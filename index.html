@@ -244,6 +244,16 @@
   .qty{width:104px;text-align:right;padding:10px 12px;border:1.5px solid var(--line-strong);border-radius:10px;font-weight:700;font-variant-numeric:tabular-nums;transition:.14s}
   .qty:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(232,146,23,.16)}
   .qty.filled{border-color:var(--green);background:var(--green-bg)}
+  .auth-msg{margin-top:10px;font-size:13px;color:var(--accent-600);min-height:18px;line-height:1.4}
+  .auth-switch{margin-top:14px;font-size:13px;color:rgba(255,255,255,.75);text-align:center}
+  .auth-switch a{color:var(--accent);font-weight:700;cursor:pointer;text-decoration:underline}
+  .login-card2 h3{color:#fff}
+  .login-card2 .sub{color:rgba(255,255,255,.65)}
+  .bar-row{display:flex;align-items:center;gap:12px;padding:7px 0}
+  .bar-label{width:200px;min-width:120px;font-size:12.5px;color:var(--ink);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bar-track{flex:1;height:14px;background:var(--surface-2);border-radius:8px;overflow:hidden}
+  .bar-fill{height:100%;background:linear-gradient(90deg,var(--brand),var(--accent));border-radius:8px}
+  .bar-val{width:44px;text-align:right;font-size:12.5px;font-weight:700;color:var(--ink)}
   .list-hint{padding:13px 18px;font-size:12.5px;color:var(--muted);text-align:center;background:var(--surface-2)}
   .filter-chips{display:flex;align-items:center;gap:7px;margin-top:10px;flex-wrap:wrap}
   .chip{padding:6px 13px;border-radius:20px;font-size:12.5px;font-weight:700;border:1px solid var(--line-strong);background:#fff;color:var(--muted)}
@@ -317,28 +327,30 @@
     </div>
 
     <div class="login-card2">
-      <h3>Đăng nhập</h3>
-      <div class="sub">Chọn vai trò để vào đúng phần việc &amp; quyền hạn.</div>
-
-      <label class="field2"><span>Họ tên</span>
-        <input id="loginName" class="input2" placeholder="VD: Nguyễn Văn A" value="Khoa">
-      </label>
-
-      <div class="field-lbl">Vai trò</div>
-      <div class="role-list2" id="roleGrid"></div>
-
-      <div id="loginSlocWrap" class="hidden" style="margin-top:14px">
-        <div class="grid2b">
-          <label class="field2" style="margin-bottom:0"><span>Điểm bán (Plant)</span>
-            <select id="loginPlant" class="input2"></select>
-          </label>
-          <label class="field2" style="margin-bottom:0"><span>Kho (Sloc)</span>
-            <select id="loginSloc" class="input2"></select>
-          </label>
-        </div>
+      <div id="authLogin">
+        <h3>Đăng nhập</h3>
+        <div class="sub">Dùng email &amp; mật khẩu để vào hệ thống.</div>
+        <label class="field2"><span>Email</span><input id="liEmail" class="input2" type="email" autocomplete="username" placeholder="ban@sunworld.vn"></label>
+        <label class="field2"><span>Mật khẩu</span><input id="liPass" class="input2" type="password" autocomplete="current-password" placeholder="••••••••"></label>
+        <button class="btn btn-primary btn-block" style="margin-top:16px" onclick="doSignIn()">Đăng nhập</button>
+        <div id="authMsg" class="auth-msg"></div>
+        <div class="auth-switch">Chưa có tài khoản? <a onclick="showAuth('reg')">Đăng ký</a></div>
       </div>
-
-      <button class="btn btn-primary btn-block" style="margin-top:18px" onclick="doLogin()">Vào hệ thống</button>
+      <div id="authReg" class="hidden">
+        <h3>Đăng ký tài khoản</h3>
+        <div class="sub">Sau khi đăng ký, quản trị sẽ duyệt &amp; gán quyền cho bạn.</div>
+        <label class="field2"><span>Họ tên</span><input id="regName" class="input2" placeholder="VD: Nguyễn Văn A"></label>
+        <label class="field2"><span>Email</span><input id="regEmail" class="input2" type="email" placeholder="ban@sunworld.vn"></label>
+        <label class="field2"><span>Mật khẩu</span><input id="regPass" class="input2" type="password" placeholder="ít nhất 6 ký tự"></label>
+        <button class="btn btn-primary btn-block" style="margin-top:16px" onclick="doSignUp()">Đăng ký</button>
+        <div id="authMsg2" class="auth-msg"></div>
+        <div class="auth-switch">Đã có tài khoản? <a onclick="showAuth('login')">Đăng nhập</a></div>
+      </div>
+      <div id="authPending" class="hidden">
+        <h3>Tài khoản chờ duyệt</h3>
+        <div class="sub" id="pendingMsg">Tài khoản của bạn đang chờ quản trị gán quyền. Vui lòng liên hệ Kế toán trưởng.</div>
+        <button class="btn btn-ghost btn-block" style="margin-top:16px" onclick="doLogout()">Đăng xuất</button>
+      </div>
     </div>
   </div>
 </div>
@@ -426,7 +438,7 @@ const IC={
 
 /* ============ STATE ============ */
 const ROLES={
-  ketoan_truong:{label:'Kế toán trưởng',short:'Đọc báo cáo & audit tổng thể',tabs:['tonghop','baocao','catalog','audit'],ico:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/></svg>'},
+  admin:{label:'Quản trị viên',short:'Toàn quyền theo dõi & quản trị',tabs:['tonghop','progress','kiemke','shift','dieuchuyen','opening','baocao','catalog','users','audit'],ico:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/></svg>'},
   ketoan_vien:{label:'Kế toán viên',short:'Duyệt, báo cáo, danh mục VT',tabs:['tonghop','baocao','catalog','audit'],ico:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>'},
   giam_sat:{label:'Giám sát điểm bán',short:'Duyệt & gửi, điều chuyển',tabs:['kiemke','shift','progress','dieuchuyen','opening'],ico:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'},
   bep_truong:{label:'Bếp trưởng / GS nhà hàng',short:'Nhập số đếm, bàn giao ca',tabs:['kiemke','shift','opening'],ico:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6z"/><line x1="6" y1="17" x2="18" y2="17"/></svg>'},
@@ -439,6 +451,7 @@ const TABS={
   progress:{label:'Tiến độ',title:'Tiến độ kiểm kê',ico:IC.dash},
   baocao:{label:'Báo cáo QT',title:'Báo cáo quản trị',ico:IC.report},
   catalog:{label:'Danh mục VT',title:'Danh mục vật tư theo Plant',ico:IC.count},
+  users:{label:'Người dùng',title:'Quản trị người dùng & phân quyền',ico:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>'},
   tonghop:{label:'Tổng hợp',title:'Tổng hợp số liệu',ico:IC.dash},
   audit:{label:'Nhật ký',title:'Nhật ký thao tác (Audit)',ico:IC.audit},
 };
@@ -448,6 +461,8 @@ let submissions=[],drafts={},transfers=[],auditLog=[];
 let openingStock={};   // key plant|sloc -> {items:{code:qty}, fromId, at, by}
 let reports=[];        // báo cáo quản trị do Kế toán viên tạo (Claude) -> Kế toán trưởng đọc
 let shifts=[];         // phiếu bàn giao ca (tồn cuối ca -> đầu ca sau)
+let profiles=[];       // tài khoản người dùng (đồng bộ từ Supabase, cho admin phân quyền)
+let userPlants={};     // { user_id: [plant_code,...] } — quyền theo nhiều plant
 let claudeKey='';      // Anthropic API key (nhập theo tài khoản cá nhân, chỉ lưu trong phiên)
 
 /* ============ HELPERS ============ */
@@ -468,6 +483,12 @@ function uid(p){return p+Date.now().toString(36).slice(-5).toUpperCase()+Math.fl
 const masterByCode={};DATA.materials.forEach(m=>masterByCode[m.code]=m);
 let plantMaterials={};   // { plantCode: [code,...] } — đồng bộ từ Supabase (bảng plant_materials)
 function materialsForPlant(plant){return (plantMaterials[plant]||[]).map(c=>masterByCode[c]).filter(Boolean);}
+function isPrivileged(){return session&&(session.role==='admin'||session.role==='ketoan_vien');}
+function allowedPlants(){ // danh sách plant người dùng được phép thao tác
+  if(isPrivileged())return plantsList();
+  const set=new Set(session&&session.plants?session.plants:[]);
+  return plantsList().filter(p=>set.has(p.plant));
+}
 
 /* ================= SUPABASE (đồng bộ điện thoại ↔ PC) ================= */
 const SB_URL='https://jygrdbuwveitrlfuwigs.supabase.co';
@@ -493,6 +514,8 @@ async function dbLoadAll(){
     openingStock={};(op.data||[]).forEach(r=>{openingStock[r.plant_code+'|'+r.sloc_code]={items:r.items||{},fromId:r.from_id,at:r.set_at?fmt(r.set_at):'',by:r.set_by};});
     plantMaterials={};(pm.data||[]).forEach(r=>{(plantMaterials[r.plant_code]=plantMaterials[r.plant_code]||[]).push(r.code);});
     auditLog=(al.data||[]).map(r=>({time:fmt(r.at),user:r.user_name,role:r.role,action:r.action,detail:r.detail}));
+    if(session&&session.role==='admin'){try{const pr=await sb.from('profiles').select('*').order('created_at',{ascending:false});profiles=pr.data||[];}catch(e){}
+      try{const up=await sb.from('user_plants').select('*');userPlants={};(up.data||[]).forEach(r=>{(userPlants[r.user_id]=userPlants[r.user_id]||[]).push(r.plant_code);});}catch(e){}}
   }catch(e){console.error('dbLoadAll lỗi',e);toast('Lỗi tải dữ liệu từ máy chủ');}
 }
 function fmt(ts){try{return new Date(ts).toLocaleString('vi-VN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit',year:'numeric'});}catch(e){return ts||'';}}
@@ -510,34 +533,67 @@ async function dbDel(table,match){if(!sb)return;const {error}=await sb.from(tabl
 async function dbUpsertOpening(plant,sloc,obj){if(!sb)return;const {error}=await sb.from('opening_stock').upsert({plant_code:plant,sloc_code:sloc,items:obj.items,from_id:obj.fromId,set_by:obj.by,set_at:new Date().toISOString()});if(error){console.error('opening',error);}}
 
 /* ============ LOGIN ============ */
-function renderLogin(){
-  const g=$('#roleGrid');g.innerHTML='';
-  Object.entries(ROLES).forEach(([k,r])=>{
-    const b=el('button','role-opt',`<div class="ri">${r.ico}</div><div><div class="rt">${r.label}</div><div class="rd">${r.short}</div></div>`);
-    b.onclick=()=>{document.querySelectorAll('.role-opt').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');window._selRole=k;
-      $('#loginSlocWrap').classList.toggle('hidden',!(k==='giam_sat'||k==='bep_truong'));};
-    g.appendChild(b);
-  });
-  const ps=$('#loginPlant');ps.innerHTML='';
-  plantsList().forEach(p=>{const o=el('option',null,p.name);o.value=p.plant;ps.appendChild(o);});
-  ps.onchange=fillLoginSloc;fillLoginSloc();
+function showAuth(w){
+  $('#authLogin').classList.toggle('hidden',w!=='login');
+  $('#authReg').classList.toggle('hidden',w!=='reg');
+  $('#authPending').classList.toggle('hidden',w!=='pending');
 }
-function fillLoginSloc(){const p=$('#loginPlant').value,ss=$('#loginSloc');ss.innerHTML='';slocsOf(p).forEach(w=>{const o=el('option',null,`${w.sloc_name} (${w.sloc})`);o.value=w.sloc;ss.appendChild(o);});}
-function doLogin(){
-  const role=window._selRole;if(!role){toast('Vui lòng chọn vai trò');return;}
-  const name=$('#loginName').value.trim()||'Người dùng';
-  session={role,name,plant:null,sloc:null};
-  if(role==='giam_sat'||role==='bep_truong'){session.plant=$('#loginPlant').value;session.sloc=$('#loginSloc').value;}
-  log('Đăng nhập',ROLES[role].label+(session.sloc?` · ${whName(session.plant,session.sloc)}`:''));
+async function initAuth(){
+  if(!sb){$('#authMsg').textContent='Chưa kết nối được máy chủ.';return;}
+  try{const {data:{session:s}}=await sb.auth.getSession();if(s){afterAuth();}}catch(e){console.error(e);}
+}
+async function doSignIn(){
+  const email=$('#liEmail').value.trim(),pass=$('#liPass').value;
+  const msg=$('#authMsg');msg.textContent='';
+  if(!email||!pass){msg.textContent='Nhập email và mật khẩu.';return;}
+  msg.textContent='Đang đăng nhập…';
+  const {error}=await sb.auth.signInWithPassword({email,password:pass});
+  if(error){msg.textContent='Lỗi: '+(error.message==='Invalid login credentials'?'Sai email hoặc mật khẩu.':error.message);return;}
+  afterAuth();
+}
+async function doSignUp(){
+  const name=$('#regName').value.trim(),email=$('#regEmail').value.trim(),pass=$('#regPass').value;
+  const msg=$('#authMsg2');msg.textContent='';
+  if(!name||!email||!pass){msg.textContent='Điền đủ họ tên, email, mật khẩu.';return;}
+  if(pass.length<6){msg.textContent='Mật khẩu tối thiểu 6 ký tự.';return;}
+  msg.textContent='Đang tạo tài khoản…';
+  const {data,error}=await sb.auth.signUp({email,password:pass,options:{data:{full_name:name}}});
+  if(error){msg.textContent='Lỗi: '+error.message;return;}
+  // đảm bảo có dòng profiles (phòng khi trigger chưa tạo)
+  try{if(data.user)await sb.from('profiles').upsert({id:data.user.id,email,full_name:name,status:'pending'},{onConflict:'id'});}catch(e){}
+  msg.textContent='';
+  $('#authMsg').textContent='✓ Đăng ký thành công! Chờ quản trị gán quyền, rồi đăng nhập.';
+  showAuth('login');$('#liEmail').value=email;
+}
+async function afterAuth(){
+  const {data:{user}}=await sb.auth.getUser();
+  if(!user){showAuth('login');return;}
+  let prof=null;
+  try{const {data}=await sb.from('profiles').select('*').eq('id',user.id).maybeSingle();prof=data;}catch(e){console.error(e);}
+  if(!prof){ // trigger có thể chưa chạy — tạo tạm
+    try{await sb.from('profiles').upsert({id:user.id,email:user.email,full_name:(user.user_metadata&&user.user_metadata.full_name)||'',status:'pending'},{onConflict:'id'});}catch(e){}
+    prof={role:null,status:'pending',email:user.email};
+  }
+  if(prof.status!=='active'||!prof.role||!ROLES[prof.role]){
+    $('#pendingMsg').textContent=prof.status==='disabled'?'Tài khoản đã bị khóa. Liên hệ Kế toán trưởng.':'Tài khoản của bạn đang chờ quản trị gán quyền. Vui lòng liên hệ Kế toán trưởng.';
+    showAuth('pending');return;
+  }
+  session={role:prof.role,name:prof.full_name||prof.email,plant:prof.plant_code||null,sloc:prof.sloc_code||null,email:prof.email,uid:user.id,plants:[]};
+  if(prof.role==='admin'||prof.role==='ketoan_vien'){session.plants=['*'];}
+  else{try{const {data}=await sb.from('user_plants').select('plant_code').eq('user_id',user.id);session.plants=(data||[]).map(r=>r.plant_code);}catch(e){session.plants=[];}}
+  enterApp();
+}
+function enterApp(){
+  log('Đăng nhập',ROLES[session.role].label+(session.sloc?` · ${whName(session.plant,session.sloc)}`:''));
   stopLoginFX();
   $('#login').classList.add('hidden');$('#app').classList.remove('hidden');
-  $('#userName').textContent=name;$('#userRole').textContent=ROLES[role].label;$('#userAv').textContent=initials(name);
-  activeTab=ROLES[role].tabs[0];renderNav();
+  $('#userName').textContent=session.name;$('#userRole').textContent=ROLES[session.role].label;$('#userAv').textContent=initials(session.name);
+  activeTab=ROLES[session.role].tabs[0];renderNav();
   $('#view').innerHTML='<div class="empty"><div class="big">Đang tải dữ liệu…</div></div>';
   dbLoadAll().then(()=>{renderView();dbSubscribe();});
 }
-function logout(){session=null;$('#app').classList.add('hidden');$('#login').classList.remove('hidden');window._selRole=null;
-  document.querySelectorAll('.role-opt').forEach(x=>x.classList.remove('sel'));$('#loginSlocWrap').classList.add('hidden');closeNav();startLoginFX();}
+async function doLogout(){try{await sb.auth.signOut();}catch(e){}location.reload();}
+function logout(){doLogout();}
 
 /* nav drawer */
 function openNav(){$('#sidebar').classList.add('open');$('#scrim').classList.add('show');}
@@ -559,36 +615,110 @@ function renderView(){
   const lc=$('#locChip');
   if(session.sloc){$('#locText').textContent=whName(session.plant,session.sloc);lc.classList.remove('hidden');}
   else{$('#locText').textContent='Văn phòng kế toán';}
-  if(activeTab==='kiemke')renderKiemke(v);
+  if(activeTab==='kiemke'){session.role==='admin'?renderKiemkeDash(v):renderKiemke(v);}
   else if(activeTab==='dieuchuyen')renderDieuchuyen(v);
   else if(activeTab==='opening')renderOpening(v);
-  else if(activeTab==='shift')renderShift(v);
+  else if(activeTab==='shift'){session.role==='admin'?renderShiftDash(v):renderShift(v);}
   else if(activeTab==='progress')renderProgress(v);
   else if(activeTab==='baocao')renderBaocao(v);
   else if(activeTab==='catalog')renderCatalog(v);
+  else if(activeTab==='users')renderUsers(v);
   else if(activeTab==='tonghop')renderTonghop(v);
   else if(activeTab==='audit')renderAudit(v);
 }
 
 /* ============ KIỂM KÊ ============ */
 let counting=null;
+/* ============ DASHBOARD XEM DỮ LIỆU (Quản trị viên) ============ */
+function barBlock(title,data){
+  const max=Math.max(1,...data.map(d=>d[1]));
+  const wrap=el('div','card');wrap.appendChild(el('div','card-h',`<span class="ct">${title}</span>`));
+  const b=el('div','card-b');
+  if(!data.length)b.appendChild(el('div','list-hint','Chưa có dữ liệu.'));
+  data.forEach(([lbl,val])=>{
+    const r=el('div','bar-row');
+    r.innerHTML=`<div class="bar-label">${lbl}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(val/max*100)}%"></div></div><div class="bar-val tnum">${val}</div>`;
+    b.appendChild(r);
+  });
+  wrap.appendChild(b);return wrap;
+}
+function renderKiemkeDash(v){
+  v.appendChild(el('div','page-head',`<div><h1>Kiểm kê — Tổng quan</h1><div class="ph-sub">Theo dõi tình trạng kiểm kê toàn hệ thống (chế độ xem).</div></div>`));
+  const total=submissions.length;
+  const cho=submissions.filter(s=>s.status==='Chờ duyệt').length;
+  const duyet=submissions.filter(s=>s.status==='Đã duyệt').length;
+  const plantsWith=new Set(submissions.map(s=>s.plant)).size;
+  const stats=el('div','stats');
+  stats.innerHTML=`
+    <div class="stat"><div class="ic" style="background:#EAF1F0;color:var(--brand)">📋</div><div><div class="n tnum">${total}</div><div class="l">Tổng phiếu</div></div></div>
+    <div class="stat"><div class="ic" style="background:#FDF1DC;color:var(--accent-600)">⏳</div><div><div class="n tnum">${cho}</div><div class="l">Chờ duyệt</div></div></div>
+    <div class="stat"><div class="ic" style="background:var(--green-bg);color:var(--green)">✓</div><div><div class="n tnum">${duyet}</div><div class="l">Đã duyệt</div></div></div>
+    <div class="stat"><div class="ic" style="background:#F3E7E7;color:var(--red)">🏪</div><div><div class="n tnum">${plantsWith}</div><div class="l">Điểm bán có phiếu</div></div></div>`;
+  v.appendChild(stats);
+  const byPlant={};submissions.forEach(s=>{byPlant[s.plant]=(byPlant[s.plant]||0)+1;});
+  const bars=Object.entries(byPlant).map(([p,n])=>[plantName(p),n]).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  v.appendChild(barBlock('Số phiếu theo điểm bán (top 10)',bars));
+  const card=el('div','card');
+  card.appendChild(el('div','card-h',`<span class="ct">Phiếu gần đây</span><span class="badge badge-soft">${total}</span>`));
+  const body=el('div');
+  if(!total)body.appendChild(el('div','empty',`<div class="big">Chưa có phiếu</div><div>Khi điểm bán gửi số, phiếu sẽ hiện ở đây.</div>`));
+  else{
+    const w=el('div','tbl-wrap');const tbl=el('table');
+    tbl.innerHTML=`<thead><tr><th>Mã</th><th>Kho</th><th>Người gửi</th><th>Thời gian</th><th class="num">Số mã</th><th>Trạng thái</th><th></th></tr></thead>`;
+    const tb=el('tbody');
+    submissions.slice(0,30).forEach(s=>{const tr=el('tr',null,`<td class="cell-strong tnum">${s.id}</td><td><div class="cell-strong">${whName(s.plant,s.sloc)}</div><div class="cell-sub">${plantName(s.plant)}</div></td><td>${s.user}</td><td class="tnum" style="font-size:12.5px">${s.time}</td><td class="num cell-strong tnum">${s.count}</td><td>${statusBadge(s.status)}</td><td><button class="btn btn-ghost btn-sm">Chi tiết</button></td>`);
+      tr.querySelector('button').onclick=()=>showDetail(s);tb.appendChild(tr);});
+    tbl.appendChild(tb);w.appendChild(tbl);body.appendChild(w);
+  }
+  card.appendChild(body);v.appendChild(card);
+}
+function renderShiftDash(v){
+  v.appendChild(el('div','page-head',`<div><h1>Bàn giao ca — Tổng quan</h1><div class="ph-sub">Theo dõi tình trạng bàn giao ca (chế độ xem).</div></div>`));
+  const total=shifts.length;
+  const cho=shifts.filter(s=>s.status==='Chờ nhận').length;
+  const nhan=shifts.filter(s=>s.status==='Đã nhận').length;
+  const stats=el('div','stats');
+  stats.innerHTML=`
+    <div class="stat"><div class="ic" style="background:#EAF1F0;color:var(--brand)">🕐</div><div><div class="n tnum">${total}</div><div class="l">Tổng phiếu ca</div></div></div>
+    <div class="stat"><div class="ic" style="background:#FDF1DC;color:var(--accent-600)">⏳</div><div><div class="n tnum">${cho}</div><div class="l">Chờ nhận</div></div></div>
+    <div class="stat"><div class="ic" style="background:var(--green-bg);color:var(--green)">✓</div><div><div class="n tnum">${nhan}</div><div class="l">Đã nhận</div></div></div>`;
+  v.appendChild(stats);
+  const byPlant={};shifts.forEach(s=>{byPlant[s.plant]=(byPlant[s.plant]||0)+1;});
+  const bars=Object.entries(byPlant).map(([p,n])=>[plantName(p),n]).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  v.appendChild(barBlock('Số phiếu bàn giao theo điểm bán (top 10)',bars));
+  const card=el('div','card');
+  card.appendChild(el('div','card-h',`<span class="ct">Phiếu bàn giao gần đây</span><span class="badge badge-soft">${total}</span>`));
+  const body=el('div');
+  if(!total)body.appendChild(el('div','empty',`<div class="big">Chưa có bàn giao ca</div><div>Khi điểm bán chốt ca, phiếu sẽ hiện ở đây.</div>`));
+  else{
+    const w=el('div','tbl-wrap');const tbl=el('table');
+    tbl.innerHTML=`<thead><tr><th>Mã</th><th>Kho</th><th>Ca</th><th>Người giao</th><th class="num">Số mã</th><th>Trạng thái</th><th></th></tr></thead>`;
+    const tb=el('tbody');
+    shifts.slice(0,30).forEach(s=>{const badge=s.status==='Đã nhận'?'<span class="badge badge-done">✓ Đã nhận</span>':'<span class="badge badge-wait">⏳ Chờ nhận</span>';
+      const tr=el('tr',null,`<td class="cell-strong tnum">${s.id}</td><td><div class="cell-strong">${whName(s.plant,s.sloc)}</div><div class="cell-sub tnum">${s.date}</div></td><td>${s.ca}</td><td>${s.fromUser}</td><td class="num cell-strong tnum">${s.count}</td><td>${badge}</td><td><button class="btn btn-ghost btn-sm">Chi tiết</button></td>`);
+      tr.querySelector('button').onclick=()=>showShiftDetail(s);tb.appendChild(tr);});
+    tbl.appendChild(tb);w.appendChild(tbl);body.appendChild(w);
+  }
+  card.appendChild(body);v.appendChild(card);
+}
+
 function renderKiemke(v){
-  const fixed=(session.role==='giam_sat'||session.role==='bep_truong');
+  const mine=allowedPlants();
   const ph=el('div','page-head',`<div><h1>Kiểm kê</h1><div class="ph-sub">Nhập số đếm thực tế theo từng kho. Kho đã có tồn đầu kỳ sẽ hiển thị để đối chiếu; kho kỳ đầu đếm mù.</div></div>`);
   v.appendChild(ph);
+  if(!mine.length){v.appendChild(el('div','card',`<div class="card-b"><div class="empty"><div class="big">Chưa được gán điểm bán</div><div>Bạn chưa được Quản trị viên gán điểm bán nào. Vui lòng liên hệ để được cấp quyền.</div></div></div>`));return;}
 
   const pick=el('div','card');
   const b=el('div','card-b');
-  b.innerHTML=`<div class="section-eyebrow"><span class="step">1</span>${fixed?'Kho bạn phụ trách':'Chọn kho cần kiểm kê'}</div>`;
+  b.innerHTML=`<div class="section-eyebrow"><span class="step">1</span>${isPrivileged()?'Chọn kho cần kiểm kê':'Chọn kho bạn phụ trách'}</div>`;
   const row=el('div','grid2');
   const pl=el('label','field',`<span>Điểm bán (Plant)</span>`);const plantSel=el('select','input');
-  plantsList().forEach(p=>{const o=el('option',null,p.name);o.value=p.plant;plantSel.appendChild(o);});pl.appendChild(plantSel);
+  mine.forEach(p=>{const o=el('option',null,p.name);o.value=p.plant;plantSel.appendChild(o);});pl.appendChild(plantSel);
   const sl=el('label','field',`<span>Kho (Sloc)</span>`);const slocSel=el('select','input');sl.appendChild(slocSel);
   row.appendChild(pl);row.appendChild(sl);b.appendChild(row);
   const startBtn=el('button','btn btn-brand','Bắt đầu / Tiếp tục đếm');b.appendChild(startBtn);
   function fillSloc(){slocSel.innerHTML='';slocsOf(plantSel.value).forEach(w=>{const o=el('option',null,`${w.sloc_name} (${w.sloc})`);o.value=w.sloc;slocSel.appendChild(o);});}
   plantSel.onchange=fillSloc;fillSloc();
-  if(fixed){plantSel.value=session.plant;fillSloc();slocSel.value=session.sloc;plantSel.disabled=true;slocSel.disabled=true;}
   startBtn.onclick=()=>{counting={plant:plantSel.value,sloc:slocSel.value};renderView();setTimeout(()=>{const c=$('#countCard');if(c)c.scrollIntoView({behavior:'smooth',block:'start'});},50);};
   pick.appendChild(b);v.appendChild(pick);
 
@@ -768,9 +898,11 @@ function renderDieuchuyen(v){
   const iUomTag=fQty.querySelector('#uomTag');
   const fromF=el('label','field','<span>Từ kho (nguồn)</span>');const sFrom=el('select','input');
   const toF=el('label','field','<span>Đến kho (đích)</span>');const sTo=el('select','input');
+  const allowSet=isPrivileged()?null:new Set(allowedPlants().map(p=>p.plant));
+  const whList=allowSet?DATA.warehouses.filter(w=>allowSet.has(w.plant)):DATA.warehouses;
   [[sFrom,'— Kho tổng / nhập ngoài —'],[sTo,'— Xuất ngoài / hao hụt —']].forEach(([sel,lbl])=>{
     const o=el('option',null,lbl);o.value='EXT';sel.appendChild(o);
-    DATA.warehouses.forEach(w=>{const op=el('option',null,`${w.sloc_name} · ${plantName(w.plant)}`);op.value=w.plant+'|'+w.sloc;sel.appendChild(op);});});
+    whList.forEach(w=>{const op=el('option',null,`${w.sloc_name} · ${plantName(w.plant)}`);op.value=w.plant+'|'+w.sloc;sel.appendChild(op);});});
   fromF.appendChild(sFrom);toF.appendChild(sTo);
   g2.appendChild(fQty);g2.appendChild(el('div'));b.appendChild(g2);
   const g3=el('div','grid2');g3.appendChild(fromF);g3.appendChild(toF);b.appendChild(g3);
@@ -925,14 +1057,15 @@ function lastShift(plant,sloc){
   return arr.length?arr[0]:null; // shifts.unshift => phần tử đầu là mới nhất
 }
 function renderShift(v){
-  const fixed=(session.role==='giam_sat'||session.role==='bep_truong');
+  const mine=allowedPlants();
   v.appendChild(el('div','page-head',`<div><h1>Bàn giao ca</h1><div class="ph-sub">Cuối ca chốt tồn thực tế → thành tồn đầu ca sau. Ca sau ký nhận bàn giao.</div></div>`));
+  if(!mine.length){v.appendChild(el('div','card',`<div class="card-b"><div class="empty"><div class="big">Chưa được gán điểm bán</div><div>Liên hệ Quản trị viên để được gán điểm bán.</div></div></div>`));return;}
 
   const pick=el('div','card');const b=el('div','card-b');
   b.innerHTML=`<div class="section-eyebrow"><span class="step">1</span>Chọn kho & ca bàn giao</div>`;
   const row=el('div','grid2');
   const pl=el('label','field','<span>Điểm bán (Plant)</span>');const plantSel=el('select','input');
-  plantsList().forEach(p=>{const o=el('option',null,p.name);o.value=p.plant;plantSel.appendChild(o);});pl.appendChild(plantSel);
+  mine.forEach(p=>{const o=el('option',null,p.name);o.value=p.plant;plantSel.appendChild(o);});pl.appendChild(plantSel);
   const sl=el('label','field','<span>Kho (Sloc)</span>');const slocSel=el('select','input');sl.appendChild(slocSel);
   row.appendChild(pl);row.appendChild(sl);b.appendChild(row);
   const row2=el('div','grid2');
@@ -941,7 +1074,6 @@ function renderShift(v){
   row2.appendChild(caF);row2.appendChild(dF);b.appendChild(row2);
   function fillSloc(){slocSel.innerHTML='';slocsOf(plantSel.value).forEach(w=>{const o=el('option',null,`${w.sloc_name} (${w.sloc})`);o.value=w.sloc;slocSel.appendChild(o);});}
   plantSel.onchange=fillSloc;fillSloc();
-  if(fixed){plantSel.value=session.plant;fillSloc();slocSel.value=session.sloc;plantSel.disabled=true;slocSel.disabled=true;}
   const startBtn=el('button','btn btn-brand','Bắt đầu chốt ca');
   startBtn.onclick=()=>{shiftEntry={plant:plantSel.value,sloc:slocSel.value,ca:caSel.value,date:dInp.value};renderView();setTimeout(()=>{const c=$('#shiftCard');if(c)c.scrollIntoView({behavior:'smooth'});},50);};
   b.appendChild(startBtn);pick.appendChild(b);v.appendChild(pick);
@@ -1076,7 +1208,8 @@ function statusOf(plant,sloc){
 }
 function renderProgress(v){
   v.appendChild(el('div','page-head',`<div><h1>Tiến độ kiểm kê</h1><div class="ph-sub">Theo dõi kho nào đã đếm / chờ duyệt / chưa đếm để đôn đốc.</div></div>`));
-  const whs=DATA.warehouses;
+  const allowSet=isPrivileged()?null:new Set(allowedPlants().map(p=>p.plant));
+  const whs=allowSet?DATA.warehouses.filter(w=>allowSet.has(w.plant)):DATA.warehouses;
   const done=whs.filter(w=>statusOf(w.plant,w.sloc).k==='done').length;
   const wait=whs.filter(w=>statusOf(w.plant,w.sloc).k==='wait').length;
   const none=whs.length-done-wait;
@@ -1117,17 +1250,16 @@ function renderProgress(v){
 function renderOpening(v){
   v.appendChild(el('div','page-head',`<div><h1>Tồn đầu kỳ</h1><div class="ph-sub">Số tồn đầu kỳ được chốt từ biên bản kiểm kê kỳ trước đã được kế toán phê duyệt.</div></div>`));
 
-  const fixed=(session.role==='giam_sat'||session.role==='bep_truong');
+  const mine=allowedPlants();
   const pick=el('div','card');const b=el('div','card-b');
   b.innerHTML=`<div class="section-eyebrow"><span class="step">1</span>Chọn kho</div>`;
   const row=el('div','grid2');
   const pl=el('label','field','<span>Điểm bán (Plant)</span>');const plantSel=el('select','input');
-  plantsList().forEach(p=>{const o=el('option',null,p.name);o.value=p.plant;plantSel.appendChild(o);});pl.appendChild(plantSel);
+  mine.forEach(p=>{const o=el('option',null,p.name);o.value=p.plant;plantSel.appendChild(o);});pl.appendChild(plantSel);
   const sl=el('label','field','<span>Kho (Sloc)</span>');const slocSel=el('select','input');sl.appendChild(slocSel);
   row.appendChild(pl);row.appendChild(sl);b.appendChild(row);
   function fillSloc(){slocSel.innerHTML='';slocsOf(plantSel.value).forEach(w=>{const o=el('option',null,`${w.sloc_name} (${w.sloc})`);o.value=w.sloc;slocSel.appendChild(o);});}
   plantSel.onchange=()=>{fillSloc();show();};slocSel.onchange=()=>show();fillSloc();
-  if(fixed){plantSel.value=session.plant;fillSloc();slocSel.value=session.sloc;plantSel.disabled=true;slocSel.disabled=true;}
   pick.appendChild(b);v.appendChild(pick);
 
   const holder=el('div');holder.style.marginTop='16px';v.appendChild(holder);
@@ -1151,6 +1283,67 @@ function renderOpening(v){
     holder.appendChild(card);
   }
   show();
+}
+
+/* ============ QUẢN TRỊ NGƯỜI DÙNG (Kế toán trưởng) ============ */
+const ROLE_OPTS=[['','— Chưa gán —'],['admin','Quản trị viên'],['ketoan_vien','Kế toán viên'],['giam_sat','Giám sát điểm bán'],['bep_truong','Bếp trưởng / GS nhà hàng']];
+function renderUsers(v){
+  v.appendChild(el('div','page-head',`<div><h1>Quản trị người dùng</h1><div class="ph-sub">Gán vai trò &amp; các điểm bán (plant) cho từng tài khoản, duyệt hoặc khóa truy cập.</div></div>`));
+  const pend=profiles.filter(p=>p.status!=='active').length;
+  const stats=el('div','stats');
+  stats.innerHTML=`<div class="stat"><div class="ic" style="background:#EAF1F0;color:var(--brand)">👥</div><div><div class="n tnum">${profiles.length}</div><div class="l">Tài khoản</div></div></div>
+    <div class="stat"><div class="ic" style="background:#FDF1DC;color:var(--accent-600)">⏳</div><div><div class="n tnum">${pend}</div><div class="l">Chờ duyệt/khóa</div></div></div>`;
+  v.appendChild(stats);
+
+  if(!profiles.length){v.appendChild(el('div','card',`<div class="card-b"><div class="empty"><div class="big">Chưa có tài khoản</div><div>Khi có người đăng ký, tài khoản sẽ hiện ở đây để bạn gán quyền.</div></div></div>`));return;}
+
+  profiles.forEach(p=>{
+    const card=el('div','card');card.style.marginBottom='14px';
+    const b=el('div','card-b');
+    const stColor=p.status==='active'?'var(--green)':p.status==='disabled'?'var(--red)':'var(--accent-600)';
+    const stLbl=p.status==='active'?'Kích hoạt':p.status==='disabled'?'Khóa':'Chờ duyệt';
+    b.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+      <div><div class="cell-strong" style="font-size:15px">${p.full_name||'(chưa đặt tên)'}</div><div class="cell-sub">${p.email||''}</div></div>
+      <span class="badge" style="background:transparent;border:1px solid ${stColor};color:${stColor}">${stLbl}</span></div>`;
+    const row=el('div','grid2');row.style.marginTop='12px';
+    // vai trò
+    const rf=el('label','field','<span>Vai trò</span>');const rsel=el('select','input');
+    ROLE_OPTS.forEach(([val,lbl])=>{const o=el('option',null,lbl);o.value=val;if((p.role||'')===val)o.selected=true;rsel.appendChild(o);});rf.appendChild(rsel);
+    // trạng thái
+    const sf=el('label','field','<span>Trạng thái</span>');const stsel=el('select','input');
+    [['pending','Chờ duyệt'],['active','Kích hoạt'],['disabled','Khóa']].forEach(([val,lbl])=>{const o=el('option',null,lbl);o.value=val;if((p.status||'pending')===val)o.selected=true;stsel.appendChild(o);});sf.appendChild(stsel);
+    row.appendChild(rf);row.appendChild(sf);b.appendChild(row);
+
+    // danh sách plant (chỉ vai điểm bán)
+    const plantsBox=el('div');plantsBox.style.marginTop='12px';
+    const lbl=el('div','field-lbl','Điểm bán được phụ trách (chọn nhiều)');
+    const grid=el('div');grid.style.cssText='display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;max-height:200px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:10px';
+    const assigned=new Set(userPlants[p.id]||[]);
+    plantsList().forEach(pl=>{
+      const w=el('label','chk-row');w.style.cssText='display:flex;align-items:center;gap:7px;font-size:12.5px;cursor:pointer';
+      const cb=el('input');cb.type='checkbox';cb.value=pl.plant;cb.className='rowchk';if(assigned.has(pl.plant))cb.checked=true;
+      w.appendChild(cb);w.appendChild(el('span',null,pl.name));grid.appendChild(w);
+    });
+    plantsBox.appendChild(lbl);plantsBox.appendChild(grid);b.appendChild(plantsBox);
+    function syncPlantsVis(){const isBP=rsel.value==='giam_sat'||rsel.value==='bep_truong';plantsBox.style.display=isBP?'block':'none';}
+    rsel.onchange=syncPlantsVis;syncPlantsVis();
+
+    const bSave=el('button','btn btn-primary','Lưu thay đổi');bSave.style.marginTop='14px';
+    bSave.onclick=async()=>{
+      const role=rsel.value||null,status=stsel.value;
+      await dbUpd('profiles',{id:p.id},{role,status,plant_code:null,sloc_code:null});
+      p.role=role;p.status=status;
+      const isBP=role==='giam_sat'||role==='bep_truong';
+      const chosen=isBP?[...grid.querySelectorAll('input:checked')].map(c=>c.value):[];
+      // cập nhật user_plants: xóa hết rồi thêm lại
+      try{await sb.from('user_plants').delete().eq('user_id',p.id);
+        if(chosen.length)await sb.from('user_plants').insert(chosen.map(pc=>({user_id:p.id,plant_code:pc})));}catch(e){console.error(e);}
+      userPlants[p.id]=chosen;
+      log('Phân quyền',`${p.email} → ${role||'chưa gán'} / ${status} / ${chosen.length} plant`);
+      toast('Đã lưu '+(p.full_name||p.email));renderView();
+    };
+    b.appendChild(bSave);card.appendChild(b);v.appendChild(card);
+  });
 }
 
 /* ============ DANH MỤC VẬT TƯ THEO PLANT (Kế toán) ============ */
@@ -1297,6 +1490,62 @@ function importPlantCatalog(file,plant,cb){
 }
 
 /* ============ BÁO CÁO QUẢN TRỊ (Claude) ============ */
+/* ===== Cấu hình AI + Teams (lưu tại trình duyệt máy admin) ===== */
+function getCfg(){try{return JSON.parse(localStorage.getItem('kk_ai_cfg')||'{}');}catch(e){return {};}}
+function setCfg(c){try{localStorage.setItem('kk_ai_cfg',JSON.stringify(c));}catch(e){}}
+function buildProgressData(){
+  const whs=DATA.warehouses;let done=0,wait=0,none=0;
+  whs.forEach(w=>{const st=statusOf(w.plant,w.sloc);if(st.k==='done')done++;else if(st.k==='wait')wait++;else none++;});
+  const filled=new Set(submissions.map(s=>s.plant));
+  const chua=plantsList().filter(p=>!filled.has(p.plant)).map(p=>p.name);
+  let txt=`TIẾN ĐỘ KIỂM KÊ (toàn hệ thống)\n- Tổng kho: ${whs.length} — đã duyệt: ${done}, chờ duyệt: ${wait}, chưa đếm: ${none}\n`;
+  txt+=`- Tổng phiếu kiểm kê: ${submissions.length}\n`;
+  txt+=`- Điểm bán CHƯA có phiếu nào (${chua.length}): ${chua.join(', ')||'(không)'}\n`;
+  return txt;
+}
+async function geminiGen(prompt,key,model){
+  const m=model||'gemini-2.0-flash';
+  const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${encodeURIComponent(key)}`,{
+    method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})});
+  if(!r.ok)throw new Error('Gemini HTTP '+r.status+' '+(await r.text()).slice(0,150));
+  const d=await r.json();const parts=(((d.candidates||[])[0]||{}).content||{}).parts||[];
+  return parts.map(p=>p.text||'').join('').trim();
+}
+async function openrouterGen(prompt,key){
+  const r=await fetch('https://openrouter.ai/api/v1/chat/completions',{
+    method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key,'HTTP-Referer':location.origin,'X-Title':'KiemKe FnB'},
+    body:JSON.stringify({model:'google/gemini-2.0-flash-001',messages:[{role:'user',content:prompt}]})});
+  if(!r.ok)throw new Error('OpenRouter HTTP '+r.status+' '+(await r.text()).slice(0,150));
+  const d=await r.json();return ((((d.choices||[])[0]||{}).message)||{}).content||'';
+}
+async function claudeReviewText(draft,facts,key){
+  const prompt=`Bạn là biên tập viên kiểm duyệt báo cáo nội bộ (FP&A) của Sun World Ba Na Hills. Dưới đây là DỮ LIỆU THỰC TẾ và BẢN NHÁP do AI khác viết. Hãy KIỂM DUYỆT: sửa lỗi, LOẠI BỎ mọi con số/nhận định không có trong dữ liệu, đảm bảo chính xác & ngắn gọn, đúng văn phong báo cáo nội bộ. Trả về BẢN CUỐI hoàn chỉnh bằng tiếng Việt, KHÔNG kèm lời bình.\n\nDỮ LIỆU:\n${facts}\n\nBẢN NHÁP:\n${draft}`;
+  const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
+    headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:'claude-sonnet-5',max_tokens:2000,messages:[{role:'user',content:prompt}]})});
+  if(!r.ok)throw new Error('Claude HTTP '+r.status+' '+(await r.text()).slice(0,150));
+  const d=await r.json();return (d.content||[]).filter(x=>x.type==='text').map(x=>x.text).join('\n').trim();
+}
+async function sendTeamsText(text){
+  const cfg=getCfg();if(!cfg.teams){toast('Chưa cấu hình link Teams (vào Cài đặt AI)');return false;}
+  try{await fetch(cfg.teams,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=UTF-8'},body:text});
+    toast('Đã gửi tới Teams — kiểm tra channel');log('Gửi báo cáo Teams',(text||'').slice(0,60));return true;
+  }catch(e){toast('Lỗi gửi Teams: '+e.message);return false;}
+}
+async function genReport(kind,extra){
+  const cfg=getCfg();
+  const facts=kind==='progress'?buildProgressData():buildReportData();
+  const label=kind==='progress'?'BÁO CÁO TIẾN ĐỘ KIỂM KÊ':'BÁO CÁO QUẢN TRỊ KIỂM KÊ';
+  const prompt=`Bạn là chuyên viên FP&A của bộ phận Kế toán Chi phí F&B — Sun World Ba Na Hills. Dựa DUY NHẤT trên dữ liệu dưới đây, viết ${label} bằng tiếng Việt, ngắn gọn, rõ, dùng markdown (## tiêu đề mục, - gạch đầu dòng). TUYỆT ĐỐI KHÔNG bịa/tự tính số không có trong dữ liệu; không suy diễn giá trị tiền nếu chưa có giá.\n\nDỮ LIỆU:\n${facts}${extra?('\n\nYÊU CẦU THÊM: '+extra):''}`;
+  let draft='',provider='';
+  if(cfg.gemini){try{draft=await geminiGen(prompt,cfg.gemini,cfg.gmodel);provider='Gemini';}catch(e){console.error('Gemini',e);}}
+  if(!draft&&cfg.openrouter){try{draft=await openrouterGen(prompt,cfg.openrouter);provider='OpenRouter (dự phòng)';}catch(e){console.error('OpenRouter',e);}}
+  if(!draft)throw new Error('Không tạo được nội dung. Kiểm tra API key Gemini/OpenRouter.');
+  let final=draft,reviewed=false;
+  if(cfg.claude){try{final=await claudeReviewText(draft,facts,cfg.claude);reviewed=true;}catch(e){console.error('Claude',e);}}
+  return {final,provider,reviewed};
+}
+
 function buildReportData(){
   const approved=submissions.filter(s=>s.status==='Đã duyệt');
   const pending=submissions.filter(s=>s.status==='Chờ duyệt');
@@ -1318,33 +1567,67 @@ function buildReportData(){
   return txt;
 }
 function renderBaocao(v){
-  const isKTV=session.role==='ketoan_vien';
-  v.appendChild(el('div','page-head',`<div><h1>Báo cáo quản trị</h1><div class="ph-sub">${isKTV?'Kế toán viên tạo báo cáo bằng Claude. Kế toán trưởng sẽ đọc được các báo cáo này.':'Các báo cáo do Kế toán viên tạo — chỉ đọc.'}</div></div>`));
+  const creator=session.role==='admin'||session.role==='ketoan_vien';
+  v.appendChild(el('div','page-head',`<div><h1>Báo cáo quản trị</h1><div class="ph-sub">${creator?'Tạo báo cáo bằng AI (Gemini → OpenRouter dự phòng → Claude kiểm duyệt), rồi gửi về MS Teams.':'Các báo cáo đã tạo — chỉ đọc.'}</div></div>`));
 
-  if(isKTV){
-    const gen=el('div','card');const b=el('div','card-b');
-    b.innerHTML=`<div class="section-eyebrow">${IC.report} Tạo báo cáo mới bằng Claude</div>
-      <div class="note" style="margin-bottom:14px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span>Báo cáo hiện dựa trên dữ liệu <b>kiểm kê & điều chuyển</b> đang có (số lượng). Chưa có giá/POS nên chưa tính được chênh lệch chi phí — khi bổ sung dữ liệu giá, cùng chức năng này sẽ mở rộng thành phân tích chi phí đầy đủ. Claude chỉ phân tích trên số đã có, không bịa số.</span></div>`;
-    const g=el('div','grid2');
-    const fKey=el('label','field','<span>Anthropic API key (theo tài khoản cá nhân)</span>');
-    const iKey=el('input','input');iKey.type='password';iKey.placeholder='sk-ant-…';iKey.value=claudeKey?'••••••••':'';fKey.appendChild(iKey);
-    const fModel=el('label','field','<span>Model</span>');const sModel=el('select','input');
-    [['claude-sonnet-5','Claude Sonnet 5 (cân bằng)'],['claude-opus-4-8','Claude Opus 4.8 (sâu hơn)'],['claude-haiku-4-5-20251001','Claude Haiku 4.5 (nhanh/rẻ)']].forEach(([val,lbl])=>{const o=el('option',null,lbl);o.value=val;sModel.appendChild(o);});
-    fModel.appendChild(sModel);g.appendChild(fKey);g.appendChild(fModel);b.appendChild(g);
-    const fTitle=el('label','field','<span>Tiêu đề báo cáo</span>');const iTitle=el('input','input');
-    iTitle.value='Báo cáo quản trị kiểm kê — '+new Date().toLocaleDateString('vi-VN',{month:'2-digit',year:'numeric'});fTitle.appendChild(iTitle);b.appendChild(fTitle);
-    const genBtn=el('button','btn btn-primary',`${IC.report} Tạo báo cáo bằng Claude`);
-    genBtn.onclick=()=>claudeReport(iKey,sModel.value,iTitle.value,genBtn);b.appendChild(genBtn);
-    const out=el('div');out.id='reportOut';out.style.marginTop='14px';b.appendChild(out);
-    gen.appendChild(b);v.appendChild(gen);
-    const link=el('a',null,'Lấy API key ↗');link.href='https://console.anthropic.com/settings/keys';link.target='_blank';
-    link.style.cssText='display:inline-block;margin-top:6px;font-size:12px;color:var(--muted)';v.appendChild(link);
+  if(creator){
+    const cfg=getCfg();
+    const setCard=el('div','card');const sb2=el('div','card-b');
+    sb2.innerHTML=`<div class="section-eyebrow">⚙️ Cài đặt AI &amp; Teams (lưu tại máy bạn)</div>
+      <div class="note" style="margin-bottom:12px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span>Khóa API chỉ lưu trên trình duyệt máy bạn, không đẩy lên máy chủ. Gemini là chính, OpenRouter dự phòng, Claude kiểm duyệt bản cuối.</span></div>`;
+    const g1=el('div','grid2');
+    const fG=el('label','field','<span>Gemini API key</span>');const iG=el('input','input');iG.type='password';iG.placeholder=cfg.gemini?'••••••••(đã lưu)':'AIza…';fG.appendChild(iG);
+    const fO=el('label','field','<span>OpenRouter API key (dự phòng)</span>');const iO=el('input','input');iO.type='password';iO.placeholder=cfg.openrouter?'••••••••(đã lưu)':'sk-or-…';fO.appendChild(iO);
+    g1.appendChild(fG);g1.appendChild(fO);sb2.appendChild(g1);
+    const g2=el('div','grid2');
+    const fC=el('label','field','<span>Claude API key — kiểm duyệt</span>');const iC=el('input','input');iC.type='password';iC.placeholder=cfg.claude?'••••••••(đã lưu)':'sk-ant-…';fC.appendChild(iC);
+    const fT=el('label','field','<span>Link MS Teams (Power Automate)</span>');const iT=el('input','input');iT.placeholder=cfg.teams?'(đã lưu) — dán để đổi':'https://prod-…logic.azure.com/…';iT.value=cfg.teams||'';fT.appendChild(iT);
+    g2.appendChild(fC);g2.appendChild(fT);sb2.appendChild(g2);
+    const saveBtn=el('button','btn btn-ghost btn-sm','💾 Lưu cài đặt');
+    saveBtn.onclick=()=>{const c=getCfg();
+      if(iG.value.trim())c.gemini=iG.value.trim();
+      if(iO.value.trim())c.openrouter=iO.value.trim();
+      if(iC.value.trim())c.claude=iC.value.trim();
+      c.teams=iT.value.trim();c.gmodel=c.gmodel||'gemini-2.0-flash';
+      setCfg(c);toast('Đã lưu cài đặt');renderView();};
+    sb2.appendChild(saveBtn);setCard.appendChild(sb2);v.appendChild(setCard);
+
+    const gen=el('div','card');gen.style.marginTop='16px';const b=el('div','card-b');
+    b.innerHTML=`<div class="section-eyebrow">${IC.report} Tạo báo cáo bằng AI</div>`;
+    const g3=el('div','grid2');
+    const fKind=el('label','field','<span>Loại báo cáo</span>');const sKind=el('select','input');
+    [['baocao','Báo cáo quản trị (kiểm kê & điều chuyển)'],['progress','Tổng hợp tiến độ kiểm kê']].forEach(([val,lbl])=>{const o=el('option',null,lbl);o.value=val;sKind.appendChild(o);});fKind.appendChild(sKind);
+    const fExtra=el('label','field','<span>Yêu cầu thêm (tùy chọn)</span>');const iExtra=el('input','input');iExtra.placeholder='VD: nhấn mạnh kho chưa nộp';fExtra.appendChild(iExtra);
+    g3.appendChild(fKind);g3.appendChild(fExtra);b.appendChild(g3);
+    const genBtn=el('button','btn btn-primary',`${IC.report} Tạo báo cáo`);
+    const out=el('div');out.id='reportOut';out.style.marginTop='14px';
+    genBtn.onclick=async()=>{
+      const cfg2=getCfg();
+      if(!cfg2.gemini&&!cfg2.openrouter){out.innerHTML='<div class="imp-res imp-err">Chưa có key Gemini/OpenRouter. Vào Cài đặt AI để nhập.</div>';return;}
+      genBtn.disabled=true;out.innerHTML='<div style="font-size:13px;color:var(--muted)">⏳ Đang tạo (Gemini) → kiểm duyệt (Claude)…</div>';
+      try{
+        const rs=await genReport(sKind.value,iExtra.value.trim());
+        const title=(sKind.value==='progress'?'Tổng hợp tiến độ':'Báo cáo quản trị')+' — '+new Date().toLocaleDateString('vi-VN');
+        out.innerHTML='';
+        const tag=el('div');tag.style.cssText='font-size:12px;color:var(--muted);margin-bottom:8px';
+        tag.textContent=`Nguồn: ${rs.provider}${rs.reviewed?' · đã qua Claude kiểm duyệt ✓':' · (Claude chưa kiểm duyệt — thiếu key)'}`;
+        out.appendChild(tag);
+        const ta=el('textarea','input');ta.style.cssText='width:100%;min-height:280px;font-family:inherit;line-height:1.5';ta.value=rs.final;out.appendChild(ta);
+        const rowb=el('div','btn-row');rowb.style.marginTop='10px';
+        const sendBtn=el('button','btn btn-primary','📨 Gửi về MS Teams');sendBtn.onclick=()=>sendTeamsText(ta.value);
+        const saveBtn2=el('button','btn btn-ghost','💾 Lưu vào danh sách');
+        saveBtn2.onclick=()=>{const r={id:uid('BC'),title,content:ta.value,by:session.name,time:now(),model:rs.provider+(rs.reviewed?'+Claude':'')};reports.unshift(r);log('Tạo báo cáo',r.id);toast('Đã lưu '+r.id);renderView();};
+        rowb.appendChild(sendBtn);rowb.appendChild(saveBtn2);out.appendChild(rowb);
+      }catch(err){out.innerHTML='<div class="imp-res imp-err"><b>Không tạo được báo cáo.</b> '+err.message+'</div>';}
+      finally{genBtn.disabled=false;}
+    };
+    b.appendChild(genBtn);b.appendChild(out);gen.appendChild(b);v.appendChild(gen);
   }
 
   const listCard=el('div','card');listCard.style.marginTop='16px';
-  listCard.appendChild(el('div','card-h',`<span class="ct">Báo cáo đã tạo</span><span class="badge badge-soft">${reports.length}</span>`));
+  listCard.appendChild(el('div','card-h',`<span class="ct">Báo cáo đã lưu</span><span class="badge badge-soft">${reports.length}</span>`));
   const body=el('div');
-  if(!reports.length){body.appendChild(el('div','empty',`<div class="ei">${IC.report}</div><div class="big">Chưa có báo cáo</div><div>${isKTV?'Tạo báo cáo đầu tiên ở phần trên.':'Kế toán viên chưa tạo báo cáo nào.'}</div>`));}
+  if(!reports.length){body.appendChild(el('div','empty',`<div class="ei">${IC.report}</div><div class="big">Chưa có báo cáo</div><div>${creator?'Tạo báo cáo ở phần trên.':'Chưa có báo cáo nào.'}</div>`));}
   else{
     reports.forEach(r=>{
       const row=el('div');row.style.cssText='padding:14px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px;cursor:pointer';
@@ -1533,7 +1816,7 @@ function startLoginFX(){
 function stopLoginFX(){_sl.run=false;cancelAnimationFrame(_sl.raf);}
 
 /* ============ INIT ============ */
-renderLogin();
+initAuth();
 startLoginFX();
 </script>
 </body>
