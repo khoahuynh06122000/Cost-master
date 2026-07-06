@@ -249,14 +249,11 @@
   .auth-switch a{color:var(--accent);font-weight:700;cursor:pointer;text-decoration:underline}
   .login-card2 h3{color:#fff}
   .login-card2 .sub{color:rgba(255,255,255,.65)}
-<<<<<<< HEAD
   .bar-row{display:flex;align-items:center;gap:12px;padding:7px 0}
   .bar-label{width:200px;min-width:120px;font-size:12.5px;color:var(--ink);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .bar-track{flex:1;height:14px;background:var(--surface-2);border-radius:8px;overflow:hidden}
   .bar-fill{height:100%;background:linear-gradient(90deg,var(--brand),var(--accent));border-radius:8px}
   .bar-val{width:44px;text-align:right;font-size:12.5px;font-weight:700;color:var(--ink)}
-=======
->>>>>>> 89d5aefa7253c69a407ec17efa93926a9dbc16a8
   .list-hint{padding:13px 18px;font-size:12.5px;color:var(--muted);text-align:center;background:var(--surface-2)}
   .filter-chips{display:flex;align-items:center;gap:7px;margin-top:10px;flex-wrap:wrap}
   .chip{padding:6px 13px;border-radius:20px;font-size:12.5px;font-weight:700;border:1px solid var(--line-strong);background:#fff;color:var(--muted)}
@@ -466,6 +463,8 @@ let reports=[];        // báo cáo quản trị do Kế toán viên tạo (Clau
 let shifts=[];         // phiếu bàn giao ca (tồn cuối ca -> đầu ca sau)
 let profiles=[];       // tài khoản người dùng (đồng bộ từ Supabase, cho admin phân quyền)
 let userPlants={};     // { user_id: [plant_code,...] } — quyền theo nhiều plant
+let dashPlantKK='';    // plant đang lọc ở dashboard Kiểm kê ('' = tất cả)
+let dashPlantSC='';    // plant đang lọc ở dashboard Bàn giao ca
 let claudeKey='';      // Anthropic API key (nhập theo tài khoản cá nhân, chỉ lưu trong phiên)
 
 /* ============ HELPERS ============ */
@@ -645,22 +644,34 @@ function barBlock(title,data){
   });
   wrap.appendChild(b);return wrap;
 }
+function dashFilterCard(current,onPick){
+  const card=el('div','card');const b=el('div','card-b');
+  b.innerHTML=`<div class="section-eyebrow">🔎 Lọc theo điểm bán</div>`;
+  const sel=el('select','input');sel.style.maxWidth='420px';
+  const oAll=el('option',null,'Tất cả điểm bán');oAll.value='';sel.appendChild(oAll);
+  plantsList().forEach(p=>{const o=el('option',null,p.name);o.value=p.plant;if(current===p.plant)o.selected=true;sel.appendChild(o);});
+  sel.onchange=()=>onPick(sel.value);
+  b.appendChild(sel);card.appendChild(b);return card;
+}
 function renderKiemkeDash(v){
-  v.appendChild(el('div','page-head',`<div><h1>Kiểm kê — Tổng quan</h1><div class="ph-sub">Theo dõi tình trạng kiểm kê toàn hệ thống (chế độ xem).</div></div>`));
-  const total=submissions.length;
-  const cho=submissions.filter(s=>s.status==='Chờ duyệt').length;
-  const duyet=submissions.filter(s=>s.status==='Đã duyệt').length;
-  const plantsWith=new Set(submissions.map(s=>s.plant)).size;
+  v.appendChild(el('div','page-head',`<div><h1>Kiểm kê — Tổng quan</h1><div class="ph-sub">Theo dõi tình trạng kiểm kê (chế độ xem).</div></div>`));
+  v.appendChild(dashFilterCard(dashPlantKK,val=>{dashPlantKK=val;renderView();}));
+  const rows=dashPlantKK?submissions.filter(s=>s.plant===dashPlantKK):submissions;
+  const total=rows.length;
+  const cho=rows.filter(s=>s.status==='Chờ duyệt').length;
+  const duyet=rows.filter(s=>s.status==='Đã duyệt').length;
+  const plantsWith=new Set(rows.map(s=>s.plant)).size;
   const stats=el('div','stats');
   stats.innerHTML=`
     <div class="stat"><div class="ic" style="background:#EAF1F0;color:var(--brand)">📋</div><div><div class="n tnum">${total}</div><div class="l">Tổng phiếu</div></div></div>
     <div class="stat"><div class="ic" style="background:#FDF1DC;color:var(--accent-600)">⏳</div><div><div class="n tnum">${cho}</div><div class="l">Chờ duyệt</div></div></div>
     <div class="stat"><div class="ic" style="background:var(--green-bg);color:var(--green)">✓</div><div><div class="n tnum">${duyet}</div><div class="l">Đã duyệt</div></div></div>
-    <div class="stat"><div class="ic" style="background:#F3E7E7;color:var(--red)">🏪</div><div><div class="n tnum">${plantsWith}</div><div class="l">Điểm bán có phiếu</div></div></div>`;
+    <div class="stat"><div class="ic" style="background:#F3E7E7;color:var(--red)">🏪</div><div><div class="n tnum">${dashPlantKK?new Set(rows.map(s=>s.sloc)).size:plantsWith}</div><div class="l">${dashPlantKK?'Kho có phiếu':'Điểm bán có phiếu'}</div></div></div>`;
   v.appendChild(stats);
-  const byPlant={};submissions.forEach(s=>{byPlant[s.plant]=(byPlant[s.plant]||0)+1;});
-  const bars=Object.entries(byPlant).map(([p,n])=>[plantName(p),n]).sort((a,b)=>b[1]-a[1]).slice(0,10);
-  v.appendChild(barBlock('Số phiếu theo điểm bán (top 10)',bars));
+  let bars;
+  if(dashPlantKK){const bySloc={};rows.forEach(s=>{bySloc[s.sloc]=(bySloc[s.sloc]||0)+1;});bars=Object.entries(bySloc).map(([sl,n])=>[whName(dashPlantKK,sl),n]).sort((a,b)=>b[1]-a[1]).slice(0,12);}
+  else{const byPlant={};rows.forEach(s=>{byPlant[s.plant]=(byPlant[s.plant]||0)+1;});bars=Object.entries(byPlant).map(([p,n])=>[plantName(p),n]).sort((a,b)=>b[1]-a[1]).slice(0,10);}
+  v.appendChild(barBlock(dashPlantKK?'Số phiếu theo kho':'Số phiếu theo điểm bán (top 10)',bars));
   const card=el('div','card');
   card.appendChild(el('div','card-h',`<span class="ct">Phiếu gần đây</span><span class="badge badge-soft">${total}</span>`));
   const body=el('div');
@@ -669,7 +680,7 @@ function renderKiemkeDash(v){
     const w=el('div','tbl-wrap');const tbl=el('table');
     tbl.innerHTML=`<thead><tr><th>Mã</th><th>Kho</th><th>Người gửi</th><th>Thời gian</th><th class="num">Số mã</th><th>Trạng thái</th><th></th></tr></thead>`;
     const tb=el('tbody');
-    submissions.slice(0,30).forEach(s=>{const tr=el('tr',null,`<td class="cell-strong tnum">${s.id}</td><td><div class="cell-strong">${whName(s.plant,s.sloc)}</div><div class="cell-sub">${plantName(s.plant)}</div></td><td>${s.user}</td><td class="tnum" style="font-size:12.5px">${s.time}</td><td class="num cell-strong tnum">${s.count}</td><td>${statusBadge(s.status)}</td><td><button class="btn btn-ghost btn-sm">Chi tiết</button></td>`);
+    rows.slice(0,50).forEach(s=>{const tr=el('tr',null,`<td class="cell-strong tnum">${s.id}</td><td><div class="cell-strong">${whName(s.plant,s.sloc)}</div><div class="cell-sub">${plantName(s.plant)}</div></td><td>${s.user}</td><td class="tnum" style="font-size:12.5px">${s.time}</td><td class="num cell-strong tnum">${s.count}</td><td>${statusBadge(s.status)}</td><td><button class="btn btn-ghost btn-sm">Chi tiết</button></td>`);
       tr.querySelector('button').onclick=()=>showDetail(s);tb.appendChild(tr);});
     tbl.appendChild(tb);w.appendChild(tbl);body.appendChild(w);
   }
@@ -677,18 +688,21 @@ function renderKiemkeDash(v){
 }
 function renderShiftDash(v){
   v.appendChild(el('div','page-head',`<div><h1>Bàn giao ca — Tổng quan</h1><div class="ph-sub">Theo dõi tình trạng bàn giao ca (chế độ xem).</div></div>`));
-  const total=shifts.length;
-  const cho=shifts.filter(s=>s.status==='Chờ nhận').length;
-  const nhan=shifts.filter(s=>s.status==='Đã nhận').length;
+  v.appendChild(dashFilterCard(dashPlantSC,val=>{dashPlantSC=val;renderView();}));
+  const rows=dashPlantSC?shifts.filter(s=>s.plant===dashPlantSC):shifts;
+  const total=rows.length;
+  const cho=rows.filter(s=>s.status==='Chờ nhận').length;
+  const nhan=rows.filter(s=>s.status==='Đã nhận').length;
   const stats=el('div','stats');
   stats.innerHTML=`
     <div class="stat"><div class="ic" style="background:#EAF1F0;color:var(--brand)">🕐</div><div><div class="n tnum">${total}</div><div class="l">Tổng phiếu ca</div></div></div>
     <div class="stat"><div class="ic" style="background:#FDF1DC;color:var(--accent-600)">⏳</div><div><div class="n tnum">${cho}</div><div class="l">Chờ nhận</div></div></div>
     <div class="stat"><div class="ic" style="background:var(--green-bg);color:var(--green)">✓</div><div><div class="n tnum">${nhan}</div><div class="l">Đã nhận</div></div></div>`;
   v.appendChild(stats);
-  const byPlant={};shifts.forEach(s=>{byPlant[s.plant]=(byPlant[s.plant]||0)+1;});
-  const bars=Object.entries(byPlant).map(([p,n])=>[plantName(p),n]).sort((a,b)=>b[1]-a[1]).slice(0,10);
-  v.appendChild(barBlock('Số phiếu bàn giao theo điểm bán (top 10)',bars));
+  let bars;
+  if(dashPlantSC){const bySloc={};rows.forEach(s=>{bySloc[s.sloc]=(bySloc[s.sloc]||0)+1;});bars=Object.entries(bySloc).map(([sl,n])=>[whName(dashPlantSC,sl),n]).sort((a,b)=>b[1]-a[1]).slice(0,12);}
+  else{const byPlant={};rows.forEach(s=>{byPlant[s.plant]=(byPlant[s.plant]||0)+1;});bars=Object.entries(byPlant).map(([p,n])=>[plantName(p),n]).sort((a,b)=>b[1]-a[1]).slice(0,10);}
+  v.appendChild(barBlock(dashPlantSC?'Số phiếu bàn giao theo kho':'Số phiếu bàn giao theo điểm bán (top 10)',bars));
   const card=el('div','card');
   card.appendChild(el('div','card-h',`<span class="ct">Phiếu bàn giao gần đây</span><span class="badge badge-soft">${total}</span>`));
   const body=el('div');
@@ -697,7 +711,7 @@ function renderShiftDash(v){
     const w=el('div','tbl-wrap');const tbl=el('table');
     tbl.innerHTML=`<thead><tr><th>Mã</th><th>Kho</th><th>Ca</th><th>Người giao</th><th class="num">Số mã</th><th>Trạng thái</th><th></th></tr></thead>`;
     const tb=el('tbody');
-    shifts.slice(0,30).forEach(s=>{const badge=s.status==='Đã nhận'?'<span class="badge badge-done">✓ Đã nhận</span>':'<span class="badge badge-wait">⏳ Chờ nhận</span>';
+    rows.slice(0,50).forEach(s=>{const badge=s.status==='Đã nhận'?'<span class="badge badge-done">✓ Đã nhận</span>':'<span class="badge badge-wait">⏳ Chờ nhận</span>';
       const tr=el('tr',null,`<td class="cell-strong tnum">${s.id}</td><td><div class="cell-strong">${whName(s.plant,s.sloc)}</div><div class="cell-sub tnum">${s.date}</div></td><td>${s.ca}</td><td>${s.fromUser}</td><td class="num cell-strong tnum">${s.count}</td><td>${badge}</td><td><button class="btn btn-ghost btn-sm">Chi tiết</button></td>`);
       tr.querySelector('button').onclick=()=>showShiftDetail(s);tb.appendChild(tr);});
     tbl.appendChild(tb);w.appendChild(tbl);body.appendChild(w);
