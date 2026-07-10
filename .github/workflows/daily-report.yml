@@ -1,0 +1,21 @@
+name: Canh bao lech cap nhat
+
+on:
+  schedule:
+    - cron: '0 1 * * *'   # kiem tra ngam moi sang 8h VN — CHI GUI TIN KHI CO CANH BAO
+  workflow_dispatch: {}    # bam chay tay de test
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Kiem tra & canh bao ve Teams
+        run: node agent/report.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          TEAMS_FLOW_URL: ${{ secrets.TEAMS_FLOW_URL }}
