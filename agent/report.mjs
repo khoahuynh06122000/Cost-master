@@ -13,7 +13,7 @@ const LATE_DAYS = 2;
 if (!SB_URL || !SB_KEY || !FLOW) { console.error('Thiếu SUPABASE_URL / SUPABASE_SERVICE_KEY / TEAMS_FLOW_URL'); process.exit(1); }
 
 const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` };
-const dstr = t => new Date(t).toLocaleDateString('vi-VN');
+const dstr = t => new Date(t).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 async function postTeams(url, text) {
@@ -103,7 +103,7 @@ try {
   items.sort((a,b) => (b.days ?? 999) - (a.days ?? 999));
   const urgent = items.filter(x => x.last === null || x.days > 2);
   const mild   = items.filter(x => x.last !== null && x.days >= 1 && x.days <= 2);
-  let msg = `⚠ CẢNH BÁO LỆCH CẬP NHẬT KIỂM KÊ — ${new Date().toLocaleString('vi-VN')}\n`;
+  let msg = `⚠ CẢNH BÁO LỆCH CẬP NHẬT KIỂM KÊ — ${new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })}\n`;
   if (urgent.length) msg += `\n🔴 KHẨN (quá 2 ngày hoặc chưa từng cập nhật):\n` +
     urgent.map(x => `- ${pname(x.pc)}: ${x.last ? `gần nhất ${dstr(x.last)} (${x.days} ngày)` : 'CHƯA cập nhật lần nào'}`).join('\n') + '\n';
   if (mild.length) msg += `\n⚠ Nhắc nhở (lệch 1-2 ngày):\n` +
@@ -121,7 +121,7 @@ try {
   // ===== AUTO-HEALING: đã thử lại nhưng vẫn lỗi -> AI chẩn đoán -> báo RIÊNG Khoa =====
   console.error('LỖI:', e.message||e);
   const diag = (await aiDiagnose(e.message||String(e))) || ruleDiagnose(e);
-  const report = `🔧 AGENT LỖI (đã tự thử lại ${e.attempts||3} lần không được)\nThời điểm: ${new Date().toLocaleString('vi-VN')}\n\nChi tiết lỗi: ${(e.message||String(e)).slice(0,300)}\n\n🤖 Chẩn đoán:\n${diag}`;
+  const report = `🔧 AGENT LỖI (đã tự thử lại ${e.attempts||3} lần không được)\nThời điểm: ${new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })}\n\nChi tiết lỗi: ${(e.message||String(e)).slice(0,300)}\n\n🤖 Chẩn đoán:\n${diag}`;
   try { await postTeams(PERSONAL, report); console.log('Đã gửi báo lỗi + chẩn đoán về chat riêng Khoa.'); }
   catch (e2) { console.error('Không gửi được báo lỗi về Teams:', e2.message||e2); }
   console.log(report);
