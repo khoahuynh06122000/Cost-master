@@ -19,3 +19,5 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           TEAMS_FLOW_URL: ${{ secrets.TEAMS_FLOW_URL }}
+          TEAMS_PERSONAL_URL: ${{ secrets.TEAMS_PERSONAL_URL }}
+          AI_API_KEY: ${{ secrets.AI_API_KEY }}
