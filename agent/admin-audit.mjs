@@ -9,6 +9,7 @@ const SB_KEY   = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY;
 const FLOW     = process.env.TEAMS_FLOW_URL;                 // nhóm (dự phòng)
 const PERSONAL = process.env.TEAMS_PERSONAL_URL || FLOW;     // chat riêng Khoa (đích chính)
 const AI_KEY   = process.env.AI_API_KEY || '';              // Gemini để viết nhận định (tùy chọn)
+const AI_MODEL = process.env.AI_MODEL || 'gemini-2.5-flash';// đổi model tại đây (hoặc set secret AI_MODEL)
 const STALE_DAYS = 2;   // phiếu Chờ duyệt treo quá ngần này ngày = cảnh báo
 const BIG_AMOUNT = 500000;  // tiền bù đột xuất >= mức này = đáng chú ý
 const BIG_DIFF   = 5;   // số mã lệch tồn cuối / điểm bán >= mức này = đáng chú ý
@@ -77,7 +78,7 @@ async function aiSummary(problems) {
 ${brief}
 Viết NGẮN GỌN tiếng Việt, tối đa 4 dòng: (1) 1 câu nhận định tổng thể mức độ khỏe/không; (2) liệt kê 2-3 việc nên ưu tiên xử lý trước theo thứ tự. Không bịa thêm số, chỉ dựa dữ liệu trên.`;
   try {
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${AI_KEY}`, {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${AI_MODEL}:generateContent?key=${AI_KEY}`, {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ contents:[{ parts:[{ text: prompt }] }] })
     });

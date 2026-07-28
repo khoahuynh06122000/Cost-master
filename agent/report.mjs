@@ -8,6 +8,7 @@ const SB_KEY   = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY;
 const FLOW     = process.env.TEAMS_FLOW_URL;                 // nhóm
 const PERSONAL = process.env.TEAMS_PERSONAL_URL || FLOW;     // chat riêng Khoa (thiếu thì tạm về nhóm)
 const AI_KEY   = process.env.AI_API_KEY || '';               // khóa AI để chẩn đoán (Gemini)
+const AI_MODEL = process.env.AI_MODEL || 'gemini-2.5-flash'; // đổi model tại đây (hoặc set secret AI_MODEL)
 const LATE_DAYS = 2;
 
 if (!SB_URL || !SB_KEY || !FLOW) { console.error('Thiếu SUPABASE_URL / SUPABASE_SERVICE_KEY / TEAMS_FLOW_URL'); process.exit(1); }
@@ -54,7 +55,7 @@ Nguyên nhân: ...
 Tự sửa được không: (Có/Không) - vì sao
 Cách khắc phục: (các bước ngắn)`;
   try {
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${AI_KEY}`, {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${AI_MODEL}:generateContent?key=${AI_KEY}`, {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ contents:[{ parts:[{ text: prompt }] }] })
     });
