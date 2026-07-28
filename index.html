@@ -562,6 +562,8 @@ function undeclaredCodes(){
   const seen=new Map(); // code -> Set(plant)
   Object.entries(openingStock).forEach(([key,val])=>{const plant=key.split('|')[0];Object.keys(val.items||{}).forEach(c=>{if(!seen.has(c))seen.set(c,new Set());seen.get(c).add(plant);});});
   Object.entries(plantMaterials).forEach(([plant,arr])=>(arr||[]).forEach(c=>{if(!seen.has(c))seen.set(c,new Set());seen.get(c).add(plant);}));
+  // + quét toàn bộ danh mục tổng để bắt cả mã thiếu tên CHƯA gán kho nào (plants rỗng)
+  DATA.materials.forEach(m=>{if(m&&m.code!=null){const c=String(m.code);if(!seen.has(c))seen.set(c,new Set());}});
   const bad=[];
   seen.forEach((plants,code)=>{const m=masterByCode[code];const name=m&&m.name?String(m.name).trim():'';
     if(!m||name===''||name==='?'||name===code)bad.push({code,plants:[...plants],name:(m&&m.name)||''});});
@@ -2944,8 +2946,14 @@ function renderSpotcheck(v){
     psel.onchange=fillS;fillS();
     row.appendChild(pf);row.appendChild(sf);b.appendChild(row);
     const df=el('label','field','<span>Mô tả sự cố / thất thoát</span>');const iDesc=el('textarea','input');iDesc.style.minHeight='90px';iDesc.placeholder='VD: Thất thoát trong quá trình bán ca chiều, thiếu 3 lon nước ngọt...';df.appendChild(iDesc);b.appendChild(df);
-    const af=el('label','field','<span>Số tiền đề xuất bù (đ)</span>');const iAmt=el('input','input');iAmt.type='number';iAmt.min='0';iAmt.step='1000';iAmt.placeholder='VD: 45000';af.appendChild(iAmt);b.appendChild(af);
-    const addBtn=el('button','btn btn-primary','Ghi nhận & gửi giám sát duyệt');
+    const af=el('label','field','<span>Số tiền đề xuất bù (đ)</span>');const iAmt=el('input','input');iAmt.type='number';iAmt.min='0';iAmt.step='1000';iAmt.placeholder='VD: 45000';iAmt.inputMode='numeric';af.appendChild(iAmt);
+    const amtPrev=el('div');amtPrev.style.cssText='font-size:13px;margin-top:5px;min-height:17px';af.appendChild(amtPrev);
+    const quick=el('div');quick.style.cssText='display:flex;gap:6px;flex-wrap:wrap;margin-top:8px';
+    function updAmt(){const n=Number(iAmt.value)||0;amtPrev.innerHTML=n>0?('= <b style="color:var(--accent-600)">'+n.toLocaleString('vi-VN')+' đ</b>'):'<span style="color:var(--muted)">Chưa nhập số tiền</span>';}
+    [10000,20000,50000,100000].forEach(stp=>{const qb=el('button','btn btn-ghost btn-sm','+'+(stp/1000)+'k');qb.type='button';qb.onclick=()=>{iAmt.value=String((Number(iAmt.value)||0)+stp);updAmt();};quick.appendChild(qb);});
+    const qc=el('button','btn btn-ghost btn-sm','↺ Xóa');qc.type='button';qc.style.marginLeft='auto';qc.onclick=()=>{iAmt.value='';updAmt();};quick.appendChild(qc);
+    af.appendChild(quick);iAmt.oninput=updAmt;updAmt();b.appendChild(af);
+    const addBtn=el('button','btn btn-primary','Ghi nhận & gửi giám sát duyệt');addBtn.style.marginTop='14px';
     addBtn.onclick=()=>{
       if(!psel.value||!ssel.value){toast('Chọn điểm bán & kho');return;}
       if(!iDesc.value.trim()){toast('Nhập mô tả sự cố');return;}
@@ -3125,9 +3133,11 @@ function renderCatalog(v){
       const w=el('div','tbl-wrap');w.style.cssText='max-height:52vh;overflow:auto';const tbl=el('table');
       tbl.innerHTML=`<thead><tr><th>Mã hàng</th><th>Tên hàng</th><th>ĐVT</th></tr></thead>`;
       const tb=el('tbody');
-      shown.forEach(m=>tb.appendChild(el('tr',null,`<td class="tnum">${m.code}</td><td>${m.name||''}</td><td><span class="badge badge-uom">${m.uom||''}</span></td>`)));
+      let _missCnt=0;
+      shown.forEach(m=>{const nm=(m.name==null?'':String(m.name)).trim();const miss=!nm||nm==='?'||nm===String(m.code).trim();if(miss)_missCnt++;
+        tb.appendChild(el('tr',null,`<td class="tnum">${m.code}</td><td>${miss?'<span style="color:var(--red);font-weight:700">⚠ thiếu tên</span>':m.name}</td><td><span class="badge badge-uom">${m.uom||''}</span></td>`));});
       tbl.appendChild(tb);w.appendChild(tbl);listWrap.appendChild(w);
-      listWrap.appendChild(el('div',null,`<div style="padding:8px 4px;font-size:12px;color:var(--muted)">Hiển thị ${shown.length}/${arr.length} mã${arr.length>500?' — gõ tìm để lọc':''}</div>`));
+      listWrap.appendChild(el('div',null,`<div style="padding:8px 4px;font-size:12px;color:var(--muted)">Hiển thị ${shown.length}/${arr.length} mã${arr.length>500?' — gõ tìm để lọc':''}${_missCnt?` · <b style="color:var(--red)">${_missCnt} mã thiếu tên</b> trong danh sách này`:''}</div>`));
     }
     drawMC('');
     setTimeout(()=>{const s=$('#mcSearch');if(s)s.oninput=e=>drawMC(e.target.value);},0);
@@ -3169,7 +3179,7 @@ function renderCatalog(v){
       tbl.innerHTML=`<thead><tr><th>Mã hàng</th><th>Xuất hiện ở kho</th>${editable?'<th>Tên hàng (nhập)</th><th>ĐVT</th><th></th>':''}</tr></thead>`;
       const tb=el('tbody');
       bad.forEach(x=>{
-        const plantsTxt=x.plants.map(p=>plantName(p)).slice(0,3).join(', ')+(x.plants.length>3?` +${x.plants.length-3}`:'');
+        const plantsTxt=x.plants.length?(x.plants.map(p=>plantName(p)).slice(0,3).join(', ')+(x.plants.length>3?` +${x.plants.length-3}`:'')):'<i style="color:var(--muted)">(chưa gán kho)</i>';
         const tr=el('tr');
         if(editable){
           tr.innerHTML=`<td class="tnum">${x.code}</td><td style="font-size:12px">${plantsTxt}</td>

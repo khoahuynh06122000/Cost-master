@@ -1,0 +1,23 @@
+name: Bac si du lieu (health-check hang tuan)
+
+on:
+  schedule:
+    - cron: '0 1 * * 1'   # 08:00 VN moi sang THU 2 — bao cao suc khoe he thong
+  workflow_dispatch: {}    # bam chay tay de test ngay
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Quet du lieu & gui bao cao ve Teams
+        run: node agent/admin-audit.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          TEAMS_FLOW_URL: ${{ secrets.TEAMS_FLOW_URL }}
+          TEAMS_PERSONAL_URL: ${{ secrets.TEAMS_PERSONAL_URL }}
+          AI_API_KEY: ${{ secrets.AI_API_KEY }}
