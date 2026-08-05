@@ -124,14 +124,13 @@ try {
   ]);
   const pname = c => (plants.find(p => p.plant_code === c) || {}).plant_name || c;
   const problems = [];  // {title, level, count, lines[]}
-  const add = (title, level, lines) => { if (lines.length) problems.push({ title, level, count: lines.length, lines }); };
+  const add = (title, level, lines, total) => { if (lines.length) problems.push({ title, level, count: total != null ? total : lines.length, lines }); };
 
   // ① Mã vật tư thiếu tên (name rỗng / '?' / trùng code)
   {
     const bad = materials.filter(m => { const nm = (m.name == null ? '' : String(m.name)).trim(); return !nm || nm === '?' || nm === String(m.code).trim(); });
     add('① Mã vật tư thiếu tên (name = code / rỗng)', 'vàng',
-      bad.slice(0, 15).map(m => `- ${m.code}`).concat(bad.length > 15 ? [`…và ${bad.length - 15} mã nữa`] : []));
-    if (bad.length) problems[problems.length-1].count = bad.length; // đếm tổng thật
+      bad.slice(0, 15).map(m => `- ${m.code}`).concat(bad.length > 15 ? [`…và ${bad.length - 15} mã nữa`] : []), bad.length);
   }
 
   // ② Phiếu kiểm kê "Chờ duyệt" treo lâu
@@ -139,8 +138,7 @@ try {
     const stale = subs.filter(s => /chờ duyệt/i.test(s.status || '') && daysSince(s.created_at) >= STALE_DAYS);
     add(`② Phiếu kiểm kê "Chờ duyệt" treo ≥ ${STALE_DAYS} ngày`, 'đỏ',
       stale.slice(0, 15).map(s => `- ${pname(s.plant_code)} · phiếu ${s.id} · ${dstr(s.created_at)} (${daysSince(s.created_at)} ngày)`)
-        .concat(stale.length > 15 ? [`…và ${stale.length - 15} phiếu nữa`] : []));
-    if (stale.length) problems[problems.length-1].count = stale.length;
+        .concat(stale.length > 15 ? [`…và ${stale.length - 15} phiếu nữa`] : []), stale.length);
   }
 
   // ③ Đột xuất chưa duyệt + tiền bù đang treo
@@ -149,8 +147,7 @@ try {
     const sum = pend.reduce((a, s) => a + (Number(s.amount) || 0), 0);
     const lines = pend.slice(0, 12).map(s => `- ${pname(s.plant_code)} · ${vnd(s.amount)}${(Number(s.amount)||0) >= BIG_AMOUNT ? ' ⚠' : ''} · ${dstr(s.created_at)}`);
     if (pend.length) lines.push(`→ Tổng tiền bù đang chờ duyệt: ${vnd(sum)} (${pend.length} vụ)`);
-    add('③ Kiểm kê đột xuất chưa duyệt', 'vàng', lines);
-    if (pend.length) problems[problems.length-1].count = pend.length;
+    add('③ Kiểm kê đột xuất chưa duyệt', 'vàng', lines, pend.length);
   }
 
   // ④ Tồn âm (trong tồn đầu kỳ & tồn cuối kỳ)
@@ -158,7 +155,7 @@ try {
     const lines = [];
     openings.forEach(o => { const neg = negatives(o.items); if (neg.length) lines.push(`- [đầu kỳ] ${pname(o.plant_code)}/${o.sloc_code}: ${neg.slice(0,3).map(x=>x.code+'='+x.qty).join(', ')}${neg.length>3?` +${neg.length-3}`:''}`); });
     closings.forEach(c => { const neg = negatives(c.items); if (neg.length) lines.push(`- [cuối kỳ ${c.period||''}] ${pname(c.plant_code)}/${c.sloc_code}: ${neg.slice(0,3).map(x=>x.code+'='+x.qty).join(', ')}${neg.length>3?` +${neg.length-3}`:''}`); });
-    add('④ Tồn âm (số lượng < 0)', 'đỏ', lines.slice(0, 15).concat(lines.length > 15 ? [`…và ${lines.length - 15} dòng nữa`] : []));
+    add('④ Tồn âm (số lượng < 0)', 'đỏ', lines.slice(0, 15).concat(lines.length > 15 ? [`…và ${lines.length - 15} dòng nữa`] : []), lines.length);
   }
 
   // ⑤ Chênh lệch tồn cuối lớn (recon.diffCnt cao) — chỉ xét kỳ gần nhất mỗi điểm bán
@@ -172,7 +169,7 @@ try {
     }
     big.sort((a, b) => b.d - a.d);
     add(`⑤ Chênh lệch tồn cuối lớn (≥ ${BIG_DIFF} mã lệch)`, 'vàng',
-      big.slice(0, 12).map(x => `- ${x.name} · ${x.d} mã lệch · kỳ ${x.period || '?'}`));
+      big.slice(0, 12).map(x => `- ${x.name} · ${x.d} mã lệch · kỳ ${x.period || '?'}`).concat(big.length > 12 ? [`…và ${big.length - 12} điểm bán nữa`] : []), big.length);
   }
 
   // ⑥ Kho chưa kiểm kê kỳ hiện tại (chỉ tính điểm bán có người phụ trách active)
@@ -181,8 +178,7 @@ try {
     const watched = [...new Set(userPlants.filter(u => activeIds.has(u.user_id)).map(u => u.plant_code))];
     const donePlants = new Set(subs.filter(s => (s.period||'') === PERIOD).map(s => s.plant_code));
     const missing = watched.filter(pc => !donePlants.has(pc));
-    add(`⑥ Kho CHƯA có phiếu kiểm kê kỳ ${PERIOD}`, 'đỏ', missing.slice(0, 20).map(pc => `- ${pname(pc)}`));
-    if (missing.length) problems[problems.length-1].count = missing.length;
+    add(`⑥ Kho CHƯA có phiếu kiểm kê kỳ ${PERIOD}`, 'đỏ', missing.slice(0, 20).map(pc => `- ${pname(pc)}`).concat(missing.length > 20 ? [`…và ${missing.length - 20} kho nữa`] : []), missing.length);
   }
 
   // ⑦ User active nhưng chưa được gán kho
@@ -190,15 +186,14 @@ try {
     const assigned = new Set(userPlants.map(u => u.user_id));
     const orphan = profiles.filter(p => (p.role==='giam_sat'||p.role==='bep_truong') && p.status==='active' && !assigned.has(p.id));
     add('⑦ Người dùng active chưa gán kho phụ trách', 'vàng',
-      orphan.slice(0, 15).map(p => `- ${p.full_name || p.id} (${p.role})`));
+      orphan.slice(0, 15).map(p => `- ${p.full_name || p.id} (${p.role})`).concat(orphan.length > 15 ? [`…và ${orphan.length - 15} người nữa`] : []), orphan.length);
   }
 
   // ⑧ Tài khoản đang chờ duyệt (pending)
   {
     const pend = profiles.filter(p => p.status === 'pending');
     add('⑧ Tài khoản chờ admin duyệt', 'vàng',
-      pend.slice(0, 15).map(p => `- ${p.full_name || p.id}${p.created_at ? ' · đăng ký ' + dstr(p.created_at) : ''}`));
-    if (pend.length) problems[problems.length-1].count = pend.length;
+      pend.slice(0, 15).map(p => `- ${p.full_name || p.id}${p.created_at ? ' · đăng ký ' + dstr(p.created_at) : ''}`).concat(pend.length > 15 ? [`…và ${pend.length - 15} TK nữa`] : []), pend.length);
   }
 
   // ===== ĐÓNG GÓI BÁO CÁO =====
