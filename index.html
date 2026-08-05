@@ -943,6 +943,60 @@ function svgDiverge(items){
 function _esc(s){return String(s==null?'':s).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));}
 function _phCard(title,sub,inner){const c=el('div','card');c.style.padding='18px';c.innerHTML=`<div style="font-weight:800;font-size:14.5px">${title}</div><div style="font-size:12px;color:var(--muted);margin-bottom:12px">${sub}</div>`+inner;return c;}
 
+/* ============================================================
+   ⚠️ DEMO PHÂN TÍCH — DATA ẢO, CHỈ USER ADMIN. XÓA CẢ HÀM NÀY
+   + nhánh dispatch admin khi có data thật (kế toán/giám sát).
+   ============================================================ */
+function renderPhantichDemo(v){
+  const D={period:'2026-07',lastday:'31/07/2026',
+    wf:[{label:'Tồn đầu',val:12700,kind:'base'},{label:'+Nhập',val:7100,kind:'add'},{label:'+Chuyển đến',val:1800,kind:'add'},{label:'−Chuyển đi',val:1240,kind:'sub'},{label:'−Tiêu hao',val:17180,kind:'sub',big:true},{label:'Tồn cuối',val:3180,kind:'end'}],
+    top:[{name:'Bia Tiger lon',val:2840},{name:'Coca Cola lon',val:2230},{name:'Nước suối 500ml',val:1850},{name:'Bò Úc phi lê (kg)',val:1260},{name:'Khoai tây (kg)',val:980},{name:'Phô mai lát',val:740}],
+    abn:[{type:'XUẤT ÂM',col:'red',t:'Beer Factory · Rượu vang đỏ: xuất kho −18',fix:'Tồn cuối > đầu+nhập: quên ghi nhập hoặc đếm nhầm. Kiểm lại phiếu nhập.'},{type:'TỒN ÂM',col:'red',t:'NH Hầm rượu · Đá viên: tồn cuối −5',fix:'Xuất nhiều hơn tồn thực có — lỗi nhập liệu hoặc thiếu ghi nhập.'},{type:'ĐỘT BIẾN',col:'accent',t:'Quầy Lễ Hội Bia · Bia Tiger: tiêu hao +180% so T6',fix:'Tăng mạnh bất thường. Kiểm tra sự kiện/khuyến mãi hoặc thất thoát.'},{type:'Ứ ĐỌNG',col:'accent',t:'NH Hội An · Vang trắng: nhập 12, xuất 0',fix:'Nhập nhưng không tiêu thụ. Rà hạn sử dụng, cân nhắc điều chuyển.'}],
+    hhP:[{name:'NH Hầm rượu 1',val:14},{name:'Beer Factory',val:9},{name:'Đbán Sunbun',val:7},{name:'Quầy Lễ Hội Bia',val:4}],
+    hhD:[{name:'Bia Tiger lon',a:120,b:108,delta:-12},{name:'Rượu Chivas 12',a:15,b:11,delta:-4},{name:'Nước suối 500ml',a:200,b:209,delta:9},{name:'Phô mai lát',a:40,b:37,delta:-3}],
+    disc:[{name:'NH Hầm rượu 1',days:11,submit:'20/07'},{name:'Đbán Sunbun',days:8,submit:'23/07'},{name:'Beer Factory',days:3,submit:'28/07'},{name:'Đbán Cổng thành',days:1,submit:'30/07'},{name:'Quầy coffee FEC B1',days:-4,submit:'chưa nộp',none:true,late:true},{name:'NH Chợ quê La Pensee',days:-2,submit:'chưa nộp',none:true,late:true}]};
+  const fmtN=n=>Math.round(n).toLocaleString('vi-VN'),rv=[];
+  const mark=e=>{rv.push(e);return e;};
+  // header
+  const head=el('div','page-head');
+  head.innerHTML=`<div><div style="font-size:10.5px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;color:var(--brand);display:inline-flex;align-items:center;gap:7px;margin-bottom:6px"><span style="width:6px;height:6px;border-radius:50%;background:var(--brand)"></span>Phân tích tồn kho · Kỳ ${periodVN(D.period)}</div><h1 style="font-size:24px;letter-spacing:-.5px;font-weight:800">Phân tích</h1><div class="ph-sub" style="color:var(--muted);font-size:13.5px;margin-top:2px">Dòng chảy tồn kho · tiêu hao · hao hụt · kỷ luật</div></div><div style="display:flex;gap:8px;align-items:center"><span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--accent-600);background:#FFFBF3;border:1px solid #F2DDB2;border-radius:20px;padding:5px 11px">● Dữ liệu mẫu</span></div>`;
+  v.appendChild(head);
+  // KPI (thẻ ink đen điểm nhấn + count-up)
+  const kpi=el('div');kpi.style.cssText='display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px';
+  const kc=(lbl,to,suf,sub,dark,vcol,bd,bg)=>`<div class="card" style="padding:15px 16px;border-radius:16px${dark?';background:#0a0a0a;border-color:#0a0a0a':bd?';border-color:'+bd:''}${bg?';background:'+bg:''}"><div style="font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:${dark?'rgba(255,255,255,.5)':'var(--muted)'}">${lbl}</div><div class="ph-count" data-to="${to}" data-suf="${suf||''}" style="font-size:23px;font-weight:800;letter-spacing:-.5px;margin-top:5px;line-height:1;color:${vcol}">0</div><div style="font-size:11.5px;color:${dark?'rgba(255,255,255,.5)':'var(--muted)'};margin-top:5px">${sub}</div></div>`;
+  kpi.innerHTML=kc('Tiêu hao (xuất kho)',17180,'','214 mã · kỳ '+periodVN(D.period),true,'#fff')+kc('Nhập trong kỳ',8900,'','mua + chuyển đến',false,'var(--green)')+kc('Tồn cuối kỳ',3180,'','≈ 5 ngày tiêu hao',false,'var(--ink)')+kc('⚠ Bất thường',7,'','mã cần rà soát',false,'var(--red)','#F0C9C9','#FEF6F6')+kc('Hao hụt (chênh lệch)',34,'','mã lệch · 3 điểm bán',false,'var(--accent-600)','#F2DDB2','#FFFBF3');
+  mark(kpi);v.appendChild(kpi);
+  // Waterfall
+  const luan=12700+7100+1800;
+  const wfCard=el('div','card');wfCard.style.cssText='padding:18px;margin-bottom:16px;border-radius:16px';
+  wfCard.innerHTML=`<div style="font-weight:800;font-size:15px">Dòng chảy tồn kho trong kỳ</div><div style="font-size:12px;color:var(--muted);margin:2px 0 12px">Tồn đầu → +Nhập → +Chuyển đến → −Chuyển đi → −Tiêu hao → Tồn cuối</div>${svgWaterfall(D.wf)}<div style="background:var(--surface-2);border-left:3px solid var(--brand);border-radius:0 8px 8px 0;padding:9px 12px;font-size:12.5px;line-height:1.5;color:var(--ink-soft);margin-top:12px">📌 Tiêu hao <b style="color:var(--brand)">${fmtN(17180)}</b> ≈ ${Math.round(17180/luan*100)}% lượng luân chuyển · Nhập (8.900) &lt; Tiêu hao → đang <b>rút tồn kho</b>, tồn cuối 3.180 đủ ~5 ngày.</div>`;
+  mark(wfCard);v.appendChild(wfCard);
+  // Top tiêu hao + Bất thường
+  const g=el('div');g.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;margin-bottom:16px';
+  const t6=D.top.reduce((a,x)=>a+x.val,0);
+  g.appendChild(mark(_phCard('Top mã tiêu hao nhiều nhất','Mã ngốn lượng lớn — siết định mức chặt',svgHBars(D.top)+`<div style="background:var(--surface-2);border-left:3px solid var(--brand);border-radius:0 8px 8px 0;padding:9px 12px;font-size:12.5px;margin-top:10px;color:var(--ink-soft)">📌 6 mã này chiếm <b style="color:var(--brand)">${Math.round(t6/17180*100)}%</b> tổng tiêu hao — ưu tiên kiểm soát + đối chiếu bán ra.</div>`)));
+  const ic={red:['var(--red-bg)','var(--red)'],accent:['#FDF1DC','var(--accent-600)']};
+  g.appendChild(mark(_phCard('⚠ Cảnh báo bất thường','Cần rà soát gấp — có diễn giải',`<div>${D.abn.map(a=>`<div style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line)"><span style="flex:none;font-size:10px;font-weight:800;padding:3px 8px;border-radius:6px;background:${ic[a.col][0]};color:${ic[a.col][1]}">${a.type}</span><div style="font-size:12.5px;line-height:1.4"><b>${_esc(a.t)}</b><div style="color:var(--muted);font-size:11.5px;margin-top:2px">→ ${_esc(a.fix)}</div></div></div>`).join('')}</div>`)));
+  v.appendChild(g);
+  // Hao hụt
+  const hh=el('div','card');hh.style.cssText='padding:18px;margin-bottom:16px;border-radius:16px';
+  hh.innerHTML=`<div style="font-weight:800;font-size:15px;color:var(--accent-600)">Hao hụt / thất thoát (chênh lệch sổ vs thực)</div><div style="font-size:12px;color:var(--muted);margin:2px 0 12px">Từ đối chiếu chốt tồn tháng · điểm bán &amp; mã lệch nhiều nhất</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:16px"><div>${svgHBars(D.hhP)}</div><div><div class="tbl-wrap"><table style="width:100%;border-collapse:collapse;font-size:12.5px"><thead><tr><th style="text-align:left;font-size:10.5px;text-transform:uppercase;color:var(--muted);padding:7px 8px;border-bottom:1px solid var(--line)">Mã lệch</th><th style="text-align:right;font-size:10.5px;color:var(--muted);padding:7px 8px;border-bottom:1px solid var(--line)">Sổ→Thực</th><th style="text-align:right;font-size:10.5px;color:var(--muted);padding:7px 8px;border-bottom:1px solid var(--line)">Δ</th></tr></thead><tbody>${D.hhD.map(d=>`<tr><td style="padding:8px;border-bottom:1px solid var(--line)">${_esc(d.name)}</td><td style="text-align:right;padding:8px;border-bottom:1px solid var(--line)">${d.a}→${d.b}</td><td style="text-align:right;padding:8px;border-bottom:1px solid var(--line);font-weight:700;color:${d.delta<0?'var(--red)':'var(--green)'}">${d.delta>0?'+':''}${d.delta}</td></tr>`).join('')}</tbody></table></div></div></div><div style="background:var(--surface-2);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:9px 12px;font-size:12.5px;margin-top:12px;color:var(--ink-soft)">📌 Lệch tập trung ở <b style="color:var(--accent-600)">NH Hầm rượu 1</b> (14 mã) — kho rượu/bia giá trị cao, ưu tiên kiểm kê đột xuất. Δ âm (thiếu) nhiều hơn dương → nghiêng <b>thất thoát</b>.</div>`;
+  mark(hh);v.appendChild(hh);
+  // Kỷ luật
+  const warn=D.disc.filter(d=>d.late);
+  const gb=d=>{const g=d.late?['🔴 Cảnh báo','var(--red-bg)','var(--red)']:d.days>=5?['🟢 Tốt','var(--green-bg)','var(--green)']:['🟡 Khá','#FDF1DC','var(--accent-600)'];return `<span style="display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:${g[1]};color:${g[2]}">${g[0]}</span>`;};
+  const kl=el('div','card');kl.style.cssText='padding:18px;margin-bottom:16px;border-radius:16px';
+  const warnBox=`<div style="display:flex;gap:10px;align-items:center;background:var(--red-bg);border:1px solid #F0C9C9;border-radius:12px;padding:11px 14px;margin:4px 0 14px"><div style="font-size:20px">⚠️</div><div style="font-size:13px;line-height:1.5"><b style="color:var(--red)">${warn.length} bộ phận cần cảnh báo:</b> ${warn.map(d=>`<b>${_esc(d.name)}</b> ${d.days<0?'TRỄ '+(-d.days)+' ngày':'chưa nộp'}`).join(' · ')}.</div></div>`;
+  const rows=[...D.disc].sort((a,b)=>((a.late?0:1)-(b.late?0:1))||a.days-b.days);
+  kl.innerHTML=`<div style="font-weight:800;font-size:15px">⏱ Tiến độ &amp; kỷ luật hoàn thành kiểm kê</div><div style="font-size:12px;color:var(--muted);margin:2px 0 4px">Đánh giá bộ phận: đúng hạn · nhanh — kỳ ${periodVN(D.period)} · hạn chốt ${D.lastday}</div>${warnBox}<div style="font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:6px">Số ngày nộp sớm/trễ so hạn chốt</div>${svgDiverge(D.disc.map(d=>({name:d.name,days:d.days})))}<details style="margin-top:14px"><summary style="cursor:pointer;font-weight:700;color:var(--brand);font-size:13px">📋 Xem bảng xếp hạng chi tiết (${D.disc.length} bộ phận)</summary><div class="tbl-wrap" style="margin-top:10px"><table><thead><tr><th>Bộ phận</th><th>Nộp lúc</th><th style="text-align:center">So hạn</th><th style="text-align:center">Xếp loại</th></tr></thead><tbody>${rows.map(d=>`<tr><td class="cell-strong">${_esc(d.name)}</td><td style="font-size:12px${d.late?';color:var(--red)':''}">${d.submit}</td><td style="text-align:center;font-weight:700;color:${d.late?'var(--red)':'var(--green)'}">${d.days<0?'TRỄ '+(-d.days):'sớm '+d.days}</td><td style="text-align:center">${gb(d)}</td></tr>`).join('')}</tbody></table></div></details>`;
+  mark(kl);v.appendChild(kl);
+  // polish: count-up + reveal khi vào view
+  requestAnimationFrame(()=>{
+    const io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){e.target.style.opacity='1';e.target.style.transform='none';io.unobserve(e.target);}});},{threshold:.1});
+    rv.forEach((e,i)=>{e.style.opacity='0';e.style.transform='translateY(22px)';e.style.transition=`opacity .7s cubic-bezier(.22,1,.36,1) ${i*60}ms,transform .7s cubic-bezier(.22,1,.36,1) ${i*60}ms`;io.observe(e);});
+    v.querySelectorAll('.ph-count').forEach(sp=>{const to=+sp.dataset.to,suf=sp.dataset.suf||'';let st=null;const dur=1100;function tick(t){if(!st)st=t;const p=Math.min(1,(t-st)/dur),e=1-Math.pow(1-p,3);sp.textContent=Math.round(e*to).toLocaleString('vi-VN')+suf;if(p<1)requestAnimationFrame(tick);}requestAnimationFrame(tick);});
+  });
+}
 // Waterfall dòng chảy tồn kho. steps:[{label,val,kind}] kind: base|add|sub|end
 function svgWaterfall(steps){
   const W=640,H=250,x0=40,x1=620,yB=200,yT=30,ph=yB-yT;
@@ -1091,7 +1145,7 @@ function renderView(){
   else if(activeTab==='users')renderUsers(v);
   else if(activeTab==='spotcheck')renderSpotcheck(v);
   else if(activeTab==='tonghop')renderTonghop(v);
-  else if(activeTab==='phantich')renderPhantich(v);
+  else if(activeTab==='phantich'){session.role==='admin'?renderPhantichDemo(v):renderPhantich(v);}
   else if(activeTab==='dieuhanh')renderDieuhanh(v);
   else if(activeTab==='audit')renderAudit(v);
 }
