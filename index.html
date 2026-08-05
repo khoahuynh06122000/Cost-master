@@ -943,6 +943,19 @@ function svgDiverge(items){
 function _esc(s){return String(s==null?'':s).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));}
 function _phCard(title,sub,inner){const c=el('div','card');c.style.padding='18px';c.innerHTML=`<div style="font-weight:800;font-size:14.5px">${title}</div><div style="font-size:12px;color:var(--muted);margin-bottom:12px">${sub}</div>`+inner;return c;}
 
+// Waterfall dòng chảy tồn kho. steps:[{label,val,kind}] kind: base|add|sub|end
+function svgWaterfall(steps){
+  const W=640,H=250,x0=40,x1=620,yB=200,yT=30,ph=yB-yT;
+  let run=0,maxV=0;const seg=[];
+  steps.forEach(s=>{let lo,hi;if(s.kind==='base'||s.kind==='end'){lo=0;hi=s.val;run=s.val;}else if(s.kind==='add'){lo=run;hi=run+s.val;run+=s.val;}else{lo=run-s.val;hi=run;run-=s.val;}seg.push({label:s.label,val:s.val,kind:s.kind,big:s.big,lo,hi});maxV=Math.max(maxV,hi,run);});
+  maxV=maxV||1;const n=Math.max(1,steps.length),slot=(x1-x0)/n,bw=Math.min(70,slot*0.6),Y=v=>yB-v/maxV*ph;
+  let out=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img"><line x1="${x0}" y1="${yB}" x2="${x1}" y2="${yB}" stroke="#D2D8D5"/>`;
+  seg.forEach((s,i)=>{const cx=x0+slot*i+slot/2,x=cx-bw/2,yhi=Y(Math.max(s.lo,s.hi)),ylo=Y(Math.min(s.lo,s.hi)),h=Math.max(2,ylo-yhi),col=s.kind==='add'?'#1F8A54':s.kind==='sub'?(s.big?'#C43D3D':'#E89217'):'#0E5C55';
+    out+=`<rect x="${x.toFixed(1)}" y="${yhi.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="3" fill="${col}"/><text x="${cx.toFixed(1)}" y="${(yhi-6).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="700" fill="${col}">${(s.kind==='add'?'+':s.kind==='sub'?'−':'')+Math.round(s.val).toLocaleString('vi-VN')}</text><text x="${cx.toFixed(1)}" y="${yB+18}" text-anchor="middle" font-size="10.5" fill="#6A7773">${s.label}</text>`;
+    if(i<seg.length-1){const yc=Y(s.kind==='sub'?s.lo:s.hi);out+=`<line x1="${(cx+bw/2).toFixed(1)}" y1="${yc.toFixed(1)}" x2="${(x0+slot*(i+1)+slot/2-bw/2).toFixed(1)}" y2="${yc.toFixed(1)}" stroke="#C9CFCD" stroke-dasharray="3 3"/>`;}
+  });
+  return out+`</svg>`;
+}
 function renderPhantich(v){
   const priv=isPrivileged();
   const scope=priv?null:new Set(allowedPlants().map(p=>p.plant));
@@ -969,43 +982,55 @@ function renderPhantich(v){
   const subPS=(p,s)=>submissions.filter(x=>x.plant===p&&x.sloc===s&&(x.period||curPeriod())===period).sort((a,b)=>(a.status==='Chờ duyệt'?-1:0)-(b.status==='Chờ duyệt'?-1:0))[0];
   const stOf=(p,s)=>{const sb=subPS(p,s);return !sb?'none':sb.status==='Đã duyệt'?'done':'wait';};
 
-  // ---- KPI ----
-  const done=whs.filter(w=>stOf(w.plant,w.sloc)==='done').length;
-  const wait=whs.filter(w=>stOf(w.plant,w.sloc)==='wait').length;
+  // ---- DÒNG CHẢY & TIÊU HAO (inventoryFlow qua phiếu mới nhất mỗi kho kỳ này) ----
+  const _cur={};submissions.forEach(s=>{if((s.period||curPeriod())===period&&inScopeP(s.plant)){const k=s.plant+'|'+s.sloc;if(!_cur[k])_cur[k]=s;}});
+  let sumDk=0,sumBuy=0,sumTin=0,sumTout=0,sumCuoi=0;const xuatByCode={},abn=[];
+  Object.values(_cur).forEach(s=>{inventoryFlow(s).forEach(r=>{
+    sumDk+=r.dk;sumBuy+=r.buy;sumTin+=r.tin;sumTout+=r.tout;sumCuoi+=r.cuoi;
+    if(r.xuat>0){if(!xuatByCode[r.code])xuatByCode[r.code]={name:r.name,v:0};xuatByCode[r.code].v+=r.xuat;}
+    if(r.cuoi<0)abn.push({type:'TỒN ÂM',col:'red',t:`${plantName(s.plant)} · ${r.name}: tồn cuối ${r.cuoi}`,fix:'Xuất nhiều hơn tồn thực có — lỗi nhập liệu hoặc thiếu ghi nhập.'});
+    else if(r.xuat<0&&(r.dk+r.buy+r.tin)>0)abn.push({type:'XUẤT ÂM',col:'red',t:`${plantName(s.plant)} · ${r.name}: xuất kho ${Math.round(r.xuat*100)/100}`,fix:'Tồn cuối > đầu+nhập: quên ghi nhập hoặc đếm nhầm — kiểm lại phiếu nhập.'});
+    else if(r.buy>0&&r.xuat<=0)abn.push({type:'Ứ ĐỌNG',col:'accent',t:`${plantName(s.plant)} · ${r.name}: nhập ${r.buy}, xuất 0`,fix:'Nhập nhưng không tiêu thụ — rà hạn dùng, cân nhắc điều chuyển.'});
+  });});
+  const flowXuat=sumDk+sumBuy+sumTin-sumTout-sumCuoi;
+  const hasFlow=(sumDk+sumBuy+sumTin)>0;
+  const fmtN=n=>Math.round(n).toLocaleString('vi-VN');
   const plantActive=plantsIn.filter(P=>DATA.warehouses.some(w=>w.plant===P.plant&&stOf(w.plant,w.sloc)!=='none')).length;
   const pctKho=plantsIn.length?Math.round(plantActive/plantsIn.length*100):0;
-  const spotP=spotChecks.filter(s=>inScopeP(s.plant));
-  const spotSum=spotP.filter(s=>s.status==='Đã duyệt').reduce((a,s)=>a+(s.amount||0),0);
+  const wait=whs.filter(w=>stOf(w.plant,w.sloc)==='wait').length;
+  const spotP=spotChecks.filter(s=>inScopeP(s.plant));const spotSum=spotP.filter(s=>s.status==='Đã duyệt').reduce((a,s)=>a+(s.amount||0),0);
   const closThis=closings.filter(c=>c.period===period&&inScopeP(c.plant));
   const diffItems=closThis.reduce((a,c)=>a+((c.recon||{}).diffCnt||0),0);
-  const kpi=el('div');kpi.style.cssText='display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px';
-  const kcard=(ic,icbg,iccol,lbl,val,vcol,sub)=>`<div class="card" style="padding:16px 18px"><div style="width:40px;height:40px;border-radius:11px;display:grid;place-items:center;font-size:20px;background:${icbg};color:${iccol};margin-bottom:12px">${ic}</div><div style="font-size:10.5px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;color:var(--muted)">${lbl}</div><div style="font-size:26px;font-weight:800;letter-spacing:-.5px;margin-top:3px;line-height:1;color:${vcol}">${val}</div><div style="font-size:12px;color:var(--muted);margin-top:5px">${sub}</div></div>`;
-  kpi.innerHTML=kcard('✓','var(--green-bg)','var(--green)','Điểm bán đã kiểm kê',pctKho+'%','var(--green)',`${plantActive}/${plantsIn.length} điểm bán · kỳ ${periodVN(period)}`)
-    +kcard('⏳','#FDF1DC','var(--accent-600)','Phiếu chờ duyệt',wait,'var(--accent-600)','cần kế toán xử lý')
-    +kcard('₫','var(--red-bg)','var(--red)','Tiền bù đột xuất',fmtVnd(spotSum),'var(--red)',`${spotP.filter(s=>s.status==='Đã duyệt').length} vụ đã duyệt`)
-    +kcard('⚠','#FDF1DC','var(--accent-600)','Mã lệch tồn (hao hụt)',diffItems,'var(--accent-600)',`tồn cuối kỳ ${periodVN(period)}`);
-  v.appendChild(kpi);
+  // ---- KPI ----
+  const kpi=el('div');kpi.style.cssText='display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px';
+  const kc=(lbl,val,vcol,sub,bd,bg)=>`<div class="card" style="padding:14px 15px${bd?';border-color:'+bd:''}${bg?';background:'+bg:''}"><div style="font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--muted)">${lbl}</div><div style="font-size:22px;font-weight:800;letter-spacing:-.5px;margin-top:4px;line-height:1;color:${vcol}">${val}</div><div style="font-size:11.5px;color:var(--muted);margin-top:5px">${sub}</div></div>`;
+  let _k=hasFlow?(kc('Tiêu hao (xuất kho)',fmtN(flowXuat),'var(--brand)',Object.keys(xuatByCode).length+' mã · kỳ '+periodVN(period))+kc('Nhập trong kỳ',fmtN(sumBuy+sumTin),'var(--green)','mua + chuyển đến')+kc('Tồn cuối kỳ',fmtN(sumCuoi),'var(--ink)','đã đếm')):(kc('Điểm bán đã kiểm kê',pctKho+'%','var(--green)',`${plantActive}/${plantsIn.length} điểm bán`)+kc('Phiếu chờ duyệt',wait,'var(--accent-600)','cần kế toán xử lý')+kc('Tồn cuối kỳ',fmtN(sumCuoi),'var(--ink)','đã đếm'));
+  _k+=kc('⚠ Bất thường',abn.length,'var(--red)','mã cần rà soát','#F0C9C9','#FEF6F6')+kc('Hao hụt (chênh lệch)',diffItems,'var(--accent-600)',closThis.length+' bản chốt','#F2DDB2','#FFFBF3');
+  kpi.innerHTML=_k;v.appendChild(kpi);
 
-  // ---- biểu đồ (theo ĐIỂM BÁN, ẩn card rỗng, xếp động) ----
-  const per6=periodOptions(6).reverse();
-  const bars=per6.map(pp=>plantsIn.filter(P=>DATA.warehouses.some(w=>w.plant===P.plant&&submissions.some(x=>x.plant===P.plant&&x.sloc===w.sloc&&(x.period||curPeriod())===pp))).length);
-  const barMax=Math.max(1,plantsIn.length);
-  const lineP=per6.map((pp,i)=>plantsIn.length?Math.round(bars[i]/plantsIn.length*100):0);
-  const dbp={};closThis.forEach(c=>{const d=(c.recon||{}).diffCnt||0;if(d)dbp[c.plant]=(dbp[c.plant]||0)+d;});
-  const hh=Object.entries(dbp).map(([p,n])=>({name:plantName(p),val:n})).sort((a,b)=>b.val-a.val).slice(0,6);
-  const trP=transfers.filter(t=>(t.period||periodOfDate(t.date))===period);
-  const byReason={};trP.forEach(t=>{const r=t.reason||'Khác';byReason[r]=(byReason[r]||0)+1;});
-  const palette=['#0E5C55','#E89217','#3a9e8f','#7A6FB0','#C9CFCD'];
-  const segs=Object.entries(byReason).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([r,n],i)=>({name:r,val:n,color:palette[i%palette.length]}));
-  const dTot=segs.reduce((a,s)=>a+s.val,0);
-  const byPlant={};whs.forEach(w=>{const k=stOf(w.plant,w.sloc);(byPlant[w.plant]=byPlant[w.plant]||{t:0,d:0});byPlant[w.plant].t++;if(k!=='none')byPlant[w.plant].d++;});
-  const progAll=Object.entries(byPlant).map(([p,o])=>({name:plantName(p),pct:Math.round(o.d/o.t*100)})).sort((a,b)=>a.pct-b.pct);
-  const charts=[];
-  if(bars.some(x=>x>0))charts.push(_phCard('Tiến độ kiểm kê 6 tháng','Cột = số điểm bán kiểm kê · Đường = % hoàn thành',svgComposed(per6.map(periodVN),bars,barMax,lineP)+`<div class="legend" style="display:flex;gap:16px;font-size:12px;color:var(--ink-soft);margin-top:8px"><span>■ <span style="color:var(--brand)">Số điểm bán</span></span><span>■ <span style="color:var(--accent-600)">% hoàn thành</span></span></div>`));
-  if(hh.length)charts.push(_phCard('Hao hụt tồn theo điểm bán','Số mã lệch tồn cuối kỳ · top 6',svgHBars(hh)));
-  if(segs.length)charts.push(_phCard('Cơ cấu lý do điều chuyển','Tỷ trọng theo số phiếu kỳ '+periodVN(period),`<div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">${svgDonut(segs,String(dTot),'phiếu')}<div style="display:flex;flex-direction:column;gap:9px;font-size:12px;color:var(--ink-soft)">${segs.map(s=>`<span><i style="width:11px;height:11px;border-radius:3px;display:inline-block;background:${s.color};margin-right:6px"></i>${_esc(s.name)} · ${dTot?Math.round(s.val/dTot*100):0}%</span>`).join('')}</div></div>`));
-  if(progAll.some(p=>p.pct>0))charts.push(_phCard('Tiến độ theo điểm bán (kỳ '+periodVN(period)+')','% kho đã kiểm kê mỗi điểm bán',`<div style="display:flex;flex-direction:column;gap:11px;margin-top:2px">${progAll.slice(0,8).map(p=>{const col=p.pct>=100?'var(--green)':p.pct>=50?'var(--accent)':'var(--red)';return `<div><div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px"><span style="font-weight:700">${_esc(p.name)}</span><span style="color:${col};font-weight:800">${p.pct}%</span></div><div style="height:7px;background:var(--line);border-radius:20px;overflow:hidden"><div style="width:${p.pct}%;height:100%;background:${col}"></div></div></div>`;}).join('')}</div>`+(progAll.length>8?`<div style="font-size:12px;color:var(--muted);margin-top:10px;text-align:center">…và ${progAll.length-8} điểm bán khác</div>`:'')));
-  if(charts.length){const cg=el('div');cg.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;margin-bottom:18px';charts.forEach(c=>cg.appendChild(c));v.appendChild(cg);}
+  // ---- phân tích: dòng chảy + tiêu hao + bất thường + hao hụt ----
+  const dbp={},diffCodes={};
+  closThis.forEach(c=>{const d=(c.recon||{}).diffCnt||0;if(d)dbp[c.plant]=(dbp[c.plant]||0)+d;((c.recon||{}).diff||[]).forEach(r=>{if(!diffCodes[r.code])diffCodes[r.code]={name:r.name,a:r.a,b:r.b,delta:0};diffCodes[r.code].delta+=(Number(r.delta)||0);});});
+  if(hasFlow){
+    const luan=sumDk+sumBuy+sumTin;
+    const wf=[{label:'Tồn đầu',val:sumDk,kind:'base'},{label:'+Nhập',val:sumBuy,kind:'add'},{label:'+Chuyển đến',val:sumTin,kind:'add'},{label:'−Chuyển đi',val:sumTout,kind:'sub'},{label:'−Tiêu hao',val:flowXuat,kind:'sub',big:true},{label:'Tồn cuối',val:sumCuoi,kind:'end'}];
+    const wfCard=el('div','card');wfCard.style.cssText='padding:18px;margin-bottom:16px';
+    wfCard.innerHTML=`<div style="font-weight:800;font-size:15px">Dòng chảy tồn kho trong kỳ</div><div style="font-size:12px;color:var(--muted);margin:2px 0 12px">Tồn đầu → +Nhập → +Chuyển đến → −Chuyển đi → −Tiêu hao → Tồn cuối</div>${svgWaterfall(wf)}<div style="background:var(--surface-2);border-left:3px solid var(--brand);border-radius:0 8px 8px 0;padding:9px 12px;font-size:12.5px;line-height:1.5;color:var(--ink-soft);margin-top:12px">📌 Tiêu hao <b style="color:var(--brand)">${fmtN(flowXuat)}</b>${luan>0?' ≈ '+Math.round(flowXuat/luan*100)+'% lượng luân chuyển':''} · ${(sumBuy+sumTin)<flowXuat?'Nhập &lt; Tiêu hao → đang <b>rút tồn kho</b>':'Nhập ≥ Tiêu hao → tồn kho <b>ổn định</b>'}.</div>`;
+    v.appendChild(wfCard);
+  }
+  const g=el('div');g.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;margin-bottom:16px';
+  const topX=Object.entries(xuatByCode).map(([c,o])=>({name:o.name,val:Math.round(o.v)})).sort((a,b)=>b.val-a.val).slice(0,6);
+  if(topX.length){const tot=Object.values(xuatByCode).reduce((a,o)=>a+o.v,0),t6=topX.reduce((a,x)=>a+x.val,0);
+    g.appendChild(_phCard('Top mã tiêu hao nhiều nhất','Mã ngốn lượng lớn — siết định mức',svgHBars(topX)+`<div style="background:var(--surface-2);border-left:3px solid var(--brand);border-radius:0 8px 8px 0;padding:9px 12px;font-size:12.5px;margin-top:10px;color:var(--ink-soft)">📌 ${topX.length} mã này chiếm <b style="color:var(--brand)">${tot?Math.round(t6/tot*100):0}%</b> tổng tiêu hao — ưu tiên kiểm soát.</div>`));}
+  if(abn.length){const ic={red:['var(--red-bg)','var(--red)'],accent:['#FDF1DC','var(--accent-600)']};
+    g.appendChild(_phCard('⚠ Cảnh báo bất thường','Cần rà soát gấp — có diễn giải',`<div>${abn.slice(0,6).map(a=>`<div style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line)"><span style="flex:none;font-size:10px;font-weight:800;padding:3px 8px;border-radius:6px;background:${ic[a.col][0]};color:${ic[a.col][1]}">${a.type}</span><div style="font-size:12.5px;line-height:1.4"><b>${_esc(a.t)}</b><div style="color:var(--muted);font-size:11.5px;margin-top:2px">→ ${_esc(a.fix)}</div></div></div>`).join('')}${abn.length>6?`<div style="font-size:12px;color:var(--muted);margin-top:8px">…và ${abn.length-6} cảnh báo khác</div>`:''}</div>`));}
+  if(g.children.length)v.appendChild(g);
+  const hhPlants=Object.entries(dbp).map(([p,n])=>({name:plantName(p),val:n})).sort((a,b)=>b.val-a.val).slice(0,6);
+  if(hhPlants.length){const topDiff=Object.values(diffCodes).sort((a,b)=>Math.abs(b.delta)-Math.abs(a.delta)).slice(0,5);
+    const hhCard=el('div','card');hhCard.style.cssText='padding:18px;margin-bottom:16px';
+    hhCard.innerHTML=`<div style="font-weight:800;font-size:15px;color:var(--accent-600)">Hao hụt / thất thoát (chênh lệch sổ vs thực)</div><div style="font-size:12px;color:var(--muted);margin:2px 0 12px">Từ đối chiếu chốt tồn tháng · điểm bán &amp; mã lệch nhiều nhất</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:16px"><div>${svgHBars(hhPlants)}</div><div><div class="tbl-wrap"><table style="width:100%;border-collapse:collapse;font-size:12.5px"><thead><tr><th style="text-align:left;font-size:10.5px;text-transform:uppercase;color:var(--muted);padding:7px 8px;border-bottom:1px solid var(--line)">Mã lệch</th><th style="text-align:right;font-size:10.5px;color:var(--muted);padding:7px 8px;border-bottom:1px solid var(--line)">Sổ→Thực</th><th style="text-align:right;font-size:10.5px;color:var(--muted);padding:7px 8px;border-bottom:1px solid var(--line)">Δ</th></tr></thead><tbody>${topDiff.map(d=>`<tr><td style="padding:8px;border-bottom:1px solid var(--line)">${_esc(d.name)}</td><td style="text-align:right;padding:8px;border-bottom:1px solid var(--line)">${d.a}→${d.b}</td><td style="text-align:right;padding:8px;border-bottom:1px solid var(--line);font-weight:700;color:${d.delta<0?'var(--red)':'var(--green)'}">${d.delta>0?'+':''}${Math.round(d.delta*100)/100}</td></tr>`).join('')}</tbody></table></div></div></div>`;
+    v.appendChild(hhCard);
+  }
 
   // ---- kỷ luật hoàn thành kiểm kê ----
   const today=new Date();today.setHours(0,0,0,0);
