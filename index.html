@@ -972,46 +972,40 @@ function renderPhantich(v){
   // ---- KPI ----
   const done=whs.filter(w=>stOf(w.plant,w.sloc)==='done').length;
   const wait=whs.filter(w=>stOf(w.plant,w.sloc)==='wait').length;
-  const pctKho=whs.length?Math.round((done+wait)/whs.length*100):0;
+  const plantActive=plantsIn.filter(P=>DATA.warehouses.some(w=>w.plant===P.plant&&stOf(w.plant,w.sloc)!=='none')).length;
+  const pctKho=plantsIn.length?Math.round(plantActive/plantsIn.length*100):0;
   const spotP=spotChecks.filter(s=>inScopeP(s.plant));
   const spotSum=spotP.filter(s=>s.status==='Đã duyệt').reduce((a,s)=>a+(s.amount||0),0);
   const closThis=closings.filter(c=>c.period===period&&inScopeP(c.plant));
   const diffItems=closThis.reduce((a,c)=>a+((c.recon||{}).diffCnt||0),0);
   const kpi=el('div');kpi.style.cssText='display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px';
   const kcard=(ic,icbg,iccol,lbl,val,vcol,sub)=>`<div class="card" style="padding:16px 18px"><div style="width:40px;height:40px;border-radius:11px;display:grid;place-items:center;font-size:20px;background:${icbg};color:${iccol};margin-bottom:12px">${ic}</div><div style="font-size:10.5px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;color:var(--muted)">${lbl}</div><div style="font-size:26px;font-weight:800;letter-spacing:-.5px;margin-top:3px;line-height:1;color:${vcol}">${val}</div><div style="font-size:12px;color:var(--muted);margin-top:5px">${sub}</div></div>`;
-  kpi.innerHTML=kcard('✓','var(--green-bg)','var(--green)','Kho đã kiểm kê',pctKho+'%','var(--green)',`${done+wait}/${whs.length} kho · kỳ ${periodVN(period)}`)
+  kpi.innerHTML=kcard('✓','var(--green-bg)','var(--green)','Điểm bán đã kiểm kê',pctKho+'%','var(--green)',`${plantActive}/${plantsIn.length} điểm bán · kỳ ${periodVN(period)}`)
     +kcard('⏳','#FDF1DC','var(--accent-600)','Phiếu chờ duyệt',wait,'var(--accent-600)','cần kế toán xử lý')
     +kcard('₫','var(--red-bg)','var(--red)','Tiền bù đột xuất',fmtVnd(spotSum),'var(--red)',`${spotP.filter(s=>s.status==='Đã duyệt').length} vụ đã duyệt`)
     +kcard('⚠','#FDF1DC','var(--accent-600)','Mã lệch tồn (hao hụt)',diffItems,'var(--accent-600)',`tồn cuối kỳ ${periodVN(period)}`);
   v.appendChild(kpi);
 
-  // ---- hàng 2 biểu đồ: tiến độ 6 tháng (composed) + hao hụt theo điểm bán ----
-  const g1=el('div');g1.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px';
+  // ---- biểu đồ (theo ĐIỂM BÁN, ẩn card rỗng, xếp động) ----
   const per6=periodOptions(6).reverse();
-  const bars=per6.map(pp=>{const s=new Set();whs.forEach(w=>{if(submissions.some(x=>x.plant===w.plant&&x.sloc===w.sloc&&(x.period||curPeriod())===pp))s.add(w.plant+'|'+w.sloc);});return s.size;});
-  const barMax=Math.max(1,whs.length);
-  const lineP=per6.map((pp,i)=>whs.length?Math.round(bars[i]/whs.length*100):0);
-  g1.appendChild(_phCard('Tiến độ kiểm kê 6 tháng','Cột = số kho kiểm kê · Đường = % hoàn thành',svgComposed(per6.map(periodVN),bars,barMax,lineP)+`<div class="legend" style="display:flex;gap:16px;font-size:12px;color:var(--ink-soft);margin-top:8px"><span>■ <span style="color:var(--brand)">Số kho</span></span><span>■ <span style="color:var(--accent-600)">% hoàn thành</span></span></div>`));
+  const bars=per6.map(pp=>plantsIn.filter(P=>DATA.warehouses.some(w=>w.plant===P.plant&&submissions.some(x=>x.plant===P.plant&&x.sloc===w.sloc&&(x.period||curPeriod())===pp))).length);
+  const barMax=Math.max(1,plantsIn.length);
+  const lineP=per6.map((pp,i)=>plantsIn.length?Math.round(bars[i]/plantsIn.length*100):0);
   const dbp={};closThis.forEach(c=>{const d=(c.recon||{}).diffCnt||0;if(d)dbp[c.plant]=(dbp[c.plant]||0)+d;});
   const hh=Object.entries(dbp).map(([p,n])=>({name:plantName(p),val:n})).sort((a,b)=>b.val-a.val).slice(0,6);
-  g1.appendChild(_phCard('Hao hụt tồn theo điểm bán','Số mã lệch tồn cuối kỳ · top 6',svgHBars(hh)));
-  v.appendChild(g1);
-
-  // ---- hàng 3: donut lý do điều chuyển + tiến độ theo điểm bán ----
-  const g2=el('div');g2.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px';
   const trP=transfers.filter(t=>(t.period||periodOfDate(t.date))===period);
   const byReason={};trP.forEach(t=>{const r=t.reason||'Khác';byReason[r]=(byReason[r]||0)+1;});
   const palette=['#0E5C55','#E89217','#3a9e8f','#7A6FB0','#C9CFCD'];
   const segs=Object.entries(byReason).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([r,n],i)=>({name:r,val:n,color:palette[i%palette.length]}));
   const dTot=segs.reduce((a,s)=>a+s.val,0);
-  const donutInner=`<div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">${segs.length?svgDonut(segs,String(dTot),'phiếu'):'<div class="list-hint">Chưa có điều chuyển kỳ này.</div>'}<div style="display:flex;flex-direction:column;gap:9px;font-size:12px;color:var(--ink-soft)">${segs.map(s=>`<span><i style="width:11px;height:11px;border-radius:3px;display:inline-block;background:${s.color};margin-right:6px"></i>${_esc(s.name)} · ${dTot?Math.round(s.val/dTot*100):0}%</span>`).join('')}</div></div>`;
-  g2.appendChild(_phCard('Cơ cấu lý do điều chuyển','Tỷ trọng theo số phiếu kỳ '+periodVN(period),donutInner));
   const byPlant={};whs.forEach(w=>{const k=stOf(w.plant,w.sloc);(byPlant[w.plant]=byPlant[w.plant]||{t:0,d:0});byPlant[w.plant].t++;if(k!=='none')byPlant[w.plant].d++;});
   const progAll=Object.entries(byPlant).map(([p,o])=>({name:plantName(p),pct:Math.round(o.d/o.t*100)})).sort((a,b)=>a.pct-b.pct);
-  const progAny=progAll.some(p=>p.pct>0);
-  const progInner = !progAny ? '<div class="list-hint">Kỳ này chưa có điểm bán nào kiểm kê.</div>' : `<div style="display:flex;flex-direction:column;gap:11px;margin-top:2px">${progAll.slice(0,8).map(p=>{const col=p.pct>=100?'var(--green)':p.pct>=50?'var(--accent)':'var(--red)';return `<div><div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px"><span style="font-weight:700">${_esc(p.name)}</span><span style="color:${col};font-weight:800">${p.pct}%</span></div><div style="height:7px;background:var(--line);border-radius:20px;overflow:hidden"><div style="width:${p.pct}%;height:100%;background:${col}"></div></div></div>`;}).join('')}</div>`+(progAll.length>8?`<div style="font-size:12px;color:var(--muted);margin-top:10px;text-align:center">…và ${progAll.length-8} điểm bán khác</div>`:'');
-  g2.appendChild(_phCard('Tiến độ theo điểm bán (kỳ '+periodVN(period)+')','Gộp từ tab Tiến độ cũ',progInner));
-  v.appendChild(g2);
+  const charts=[];
+  if(bars.some(x=>x>0))charts.push(_phCard('Tiến độ kiểm kê 6 tháng','Cột = số điểm bán kiểm kê · Đường = % hoàn thành',svgComposed(per6.map(periodVN),bars,barMax,lineP)+`<div class="legend" style="display:flex;gap:16px;font-size:12px;color:var(--ink-soft);margin-top:8px"><span>■ <span style="color:var(--brand)">Số điểm bán</span></span><span>■ <span style="color:var(--accent-600)">% hoàn thành</span></span></div>`));
+  if(hh.length)charts.push(_phCard('Hao hụt tồn theo điểm bán','Số mã lệch tồn cuối kỳ · top 6',svgHBars(hh)));
+  if(segs.length)charts.push(_phCard('Cơ cấu lý do điều chuyển','Tỷ trọng theo số phiếu kỳ '+periodVN(period),`<div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">${svgDonut(segs,String(dTot),'phiếu')}<div style="display:flex;flex-direction:column;gap:9px;font-size:12px;color:var(--ink-soft)">${segs.map(s=>`<span><i style="width:11px;height:11px;border-radius:3px;display:inline-block;background:${s.color};margin-right:6px"></i>${_esc(s.name)} · ${dTot?Math.round(s.val/dTot*100):0}%</span>`).join('')}</div></div>`));
+  if(progAll.some(p=>p.pct>0))charts.push(_phCard('Tiến độ theo điểm bán (kỳ '+periodVN(period)+')','% kho đã kiểm kê mỗi điểm bán',`<div style="display:flex;flex-direction:column;gap:11px;margin-top:2px">${progAll.slice(0,8).map(p=>{const col=p.pct>=100?'var(--green)':p.pct>=50?'var(--accent)':'var(--red)';return `<div><div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px"><span style="font-weight:700">${_esc(p.name)}</span><span style="color:${col};font-weight:800">${p.pct}%</span></div><div style="height:7px;background:var(--line);border-radius:20px;overflow:hidden"><div style="width:${p.pct}%;height:100%;background:${col}"></div></div></div>`;}).join('')}</div>`+(progAll.length>8?`<div style="font-size:12px;color:var(--muted);margin-top:10px;text-align:center">…và ${progAll.length-8} điểm bán khác</div>`:'')));
+  if(charts.length){const cg=el('div');cg.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;margin-bottom:18px';charts.forEach(c=>cg.appendChild(c));v.appendChild(cg);}
 
   // ---- kỷ luật hoàn thành kiểm kê ----
   const today=new Date();today.setHours(0,0,0,0);
@@ -1030,8 +1024,8 @@ function renderPhantich(v){
   const warnBox=warn.length?`<div style="display:flex;gap:10px;align-items:center;background:var(--red-bg);border:1px solid #F0C9C9;border-radius:12px;padding:11px 14px;margin:4px 0 16px"><div style="font-size:20px">⚠️</div><div style="font-size:13px;line-height:1.5"><b style="color:var(--red)">${warn.length} bộ phận cần cảnh báo:</b> ${warn.map(d=>`<b>${_esc(d.name)}</b> ${d.none?(d.late?'chưa nộp, ĐÃ QUÁ HẠN':'chưa nộp (còn '+d.days+' ngày)'):'TRỄ '+(-d.days)+' ngày'}`).join(' · ')}.</div></div>`:`<div style="background:var(--green-bg);border:1px solid var(--green-line);border-radius:12px;padding:11px 14px;margin:4px 0 16px;font-size:13px;color:var(--green);font-weight:600">✓ Không có bộ phận nào trễ hạn kỳ này.</div>`;
   const discSorted=[...disc].sort((a,b)=>(((a.late||a.none)?0:1)-((b.late||b.none)?0:1))||a.days-b.days);
   const discChart=svgDiverge(discSorted.slice(0,8).map(d=>({name:d.name,days:d.days>60?60:d.days<-30?-30:d.days})));
-  const discRows=discSorted.slice(0,10).map(d=>`<tr><td class="cell-strong">${_esc(d.name)}</td><td style="font-size:12px${d.late?';color:var(--red)':d.none?';color:var(--muted)':''}">${d.submit}</td><td style="text-align:center;font-weight:700;color:${d.late?'var(--red)':d.none?'var(--accent-600)':'var(--green)'}">${d.none?(d.late?'quá hạn':'còn '+d.days):d.days<0?'TRỄ '+(-d.days):'sớm '+d.days}</td><td style="text-align:center">${gbadge(d)}</td></tr>`).join('')+(discSorted.length>10?`<tr><td colspan="4" style="text-align:center;color:var(--muted);font-size:12px;padding:8px">…và ${discSorted.length-10} bộ phận khác</td></tr>`:'');
-  const discInner=warnBox+`<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><div><div style="font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:6px">Số ngày nộp sớm/trễ so hạn chốt (${lastDayVN(period).str})</div>${discChart}</div><div><div style="font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:6px">Bảng xếp hạng kỷ luật</div><div class="tbl-wrap"><table><thead><tr><th>Bộ phận</th><th>Nộp lúc</th><th style="text-align:center">So hạn</th><th style="text-align:center">Xếp loại</th></tr></thead><tbody>${discRows||'<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:16px">Chưa có dữ liệu.</td></tr>'}</tbody></table></div></div></div>`;
+  const discRows=discSorted.map(d=>`<tr><td class="cell-strong">${_esc(d.name)}</td><td style="font-size:12px${d.late?';color:var(--red)':d.none?';color:var(--muted)':''}">${d.submit}</td><td style="text-align:center;font-weight:700;color:${d.late?'var(--red)':d.none?'var(--accent-600)':'var(--green)'}">${d.none?(d.late?'quá hạn':'còn '+d.days):d.days<0?'TRỄ '+(-d.days):'sớm '+d.days}</td><td style="text-align:center">${gbadge(d)}</td></tr>`).join('');
+  const discInner=warnBox+`<div style="font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:6px">Số ngày nộp sớm/trễ so hạn chốt (${lastDayVN(period).str})</div>${discChart}<details style="margin-top:14px"><summary style="cursor:pointer;font-weight:700;color:var(--brand);font-size:13px">📋 Xem bảng xếp hạng chi tiết (${disc.length} bộ phận)</summary><div class="tbl-wrap" style="margin-top:10px"><table><thead><tr><th>Bộ phận</th><th>Nộp lúc</th><th style="text-align:center">So hạn</th><th style="text-align:center">Xếp loại</th></tr></thead><tbody>${discRows||'<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:16px">Chưa có dữ liệu.</td></tr>'}</tbody></table></div></details>`;
   const discCard=_phCard('⏱ Tiến độ &amp; kỷ luật hoàn thành kiểm kê','Đánh giá bộ phận: đúng hạn · nhanh — kỳ '+periodVN(period)+' · hạn chốt '+lastDayVN(period).str,discInner);
   discCard.style.marginBottom='18px';v.appendChild(discCard);
 
@@ -1041,19 +1035,19 @@ function renderPhantich(v){
   const stPP=(p,pp)=>{const ss=DATA.warehouses.filter(w=>w.plant===p);let any=false,allDone=true;ss.forEach(w=>{const has=submissions.some(x=>x.plant===p&&x.sloc===w.sloc&&(x.period||curPeriod())===pp);const dn=submissions.some(x=>x.plant===p&&x.sloc===w.sloc&&(x.period||curPeriod())===pp&&x.status==='Đã duyệt');if(has)any=true;if(!dn)allDone=false;});return !any?'none':allDone?'done':'wait';};
   const mActive=plantsIn.filter(P=>per3.some(pp=>stPP(P.plant,pp)!=='none'));
   const mRows=mActive.slice(0,12).map(P=>{const hhP=(dbp[P.plant]||0);return `<tr><td class="cell-strong">${_esc(P.name)}</td>${per3.map(pp=>`<td style="text-align:center">${mIco(stPP(P.plant,pp))}</td>`).join('')}<td style="text-align:right;font-weight:700;color:${hhP?'var(--accent-600)':'var(--muted)'}">${hhP||'—'}</td></tr>`;}).join('')+(mActive.length>12?`<tr><td colspan="5" style="text-align:center;color:var(--muted);font-size:12px;padding:8px">…và ${mActive.length-12} điểm bán khác</td></tr>`:'');
-  const mxCard=_phCard('Ma trận tồn theo điểm bán × kỳ','So sánh song song · ✓ đã duyệt · ⏳ chờ · – chưa đếm',`<div class="tbl-wrap"><table><thead><tr><th>Điểm bán</th>${per3.map(pp=>`<th style="text-align:center">${periodVN(pp)}</th>`).join('')}<th style="text-align:right">Hao hụt ${periodVN(period)}</th></tr></thead><tbody>${mRows||'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:16px">Chưa có dữ liệu.</td></tr>'}</tbody></table></div>`);
-  mxCard.style.marginBottom='18px';v.appendChild(mxCard);
+  if(mActive.length){const mxCard=el('div','card');mxCard.style.cssText='padding:18px;margin-bottom:18px';
+    mxCard.innerHTML=`<details><summary style="cursor:pointer;font-weight:800;font-size:14.5px;color:var(--ink)">Ma trận tồn theo điểm bán × kỳ <span style="font-weight:400;font-size:12px;color:var(--muted)">— bấm xem chi tiết</span></summary><div style="font-size:12px;color:var(--muted);margin:8px 0 10px">✓ đã duyệt · ⏳ chờ · – chưa đếm</div><div class="tbl-wrap"><table><thead><tr><th>Điểm bán</th>${per3.map(pp=>`<th style="text-align:center">${periodVN(pp)}</th>`).join('')}<th style="text-align:right">Hao hụt ${periodVN(period)}</th></tr></thead><tbody>${mRows}</tbody></table></div></details>`;
+    v.appendChild(mxCard);}
 
   // ---- danh sách phiếu kiểm kê (từ Tổng hợp cũ) ----
   const subsIn=submissions.filter(s=>inScopeP(s.plant));
-  const listCard=el('div','card');
-  listCard.appendChild(el('div','card-h',`<div><span class="ct">Phiếu kiểm kê đã nộp</span> <span class="cs">· ${subsIn.length} phiếu</span></div><button class="btn btn-ghost btn-sm" onclick="exportCounts()">⬇ Xuất CSV</button>`));
-  const lb=el('div');
-  if(!subsIn.length)lb.appendChild(el('div','empty',`<div class="big">Chưa có phiếu kiểm kê</div><div>Khi điểm bán gửi số đếm, phiếu sẽ hiện ở đây.</div>`));
-  else{const w=el('div','tbl-wrap');const tbl=el('table');tbl.innerHTML=`<thead><tr><th>Mã phiếu</th><th>Kho</th><th>Người gửi</th><th class="num">Số mã</th><th>Trạng thái</th><th></th></tr></thead>`;const tb=el('tbody');
+  const listCard=el('div','card');listCard.style.padding='18px';
+  const lb=document.createElement('details');
+  lb.innerHTML=`<summary style="cursor:pointer;font-weight:800;font-size:14.5px;color:var(--ink)">Danh sách phiếu kiểm kê (${subsIn.length}) <span style="font-weight:400;font-size:12px;color:var(--muted)">— bấm xem chi tiết</span></summary><div style="text-align:right;margin:8px 0"><button class="btn btn-ghost btn-sm" onclick="exportCounts()">⬇ Xuất CSV</button></div>`;
+  if(subsIn.length){const w=el('div','tbl-wrap');const tbl=el('table');tbl.innerHTML=`<thead><tr><th>Mã phiếu</th><th>Kho</th><th>Người gửi</th><th class="num">Số mã</th><th>Trạng thái</th><th></th></tr></thead>`;const tb=el('tbody');
     subsIn.slice(0,80).forEach(s=>{const tr=el('tr',null,`<td class="cell-strong tnum">${s.id}</td><td><div class="cell-strong">${whName(s.plant,s.sloc)}</div><div class="cell-sub">${plantName(s.plant)}</div></td><td>${_esc(s.user)}</td><td class="num cell-strong tnum">${s.count}</td><td>${statusBadge(s.status)}</td><td><button class="btn btn-ghost btn-sm">Chi tiết</button></td>`);tr.querySelector('.btn').onclick=()=>showDetail(s);tb.appendChild(tr);});
     tbl.appendChild(tb);w.appendChild(tbl);lb.appendChild(w);}
-  listCard.appendChild(lb);v.appendChild(listCard);
+  if(subsIn.length){listCard.appendChild(lb);v.appendChild(listCard);}
 }
 function renderView(){
   const v=$('#view');v.innerHTML='';
