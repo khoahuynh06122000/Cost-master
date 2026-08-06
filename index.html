@@ -809,7 +809,8 @@ let recoveryMode=false;
 // khi người dùng bấm link đặt lại mật khẩu trong email -> hiện màn đặt mật khẩu mới
 if(sb){try{sb.auth.onAuthStateChange((event)=>{if(event==='PASSWORD_RECOVERY'){recoveryMode=true;showAuth('reset');}});}catch(e){console.error(e);}}
 
-function inEntry(){return counting||shiftEntry;} // đang nhập dở thì không tự re-render
+let ocrPreviewOpen=false; // đang xem bảng preview quét ảnh (chưa bấm lưu) -> chặn polling re-render xóa mất
+function inEntry(){return counting||shiftEntry||ocrPreviewOpen;} // đang nhập dở thì không tự re-render
 async function fetchAllRows(table,cols){
   const out=[];let from=0;const step=1000;
   for(;;){
@@ -1253,6 +1254,7 @@ function renderPhantich(v){
 function toggleDark(){const d=document.documentElement.classList.toggle('dark');try{localStorage.setItem('appDark',d?'1':'0');}catch(e){}const b=$('#darkToggle');if(b)b.textContent=d?'☀':'🌙';}
 (function(){const b=document.getElementById('darkToggle');if(b)b.textContent=document.documentElement.classList.contains('dark')?'☀':'🌙';})();
 function renderView(){
+  ocrPreviewOpen=false; // vẽ lại màn = preview quét cũ (nếu có) bị bỏ; tránh kẹt cờ chặn polling
   const v=$('#view');v.innerHTML='';
   v.classList.toggle('wide',activeTab==='dieuhanh'||activeTab==='phantich');
   $('#pageTitle').textContent=TABS[activeTab].title;
@@ -2406,6 +2408,7 @@ function renderNhapKho(v){
   };
   function renderPreview(rows){
     prevWrap.innerHTML='';
+    ocrPreviewOpen=true; // đang xem preview chưa lưu -> chặn polling tự vẽ lại xóa mất
     const pv=rows.map(r=>{const m=findMat(r);return{code:m?m.code:((r.code||'').trim()),name:m?m.name:r.name,ocrName:r.name,uom:m?m.uom:(r.uom||''),qty:r.qty,removed:false};});
     const w=el('div','tbl-wrap');const tbl=el('table');
     tbl.innerHTML='<thead><tr><th>Đọc được</th><th>Mã hệ thống</th><th class="num">SL nhập</th><th></th></tr></thead>';
@@ -2434,9 +2437,12 @@ function renderNhapKho(v){
         dbIns('receipts',{id:rec.id,plant_code:rec.plant,sloc_code:rec.sloc,code:rec.code,name:rec.name,uom:rec.uom,qty:rec.qty,date:rec.date,period:rec.period,note:rec.note,created_by:rec.by});});
       log('Nhập kho từ ảnh',ok.length+' dòng · '+whName(plantSel.value,slocSel.value)+' · kỳ '+periodVN(perSel.value));
       toast('✓ Đã thêm '+ok.length+' dòng nhập kho');
-      prevWrap.innerHTML='';statusEl.innerHTML='';renderList();
+      ocrPreviewOpen=false;prevWrap.innerHTML='';statusEl.innerHTML='';renderList();
     };
     prevWrap.appendChild(saveBtn);
+    const cancelBtn=el('button','btn btn-ghost','Hủy');cancelBtn.style.cssText='margin-top:10px;margin-left:8px';
+    cancelBtn.onclick=()=>{ocrPreviewOpen=false;prevWrap.innerHTML='';statusEl.innerHTML='';};
+    prevWrap.appendChild(cancelBtn);
   }
   const listWrap=el('div');listWrap.style.marginTop='14px';b.appendChild(listWrap);
   function renderList(){
