@@ -8,7 +8,9 @@ const AI_KEYS = [
   process.env.AI_API_KEY,  process.env.AI_API_KEY2,  process.env.AI_API_KEY3,
   process.env.GEMINI_API_KEY, process.env.GEMINI2_API_KEY, process.env.GEMINI3_API_KEY,
 ].map((k) => (k || '').trim()).filter(Boolean);
-const AI_MODEL = process.env.AI_MODEL_VISION || process.env.AI_MODEL || 'gemini-2.5-flash';
+// Mặc định gemini-2.0-flash: rẻ quota, hào phóng, ít bị 503 hơn 2.5-flash; vision đọc bảng in tốt.
+// 2.5-flash giữ làm phao dự phòng trong danh sách MODELS bên dưới.
+const AI_MODEL = process.env.AI_MODEL_VISION || process.env.AI_MODEL || 'gemini-2.0-flash';
 
 const PROMPT = `Bạn là công cụ đọc CHỨNG TỪ NHẬP KHO in trên giấy của bộ phận F&B nhà hàng.
 Chứng từ có thể mang tiêu đề "Phiếu nhập kho" HOẶC "Phiếu xuất điều chuyển" — cả hai đều là hàng NHẬP về kho, xử lý như nhau.
