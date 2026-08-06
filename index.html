@@ -399,6 +399,13 @@
   .tpl .dot{width:7px;height:7px;border-radius:50%;background:var(--brand);flex:none}
   .tpl.empty{color:var(--muted);justify-content:center}
   .tpl .uav{width:22px;height:22px;font-size:10px}
+  .tstaff{margin-top:14px;display:flex;flex-direction:column;gap:7px;width:100%;position:relative}
+  .tstaff::before{content:'';position:absolute;top:-14px;left:50%;width:2px;height:14px;background:var(--line-strong)}
+  .tsnode{display:flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--line-strong);border-radius:10px;padding:7px 9px;text-align:left}
+  .tsnode .uav{width:26px;height:26px;font-size:11px;flex:none}
+  .tsnode .snm{font-size:12px;font-weight:700;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tsnode .srole{font-size:9.5px;font-weight:800;color:#7A6FB0;text-transform:uppercase;letter-spacing:.3px}
+  .tstaff-empty{margin-top:14px;font-size:11.5px;color:var(--muted);font-style:italic;text-align:center}
 </style>
 <script>try{if(localStorage.getItem('appDark')==='1')document.documentElement.classList.add('dark');}catch(e){}</script>
 </head>
@@ -3471,15 +3478,23 @@ function openUserDrawer(view,p){
   ov.appendChild(dr);view.appendChild(ov);
 }
 function renderUsersTree(view){
-  const people=profiles.filter(p=>_ufield(p.role)).sort((a,b)=>(a.full_name||'').localeCompare(b.full_name||'','vi'));
+  const sups=profiles.filter(p=>p.role==='giam_sat'||p.role==='bep_truong').sort((a,b)=>(a.full_name||'').localeCompare(b.full_name||'','vi'));
+  const staff=profiles.filter(p=>p.role==='nhan_vien');
   const card=el('div','card usr-chart');
-  if(!people.length){card.innerHTML='<div style="padding:44px;text-align:center;color:var(--muted);font-size:13.5px">Chưa có Giám sát / Bếp trưởng / Nhân viên nào được gán điểm bán.<br>Chuyển sang <b>Danh sách</b> để gán vai trò &amp; kho.</div>';view.appendChild(card);return;}
-  const cols=people.map(p=>{
-    const rb=USR_ROLEB[p.role||'']||USR_ROLEB[''],pls=(userPlants[p.id]||[]);
-    const chips=pls.length?(pls.slice(0,5).map(pc=>`<div class="tpl"><span class="dot"></span>${_esc(plantName(pc))}</div>`).join('')+(pls.length>5?`<div class="tpl" style="color:var(--muted);justify-content:center">+${pls.length-5} điểm bán…</div>`:'')):`<div class="tpl empty">Chưa gán kho</div>`;
-    return `<div class="tcol"><div class="tperson">${_uav(p)}<div class="nm">${_esc(p.full_name||'(chưa tên)')}</div><span class="trole" style="background:${rb[1]};color:${rb[2]}">${rb[0]}</span><span class="tcnt">${pls.length} điểm bán</span></div><div class="tplants">${chips}</div></div>`;
+  if(!sups.length&&!staff.length){card.innerHTML='<div style="padding:44px;text-align:center;color:var(--muted);font-size:13.5px">Chưa có Giám sát / Nhân viên nào được gán điểm bán.<br>Chuyển sang <b>Danh sách</b> để gán vai trò &amp; kho.</div>';view.appendChild(card);return;}
+  const snode=nv=>`<div class="tsnode">${_uav(nv)}<div style="min-width:0"><div class="snm">${_esc(nv.full_name||nv.email||'—')}</div><span class="srole">Nhân viên</span></div></div>`;
+  const assigned=new Set();
+  const cols=sups.map(S=>{
+    const rb=USR_ROLEB[S.role],pls=(userPlants[S.id]||[]),SP=new Set(pls);
+    const under=staff.filter(nv=>(userPlants[nv.id]||[]).some(pc=>SP.has(pc)));
+    under.forEach(nv=>assigned.add(nv.id));
+    const chips=pls.length?(pls.slice(0,4).map(pc=>`<div class="tpl"><span class="dot"></span>${_esc(plantName(pc))}</div>`).join('')+(pls.length>4?`<div class="tpl" style="color:var(--muted);justify-content:center">+${pls.length-4} điểm…</div>`:'')):`<div class="tpl empty">Chưa gán kho</div>`;
+    const staffBox=under.length?`<div class="tstaff">${under.map(snode).join('')}</div>`:`<div class="tstaff-empty">Chưa có nhân viên</div>`;
+    return `<div class="tcol"><div class="tperson">${_uav(S)}<div class="nm">${_esc(S.full_name||'(chưa tên)')}</div><span class="trole" style="background:${rb[1]};color:${rb[2]}">${rb[0]}</span><span class="tcnt">${pls.length} điểm · ${under.length} NV</span></div><div class="tplants">${chips}</div>${staffBox}</div>`;
   }).join('');
-  card.innerHTML=`<div class="ttree"><div class="troot"><span class="s">Phòng Kế toán F&amp;B</span>Sun World Ba Na Hills</div><div class="tbranches">${cols}</div></div>`;
+  const orphan=staff.filter(nv=>!assigned.has(nv.id));
+  const orphanCol=orphan.length?`<div class="tcol"><div class="tperson" style="border-style:dashed"><div class="nm" style="font-size:12.5px">Chưa thuộc giám sát</div><span class="tcnt">${orphan.length} nhân viên</span></div><div class="tstaff">${orphan.map(snode).join('')}</div></div>`:'';
+  card.innerHTML=`<div class="ttree"><div class="troot"><span class="s">Phòng Kế toán F&amp;B</span>Sun World Ba Na Hills</div><div class="tbranches" style="align-items:flex-start">${cols}${orphanCol}</div></div>`;
   view.appendChild(card);
 }
 // Sơ đồ cho GIÁM SÁT (chỉ xem): điểm mình quản → nhân viên đứng điểm
