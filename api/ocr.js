@@ -1,8 +1,13 @@
 // api/ocr.js — Vercel serverless: đọc ảnh biên bản NHẬP KHO (bản in) -> JSON dòng hàng.
-// Gọi Gemini Vision REST thẳng (khỏi npm dep). Key giấu trong env Vercel: AI_API_KEY.
+// Gọi Gemini Vision REST thẳng (khỏi npm dep).
+// Key đọc từ env Vercel (thử lần lượt, key trước hết lượt/429 thì nhảy key sau):
+//   AI_API_KEY, AI_API_KEY2, AI_API_KEY3  (tương thích cả GEMINI_API_KEY / GEMINI2_API_KEY / GEMINI3_API_KEY của app beer).
 // Client gửi POST { images:["data:image/jpeg;base64,..."] }  -> trả { rows:[{code,name,uom,qty}], raw }.
 
-const AI_KEY   = process.env.AI_API_KEY || '';
+const AI_KEYS = [
+  process.env.AI_API_KEY,  process.env.AI_API_KEY2,  process.env.AI_API_KEY3,
+  process.env.GEMINI_API_KEY, process.env.GEMINI2_API_KEY, process.env.GEMINI3_API_KEY,
+].map((k) => (k || '').trim()).filter(Boolean);
 const AI_MODEL = process.env.AI_MODEL_VISION || process.env.AI_MODEL || 'gemini-2.5-flash';
 
 const PROMPT = `Bạn là công cụ đọc CHỨNG TỪ NHẬP KHO in trên giấy của bộ phận F&B nhà hàng.
@@ -38,7 +43,7 @@ const SCHEMA = {
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') { res.status(405).json({ error: 'Chỉ nhận POST' }); return; }
-  if (!AI_KEY) { res.status(500).json({ error: 'Server chưa cấu hình AI_API_KEY' }); return; }
+  if (!AI_KEYS.length) { res.status(500).json({ error: 'Server chưa cấu hình AI_API_KEY (env Vercel)' }); return; }
 
   try {
     // body có thể đã parse sẵn (Vercel) hoặc là string
@@ -54,25 +59,30 @@ module.exports = async (req, res) => {
     }
     if (parts.length === 1) { res.status(400).json({ error: 'Ảnh không hợp lệ (cần data:image;base64)' }); return; }
 
-    const r = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${AI_MODEL}:generateContent?key=${AI_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts }],
-          generationConfig: { responseMimeType: 'application/json', responseSchema: SCHEMA, temperature: 0 },
-        }),
-      }
-    );
+    const reqBody = JSON.stringify({
+      contents: [{ role: 'user', parts }],
+      generationConfig: { responseMimeType: 'application/json', responseSchema: SCHEMA, temperature: 0 },
+    });
 
-    if (!r.ok) {
+    // Thử lần lượt từng key. 429/hết lượt/hết quota (403,401) -> nhảy key kế. Lỗi khác -> báo luôn.
+    let j = null, lastErr = '';
+    for (let i = 0; i < AI_KEYS.length; i++) {
+      const r = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${AI_MODEL}:generateContent?key=${AI_KEYS[i]}`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: reqBody }
+      );
+      if (r.ok) { j = await r.json(); break; }
       const t = await r.text().catch(() => '');
-      res.status(502).json({ error: `Gemini lỗi ${r.status}`, detail: t.slice(0, 300) });
-      return;
+      lastErr = `key#${i + 1} lỗi ${r.status}: ${t.slice(0, 200)}`;
+      // key hết lượt / không hợp lệ -> thử key tiếp; các lỗi này mới đáng nhảy key
+      const canFallback = [429, 401, 403].includes(r.status) || /RESOURCE_EXHAUSTED|quota|rate/i.test(t);
+      if (!canFallback || i === AI_KEYS.length - 1) {
+        res.status(502).json({ error: `Gemini lỗi ${r.status}`, detail: t.slice(0, 300) });
+        return;
+      }
     }
+    if (!j) { res.status(502).json({ error: 'Tất cả key đều lỗi', detail: lastErr }); return; }
 
-    const j = await r.json();
     const raw = j?.candidates?.[0]?.content?.parts?.[0]?.text || '';
     let rows = [];
     try {
