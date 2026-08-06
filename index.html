@@ -2275,7 +2275,7 @@ function renderDieuchuyen(v){
   const dd=el('div','ac-dd');let chosen=null;
   iMat.oninput=()=>{chosen=null;iUomTag.textContent='';const q=iMat.value.trim().toLowerCase();if(!q){dd.style.display='none';return;}
     const res=DATA.materials.filter(m=>m.code.includes(q)||m.name.toLowerCase().includes(q)).slice(0,30);dd.innerHTML='';
-    if(!res.length){dd.style.display='none';return;}
+    if(!res.length){if(q.length>=2){dd.innerHTML='<div class="ac-item" style="cursor:default"><div class="n" style="color:var(--red)">Không tồn tại mã "'+iMat.value.trim()+'"</div><div class="s">Chưa có trong hệ thống — có thể thêm mã mới bên dưới</div></div>';dd.style.display='block';}else{dd.style.display='none';}return;}
     res.forEach(m=>{const it=el('div','ac-item',`<div class="n">${m.name}</div><div class="s">${m.code} · ${m.uom}</div>`);
       it.onclick=()=>{chosen=m;iMat.value=`${m.name} (${m.code})`;dd.style.display='none';iUomTag.textContent='· '+m.uom;};dd.appendChild(it);});
     dd.style.display='block';};
@@ -2341,7 +2341,7 @@ function renderNhapKho(v){
   const fMat=el('label','field','<span>Mã hàng</span>');
   const acw=el('div','ac-wrap');const iMat=el('input','input');iMat.placeholder='Gõ mã hoặc tên hàng…';iMat.autocomplete='off';
   const dd=el('div','ac-dd');let chosen=null;
-  iMat.oninput=()=>{chosen=null;const q=iMat.value.trim().toLowerCase();if(!q){dd.style.display='none';return;}const res=DATA.materials.filter(m=>m.code.includes(q)||m.name.toLowerCase().includes(q)).slice(0,30);dd.innerHTML='';if(!res.length){dd.style.display='none';return;}res.forEach(m=>{const it=el('div','ac-item',`<div class="n">${m.name}</div><div class="s">${m.code} · ${m.uom}</div>`);it.onclick=()=>{chosen=m;iMat.value=`${m.name} (${m.code})`;dd.style.display='none';};dd.appendChild(it);});dd.style.display='block';};
+  iMat.oninput=()=>{chosen=null;const q=iMat.value.trim().toLowerCase();if(!q){dd.style.display='none';return;}const res=DATA.materials.filter(m=>m.code.includes(q)||m.name.toLowerCase().includes(q)).slice(0,30);dd.innerHTML='';if(!res.length){if(q.length>=2){dd.innerHTML='<div class="ac-item" style="cursor:default"><div class="n" style="color:var(--red)">Không tồn tại mã "'+iMat.value.trim()+'"</div><div class="s">Chưa có trong hệ thống — có thể thêm mã mới bên dưới</div></div>';dd.style.display='block';}else{dd.style.display='none';}return;}res.forEach(m=>{const it=el('div','ac-item',`<div class="n">${m.name}</div><div class="s">${m.code} · ${m.uom}</div>`);it.onclick=()=>{chosen=m;iMat.value=`${m.name} (${m.code})`;dd.style.display='none';};dd.appendChild(it);});dd.style.display='block';};
   document.addEventListener('click',e=>{if(!acw.contains(e.target))dd.style.display='none';});
   acw.appendChild(iMat);acw.appendChild(dd);fMat.appendChild(acw);b.appendChild(fMat);
   // ---- BP tự thêm mã mới nếu không có trong hệ thống ----
