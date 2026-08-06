@@ -2287,19 +2287,20 @@ function renderDieuchuyen(v){
   const iQty=el('input','input');iQty.type='number';iQty.step='any';iQty.min='0';iQty.placeholder='0';fQty.appendChild(iQty);
   const iUomTag=fQty.querySelector('#uomTag');
   // Picker kho 2 cấp: chọn Điểm bán (Plant) -> hiện Kho (Sloc). Mở FULL tất cả điểm bán.
-  function whPicker(labelTxt,extLbl){
+  function whPicker(labelTxt,extLbl,plants){
     const wrap=el('label','field',`<span>${labelTxt}</span>`);
     const row=el('div');row.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:8px';
     const pSel=el('select','input'),sSel=el('select','input');
     const oe=el('option',null,extLbl);oe.value='EXT';pSel.appendChild(oe);
-    plantsList().forEach(p=>{const o=el('option',null,p.name);o.value=p.plant;pSel.appendChild(o);});
+    plants.forEach(p=>{const o=el('option',null,p.name);o.value=p.plant;pSel.appendChild(o);});
     function fillS(){sSel.innerHTML='';if(pSel.value==='EXT'){sSel.disabled=true;sSel.appendChild(el('option',null,'—'));return;}sSel.disabled=false;slocsOf(pSel.value).forEach(w=>{const o=el('option',null,w.sloc_name+' ('+w.sloc+')');o.value=w.sloc;sSel.appendChild(o);});}
     pSel.onchange=fillS;fillS();
     row.appendChild(pSel);row.appendChild(sSel);wrap.appendChild(row);
     return {wrap,key:()=>pSel.value==='EXT'?'EXT':pSel.value+'|'+sSel.value};
   }
-  const pFrom=whPicker('Từ kho (nguồn)','— Kho tổng / nhập ngoài —');
-  const pTo=whPicker('Đến kho (đích)','— Xuất ngoài / hao hụt —');
+  const myPlants=isPrivileged()?plantsList():allowedPlants();  // Từ kho = kho mình phụ trách
+  const pFrom=whPicker('Từ kho (nguồn)','— Kho tổng / nhập ngoài —',myPlants);
+  const pTo=whPicker('Đến kho (đích)','— Xuất ngoài / hao hụt —',plantsList());  // Đến = full
   g2.appendChild(fQty);g2.appendChild(el('div'));b.appendChild(g2);
   const g3=el('div','grid2');g3.appendChild(pFrom.wrap);g3.appendChild(pTo.wrap);b.appendChild(g3);
 
