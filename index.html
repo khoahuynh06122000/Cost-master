@@ -2286,23 +2286,30 @@ function renderDieuchuyen(v){
   const fQty=el('label','field','<span>Số lượng <span id="uomTag" style="color:var(--muted);font-weight:500"></span></span>');
   const iQty=el('input','input');iQty.type='number';iQty.step='any';iQty.min='0';iQty.placeholder='0';fQty.appendChild(iQty);
   const iUomTag=fQty.querySelector('#uomTag');
-  const fromF=el('label','field','<span>Từ kho (nguồn)</span>');const sFrom=el('select','input');
-  const toF=el('label','field','<span>Đến kho (đích)</span>');const sTo=el('select','input');
-  const allowSet=isPrivileged()?null:new Set(allowedPlants().map(p=>p.plant));
-  const whList=allowSet?DATA.warehouses.filter(w=>allowSet.has(w.plant)):DATA.warehouses;
-  [[sFrom,'— Kho tổng / nhập ngoài —'],[sTo,'— Xuất ngoài / hao hụt —']].forEach(([sel,lbl])=>{
-    const o=el('option',null,lbl);o.value='EXT';sel.appendChild(o);
-    whList.forEach(w=>{const op=el('option',null,`${w.sloc_name} · ${plantName(w.plant)}`);op.value=w.plant+'|'+w.sloc;sel.appendChild(op);});});
-  fromF.appendChild(sFrom);toF.appendChild(sTo);
+  // Picker kho 2 cấp: chọn Điểm bán (Plant) -> hiện Kho (Sloc). Mở FULL tất cả điểm bán.
+  function whPicker(labelTxt,extLbl){
+    const wrap=el('label','field',`<span>${labelTxt}</span>`);
+    const row=el('div');row.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:8px';
+    const pSel=el('select','input'),sSel=el('select','input');
+    const oe=el('option',null,extLbl);oe.value='EXT';pSel.appendChild(oe);
+    plantsList().forEach(p=>{const o=el('option',null,p.name);o.value=p.plant;pSel.appendChild(o);});
+    function fillS(){sSel.innerHTML='';if(pSel.value==='EXT'){sSel.disabled=true;sSel.appendChild(el('option',null,'—'));return;}sSel.disabled=false;slocsOf(pSel.value).forEach(w=>{const o=el('option',null,w.sloc_name+' ('+w.sloc+')');o.value=w.sloc;sSel.appendChild(o);});}
+    pSel.onchange=fillS;fillS();
+    row.appendChild(pSel);row.appendChild(sSel);wrap.appendChild(row);
+    return {wrap,key:()=>pSel.value==='EXT'?'EXT':pSel.value+'|'+sSel.value};
+  }
+  const pFrom=whPicker('Từ kho (nguồn)','— Kho tổng / nhập ngoài —');
+  const pTo=whPicker('Đến kho (đích)','— Xuất ngoài / hao hụt —');
   g2.appendChild(fQty);g2.appendChild(el('div'));b.appendChild(g2);
-  const g3=el('div','grid2');g3.appendChild(fromF);g3.appendChild(toF);b.appendChild(g3);
+  const g3=el('div','grid2');g3.appendChild(pFrom.wrap);g3.appendChild(pTo.wrap);b.appendChild(g3);
 
   const addBtn=el('button','btn btn-primary','<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Thêm phiếu điều chuyển');
   addBtn.onclick=()=>{if(!chosen){toast('Chưa chọn mã hàng');return;}if(!iQty.value||Number(iQty.value)<=0){toast('Nhập số lượng hợp lệ');return;}
+    const fk=pFrom.key(),tk=pTo.key();
     const t={date:iDate.value,code:chosen.code,name:chosen.name,uom:chosen.uom,qty:iQty.value,reason:sReason.value,
-      from:sFrom.value==='EXT'?'Kho tổng/ngoài':whName(...sFrom.value.split('|')),
-      to:sTo.value==='EXT'?'Xuất ngoài':whName(...sTo.value.split('|')),
-      fromKey:sFrom.value,toKey:sTo.value,period:periodOfDate(iDate.value),user:session.name,time:now()};
+      from:fk==='EXT'?'Kho tổng/ngoài':whName(...fk.split('|')),
+      to:tk==='EXT'?'Xuất ngoài':whName(...tk.split('|')),
+      fromKey:fk,toKey:tk,period:periodOfDate(iDate.value),user:session.name,time:now()};
     transfers.unshift(t);log('Nhập điều chuyển',`${chosen.name} · ${iQty.value} ${chosen.uom} · ${t.reason}`);
     dbIns('transfers',{date:t.date,code:t.code,name:t.name,uom:t.uom,qty:Number(t.qty),from_wh:t.from,to_wh:t.to,from_key:t.fromKey,to_key:t.toKey,period:t.period,reason:t.reason,user_name:t.user});
     toast('Đã thêm phiếu điều chuyển');iMat.value='';chosen=null;iQty.value='';iUomTag.textContent='';renderTransList();};
