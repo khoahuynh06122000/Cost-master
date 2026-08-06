@@ -64,24 +64,37 @@ module.exports = async (req, res) => {
       generationConfig: { responseMimeType: 'application/json', responseSchema: SCHEMA, temperature: 0 },
     });
 
-    // Thử lần lượt từng key. 429/hết lượt/hết quota (403,401) -> nhảy key kế. Lỗi khác -> báo luôn.
-    let j = null, lastErr = '';
-    for (let i = 0; i < AI_KEYS.length; i++) {
+    // Danh sách model: model chính + dự phòng khi quá tải (2.0-flash thường sẵn hơn 2.5).
+    const MODELS = [...new Set([AI_MODEL, 'gemini-2.0-flash', 'gemini-2.5-flash'])];
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+    // Thử tổ hợp (model × key). Lỗi tạm thời/quá tải (429,500,502,503,quota,overload) -> thử tổ hợp kế.
+    // 503 (quá tải) ở tổ hợp cuối -> chờ ngắn rồi thử lại 1 lần nữa.
+    let j = null, lastStatus = 0, lastDetail = '', retried503 = false;
+    const attempts = [];
+    for (const model of MODELS) for (let i = 0; i < AI_KEYS.length; i++) attempts.push({ model, key: AI_KEYS[i], ki: i });
+
+    for (let a = 0; a < attempts.length; a++) {
+      const { model, key, ki } = attempts[a];
       const r = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${AI_MODEL}:generateContent?key=${AI_KEYS[i]}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
         { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: reqBody }
       );
       if (r.ok) { j = await r.json(); break; }
       const t = await r.text().catch(() => '');
-      lastErr = `key#${i + 1} lỗi ${r.status}: ${t.slice(0, 200)}`;
-      // key hết lượt / không hợp lệ -> thử key tiếp; các lỗi này mới đáng nhảy key
-      const canFallback = [429, 401, 403].includes(r.status) || /RESOURCE_EXHAUSTED|quota|rate/i.test(t);
-      if (!canFallback || i === AI_KEYS.length - 1) {
-        res.status(502).json({ error: `Gemini lỗi ${r.status}`, detail: t.slice(0, 300) });
+      lastStatus = r.status; lastDetail = `${model}/key#${ki + 1}: ${t.slice(0, 160)}`;
+      const overloaded = r.status === 503 || /UNAVAILABLE|overload|high demand/i.test(t);
+      const transient = [429, 500, 502, 503].includes(r.status) || /RESOURCE_EXHAUSTED|quota|rate|internal/i.test(t);
+      const canFallback = [401, 403].includes(r.status) || transient;
+      const isLast = a === attempts.length - 1;
+      if (isLast && overloaded && !retried503) { retried503 = true; await sleep(1500); a--; continue; } // chờ rồi thử lại tổ hợp cuối
+      if (!canFallback || isLast) {
+        const msg = overloaded ? 'Model AI đang quá tải — thử lại sau vài giây' : `Gemini lỗi ${r.status}`;
+        res.status(overloaded ? 503 : 502).json({ error: msg, detail: lastDetail });
         return;
       }
     }
-    if (!j) { res.status(502).json({ error: 'Tất cả key đều lỗi', detail: lastErr }); return; }
+    if (!j) { res.status(503).json({ error: 'AI tạm thời không phản hồi — thử lại sau', detail: `${lastStatus} · ${lastDetail}` }); return; }
 
     const raw = j?.candidates?.[0]?.content?.parts?.[0]?.text || '';
     let rows = [];
