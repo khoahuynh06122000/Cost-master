@@ -2377,6 +2377,67 @@ function renderNhapKho(v){
     log('Nhập kho mua mới',`${chosen.name} · ${rec.qty} ${chosen.uom} · ${whName(rec.plant,rec.sloc)} · kỳ ${periodVN(rec.period)}`);
     toast('Đã thêm nhập kho '+chosen.code);iMat.value='';chosen=null;iQty.value='';renderList();};
   b.appendChild(addBtn);
+  // ---- Quét biên bản nhập bằng ảnh (Gemini Vision qua /api/ocr) ----
+  function compressImage(file,maxDim=1600,quality=0.8){return new Promise((resolve,reject)=>{const img=new Image();const url=URL.createObjectURL(file);img.onload=()=>{URL.revokeObjectURL(url);let w=img.naturalWidth,h=img.naturalHeight;if(Math.max(w,h)>maxDim){const s=maxDim/Math.max(w,h);w=Math.round(w*s);h=Math.round(h*s);}const cv=document.createElement('canvas');cv.width=w;cv.height=h;cv.getContext('2d').drawImage(img,0,0,w,h);resolve(cv.toDataURL('image/jpeg',quality));};img.onerror=reject;img.src=url;});}
+  function findMat(r){const c=(r.code||'').trim();if(c&&masterByCode[c])return masterByCode[c];const nm=(r.name||'').trim().toLowerCase();if(nm){let m=DATA.materials.find(x=>x.name.toLowerCase()===nm);if(m)return m;m=DATA.materials.find(x=>x.name.toLowerCase().includes(nm)||nm.includes(x.name.toLowerCase()));if(m)return m;}return null;}
+  const scanWrap=el('div');scanWrap.style.cssText='margin-top:16px;padding:12px;border:1px dashed var(--brand);border-radius:12px;background:var(--surface-2)';
+  scanWrap.innerHTML='<div style="font-weight:800;font-size:13px;margin-bottom:4px">📷 Quét biên bản nhập (ảnh)</div><div style="font-size:12px;color:var(--muted);margin-bottom:10px">Chụp/chọn ảnh phiếu <b>in</b> (phiếu nhập / phiếu xuất điều chuyển từ kho tổng NCC) — hệ thống đọc số rồi cho xem trước để bạn <b>duyệt trước khi lưu</b>. Số sẽ cộng vào đúng Điểm bán / Kho / Kỳ đang chọn ở trên. Ảnh chỉ dùng để quét, <b>không lưu lại</b>.</div>';
+  const fileIn=el('input');fileIn.type='file';fileIn.accept='image/*';fileIn.setAttribute('capture','environment');fileIn.multiple=true;fileIn.style.display='none';
+  const pickBtn=el('button','btn btn-brand','📷 Chọn / chụp ảnh biên bản');
+  const statusEl=el('div');statusEl.style.cssText='font-size:12.5px;margin-top:8px';
+  const prevWrap=el('div');prevWrap.style.marginTop='10px';
+  scanWrap.appendChild(pickBtn);scanWrap.appendChild(fileIn);scanWrap.appendChild(statusEl);scanWrap.appendChild(prevWrap);
+  b.appendChild(scanWrap);
+  pickBtn.onclick=()=>fileIn.click();
+  fileIn.onchange=async ()=>{
+    const files=[...fileIn.files];if(!files.length)return;
+    prevWrap.innerHTML='';statusEl.innerHTML='<span style="color:var(--brand)">⏳ Đang nén ảnh & đọc biên bản… (vài giây)</span>';
+    try{
+      const imgs=[];for(const f of files.slice(0,4))imgs.push(await compressImage(f));
+      const resp=await fetch('/api/ocr',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({images:imgs})});
+      const data=await resp.json().catch(()=>({}));
+      if(!resp.ok){statusEl.innerHTML='<span style="color:var(--red)">✗ '+(data.error||('Lỗi '+resp.status))+(data.detail?' — '+data.detail:'')+'</span>';return;}
+      const rows=data.rows||[];
+      if(!rows.length){statusEl.innerHTML='<span style="color:var(--red)">Không đọc được dòng hàng nào. Thử chụp rõ, thẳng, đủ sáng hơn.</span>';return;}
+      statusEl.innerHTML='<span style="color:#16a34a">✓ Đọc được '+rows.length+' dòng — kiểm tra mã & số lượng rồi bấm lưu.</span>';
+      renderPreview(rows);
+    }catch(e){statusEl.innerHTML='<span style="color:var(--red)">✗ Lỗi: '+((e&&e.message)||e)+'</span>';}
+    fileIn.value='';
+  };
+  function renderPreview(rows){
+    prevWrap.innerHTML='';
+    const pv=rows.map(r=>{const m=findMat(r);return{code:m?m.code:((r.code||'').trim()),name:m?m.name:r.name,ocrName:r.name,uom:m?m.uom:(r.uom||''),qty:r.qty,removed:false};});
+    const w=el('div','tbl-wrap');const tbl=el('table');
+    tbl.innerHTML='<thead><tr><th>Đọc được</th><th>Mã hệ thống</th><th class="num">SL nhập</th><th></th></tr></thead>';
+    const tb=el('tbody');
+    pv.forEach(row=>{
+      const tr=el('tr');
+      tr.appendChild(el('td',null,'<div style="font-size:12.5px">'+row.ocrName+'</div>'));
+      const cCode=el('td');const ci=el('input','input');ci.value=row.code;ci.placeholder='Gõ mã đúng…';ci.style.cssText='min-width:120px;font-size:12px';
+      const cn=el('div');cn.style.cssText='font-size:11px;margin-top:3px';
+      function refresh(){const m=masterByCode[ci.value.trim()];if(m){row.code=m.code;cn.innerHTML='<span style="color:#16a34a">✓ '+m.name+' · '+(m.uom||'')+'</span>';}else{row.code=ci.value.trim();cn.innerHTML='<span style="color:var(--red)">⚠ Mã không tồn tại — sửa lại hoặc thêm mã mới ở trên</span>';}}
+      ci.oninput=refresh;cCode.appendChild(ci);cCode.appendChild(cn);tr.appendChild(cCode);
+      const cQty=el('td','num');const qi=el('input','input');qi.type='number';qi.step='any';qi.min='0';qi.value=row.qty;qi.style.cssText='max-width:90px;text-align:right';qi.oninput=()=>row.qty=Number(qi.value);cQty.appendChild(qi);tr.appendChild(cQty);
+      const cDel=el('td');const delb=el('button','btn btn-ghost btn-sm','✕');delb.style.color='var(--red)';delb.onclick=()=>{row.removed=true;tr.style.opacity='.35';tr.style.textDecoration='line-through';};cDel.appendChild(delb);tr.appendChild(cDel);
+      tb.appendChild(tr);refresh();
+    });
+    tbl.appendChild(tb);w.appendChild(tbl);prevWrap.appendChild(w);
+    const saveBtn=el('button','btn btn-primary','✓ Thêm tất cả vào nhập kho');saveBtn.style.marginTop='10px';
+    saveBtn.onclick=()=>{
+      const ok=pv.filter(r=>!r.removed&&r.code&&masterByCode[r.code.trim()]&&Number(r.qty)>0);
+      const skipped=pv.filter(r=>!r.removed).length-ok.length;
+      if(!ok.length){toast('Chưa có dòng nào khớp mã hợp lệ để lưu');return;}
+      if(!confirm('Thêm '+ok.length+' dòng vào Nhập kho '+whName(plantSel.value,slocSel.value)+' · tháng '+periodVN(perSel.value)+'?'+(skipped>0?'\n('+skipped+' dòng chưa khớp mã sẽ bị bỏ qua)':'')))return;
+      ok.forEach(r=>{const m=masterByCode[r.code.trim()];
+        const rec={id:uid('NK'),plant:plantSel.value,sloc:slocSel.value,code:m.code,name:m.name,uom:m.uom,qty:Number(r.qty),date:iDate.value,period:perSel.value,note:((iNote.value||'')+' [quét ảnh]').trim(),by:session.name,time:now()};
+        receipts.unshift(rec);learnMaterials([{code:rec.code,name:rec.name,uom:rec.uom}]);
+        dbIns('receipts',{id:rec.id,plant_code:rec.plant,sloc_code:rec.sloc,code:rec.code,name:rec.name,uom:rec.uom,qty:rec.qty,date:rec.date,period:rec.period,note:rec.note,created_by:rec.by});});
+      log('Nhập kho từ ảnh',ok.length+' dòng · '+whName(plantSel.value,slocSel.value)+' · kỳ '+periodVN(perSel.value));
+      toast('✓ Đã thêm '+ok.length+' dòng nhập kho');
+      prevWrap.innerHTML='';statusEl.innerHTML='';renderList();
+    };
+    prevWrap.appendChild(saveBtn);
+  }
   const listWrap=el('div');listWrap.style.marginTop='14px';b.appendChild(listWrap);
   function renderList(){
     listWrap.innerHTML='';
