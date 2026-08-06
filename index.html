@@ -302,6 +302,14 @@
     .topbar{padding:0 16px}
     .qty{width:88px}
   }
+  /* ===== Dark mode CHỈ cho tab Phân tích (.phroot) — mặc định sáng ===== */
+  .phroot{transition:background .25s ease,color .25s ease;color:var(--ink)}
+  .phroot.dark{--surface:#131c31;--surface-2:#1a2540;--bg:#0b1220;--ink:#eef1f8;--ink-soft:#cdd5e6;--muted:#9aa6bf;--faint:#7a8399;--line:rgba(255,255,255,.09);--line-strong:rgba(255,255,255,.16);--green-bg:rgba(31,138,84,.22);--red-bg:rgba(196,61,61,.20);--green-line:rgba(31,138,84,.45);background:#0b1220;padding:16px;border-radius:20px}
+  .phroot.dark .card{box-shadow:none}
+  .card.ph-ink{background:#0a0a0a;border-color:#0a0a0a}
+  .phroot.dark .card.ph-ink{background:linear-gradient(135deg,#0e5c55,#0a3d38);border-color:transparent}
+  .ph-toggle{display:inline-grid;place-items:center;width:36px;height:36px;border-radius:11px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink-soft);cursor:pointer;font-size:15px;transition:.15s}
+  .ph-toggle:hover{border-color:var(--brand);color:var(--brand)}
 </style>
 </head>
 <body>
@@ -947,7 +955,9 @@ function _phCard(title,sub,inner){const c=el('div','card');c.style.padding='18px
    ⚠️ DEMO PHÂN TÍCH — DATA ẢO, CHỈ USER ADMIN. XÓA CẢ HÀM NÀY
    + nhánh dispatch admin khi có data thật (kế toán/giám sát).
    ============================================================ */
-function renderPhantichDemo(v){
+function renderPhantichDemo(view){
+  const v=el('div','phroot');
+  if(localStorage.getItem('phDark')==='1')v.classList.add('dark');
   const D={period:'2026-07',lastday:'31/07/2026',
     wf:[{label:'Tồn đầu',val:12700,kind:'base'},{label:'+Nhập',val:7100,kind:'add'},{label:'+Chuyển đến',val:1800,kind:'add'},{label:'−Chuyển đi',val:1240,kind:'sub'},{label:'−Tiêu hao',val:17180,kind:'sub',big:true},{label:'Tồn cuối',val:3180,kind:'end'}],
     top:[{name:'Bia Tiger lon',val:2840},{name:'Coca Cola lon',val:2230},{name:'Nước suối 500ml',val:1850},{name:'Bò Úc phi lê (kg)',val:1260},{name:'Khoai tây (kg)',val:980},{name:'Phô mai lát',val:740}],
@@ -959,11 +969,14 @@ function renderPhantichDemo(v){
   const mark=e=>{rv.push(e);return e;};
   // header
   const head=el('div','page-head');
-  head.innerHTML=`<div><div style="font-size:10.5px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;color:var(--brand);display:inline-flex;align-items:center;gap:7px;margin-bottom:6px"><span style="width:6px;height:6px;border-radius:50%;background:var(--brand)"></span>Phân tích tồn kho · Kỳ ${periodVN(D.period)}</div><h1 style="font-size:24px;letter-spacing:-.5px;font-weight:800">Phân tích</h1><div class="ph-sub" style="color:var(--muted);font-size:13.5px;margin-top:2px">Dòng chảy tồn kho · tiêu hao · hao hụt · kỷ luật</div></div><div style="display:flex;gap:8px;align-items:center"><span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--accent-600);background:#FFFBF3;border:1px solid #F2DDB2;border-radius:20px;padding:5px 11px">● Dữ liệu mẫu</span></div>`;
+  head.innerHTML=`<div><div style="font-size:10.5px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;color:var(--brand);display:inline-flex;align-items:center;gap:7px;margin-bottom:6px"><span style="width:6px;height:6px;border-radius:50%;background:var(--brand)"></span>Phân tích tồn kho · Kỳ ${periodVN(D.period)}</div><h1 style="font-size:24px;letter-spacing:-.5px;font-weight:800">Phân tích</h1><div class="ph-sub" style="color:var(--muted);font-size:13.5px;margin-top:2px">Dòng chảy tồn kho · tiêu hao · hao hụt · kỷ luật</div></div><div class="ph-head-right" style="display:flex;gap:8px;align-items:center"><span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--accent-600);background:#FFFBF3;border:1px solid #F2DDB2;border-radius:20px;padding:5px 11px">● Dữ liệu mẫu</span></div>`;
+  const _tg=el('button','ph-toggle');_tg.type='button';const _si=()=>{_tg.innerHTML=v.classList.contains('dark')?'☀':'🌙';_tg.title=v.classList.contains('dark')?'Chuyển nền sáng':'Chuyển nền tối';};_si();
+  _tg.onclick=()=>{v.classList.toggle('dark');localStorage.setItem('phDark',v.classList.contains('dark')?'1':'0');_si();};
+  head.querySelector('.ph-head-right').appendChild(_tg);
   v.appendChild(head);
   // KPI (thẻ ink đen điểm nhấn + count-up)
   const kpi=el('div');kpi.style.cssText='display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px';
-  const kc=(lbl,to,suf,sub,dark,vcol,bd,bg)=>`<div class="card" style="padding:15px 16px;border-radius:16px${dark?';background:#0a0a0a;border-color:#0a0a0a':bd?';border-color:'+bd:''}${bg?';background:'+bg:''}"><div style="font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:${dark?'rgba(255,255,255,.5)':'var(--muted)'}">${lbl}</div><div class="ph-count" data-to="${to}" data-suf="${suf||''}" style="font-size:23px;font-weight:800;letter-spacing:-.5px;margin-top:5px;line-height:1;color:${vcol}">0</div><div style="font-size:11.5px;color:${dark?'rgba(255,255,255,.5)':'var(--muted)'};margin-top:5px">${sub}</div></div>`;
+  const kc=(lbl,to,suf,sub,ink,vcol,bd,bg)=>`<div class="card${ink?' ph-ink':''}" style="padding:15px 16px;border-radius:16px${!ink&&bd?';border-color:'+bd:''}${!ink&&bg?';background:'+bg:''}"><div style="font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:${ink?'rgba(255,255,255,.55)':'var(--muted)'}">${lbl}</div><div class="ph-count" data-to="${to}" data-suf="${suf||''}" style="font-size:23px;font-weight:800;letter-spacing:-.5px;margin-top:5px;line-height:1;color:${ink?'#fff':vcol}">0</div><div style="font-size:11.5px;color:${ink?'rgba(255,255,255,.55)':'var(--muted)'};margin-top:5px">${sub}</div></div>`;
   kpi.innerHTML=kc('Tiêu hao (xuất kho)',17180,'','214 mã · kỳ '+periodVN(D.period),true,'#fff')+kc('Nhập trong kỳ',8900,'','mua + chuyển đến',false,'var(--green)')+kc('Tồn cuối kỳ',3180,'','≈ 5 ngày tiêu hao',false,'var(--ink)')+kc('⚠ Bất thường',7,'','mã cần rà soát',false,'var(--red)','#F0C9C9','#FEF6F6')+kc('Hao hụt (chênh lệch)',34,'','mã lệch · 3 điểm bán',false,'var(--accent-600)','#F2DDB2','#FFFBF3');
   mark(kpi);v.appendChild(kpi);
   // Waterfall
@@ -990,6 +1003,7 @@ function renderPhantichDemo(v){
   const rows=[...D.disc].sort((a,b)=>((a.late?0:1)-(b.late?0:1))||a.days-b.days);
   kl.innerHTML=`<div style="font-weight:800;font-size:15px">⏱ Tiến độ &amp; kỷ luật hoàn thành kiểm kê</div><div style="font-size:12px;color:var(--muted);margin:2px 0 4px">Đánh giá bộ phận: đúng hạn · nhanh — kỳ ${periodVN(D.period)} · hạn chốt ${D.lastday}</div>${warnBox}<div style="font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:6px">Số ngày nộp sớm/trễ so hạn chốt</div>${svgDiverge(D.disc.map(d=>({name:d.name,days:d.days})))}<details style="margin-top:14px"><summary style="cursor:pointer;font-weight:700;color:var(--brand);font-size:13px">📋 Xem bảng xếp hạng chi tiết (${D.disc.length} bộ phận)</summary><div class="tbl-wrap" style="margin-top:10px"><table><thead><tr><th>Bộ phận</th><th>Nộp lúc</th><th style="text-align:center">So hạn</th><th style="text-align:center">Xếp loại</th></tr></thead><tbody>${rows.map(d=>`<tr><td class="cell-strong">${_esc(d.name)}</td><td style="font-size:12px${d.late?';color:var(--red)':''}">${d.submit}</td><td style="text-align:center;font-weight:700;color:${d.late?'var(--red)':'var(--green)'}">${d.days<0?'TRỄ '+(-d.days):'sớm '+d.days}</td><td style="text-align:center">${gb(d)}</td></tr>`).join('')}</tbody></table></div></details>`;
   mark(kl);v.appendChild(kl);
+  view.appendChild(v);
   // polish: count-up + reveal khi vào view
   requestAnimationFrame(()=>{
     const io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){e.target.style.opacity='1';e.target.style.transform='none';io.unobserve(e.target);}});},{threshold:.1});
