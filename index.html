@@ -406,6 +406,14 @@
   .tsnode .snm{font-size:12px;font-weight:700;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .tsnode .srole{font-size:9.5px;font-weight:800;color:#7A6FB0;text-transform:uppercase;letter-spacing:.3px}
   .tstaff-empty{margin-top:14px;font-size:11.5px;color:var(--muted);font-style:italic;text-align:center}
+  /* Hiệu ứng "dòng điện" chạy trong đường nối sơ đồ */
+  @keyframes wireFlow{0%{background-position:50% 220%}100%{background-position:50% -120%}}
+  .usr-chart .tbranches::before,.usr-chart .tcol::before,.usr-chart .tplants::before,.usr-chart .tstaff::before{
+    background:linear-gradient(180deg,var(--line-strong) 0%,var(--line-strong) 35%,#2fe3c4 48%,#eafff9 50%,#2fe3c4 52%,var(--line-strong) 65%,var(--line-strong) 100%);
+    background-size:100% 260%;animation:wireFlow 1.5s linear infinite}
+  html.dark .usr-chart .tbranches::before,html.dark .usr-chart .tcol::before,html.dark .usr-chart .tplants::before,html.dark .usr-chart .tstaff::before{
+    background:linear-gradient(180deg,rgba(255,255,255,.12) 0%,rgba(255,255,255,.12) 35%,#2fe3c4 48%,#d6fff6 50%,#2fe3c4 52%,rgba(255,255,255,.12) 65%,rgba(255,255,255,.12) 100%);
+    background-size:100% 260%}
 </style>
 <script>try{if(localStorage.getItem('appDark')==='1')document.documentElement.classList.add('dark');}catch(e){}</script>
 </head>
