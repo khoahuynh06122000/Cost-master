@@ -304,7 +304,8 @@
   }
   /* ===== Dark mode TOÀN APP (html.dark) — mặc định sáng ===== */
   html.dark{--background:#0b1220;--surface:#131c31;--surface-2:#1a2540;--bg:#0b1220;--ink:#eef1f8;--ink-soft:#cdd5e6;--muted:#9aa6bf;--faint:#7a8399;--line:rgba(255,255,255,.09);--line-strong:rgba(255,255,255,.16);--green-bg:rgba(31,138,84,.22);--red-bg:rgba(196,61,61,.20);--green-line:rgba(31,138,84,.45);--red:#ff6b6b}
-  html.dark body{background:var(--background)}
+  html.dark body{background:var(--background);color:var(--ink)}
+  html.dark .card,html.dark .stat,html.dark .note{color:var(--ink)}
   html.dark .content{background:var(--background);transition:background .25s ease}
   html.dark .topbar{background:#0b1220;border-bottom-color:rgba(255,255,255,.08)}
   html.dark .topbar .pt{color:#eef1f8}
@@ -1965,7 +1966,7 @@ function renderKiemke(v){
   const mgrid=el('div');mgrid.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px';
   function methodCard(ico,title,desc,active){
     const c=el('div');
-    c.style.cssText='border:1.5px solid '+(active?'var(--brand)':'var(--line)')+';border-radius:14px;padding:16px;cursor:pointer;background:'+(active?'#EEF9F4':'#fff')+';transition:border-color .15s,background .15s';
+    c.style.cssText='border:1.5px solid '+(active?'var(--brand)':'var(--line)')+';border-radius:14px;padding:16px;cursor:pointer;background:'+(active?'var(--surface-2)':'var(--surface)')+';transition:border-color .15s,background .15s';
     c.innerHTML=`<div style="font-size:26px;line-height:1;margin-bottom:8px">${ico}</div><div style="font-weight:800;font-size:15px;margin-bottom:4px">${title}${active?' <span class="badge badge-done" style="font-size:9px;vertical-align:middle">đang chọn</span>':''}</div><div style="font-size:12px;color:var(--muted);line-height:1.5">${desc}</div>`;
     return c;
   }
