@@ -4186,9 +4186,11 @@ function sapTransferRow(t){
   const fk=(t.fromKey&&t.fromKey!=='EXT')?String(t.fromKey).split('|'):['',''];
   const tk=(t.toKey&&t.toKey!=='EXT')?String(t.toKey).split('|'):['',''];
   const d=toSAPDate(t.date);const r=new Array(28).fill('');
-  r[0]=d;r[1]=d;r[2]='A07';r[3]='R10';r[4]=t.reason||'';r[5]='Z55';
+  const dmy=d.length>=5?d.slice(0,5):d; // 'DD.MM' từ ngày phiếu
+  const txt=((t.reason||'').trim()+' '+dmy).trim(); // Text = diễn giải + ngày (mẫu SAP)
+  r[0]=d;r[1]=d;r[2]='A07';r[3]='R10';r[4]=txt;r[5]='Z55';
   r[9]=String(t.code||'');r[10]=isFinite(Number(t.qty))?Number(t.qty):'';
-  r[12]=fk[0]||'';r[13]=fk[1]||'';r[14]='1368';r[16]=t.reason||'';
+  r[12]=fk[0]||'';r[13]=fk[1]||'';r[14]='1368';r[16]=txt;
   r[25]=tk[0]||'';r[26]=tk[1]||'';r[27]='1368';
   return r;
 }
@@ -4206,7 +4208,7 @@ function exportTransfersSAP(period){
 // Nạp phiếu điều chuyển MẪU (chỉ admin, chỉ trong RAM — KHÔNG ghi DB) để test xuất SAP. Reload là mất.
 function loadDemoTransfersSAP(){
   transfers=transfers.filter(t=>!t._demo); // xóa mẫu cũ nếu bấm lại
-  const per=curPeriod();const d=per+'-05';const dmy=toSAPDate(d).slice(0,5); // '05.08'
+  const per=curPeriod();const d=per+'-05'; // ngày phiếu mẫu (mùng 5 tháng hiện tại)
   const demo=[
     {code:'10196218',name:'Nước khoáng Sun Aqua 520ml/chai',uom:'CHA',qty:240,fromKey:'1035|2007',toKey:'2329|1000',route:'ĐC PLZ-1901'},
     {code:'10174040',name:'Vật tư 10174040',uom:'',qty:10,fromKey:'1035|2007',toKey:'1035|2006',route:'ĐC PLZ-B.PLZ'},
@@ -4215,7 +4217,7 @@ function loadDemoTransfersSAP(){
     {code:'10192049',name:'Vật tư 10192049',uom:'',qty:20.6,fromKey:'1035|2007',toKey:'1983|2202',route:'ĐC PLZ-TAIGA'}
   ];
   demo.forEach(x=>{const fk=x.fromKey.split('|'),tk=x.toKey.split('|');
-    transfers.unshift({date:d,code:x.code,name:x.name,uom:x.uom,qty:x.qty,reason:x.route+' '+dmy,
+    transfers.unshift({date:d,code:x.code,name:x.name,uom:x.uom,qty:x.qty,reason:x.route,
       from:'Plant '+fk[0]+' · Kho '+fk[1],to:'Plant '+tk[0]+' · Kho '+tk[1],
       fromKey:x.fromKey,toKey:x.toKey,period:per,user:session.name,time:now(),_demo:true});});
   log('Nạp data mẫu SAP (test)',demo.length+' phiếu · kỳ '+periodVN(per));
