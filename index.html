@@ -1612,7 +1612,14 @@ function renderDieuchuyenDash(v){
     perF.appendChild(perSel);
     const btn=el('button','btn btn-primary','📤 Xuất mẫu SAP');
     btn.onclick=()=>exportTransfersSAP(perSel.value);
-    bar.appendChild(perF);bar.appendChild(btn);eb.appendChild(bar);
+    bar.appendChild(perF);bar.appendChild(btn);
+    if(session&&session.role==='admin'){
+      const dbtn=el('button','btn btn-ghost','➕ Nạp 5 phiếu mẫu (test)');
+      dbtn.title='Nạp phiếu điều chuyển mẫu vào kỳ hiện tại để thử xuất — chỉ tạm, không lưu DB';
+      dbtn.onclick=()=>{loadDemoTransfersSAP();perSel.value=curPeriod();renderView();};
+      bar.appendChild(dbtn);
+    }
+    eb.appendChild(bar);
     expCard.appendChild(eb);v.appendChild(expCard);
   }
   const total=transfers.length;
@@ -4195,6 +4202,24 @@ function exportTransfersSAP(period){
   XLSX.writeFile(wb,'DieuChuyen_SAP_'+periodVN(period).replace('/','-')+'.xlsx');
   log('Xuất Excel SAP điều chuyển',list.length+' dòng · kỳ '+periodVN(period));
   toast('✓ Đã xuất '+list.length+' dòng điều chuyển (mẫu SAP)');
+}
+// Nạp phiếu điều chuyển MẪU (chỉ admin, chỉ trong RAM — KHÔNG ghi DB) để test xuất SAP. Reload là mất.
+function loadDemoTransfersSAP(){
+  transfers=transfers.filter(t=>!(t.reason&&t.reason.indexOf('(mẫu SAP)')>=0)); // xóa mẫu cũ nếu bấm lại
+  const per=curPeriod();const d=per+'-05';
+  const demo=[
+    {code:'10196218',name:'Nước khoáng Sun Aqua 520ml/chai',uom:'CHA',qty:240,fromKey:'1035|2007',toKey:'2329|1000',route:'ĐC PLZ-1901'},
+    {code:'10174040',name:'Vật tư 10174040',uom:'',qty:10,fromKey:'1035|2007',toKey:'1035|2006',route:'ĐC PLZ-B.PLZ'},
+    {code:'10218490',name:'Vật tư 10218490',uom:'',qty:8,fromKey:'1035|2007',toKey:'1048|2025',route:'ĐC PLZ-LHB'},
+    {code:'10252018',name:'Vật tư 10252018',uom:'',qty:96,fromKey:'1035|2007',toKey:'1048|2025',route:'ĐC PLZ-LHB'},
+    {code:'10192049',name:'Vật tư 10192049',uom:'',qty:20.6,fromKey:'1035|2007',toKey:'1983|2202',route:'ĐC PLZ-TAIGA'}
+  ];
+  demo.forEach(x=>{const fk=x.fromKey.split('|'),tk=x.toKey.split('|');
+    transfers.unshift({date:d,code:x.code,name:x.name,uom:x.uom,qty:x.qty,reason:x.route+' (mẫu SAP)',
+      from:'Plant '+fk[0]+' · Kho '+fk[1],to:'Plant '+tk[0]+' · Kho '+tk[1],
+      fromKey:x.fromKey,toKey:x.toKey,period:per,user:session.name,time:now()});});
+  log('Nạp data mẫu SAP (test)',demo.length+' phiếu · kỳ '+periodVN(per));
+  toast('✓ Đã nạp '+demo.length+' phiếu mẫu — chỉ TẠM, không lưu DB (reload sẽ mất)');
 }
 
 /* ============ LOGIN FX (spotlight reveal — vanilla, không CDN) ============ */
