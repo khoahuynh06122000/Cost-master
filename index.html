@@ -597,6 +597,36 @@ const TABS={
 
 let session=null,activeTab=null;
 let submissions=[],drafts={},transfers=[],auditLog=[];
+
+/* ===== NHÁP BỀN: số đang nhập được lưu vào máy, reload/mất mạng vẫn còn ===== */
+const DRAFT_LS='kk_drafts_v1';
+let _draftsRestored=0;
+function draftCount(){let n=0;try{Object.values(drafts||{}).forEach(d=>Object.values((d&&d.items)||{}).forEach(v=>{if(v!==''&&v!=null)n++;}));}catch(e){}return n;}
+function saveDrafts(){try{localStorage.setItem(DRAFT_LS,JSON.stringify({at:Date.now(),d:drafts}));}catch(e){}}
+let _dsT=null;function saveDraftsSoon(){clearTimeout(_dsT);_dsT=setTimeout(saveDrafts,400);}
+function loadDrafts(){
+  try{const raw=localStorage.getItem(DRAFT_LS);if(!raw)return;const o=JSON.parse(raw);
+    if(o&&o.d&&(Date.now()-(o.at||0))<1000*60*60*24*30){drafts=o.d;_draftsRestored=draftCount();}
+  }catch(e){}
+}
+/* ===== CHẨN ĐOÁN: trang có tự tải lại không? (in ra console + báo cho người dùng) ===== */
+let _navOK=false; // true = mình chủ động rời trang (đăng xuất) -> không hỏi lại
+(function(){try{
+  const arr=JSON.parse(sessionStorage.getItem('kk_boots')||'[]');arr.push(Date.now());
+  while(arr.length>20)arr.shift();sessionStorage.setItem('kk_boots',JSON.stringify(arr));
+  const gaps=arr.slice(1).map((t,i)=>Math.round((t-arr[i])/1000));
+  const nav=(performance.getEntriesByType&&performance.getEntriesByType('navigation')[0])||{};
+  window.__kkBoot={n:arr.length,gaps,type:nav.type||'?'};
+  console.log('[KK] Tải trang lần thứ '+arr.length+' trong tab này · kiểu: '+(nav.type||'?')+' · khoảng cách (giây):',gaps);
+  if(arr.length>1&&(Date.now()-arr[arr.length-2])<120000)
+    window.__kkAutoReload={n:arr.length,gap:Math.round((Date.now()-arr[arr.length-2])/1000),type:nav.type||'?'};
+}catch(e){}})();
+window.addEventListener('beforeunload',e=>{
+  if(_navOK)return;
+  const n=draftCount();
+  if(!n&&!(typeof shiftEntry!=='undefined'&&shiftEntry)&&!(typeof ocrPreviewOpen!=='undefined'&&ocrPreviewOpen))return;
+  e.preventDefault();e.returnValue='';return '';
+});
 let openingStock={};   // key plant|sloc -> {items:{code:qty}, fromId, at, by}
 let receipts=[];       // nhập kho mua mới: {id,plant,sloc,code,name,uom,qty,date,period,note,by,time}
 let reports=[];        // báo cáo quản trị do Kế toán viên tạo (Claude) -> Kế toán trưởng đọc
@@ -810,7 +840,11 @@ let recoveryMode=false;
 if(sb){try{sb.auth.onAuthStateChange((event)=>{if(event==='PASSWORD_RECOVERY'){recoveryMode=true;showAuth('reset');}});}catch(e){console.error(e);}}
 
 let ocrPreviewOpen=false; // đang xem bảng preview quét ảnh (chưa bấm lưu) -> chặn polling re-render xóa mất
-function inEntry(){return counting||shiftEntry||ocrPreviewOpen;} // đang nhập dở thì không tự re-render
+// đang gõ / đang có ô nhập chưa lưu -> TUYỆT ĐỐI không tự vẽ lại
+function typingNow(){try{const a=document.activeElement;return !!(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName));}catch(e){return false;}}
+function viewHasTyped(){try{return Array.prototype.some.call(document.querySelectorAll('#view input, #view textarea'),
+  i=>i.type!=='file'&&i.type!=='checkbox'&&i.type!=='radio'&&String(i.value||'').trim()!=='');}catch(e){return false;}}
+function inEntry(){return !!(counting||shiftEntry||ocrPreviewOpen||typingNow()||viewHasTyped());}
 async function fetchAllRows(table,cols){
   const out=[];let from=0;const step=1000;
   for(;;){
@@ -857,14 +891,21 @@ async function dbLoadAll(){
 function fmt(ts){try{return new Date(ts).toLocaleString('vi-VN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit',year:'numeric'});}catch(e){return ts||'';}}
 function dbSubscribe(){
   if(!sb)return;
-  // (1) Realtime qua WebSocket — chạy được thì cập nhật tức thời
-  try{sb.channel('sync').on('postgres_changes',{event:'*',schema:'public'},()=>{
-    clearTimeout(window._syncT);
-    window._syncT=setTimeout(async()=>{await dbLoadAll();if(session&&!inEntry())renderView();},400);
-  }).subscribe();}catch(e){console.error('realtime',e);}
-  // (2) Đã bỏ auto-refresh 25s: khi người khác cập nhật số, người đang mở chỉ cần F5 để lấy dữ liệu mới
-  //     (tránh việc đang nhập/điền file bị vẽ lại làm mất dữ liệu đang gõ)
+  // (1) KHÔNG dùng Realtime WebSocket nữa.
+  //     Lý do: mạng công ty chặn *.supabase.co nên phải đi vòng qua Vercel (/sb), mà Vercel rewrite
+  //     KHÔNG chuyển tiếp được WebSocket -> supabase-js thử lại vô hạn (1s/2s/5s/5s...), console đầy
+  //     lỗi "WebSocket connection failed" và trang bị giật/nhá liên tục ~5s một lần.
+  //     Đồng bộ chuyển sang HTTP (bên dưới), vẫn qua /sb nên không bị chặn.
   clearInterval(window._pollT);
+  // (2) Đồng bộ nhẹ 45s: chỉ TẢI dữ liệu; chỉ vẽ lại khi người dùng KHÔNG đang nhập gì
+  window._pollT=setInterval(async()=>{
+    if(!session||document.visibilityState!=='visible')return;
+    try{
+      await dbLoadAll();
+      if(inEntry())showFreshPill();   // đang nhập dở -> không vẽ lại, chỉ hiện nút "Làm mới"
+      else{const y=window.scrollY;renderView();window.scrollTo(0,y);} // giữ nguyên vị trí đang xem
+    }catch(e){console.warn('sync',e);}
+  },45000);
   // (3) Quay lại tab -> làm mới ngay
   if(!window._visBound){window._visBound=true;
     document.addEventListener('visibilitychange',async()=>{
@@ -872,7 +913,18 @@ function dbSubscribe(){
     });
   }
 }
-// các hàm ghi (đẩy lên Supabase; realtime sẽ đồng bộ các thiết bị khác)
+// Nút nổi "Có dữ liệu mới — Làm mới": dùng khi đã tải xong dữ liệu mới nhưng người dùng đang nhập dở
+function showFreshPill(){
+  if(document.getElementById('freshPill'))return;
+  const b=document.createElement('button');b.id='freshPill';b.type='button';
+  b.textContent='🔄 Có dữ liệu mới — bấm để làm mới';
+  b.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:86px;z-index:9999;border:0;cursor:pointer;'
+    +'padding:10px 16px;border-radius:999px;background:#0E5C55;color:#fff;font:600 13px/1.2 inherit;box-shadow:0 8px 24px rgba(0,0,0,.25)';
+  b.onclick=()=>{b.remove();renderView();};
+  document.body.appendChild(b);
+}
+function hideFreshPill(){const b=document.getElementById('freshPill');if(b)b.remove();}
+// các hàm ghi (đẩy lên Supabase; đồng bộ 45s sẽ cập nhật các thiết bị khác)
 async function dbIns(table,row){if(!sb)return;const {error}=await sb.from(table).insert(row);if(error){console.error(table,error);toast('Lỗi lưu máy chủ: '+error.message);}}
 async function dbUpd(table,match,patch){if(!sb)return;const {error}=await sb.from(table).update(patch).match(match);if(error){console.error(table,error);toast('Lỗi cập nhật: '+error.message);}}
 async function dbDel(table,match){if(!sb)return;const {error}=await sb.from(table).delete().match(match);if(error){console.error(table,error);}}
@@ -995,6 +1047,9 @@ function enterApp(){
   stopLoginFX();
   $('#login').classList.add('hidden');$('#app').classList.remove('hidden');
   $('#userName').textContent=session.name;$('#userRole').textContent=ROLES[session.role].label;$('#userAv').textContent=initials(session.name);
+  loadDrafts(); // khôi phục số đang nhập dở (nếu trang bị tải lại)
+  if(_draftsRestored)setTimeout(()=>toast('↩ Đã khôi phục '+_draftsRestored+' mã đang nhập dở (nháp lưu trên máy)'),900);
+  if(window.__kkAutoReload)setTimeout(()=>toast('⚠ Trang vừa tự tải lại sau '+window.__kkAutoReload.gap+'s (kiểu: '+window.__kkAutoReload.type+')'),1800);
   activeTab=ROLES[session.role].tabs[0];renderNav();
   $('#view').innerHTML='<div class="empty"><div class="big">Đang tải dữ liệu…</div></div>';
   dbLoadAll().then(()=>{if(pendingKK){try{applyDeepLinkKK(pendingKK);}catch(e){console.error(e);}pendingKK=null;}renderView();dbSubscribe();
@@ -1007,7 +1062,7 @@ function enterApp(){
     }
   });
 }
-async function doLogout(){try{await sb.auth.signOut();}catch(e){}location.reload();}
+async function doLogout(){_navOK=true;try{await sb.auth.signOut();}catch(e){}location.reload();}
 function logout(){doLogout();}
 
 /* nav drawer */
@@ -1203,6 +1258,7 @@ function toggleDark(){const d=document.documentElement.classList.toggle('dark');
 (function(){const b=document.getElementById('darkToggle');if(b)b.textContent=document.documentElement.classList.contains('dark')?'☀':'🌙';})();
 function renderView(){
   ocrPreviewOpen=false; // vẽ lại màn = preview quét cũ (nếu có) bị bỏ; tránh kẹt cờ chặn polling
+  hideFreshPill();
   const v=$('#view');v.innerHTML='';
   v.classList.toggle('wide',activeTab==='dieuhanh'||activeTab==='phantich');
   $('#pageTitle').textContent=TABS[activeTab].title;
@@ -2065,7 +2121,7 @@ function renderCountSheet(v){
       function commit(redrawTags){
         if(inp.value===''){delete items[m.code];inp.classList.remove('filled');r.classList.remove('on');}
         else{items[m.code]=inp.value;inp.classList.add('filled');r.classList.add('on');}
-        updateCnt();autosaved();
+        updateCnt();autosaved();saveDraftsSoon(); // lưu nháp xuống máy -> reload vẫn còn số
         if(redrawTags){const d=devHigh(m);inp.classList.toggle('warn',d);}
       }
       inp.oninput=()=>commit(false);
@@ -2088,13 +2144,13 @@ function renderCountSheet(v){
   // ----- File template + import wiring -----
   $('#btnTpl').onclick=()=>downloadTemplate();
   $('#btnUp').onclick=()=>$('#fileInput').click();
-  $('#fileInput').onchange=e=>{const f=e.target.files[0];if(f)importCountFile(f,items,()=>{renderList($('#searchBox').value);updateCnt();autosaved();});e.target.value='';};
+  $('#fileInput').onchange=e=>{const f=e.target.files[0];if(f)importCountFile(f,items,()=>{renderList($('#searchBox').value);updateCnt();autosaved();saveDrafts();});e.target.value='';};
 
   const act=el('div','sticky-actions');const rowb=el('div','btn-row');
   const bDraft=el('button','btn btn-ghost','<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Lưu nháp');
   const bXls=el('button','btn btn-ghost','📥 Xuất biên bản (in ký)');
   const bDone=el('button','btn btn-primary','<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Hoàn thành & Gửi');
-  bDraft.onclick=()=>{log('Lưu nháp kiểm kê',`${whName(counting.plant,counting.sloc)} · ${filled()} mã`);autosaved();toast('Đã lưu nháp '+filled()+' mã');};
+  bDraft.onclick=()=>{saveDrafts();log('Lưu nháp kiểm kê',`${whName(counting.plant,counting.sloc)} · ${filled()} mã`);autosaved();toast('Đã lưu nháp '+filled()+' mã (giữ được cả khi tải lại trang)');};
   bXls.onclick=()=>{
     const n=filled();if(n===0){toast('Chưa nhập mã nào để xuất');return;}
     const clean={};Object.entries(items).forEach(([c,val])=>{if(val!==''&&val!=null)clean[c]=Number(val);});
@@ -2115,7 +2171,7 @@ function renderCountSheet(v){
       await insSubmissionSafe(sub);
       submissions.unshift(sub);log('Gửi phiếu kiểm kê',`${sub.id} · ${whName(sub.plant,sub.sloc)} · kỳ ${periodVN(sub.period)} · ${n} mã`);
       learnMaterials(MATS);
-      delete drafts[key];counting=null;toast('Đã gửi phiếu '+sub.id+' ('+n+' mã)');renderView();
+      delete drafts[key];saveDrafts();counting=null;toast('Đã gửi phiếu '+sub.id+' ('+n+' mã)');renderView();
     })();};
   rowb.appendChild(bDraft);rowb.appendChild(bXls);rowb.appendChild(bDone);act.appendChild(rowb);v.appendChild(act);
 }
