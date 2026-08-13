@@ -504,6 +504,7 @@
         <label class="field2"><span>Họ tên</span><input id="regName" class="input2" placeholder="VD: Nguyễn Văn A"></label>
         <label class="field2"><span>Email</span><input id="regEmail" class="input2" type="email" placeholder="ban@sunworld.vn"></label>
         <label class="field2"><span>Mật khẩu</span><input id="regPass" class="input2" type="password" placeholder="ít nhất 6 ký tự"></label>
+        <label class="field2"><span>Điểm bán bạn làm việc <span style="opacity:.6;font-weight:400">— để quản trị gắn đúng kho</span></span><select id="regPlant" class="input2"></select></label>
         <button class="btn btn-primary btn-block" style="margin-top:16px" onclick="doSignUp()">Đăng ký</button>
         <div id="authMsg2" class="auth-msg"></div>
         <div class="auth-switch">Đã có tài khoản? <a onclick="showAuth('login')">Đăng nhập</a></div>
@@ -959,12 +960,16 @@ async function dbUpsertOpening(plant,sloc,obj){if(!sb)return;const {error}=await
 async function dbUpsertCountList(plant,sloc,period,items){if(!sb)return;const {error}=await sb.from('count_lists').upsert({plant_code:plant,sloc_code:sloc,period,items,created_by:session.name,created_at:new Date().toISOString()});if(error){console.error('count_lists',error);toast('Lỗi lưu danh sách kiểm kê: '+error.message);}}
 
 /* ============ LOGIN ============ */
+function fillRegPlants(){const s=$('#regPlant');if(!s||s._filled)return;s._filled=true;
+  const o0=el('option',null,'— Chọn điểm bán —');o0.value='';s.appendChild(o0);
+  plantsList().forEach(p=>{const o=el('option',null,p.name);o.value=p.plant;s.appendChild(o);});}
 function showAuth(w){
   $('#authLogin').classList.toggle('hidden',w!=='login');
   $('#authReg').classList.toggle('hidden',w!=='reg');
   $('#authPending').classList.toggle('hidden',w!=='pending');
   $('#authForgot').classList.toggle('hidden',w!=='forgot');
   $('#authReset').classList.toggle('hidden',w!=='reset');
+  if(w==='reg')fillRegPlants();
 }
 // gửi link đặt lại mật khẩu về email
 async function doForgot(){
@@ -1019,6 +1024,7 @@ async function doSignIn(){
 }
 async function doSignUp(){
   const name=$('#regName').value.trim(),email=$('#regEmail').value.trim(),pass=$('#regPass').value;
+  const reqPlant=($('#regPlant')&&$('#regPlant').value)||'';
   const msg=$('#authMsg2');msg.textContent='';
   if(!name||!email||!pass){msg.textContent='Điền đủ họ tên, email, mật khẩu.';return;}
   if(pass.length<6){msg.textContent='Mật khẩu tối thiểu 6 ký tự.';return;}
@@ -1032,7 +1038,7 @@ async function doSignUp(){
     return;
   }
   // đảm bảo có dòng profiles (phòng khi trigger chưa tạo)
-  try{if(data.user)await sb.from('profiles').upsert({id:data.user.id,email,full_name:name,status:'pending'},{onConflict:'id'});}catch(e){}
+  try{if(data.user)await sb.from('profiles').upsert({id:data.user.id,email,full_name:name,status:'pending',requested_plant:reqPlant||null},{onConflict:'id'});}catch(e){}
   msg.textContent='';
   $('#authMsg').textContent='✓ Đăng ký thành công! Chờ quản trị gán quyền, rồi đăng nhập.';
   showAuth('login');$('#liEmail').value=email;
@@ -3852,6 +3858,14 @@ function openUserDrawer(view,p){
   const assigned=new Set(userPlants[p.id]||[]);
   dr.innerHTML=`<div class="udh"><div><div class="t">${_esc(p.full_name||'(chưa đặt tên)')}</div><div class="e">${_esc(p.email||'')}</div></div><button class="udx">✕</button></div><div class="udb"></div><div class="udf"></div>`;
   const dbb=dr.querySelector('.udb');
+  if(p.requested_plant){
+    const info=el('div','ufld');info.innerHTML='<span>Điểm bán người dùng đăng ký</span>';
+    const b=el('div');b.style.cssText='display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px;padding:9px 11px;background:var(--surface-2);border-left:3px solid var(--brand);border-radius:0 8px 8px 0';
+    b.innerHTML='<span>📍 <b>'+_esc(plantName(p.requested_plant))+'</b> <span style="color:var(--muted)">('+_esc(p.requested_plant)+')</span></span>';
+    const pick=el('button','btn btn-ghost btn-sm','✓ Tích kho này');pick.style.marginLeft='auto';
+    pick.onclick=()=>{const cb=box.querySelector('input[value="'+p.requested_plant+'"]');if(cb){if(!cb.checked){cb.checked=true;cb.dispatchEvent(new Event('change'));}ski.value='';ski.dispatchEvent(new Event('input'));cb.closest('.ukitem').scrollIntoView({block:'center'});toast('Đã tích '+plantName(p.requested_plant));}else toast('Kho này không có trong danh sách');};
+    b.appendChild(pick);info.appendChild(b);dbb.appendChild(info);
+  }
   const rf=el('label','ufld','<span>Vai trò</span>');const rsel=el('select','usel');
   ROLE_OPTS.forEach(([v,l])=>{const o=el('option',null,l);o.value=v;if((p.role||'')===v)o.selected=true;rsel.appendChild(o);});rf.appendChild(rsel);dbb.appendChild(rf);
   const sf=el('label','ufld','<span>Trạng thái</span>');const ssel=el('select','usel');
