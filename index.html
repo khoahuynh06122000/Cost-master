@@ -863,6 +863,9 @@ function typingNow(){try{const a=document.activeElement;return !!(a&&/^(INPUT|TE
 function viewHasTyped(){try{return Array.prototype.some.call(document.querySelectorAll('#view input, #view textarea'),
   i=>i.type!=='file'&&i.type!=='checkbox'&&i.type!=='radio'&&String(i.value||'').trim()!=='');}catch(e){return false;}}
 function inEntry(){return !!(counting||shiftEntry||ocrPreviewOpen||typingNow()||viewHasTyped());}
+// Chữ ký dữ liệu để phát hiện có thay đổi thật (thêm/sửa/xóa/duyệt) sau mỗi lần tải ngầm
+function syncSig(){try{return [submissions,transfers,receipts,closings,spotChecks,shifts,notifications]
+  .map(a=>Array.isArray(a)?a.length+':'+JSON.stringify(a).length:'0').join('|')+'|op'+Object.keys(openingStock||{}).length;}catch(e){return '';}}
 async function fetchAllRows(table,cols){
   const out=[];let from=0;const step=1000;
   for(;;){
@@ -915,19 +918,24 @@ function dbSubscribe(){
   //     lỗi "WebSocket connection failed" và trang bị giật/nhá liên tục ~5s một lần.
   //     Đồng bộ chuyển sang HTTP (bên dưới), vẫn qua /sb nên không bị chặn.
   clearInterval(window._pollT);
-  // (2) Đồng bộ nhẹ 45s: chỉ TẢI dữ liệu; chỉ vẽ lại khi người dùng KHÔNG đang nhập gì
+  // (2) Đồng bộ nhẹ 45s: chỉ TẢI dữ liệu ngầm. TUYỆT ĐỐI KHÔNG tự vẽ lại (tránh nhảy màn).
+  //     Nếu có thay đổi thật -> chỉ hiện nút "Có dữ liệu mới" để người dùng chủ động bấm.
   window._pollT=setInterval(async()=>{
     if(!session||document.visibilityState!=='visible')return;
     try{
+      const before=syncSig();
       await dbLoadAll();
-      if(inEntry())showFreshPill();   // đang nhập dở -> không vẽ lại, chỉ hiện nút "Làm mới"
-      else{const y=window.scrollY;renderView();window.scrollTo(0,y);} // giữ nguyên vị trí đang xem
+      if(syncSig()!==before)showFreshPill();   // có gì mới -> hiện nút; không đổi -> im lặng
     }catch(e){console.warn('sync',e);}
   },45000);
-  // (3) Quay lại tab -> làm mới ngay
+  // (3) Quay lại tab -> tải ngầm; có mới thì hiện nút, KHÔNG tự vẽ lại
   if(!window._visBound){window._visBound=true;
     document.addEventListener('visibilitychange',async()=>{
-      if(document.visibilityState==='visible'&&session&&!inEntry()){try{await dbLoadAll();renderView();}catch(e){}}
+      if(document.visibilityState==='visible'&&session){
+        const before=syncSig();
+        try{await dbLoadAll();}catch(e){}
+        if(syncSig()!==before)showFreshPill();
+      }
     });
   }
 }
@@ -1275,6 +1283,7 @@ function toggleDark(){const d=document.documentElement.classList.toggle('dark');
 (function(){const b=document.getElementById('darkToggle');if(b)b.textContent=document.documentElement.classList.contains('dark')?'☀':'🌙';})();
 function renderView(){
   ocrPreviewOpen=false; // vẽ lại màn = preview quét cũ (nếu có) bị bỏ; tránh kẹt cờ chặn polling
+  hideFreshPill();      // vẽ lại màn = đã cập nhật -> gỡ nút "có dữ liệu mới" nếu còn
   hideFreshPill();
   const v=$('#view');v.innerHTML='';
   v.classList.toggle('wide',activeTab==='dieuhanh'||activeTab==='phantich');
