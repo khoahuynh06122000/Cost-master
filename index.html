@@ -638,18 +638,7 @@ function loadDrafts(){
     if(o&&o.d&&(Date.now()-(o.at||0))<1000*60*60*24*30){drafts=o.d;_draftsRestored=draftCount();}
   }catch(e){}
 }
-/* ===== CHẨN ĐOÁN: trang có tự tải lại không? (in ra console + báo cho người dùng) ===== */
 let _navOK=false; // true = mình chủ động rời trang (đăng xuất) -> không hỏi lại
-(function(){try{
-  const arr=JSON.parse(sessionStorage.getItem('kk_boots')||'[]');arr.push(Date.now());
-  while(arr.length>20)arr.shift();sessionStorage.setItem('kk_boots',JSON.stringify(arr));
-  const gaps=arr.slice(1).map((t,i)=>Math.round((t-arr[i])/1000));
-  const nav=(performance.getEntriesByType&&performance.getEntriesByType('navigation')[0])||{};
-  window.__kkBoot={n:arr.length,gaps,type:nav.type||'?'};
-  console.log('[KK] Tải trang lần thứ '+arr.length+' trong tab này · kiểu: '+(nav.type||'?')+' · khoảng cách (giây):',gaps);
-  if(arr.length>1&&(Date.now()-arr[arr.length-2])<120000)
-    window.__kkAutoReload={n:arr.length,gap:Math.round((Date.now()-arr[arr.length-2])/1000),type:nav.type||'?'};
-}catch(e){}})();
 window.addEventListener('beforeunload',e=>{
   if(_navOK)return;
   const n=draftCount();
@@ -1078,7 +1067,6 @@ function enterApp(){
   $('#userName').textContent=session.name;$('#userRole').textContent=ROLES[session.role].label;$('#userAv').textContent=initials(session.name);
   loadDrafts(); // khôi phục số đang nhập dở (nếu trang bị tải lại)
   if(_draftsRestored)setTimeout(()=>toast('↩ Đã khôi phục '+_draftsRestored+' mã đang nhập dở (nháp lưu trên máy)'),900);
-  if(window.__kkAutoReload)setTimeout(()=>toast('⚠ Trang vừa tự tải lại sau '+window.__kkAutoReload.gap+'s (kiểu: '+window.__kkAutoReload.type+')'),1800);
   activeTab=ROLES[session.role].tabs[0];renderNav();
   $('#view').innerHTML='<div class="empty"><div class="big">Đang tải dữ liệu…</div></div>';
   dbLoadAll().then(()=>{if(pendingKK){try{applyDeepLinkKK(pendingKK);}catch(e){console.error(e);}pendingKK=null;}renderView();dbSubscribe();
@@ -1821,6 +1809,13 @@ function opDashList(v){
   card.appendChild(body);v.appendChild(card);
 }
 // Chi tiết tồn kho 1 điểm bán + tải Excel
+// Lấy giải trình của kế toán (từ bản chốt tồn nguồn) cho 1 kho tồn đầu kỳ -> {mã: lý do}
+function explainForOpening(plant,sloc,val){
+  const fid=String(val&&val.fromId||'');
+  const m=fid.match(/(\d{1,2})\/(\d{4})/); // "CHỐT TỒN THÁNG 07/2026 (KT)" -> 2026-07
+  if(m){const period=m[2]+'-'+String(m[1]).padStart(2,'0');const cl=closingByKey(plant,sloc,period);if(cl&&cl.explain&&Object.keys(cl.explain).length)return cl.explain;}
+  return {};
+}
 function showOpeningDetail(plant,sloc,val){
   const rows=Object.entries(val.items||{}).map(([code,qty])=>{const m=masterByCode[code]||DATA.materials.find(x=>x.code===code)||{name:code,uom:''};return {code,qty,name:m.name,uom:m.uom};})
     .sort((a,b)=>a.name.localeCompare(b.name,'vi'));
@@ -1829,13 +1824,34 @@ function showOpeningDetail(plant,sloc,val){
   const card=el('div','card');
   card.appendChild(el('div','card-h',`<div><span class="ct">${whName(plant,sloc)} · ${rows.length} mã</span><div class="cs">${plantName(plant)} · Sloc ${sloc} · Chốt từ ${val.fromId||''} · ${val.at||''} · Người chốt ${val.by||''}</div></div>`));
   const bar=el('div');bar.style.cssText='padding:14px 20px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center';
+  const explain=explainForOpening(plant,sloc,val);
+  const exCount=rows.filter(r=>explain[r.code]).length;
   const bXls=el('button','btn btn-primary btn-sm','📥 Tải Excel kho này');
   bXls.onclick=()=>exportOpeningStock(plant,sloc,rows,val);
-  bar.appendChild(bXls);card.appendChild(bar);
+  bar.appendChild(bXls);
+  if(exCount)bar.appendChild(el('span','badge badge-soft','📝 '+exCount+' mã có giải trình của kế toán'));
+  card.appendChild(bar);
   const w=el('div','tbl-wrap');const tbl=el('table');
   tbl.innerHTML=`<thead><tr><th>Mã hàng</th><th>Tên hàng</th><th>ĐVT</th><th class="num">Tồn đầu kỳ</th></tr></thead>`;
   const tb=el('tbody');
-  rows.forEach(r=>tb.appendChild(el('tr',null,`<td class="tnum">${r.code}</td><td>${r.name}</td><td><span class="badge badge-uom">${r.uom}</span></td><td class="num cell-strong tnum">${r.qty}</td>`)));
+  rows.forEach(r=>{
+    const tr=el('tr');
+    tr.appendChild(el('td','tnum',r.code));
+    const tdName=el('td',null,`<div>${r.name}</div>`);
+    const ex=explain[r.code];
+    if(ex){
+      const note=el('div');note.style.cssText='font-size:11px;font-weight:700;color:var(--accent-600);margin-top:3px;cursor:pointer;user-select:none';
+      note.textContent='📝 Giải trình của kế toán (bấm xem)';
+      const full=el('div');full.style.cssText='display:none;font-size:12px;color:var(--ink-soft);margin-top:4px;padding:7px 10px;background:var(--surface-2);border-left:3px solid var(--accent);border-radius:0 6px 6px 0;white-space:pre-line';
+      full.textContent=ex;
+      note.onclick=()=>{const op=full.style.display==='none';full.style.display=op?'block':'none';note.textContent=op?'📝 Ẩn giải trình':'📝 Giải trình của kế toán (bấm xem)';};
+      tdName.appendChild(note);tdName.appendChild(full);
+    }
+    tr.appendChild(tdName);
+    tr.appendChild(el('td',null,`<span class="badge badge-uom">${r.uom}</span>`));
+    tr.appendChild(el('td','num cell-strong tnum',String(r.qty)));
+    tb.appendChild(tr);
+  });
   tbl.appendChild(tb);w.appendChild(tbl);card.appendChild(w);
   v.appendChild(card);
   window.scrollTo(0,0);
