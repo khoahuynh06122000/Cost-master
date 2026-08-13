@@ -1095,13 +1095,27 @@ function openNav(){$('#sidebar').classList.add('open');$('#scrim').classList.add
 function closeNav(){$('#sidebar').classList.remove('open');$('#scrim').classList.remove('show');}
 
 /* ============ NAV ============ */
+// Gom các chức năng thành nhóm có tiêu đề (giữ đúng tab từng vai; nhóm rỗng tự ẩn)
+const NAV_GROUPS=[
+  {label:'Tổng quan',           keys:['dieuhanh','phantich','sodo']},
+  {label:'Nghiệp vụ hàng ngày', keys:['kiemke','dieuchuyen','shift','spotcheck']},
+  {label:'Tồn kho & danh mục',  keys:['opening','catalog']},
+  {label:'Báo cáo',             keys:['baocao']},
+  {label:'Hệ thống',            keys:['users','audit']},
+];
 function renderNav(){
-  const n=$('#sbNav');n.innerHTML='<div class="sb-label">Chức năng</div>';
-  ROLES[session.role].tabs.forEach(k=>{
-    const b=el('button','nav-item'+(k===activeTab?' active':''),`${TABS[k].ico}<span>${TABS[k].label}</span>`);
-    b.onclick=()=>{activeTab=k;closeNav();renderNav();renderView();};
-    n.appendChild(b);
+  const n=$('#sbNav');n.innerHTML='';
+  const mine=ROLES[session.role].tabs;const used=new Set();
+  const addItem=k=>{const b=el('button','nav-item'+(k===activeTab?' active':''),`${TABS[k].ico}<span>${TABS[k].label}</span>`);
+    b.onclick=()=>{activeTab=k;closeNav();renderNav();renderView();};n.appendChild(b);};
+  NAV_GROUPS.forEach(g=>{
+    const ks=g.keys.filter(k=>mine.includes(k)&&TABS[k]);
+    if(!ks.length)return;
+    n.appendChild(el('div','sb-label',g.label));
+    ks.forEach(k=>{used.add(k);addItem(k);});
   });
+  const other=mine.filter(k=>!used.has(k)&&TABS[k]); // tab lạ chưa xếp nhóm -> nhóm Khác (an toàn)
+  if(other.length){n.appendChild(el('div','sb-label','Khác'));other.forEach(k=>{used.add(k);addItem(k);});}
 }
 /* ============ PHÂN TÍCH (thay Tổng hợp + Tiến độ) ============ */
 function _parseVNTime(t){const m=String(t||'').match(/(\d{2})\/(\d{2})\/(\d{4})/);return m?new Date(+m[3],+m[2]-1,+m[1]):null;}
