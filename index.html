@@ -2503,7 +2503,9 @@ function dcNapExcel(v){
   {
     const impCard=el('div','card');const ib=el('div','card-b');
     ib.innerHTML=`<div class="section-eyebrow">📥 Nhập điều chuyển từ Excel</div><div style="font-size:12px;color:var(--muted);margin:6px 0 10px">Tải file điều chuyển từ SharePoint về (Tệp → Tải xuống → Excel/CSV) rồi nạp vào đây. Cột: <b>Ngày · Mã hàng · Tên hàng · ĐVT · Số lượng · Từ (Plant/Sloc) · Đến (Plant/Sloc) · Diễn giải</b>.</div>`;
-    const fin=el('input');fin.type='file';fin.accept='.xlsx,.xls,.csv';fin.style.fontSize='12.5px';
+    const bTpl=el('button','btn btn-ghost btn-sm','📄 Tải file mẫu (.xlsx)');bTpl.style.marginBottom='12px';bTpl.onclick=downloadTransferTemplate;
+    ib.appendChild(bTpl);
+    const fin=el('input');fin.type='file';fin.accept='.xlsx,.xls,.csv';fin.style.fontSize='12.5px';fin.style.display='block';
     const prev=el('div');prev.style.marginTop='10px';
     function renderTPrev(list){
       prev.innerHTML='';
@@ -4616,6 +4618,20 @@ function exportTransfers(){if(!transfers.length){toast('Chưa có dữ liệu');
   const rows=[['Ngày','Mã hàng','Tên hàng','ĐVT','SL','Từ kho','Đến kho','Lý do','Người nhập','Thời gian']];
   transfers.forEach(t=>rows.push([t.date,t.code,t.name,t.uom,t.qty,t.from,t.to,t.reason,t.user,t.time]));
   dl('dieuchuyen_'+Date.now()+'.csv',rows);toast('Đã xuất CSV điều chuyển');}
+// File mẫu để bộ phận điền rồi nạp lại (đúng cột importTransferFile đọc được)
+function downloadTransferTemplate(){
+  const w0=DATA.warehouses[0]||{plant:'1035',sloc:'2007'},w1=DATA.warehouses[1]||{plant:'1048',sloc:'2025'};
+  const aoa=[
+    ['Ngày','Mã hàng','Tên hàng','ĐVT','Số lượng','Từ Plant','Từ Sloc','Đến Plant','Đến Sloc','Diễn giải'],
+    ['06/08/2026','10196218','Nước khoáng Sun Aqua 520ml','CHA',96,String(w0.plant),String(w0.sloc),String(w1.plant),String(w1.sloc),'ĐC ví dụ — xóa dòng này khi nhập thật'],
+    ['','','','','','','','','','']
+  ];
+  const ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols']=[{wch:12},{wch:12},{wch:30},{wch:7},{wch:9},{wch:9},{wch:9},{wch:9},{wch:9},{wch:26}];
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'DieuChuyen');
+  XLSX.writeFile(wb,'Mau_DieuChuyen.xlsx');
+  toast('Đã tải file mẫu điều chuyển');
+}
 // ===== Xuất Excel điều chuyển theo ĐÚNG mẫu import SAP (kế toán + admin) =====
 // 5 hàng tiêu đề trích nguyên văn từ file mẫu dc.xlsx (giữ nguyên thứ tự cột A..AB, 28 cột).
 const HEADER_SAP=[
