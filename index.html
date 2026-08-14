@@ -4008,6 +4008,18 @@ function renderUsersTree(view){
   card.appendChild(root);view.appendChild(card);
 }
 // Sơ đồ cho GIÁM SÁT (chỉ xem): điểm mình quản → nhân viên đứng điểm
+// Thu nhỏ (scale) sơ đồ cho vừa bề ngang khung -> không bao giờ kéo ngang
+function _fitChart(card){
+  const tree=card.querySelector('.ttree');if(!tree)return;
+  tree.style.transform='';tree.style.transformOrigin='top center';card.style.overflow='';card.style.height='';
+  const flex=tree.querySelector('.tbranches')||tree;
+  const avail=card.clientWidth-24,need=flex.scrollWidth; // 24 = trừ padding card
+  if(need>avail&&avail>0){const s=Math.max(0.4,avail/need);tree.style.transform='scale('+s+')';card.style.overflow='hidden';card.style.height=(tree.offsetHeight*s+8)+'px';}
+}
+function fitToWidth(card){
+  requestAnimationFrame(()=>_fitChart(card));
+  if(!window._fitBound){window._fitBound=true;let t;window.addEventListener('resize',()=>{clearTimeout(t);t=setTimeout(()=>document.querySelectorAll('.usr-chart').forEach(_fitChart),120);});}
+}
 function renderSoDo(view){
   const whKeysOf=id=>{const out=new Set();(userWh[id]||[]).forEach(w=>{if(w.sloc)out.add(w.plant+'|'+w.sloc);else slocsOf(w.plant).forEach(s=>out.add(w.plant+'|'+s.sloc));});return out;};
   // Các kho (sloc) giám sát phụ trách (sloc rỗng = cả plant -> bung mọi sloc), gom nhóm theo điểm bán
@@ -4026,6 +4038,7 @@ function renderSoDo(view){
   }).join('');
   card.innerHTML=`<div class="ttree"><div class="troot"><span class="s">Giám sát điểm bán</span>${_esc(session.name||'Tôi')}</div><div class="tbranches" style="align-items:flex-start">${cols}</div></div>`;
   view.appendChild(card);
+  fitToWidth(card); // luôn vừa 1 trang, tràn thì tự thu nhỏ
 }
 
 /* ============ DANH MỤC VẬT TƯ THEO PLANT (Kế toán) ============ */
