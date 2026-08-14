@@ -4009,19 +4009,22 @@ function renderUsersTree(view){
 }
 // Sơ đồ cho GIÁM SÁT (chỉ xem): điểm mình quản → nhân viên đứng điểm
 function renderSoDo(view){
-  const my=(session.plants||[]).filter(p=>p&&p!=='*');
+  const whKeysOf=id=>{const out=new Set();(userWh[id]||[]).forEach(w=>{if(w.sloc)out.add(w.plant+'|'+w.sloc);else slocsOf(w.plant).forEach(s=>out.add(w.plant+'|'+s.sloc));});return out;};
+  // Các kho (sloc) giám sát phụ trách (sloc rỗng = cả plant -> bung mọi sloc), gom nhóm theo điểm bán
+  const seen=new Set(),kho=[];
+  (session.wh||[]).forEach(w=>{if(!w.plant||w.plant==='*')return;const list=w.sloc?[w.sloc]:slocsOf(w.plant).map(s=>s.sloc);
+    list.forEach(sc=>{const k=w.plant+'|'+sc;if(seen.has(k))return;seen.add(k);kho.push({plant:w.plant,sloc:sc});});});
   const head=el('div','usr-banner');
-  head.innerHTML=`<div class="l"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><path d="M14 7h5a2 2 0 0 1 2 2M10 7H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h5"/></svg></div><div><h1>Sơ đồ điểm bán</h1><div class="sub">Điểm bán bạn phụ trách &amp; nhân viên đứng điểm</div></div></div><div class="usr-kpi"><div class="n">${my.length}</div><div class="l">Điểm phụ trách</div></div>`;
+  head.innerHTML=`<div class="l"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><path d="M14 7h5a2 2 0 0 1 2 2M10 7H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h5"/></svg></div><div><h1>Sơ đồ kho &amp; nhân sự</h1><div class="sub">Kho bạn phụ trách &amp; nhân viên đứng kho</div></div></div><div class="usr-kpi"><div class="n">${kho.length}</div><div class="l">Kho phụ trách</div></div>`;
   view.appendChild(head);
   const card=el('div','card usr-chart');
-  if(!my.length){card.innerHTML='<div style="padding:44px;text-align:center;color:var(--muted);font-size:13.5px">Bạn chưa được gán điểm bán nào.</div>';view.appendChild(card);return;}
-  const staffAt=P=>profiles.filter(p=>(p.role==='nhan_vien'||p.role==='bep_truong')&&(userPlants[p.id]||[]).includes(P));
-  const cols=my.map(P=>{
-    const st=staffAt(P);
-    const chips=st.length?st.map(p=>`<div class="tpl">${_uav(p)}<span>${_esc(p.full_name||p.email||'—')}</span></div>`).join(''):`<div class="tpl empty">Chưa có nhân viên đứng điểm</div>`;
-    return `<div class="tcol"><div class="tperson"><div class="nm" style="font-size:13px">${_esc(plantName(P))}</div><span class="tcnt">${st.length} người</span></div><div class="tplants">${chips}</div></div>`;
+  if(!kho.length){card.innerHTML='<div style="padding:44px;text-align:center;color:var(--muted);font-size:13.5px">Bạn chưa được gán kho nào.</div>';view.appendChild(card);return;}
+  const staffAt=key=>profiles.filter(p=>(p.role==='nhan_vien'||p.role==='bep_truong')&&whKeysOf(p.id).has(key));
+  const cols=kho.map(w=>{const key=w.plant+'|'+w.sloc;const st=staffAt(key);
+    const chips=st.length?st.map(p=>`<div class="tpl">${_uav(p)}<span>${_esc(p.full_name||p.email||'—')}</span></div>`).join(''):`<div class="tpl empty">Chưa có nhân viên đứng kho</div>`;
+    return `<div class="tcol"><div class="tperson"><div class="nm" style="font-size:13px">${_esc(whName(w.plant,w.sloc))}</div><span class="tcnt" style="color:var(--muted);font-size:11px">${_esc(plantName(w.plant))} · ${st.length} người</span></div><div class="tplants">${chips}</div></div>`;
   }).join('');
-  card.innerHTML=`<div class="ttree"><div class="troot"><span class="s">Giám sát điểm bán</span>${_esc(session.name||'Tôi')}</div><div class="tbranches">${cols}</div></div>`;
+  card.innerHTML=`<div class="ttree"><div class="troot"><span class="s">Giám sát điểm bán</span>${_esc(session.name||'Tôi')}</div><div class="tbranches" style="align-items:flex-start">${cols}</div></div>`;
   view.appendChild(card);
 }
 
