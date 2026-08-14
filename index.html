@@ -405,13 +405,23 @@
   .tpl .uav{width:22px;height:22px;font-size:10px}
   .tstaff{margin-top:14px;display:flex;flex-direction:column;gap:7px;width:100%;position:relative}
   .tstaff::before{content:'';position:absolute;top:-14px;left:50%;width:2px;height:14px;background:var(--line-strong)}
-  .tkhos{display:flex;flex-wrap:wrap;gap:8px;width:100%;justify-content:center;margin-top:12px}
-  .tkho{width:calc(50% - 4px);min-width:128px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:8px 9px;text-align:left}
-  .tkho .tpl{font-size:12px}
-  .tkho .tstaff{margin-top:6px;gap:5px}
-  .tkho .tstaff::before{display:none}
-  .tkho .tsnode{padding:5px 7px}
-  .tkho .snm{font-size:11.5px}
+  .torg{padding:6px 2px}
+  .torg-root{text-align:center;background:#0e5c55;color:#fff;border-radius:12px;padding:10px 16px;font-size:13.5px;font-weight:700;max-width:520px;margin:0 auto}
+  .torg-root span{opacity:.75;font-weight:500}
+  .tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px;margin-top:16px;align-items:start}
+  .tcard{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:13px}
+  .tcard-h{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .tcard-h .nm{font-weight:800;font-size:14px}
+  .tcard-h .sub{font-size:11.5px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .tempty{font-size:12px;color:var(--muted);font-style:italic;padding:2px}
+  .tchips{display:flex;flex-wrap:wrap;gap:6px}
+  .tchip{cursor:pointer;border:1px solid var(--line-strong);background:var(--surface);border-radius:8px;padding:5px 9px;font-size:11.5px;color:var(--ink);display:inline-flex;align-items:center;gap:6px;font-weight:700}
+  .tchip b{background:var(--brand);color:#fff;border-radius:20px;padding:0 6px;font-size:10px;font-weight:800}
+  .tchip.on{border-color:var(--brand);background:var(--surface-2)}
+  .tchip.off{cursor:default;opacity:.75;font-weight:500}
+  .tnv-panel{margin-top:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+  .tnv-h{font-size:12px;font-weight:800;margin-bottom:7px;color:var(--brand)}
+  .tnv-row{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12.5px;font-weight:600}
   .tsnode{display:flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--line-strong);border-radius:10px;padding:7px 9px;text-align:left}
   .tsnode .uav{width:26px;height:26px;font-size:11px;flex:none}
   .tsnode .snm{font-size:12px;font-weight:700;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -3958,26 +3968,44 @@ function renderUsersTree(view){
   const staff=profiles.filter(p=>p.role==='nhan_vien');
   const card=el('div','card usr-chart');
   if(!sups.length&&!staff.length){card.innerHTML='<div style="padding:44px;text-align:center;color:var(--muted);font-size:13.5px">Chưa có Giám sát / Nhân viên nào được gán điểm bán.<br>Chuyển sang <b>Danh sách</b> để gán vai trò &amp; kho.</div>';view.appendChild(card);return;}
-  const snode=nv=>`<div class="tsnode">${_uav(nv)}<div style="min-width:0"><div class="snm">${_esc(nv.full_name||nv.email||'—')}</div><span class="srole">Nhân viên</span></div></div>`;
-  // Danh sách 'plant|sloc' user phụ trách (sloc rỗng = cả plant -> bung ra mọi sloc)
   const whKeysOf=id=>{const out=new Set();(userWh[id]||[]).forEach(w=>{if(w.sloc)out.add(w.plant+'|'+w.sloc);else slocsOf(w.plant).forEach(s=>out.add(w.plant+'|'+s.sloc));});return out;};
+  const root=el('div','torg');
+  root.appendChild(el('div','torg-root','<span>Phòng Kế toán F&amp;B</span> · Sun World Ba Na Hills'));
+  const grid=el('div','tgrid');root.appendChild(grid);
   const assigned=new Set();
-  const cols=sups.map(S=>{
+  sups.forEach(S=>{
     const rb=USR_ROLEB[S.role];const supKeys=[...whKeysOf(S.id)];
-    const nvSet=new Set();const blocks=[];
+    const nvSet=new Set();const khos=[];
     supKeys.forEach(key=>{const a=key.split('|'),pc=a[0],sc=a[1];
       const nvs=staff.filter(nv=>whKeysOf(nv.id).has(key));
-      if(!nvs.length)return; // Kho chưa có nhân viên -> KHÔNG hiện lên sơ đồ
+      if(!nvs.length)return; // chỉ hiện kho CÓ nhân viên
       nvs.forEach(nv=>{assigned.add(nv.id);nvSet.add(nv.id);});
-      blocks.push(`<div class="tkho"><div class="tpl"><span class="dot"></span><b>${_esc(whName(pc,sc))}</b> <span style="color:var(--muted);font-weight:400">${_esc(sc)}</span></div><div class="tstaff" style="margin-top:5px">${nvs.map(snode).join('')}</div></div>`);
-    });
-    const body=blocks.length?`<div class="tkhos">${blocks.join('')}</div>`:`<div class="tpl empty">Chưa có nhân viên đứng kho</div>`;
-    return `<div class="tcol"><div class="tperson">${_uav(S)}<div class="nm">${_esc(S.full_name||'(chưa tên)')}</div><span class="trole" style="background:${rb[1]};color:${rb[2]}">${rb[0]}</span><span class="tcnt">${supKeys.length} kho · ${nvSet.size} NV</span></div>${body}</div>`;
-  }).join('');
+      khos.push({pc,sc,nvs});});
+    const c=el('div','tcard');
+    c.appendChild(el('div','tcard-h',`${_uav(S)}<div style="min-width:0"><div class="nm">${_esc(S.full_name||'(chưa tên)')}</div><div class="sub"><span class="trole" style="background:${rb[1]};color:${rb[2]}">${rb[0]}</span> · ${supKeys.length} kho · ${nvSet.size} NV</div></div>`));
+    if(!khos.length){c.appendChild(el('div','tempty','Chưa có nhân viên đứng kho'));}
+    else{
+      const chips=el('div','tchips');const panel=el('div','tnv-panel');panel.style.display='none';
+      khos.forEach(k=>{
+        const chip=el('button','tchip',`${_esc(whName(k.pc,k.sc))} <b>${k.nvs.length}</b>`);
+        chip.onclick=()=>{
+          if(panel._key===k.sc&&panel.style.display!=='none'){panel.style.display='none';chip.classList.remove('on');return;}
+          panel._key=k.sc;
+          panel.innerHTML=`<div class="tnv-h">📍 ${_esc(whName(k.pc,k.sc))} <span style="color:var(--muted);font-weight:400">(${_esc(k.sc)}) · ${k.nvs.length} NV</span></div>`
+            +k.nvs.map(nv=>`<div class="tnv-row">${_uav(nv)}<span>${_esc(nv.full_name||nv.email||'—')}</span></div>`).join('');
+          panel.style.display='block';chips.querySelectorAll('.tchip').forEach(x=>x.classList.remove('on'));chip.classList.add('on');
+        };
+        chips.appendChild(chip);});
+      c.appendChild(chips);c.appendChild(panel);
+    }
+    grid.appendChild(c);
+  });
   const orphan=staff.filter(nv=>!assigned.has(nv.id));
-  const orphanCol=orphan.length?`<div class="tcol"><div class="tperson" style="border-style:dashed"><div class="nm" style="font-size:12.5px">Chưa thuộc giám sát</div><span class="tcnt">${orphan.length} nhân viên</span></div><div class="tstaff">${orphan.map(snode).join('')}</div></div>`:'';
-  card.innerHTML=`<div class="ttree"><div class="troot"><span class="s">Phòng Kế toán F&amp;B</span>Sun World Ba Na Hills</div><div class="tbranches" style="align-items:flex-start">${cols}${orphanCol}</div></div>`;
-  view.appendChild(card);
+  if(orphan.length){const c=el('div','tcard');
+    c.appendChild(el('div','tcard-h',`<div><div class="nm">Chưa thuộc giám sát</div><div class="sub">${orphan.length} nhân viên chưa gán kho</div></div>`));
+    const chips=el('div','tchips');orphan.forEach(nv=>chips.appendChild(el('span','tchip off',_esc(nv.full_name||nv.email||'—'))));
+    c.appendChild(chips);grid.appendChild(c);}
+  card.appendChild(root);view.appendChild(card);
 }
 // Sơ đồ cho GIÁM SÁT (chỉ xem): điểm mình quản → nhân viên đứng điểm
 function renderSoDo(view){
