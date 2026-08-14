@@ -3964,13 +3964,14 @@ function renderUsersTree(view){
   const assigned=new Set();
   const cols=sups.map(S=>{
     const rb=USR_ROLEB[S.role];const supKeys=[...whKeysOf(S.id)];
-    const nvSet=new Set();
-    const khoBlocks=supKeys.map(key=>{const a=key.split('|'),pc=a[0],sc=a[1];
-      const nvs=staff.filter(nv=>whKeysOf(nv.id).has(key));nvs.forEach(nv=>{assigned.add(nv.id);nvSet.add(nv.id);});
-      const staffHtml=nvs.length?nvs.map(snode).join(''):`<div class="tstaff-empty">Chưa có nhân viên</div>`;
-      return `<div class="tkho"><div class="tpl"><span class="dot"></span><b>${_esc(whName(pc,sc))}</b> <span style="color:var(--muted);font-weight:400">${_esc(sc)}</span></div><div class="tstaff" style="margin-top:5px">${staffHtml}</div></div>`;
-    }).join('');
-    const body=supKeys.length?`<div class="tkhos">${khoBlocks}</div>`:`<div class="tpl empty">Chưa gán kho</div>`;
+    const nvSet=new Set();const blocks=[];
+    supKeys.forEach(key=>{const a=key.split('|'),pc=a[0],sc=a[1];
+      const nvs=staff.filter(nv=>whKeysOf(nv.id).has(key));
+      if(!nvs.length)return; // Kho chưa có nhân viên -> KHÔNG hiện lên sơ đồ
+      nvs.forEach(nv=>{assigned.add(nv.id);nvSet.add(nv.id);});
+      blocks.push(`<div class="tkho"><div class="tpl"><span class="dot"></span><b>${_esc(whName(pc,sc))}</b> <span style="color:var(--muted);font-weight:400">${_esc(sc)}</span></div><div class="tstaff" style="margin-top:5px">${nvs.map(snode).join('')}</div></div>`);
+    });
+    const body=blocks.length?`<div class="tkhos">${blocks.join('')}</div>`:`<div class="tpl empty">Chưa có nhân viên đứng kho</div>`;
     return `<div class="tcol"><div class="tperson">${_uav(S)}<div class="nm">${_esc(S.full_name||'(chưa tên)')}</div><span class="trole" style="background:${rb[1]};color:${rb[2]}">${rb[0]}</span><span class="tcnt">${supKeys.length} kho · ${nvSet.size} NV</span></div>${body}</div>`;
   }).join('');
   const orphan=staff.filter(nv=>!assigned.has(nv.id));
