@@ -1,5 +1,6 @@
-// agent/report.mjs — CẢNH BÁO LỆCH CẬP NHẬT + AUTO-HEALING (AI chẩn đoán)
-// - Cảnh báo trễ cập nhật  -> gửi NHÓM  (TEAMS_FLOW_URL). Không có gì lệch = im lặng.
+// agent/report.mjs — THEO DÕI KIỂM KÊ THEO KỲ ĐÃ MỞ + AUTO-HEALING (AI chẩn đoán)
+// - Chỉ báo khi kế toán ĐÃ MỞ KỲ (count_lists). Phân 3 nhóm: chưa nhập / chờ duyệt / đã duyệt.
+//   Tất cả kho đã mở đều được duyệt = im lặng. Chưa mở kỳ = im lặng.  -> gửi NHÓM (TEAMS_FLOW_URL).
 // - Lỗi kỹ thuật           -> tự thử lại 3 lần; vẫn lỗi thì gọi AI chẩn đoán rồi gửi RIÊNG Khoa (TEAMS_PERSONAL_URL).
 // Bí mật lấy từ GitHub Secrets — KHÔNG nhúng key vào code.
 
@@ -79,37 +80,53 @@ function ruleDiagnose(e) {
 
 try {
   // ===== THU THẬP DỮ LIỆU (mỗi truy vấn đã có retry) =====
-  const [plants, profiles, userPlants, subs, shifts] = await Promise.all([
+  // Chỉ theo dõi khi KẾ TOÁN ĐÃ MỞ KỲ: mỗi kho được mở = 1 dòng trong count_lists.
+  // Trạng thái lấy từ submissions (Chờ duyệt / Đã duyệt). Tất cả đã duyệt => im lặng.
+  const [plants, opened, subs, slocs] = await Promise.all([
     q('plants?select=plant_code,plant_name'),
-    q('profiles?select=id,role,status'),
-    q('user_plants?select=user_id,plant_code'),
-    q('submissions?select=plant_code,created_at&order=created_at.desc&limit=2000'),
-    q('shifts?select=plant_code,created_at&order=created_at.desc&limit=2000'),
+    q('count_lists?select=plant_code,sloc_code,period,created_at'),
+    q('submissions?select=plant_code,sloc_code,status,period&limit=5000'),
+    q('slocs?select=plant_code,sloc_code,sloc_name').catch(() => []), // tên kho (nếu có bảng)
   ]);
   const pname = c => (plants.find(p => p.plant_code === c) || {}).plant_name || c;
-  const activeIds = new Set(profiles.filter(p => (p.role==='giam_sat'||p.role==='bep_truong') && p.status==='active').map(p=>p.id));
-  const watched = [...new Set(userPlants.filter(u => activeIds.has(u.user_id)).map(u => u.plant_code))];
+  const snameMap = {};
+  (Array.isArray(slocs) ? slocs : []).forEach(s => { snameMap[s.plant_code + '|' + s.sloc_code] = s.sloc_name; });
+  const sname = (p, s) => snameMap[p + '|' + s] || ('kho ' + s);
+  const whLabel = (p, s) => `${pname(p)} · ${sname(p, s)}`;
 
-  const lastOf = {};
-  [...subs, ...shifts].forEach(r => { const t = new Date(r.created_at).getTime(); if (!lastOf[r.plant_code] || t > lastOf[r.plant_code]) lastOf[r.plant_code] = t; });
+  // Chưa mở kỳ nào => không báo.
+  if (!opened.length) { console.log('✅ Chưa có kỳ kiểm kê nào được mở — không gửi tin.'); process.exit(0); }
 
-  const items = watched.map(pc => {
-    const last = lastOf[pc] || null;
-    const days = last ? Math.floor((Date.now() - last) / 864e5) : null;
-    return { pc, last, days };
-  }).filter(x => x.last === null || x.days >= 1);
+  // Kỳ đang theo dõi = kỳ mới nhất đã được mở.
+  const activePeriod = [...new Set(opened.map(o => o.period))].sort().pop();
+  const openUnits = opened.filter(o => o.period === activePeriod);
 
-  if (!items.length) { console.log('✅ Không có điểm bán nào lệch cập nhật — không gửi tin.'); process.exit(0); }
+  // Trạng thái từng kho đã mở: 'done' (đã duyệt) | 'wait' (đã nhập, chờ duyệt) | 'none' (chưa nhập).
+  const subOf = (p, s) => subs.filter(x => x.plant_code === p && x.sloc_code === s && x.period === activePeriod);
+  const units = openUnits.map(o => {
+    const ss = subOf(o.plant_code, o.sloc_code);
+    const st = ss.some(x => x.status === 'Đã duyệt') ? 'done' : (ss.length ? 'wait' : 'none');
+    const days = Math.floor((Date.now() - new Date(o.created_at).getTime()) / 864e5);
+    return { p: o.plant_code, s: o.sloc_code, st, days };
+  });
 
-  items.sort((a,b) => (b.days ?? 999) - (a.days ?? 999));
-  const urgent = items.filter(x => x.last === null || x.days > 2);
-  const mild   = items.filter(x => x.last !== null && x.days >= 1 && x.days <= 2);
-  let msg = `⚠ CẢNH BÁO LỆCH CẬP NHẬT KIỂM KÊ — ${new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })}\n`;
-  if (urgent.length) msg += `\n🔴 KHẨN (quá 2 ngày hoặc chưa từng cập nhật):\n` +
-    urgent.map(x => `- ${pname(x.pc)}: ${x.last ? `gần nhất ${dstr(x.last)} (${x.days} ngày)` : 'CHƯA cập nhật lần nào'}`).join('\n') + '\n';
-  if (mild.length) msg += `\n⚠ Nhắc nhở (lệch 1-2 ngày):\n` +
-    mild.map(x => `- ${pname(x.pc)}: gần nhất ${dstr(x.last)} (${x.days} ngày)`).join('\n') + '\n';
-  msg += `\nTổng: ${items.length} điểm bán cần đôn đốc cập nhật.`;
+  const none = units.filter(u => u.st === 'none');
+  const wait = units.filter(u => u.st === 'wait');
+  const done = units.filter(u => u.st === 'done');
+
+  // Tất cả đã duyệt => dừng thông báo.
+  if (!none.length && !wait.length) { console.log('✅ Tất cả kho đã mở đều được duyệt — không gửi tin.'); process.exit(0); }
+
+  const perVN = (activePeriod || '').split('-').reverse().join('/'); // YYYY-MM -> MM/YYYY
+  const line = u => `- ${whLabel(u.p, u.s)}`;
+  let msg = `📋 THEO DÕI KIỂM KÊ — KỲ THÁNG ${perVN} (đã mở kỳ)\nThời điểm: ${new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })}\n`;
+  if (none.length) msg += `\n🔴 CHƯA NHẬP (${none.length} kho):\n` +
+    none.sort((a,b) => b.days - a.days).map(u => `${line(u)}${u.days >= 1 ? ` — mở kỳ ${u.days} ngày trước` : ''}`).join('\n') + '\n';
+  if (wait.length) msg += `\n🟡 ĐÃ NHẬP · CHỜ KẾ TOÁN DUYỆT (${wait.length} kho):\n` +
+    wait.map(line).join('\n') + '\n';
+  if (done.length) msg += `\n🟢 ĐÃ DUYỆT (${done.length} kho):\n` +
+    done.map(line).join('\n') + '\n';
+  msg += `\nTiến độ: ${done.length}/${units.length} kho đã duyệt.`;
 
   // gửi cảnh báo vào NHÓM (có retry)
   await withRetry('Gửi cảnh báo về nhóm Teams', async () => {
