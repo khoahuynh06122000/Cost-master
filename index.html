@@ -1073,7 +1073,7 @@ async function doSignUp(){
   if(pass.length<6){msg.textContent='Mật khẩu tối thiểu 6 ký tự.';return;}
   msg.textContent='Đang tạo tài khoản…';
   let data,error;
-  try{ ({data,error}=await sb.auth.signUp({email,password:pass,options:{data:{full_name:name}}})); }
+  try{ ({data,error}=await sb.auth.signUp({email,password:pass,options:{data:{full_name:name,requested_plant:reqPlant||null,requested_sloc:reqSloc||null}}})); }
   catch(e){ msg.textContent='Không kết nối được máy chủ đăng ký (mạng yếu hoặc Supabase đang tạm dừng). Kiểm tra mạng rồi thử lại.'; return; }
   if(error){
     const net=/failed to fetch|networkerror|fetch|network/i.test(error.message||'');
@@ -1091,9 +1091,13 @@ async function afterAuth(){
   if(!user){showAuth('login');return;}
   let prof=null;
   try{const {data}=await sb.from('profiles').select('*').eq('id',user.id).maybeSingle();prof=data;}catch(e){console.error(e);}
-  if(!prof){ // trigger có thể chưa chạy — tạo tạm
-    try{await sb.from('profiles').upsert({id:user.id,email:user.email,full_name:(user.user_metadata&&user.user_metadata.full_name)||'',status:'pending'},{onConflict:'id'});}catch(e){}
-    prof={role:null,status:'pending',email:user.email};
+  const um=user.user_metadata||{};
+  if(!prof){ // trigger có thể chưa chạy — tạo tạm (kèm điểm bán đã đăng ký)
+    try{await sb.from('profiles').upsert({id:user.id,email:user.email,full_name:um.full_name||'',status:'pending',requested_plant:um.requested_plant||null,requested_sloc:um.requested_sloc||null},{onConflict:'id'});}catch(e){}
+    prof={role:null,status:'pending',email:user.email,requested_plant:um.requested_plant||null,requested_sloc:um.requested_sloc||null};
+  } else if(!prof.requested_plant&&um.requested_plant){ // backfill khi trigger cũ chưa chép điểm bán
+    try{await sb.from('profiles').update({requested_plant:um.requested_plant,requested_sloc:um.requested_sloc||null}).eq('id',user.id);}catch(e){}
+    prof.requested_plant=um.requested_plant;prof.requested_sloc=um.requested_sloc||null;
   }
   if(prof.status!=='active'||!prof.role||!ROLES[prof.role]){
     $('#pendingMsg').textContent=prof.status==='disabled'?'Tài khoản đã bị khóa. Liên hệ Kế toán trưởng.':'Tài khoản của bạn đang chờ quản trị gán quyền. Vui lòng liên hệ Kế toán trưởng.';
