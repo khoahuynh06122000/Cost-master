@@ -1909,6 +1909,12 @@ function showOpeningDetail(plant,sloc,val){
   const bXls=el('button','btn btn-primary btn-sm','📥 Tải Excel kho này');
   bXls.onclick=()=>exportOpeningStock(plant,sloc,rows,val);
   bar.appendChild(bXls);
+  if(isPrivileged()){
+    const bDel=el('button','btn btn-ghost btn-sm','🗑 Xóa tồn đầu kỳ');
+    bDel.style.color='var(--red)';
+    bDel.onclick=()=>deleteOpeningT6(plant,sloc,()=>renderView());
+    bar.appendChild(bDel);
+  }
   if(exCount)bar.appendChild(el('span','badge badge-soft','📝 '+exCount+' mã có giải trình của kế toán'));
   card.appendChild(bar);
   const w=el('div','tbl-wrap');const tbl=el('table');
