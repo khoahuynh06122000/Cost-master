@@ -874,7 +874,11 @@ let kkPeriod=null; // kỳ (tháng) đang chọn ở màn Kiểm kê
 function periodOptions(n){const out=[];const d=new Date();for(let i=0;i<(n||12);i++){const dt=new Date(d.getFullYear(),d.getMonth()-i,1);out.push(dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0'));}return out;}
 function periodVN(p){if(!p)return '';const a=p.split('-');return a[1]+'/'+a[0];}
 function lastDayVN(p){const a=p.split('-').map(Number);const d=new Date(a[0],a[1],0);return {date:d,str:String(d.getDate()).padStart(2,'0')+'/'+String(a[1]).padStart(2,'0')+'/'+a[0]};}
-function periodLocked(plant,sloc,period){return submissions.some(s=>s.plant===plant&&s.sloc===sloc&&s.period===period&&s.status==='Đã duyệt');}
+// Kỳ bị KHÓA khi có phiếu kiểm kê ĐÃ DUYỆT cho đúng kho + kỳ (KHÔNG liên quan tồn đầu kỳ).
+// lockedSub trả về chính phiếu đang khóa để thông báo cho người dùng biết phải xử lý phiếu nào.
+function lockedSub(plant,sloc,period){return submissions.find(s=>s.plant===plant&&s.sloc===sloc&&s.period===period&&s.status==='Đã duyệt');}
+function periodLocked(plant,sloc,period){return !!lockedSub(plant,sloc,period);}
+function lockMsg(plant,sloc,period){const s=lockedSub(plant,sloc,period);return 'Tháng '+periodVN(period)+' đã khóa cho kho này'+(s?' — do phiếu '+s.id+' đã duyệt'+(s.approvedBy?' bởi '+s.approvedBy:'')+'. Admin vào Kiểm kê → theo dõi & duyệt → mở phiếu đó → "↩ Hủy duyệt" để mở lại kỳ.':'.');}
 
 /* ================= SUPABASE (đồng bộ điện thoại ↔ PC) ================= */
 const SB_DIRECT='https://jygrdbuwveitrlfuwigs.supabase.co';
@@ -989,8 +993,11 @@ function showFreshPill(){
 function hideFreshPill(){const b=document.getElementById('freshPill');if(b)b.remove();}
 // các hàm ghi (đẩy lên Supabase; đồng bộ 45s sẽ cập nhật các thiết bị khác)
 async function dbIns(table,row){if(!sb)return;const {error}=await sb.from(table).insert(row);if(error){console.error(table,error);toast('Lỗi lưu máy chủ: '+error.message);}}
-async function dbUpd(table,match,patch){if(!sb)return;const {error}=await sb.from(table).update(patch).match(match);if(error){console.error(table,error);toast('Lỗi cập nhật: '+error.message);}}
-async function dbDel(table,match){if(!sb)return;const {error}=await sb.from(table).delete().match(match);if(error){console.error(table,error);}}
+// dbUpd/dbDel dùng .select() để BIẾT thực sự có bao nhiêu dòng đổi trên máy chủ.
+// RLS chặn UPDATE/DELETE thì Supabase KHÔNG trả error, chỉ trả 0 dòng => trước đây app im lặng
+// và vẫn xóa trong RAM (báo thành công giả, F5 là dữ liệu quay lại). Nay trả {ok,count} để nơi gọi kiểm tra.
+async function dbUpd(table,match,patch){if(!sb)return {ok:true,count:null};const {data,error}=await sb.from(table).update(patch).match(match).select();if(error){console.error(table,error);toast('Lỗi cập nhật: '+error.message);return {ok:false,count:0,error};}const n=Array.isArray(data)?data.length:null;if(n===0){console.warn(table+': UPDATE 0 dòng',match);toast('⚠ Máy chủ không cập nhật dòng nào ('+table+') — có thể do quyền RLS. Tải lại trang để xem số thật.');}return {ok:true,count:n};}
+async function dbDel(table,match){if(!sb)return {ok:true,count:null};const {data,error}=await sb.from(table).delete().match(match).select();if(error){console.error(table,error);toast('Lỗi xóa trên máy chủ ('+table+'): '+error.message);return {ok:false,count:0,error};}const n=Array.isArray(data)?data.length:null;if(n===0){console.warn(table+': DELETE 0 dòng',match);toast('⚠ Máy chủ không xóa dòng nào ('+table+') — có thể do quyền RLS. Tải lại trang để xem số thật.');}return {ok:true,count:n};}
 async function dbUpsert(table,row){if(!sb)return;const {error}=await sb.from(table).upsert(row);if(error){console.error(table,error);toast('Lỗi lưu máy chủ: '+error.message);}}
 async function dbUpsertOpening(plant,sloc,obj){if(!sb)return;const {error}=await sb.from('opening_stock').upsert({plant_code:plant,sloc_code:sloc,items:obj.items,from_id:obj.fromId,set_by:obj.by,set_at:new Date().toISOString()});if(error){console.error('opening',error);}}
 async function dbUpsertCountList(plant,sloc,period,items){if(!sb)return;const {error}=await sb.from('count_lists').upsert({plant_code:plant,sloc_code:sloc,period,items,created_by:session.name,created_at:new Date().toISOString()});if(error){console.error('count_lists',error);toast('Lỗi lưu danh sách kiểm kê: '+error.message);}}
@@ -1582,7 +1589,7 @@ function renderKKUpload(v,fixed){
     bNo.onclick=()=>{prev.innerHTML='';fin.value='';};
     brow.appendChild(bOk);brow.appendChild(bNo);prev.appendChild(brow);
   }
-  fin.onchange=e=>{const f=e.target.files[0];if(f){if(periodLocked(plantSel.value,slocSel.value,perSel.value)){toast('Tháng '+periodVN(perSel.value)+' đã khóa cho kho này.');fin.value='';return;}importOpeningT6(plantSel.value,slocSel.value,f,renderPrev);}};
+  fin.onchange=e=>{const f=e.target.files[0];if(f){if(periodLocked(plantSel.value,slocSel.value,perSel.value)){toast(lockMsg(plantSel.value,slocSel.value,perSel.value));fin.value='';return;}importOpeningT6(plantSel.value,slocSel.value,f,renderPrev);}};
   card.appendChild(b);v.appendChild(card);
 }
 // tạo phiếu kiểm kê 'Chờ duyệt' từ dữ liệu đã xem trước
@@ -2867,7 +2874,13 @@ function showDetail(s){
     bar.appendChild(el('span','',`<span style="font-size:12.5px;color:var(--muted)">Duyệt: số đếm thành <b>tồn cuối kỳ</b> & lưu làm <b>tồn đầu kỳ</b> kỳ sau. Từ chối: <b>xóa số liệu</b> & báo giám sát kiểm lại.</span>`));
   }else if(s.status==='Đã duyệt'){
     bar.appendChild(el('span','',`<span style="font-size:12.5px;color:var(--green);font-weight:600">✓ Đã duyệt bởi ${s.approvedBy||'—'} lúc ${s.approvedAt||'—'} · đã chốt làm tồn đầu kỳ.</span>`));
-    if(session.role==='admin'){const bDel=el('button','btn btn-ghost btn-sm','🗑 Xóa phiếu (admin)');bDel.style.color='var(--red)';bDel.onclick=()=>deleteSubmission(s,()=>renderView());bar.appendChild(bDel);}
+    if(session.role==='admin'){
+      const bUn=el('button','btn btn-ghost btn-sm','↩ Hủy duyệt (mở lại kỳ)');bUn.style.color='var(--accent-600)';
+      bUn.onclick=()=>unapproveSubmission(s,()=>renderView());bar.appendChild(bUn);
+      const bDel=el('button','btn btn-ghost btn-sm','🗑 Xóa phiếu (admin)');bDel.style.color='var(--red)';
+      bDel.onclick=()=>deleteSubmission(s,()=>renderView());bar.appendChild(bDel);
+      bar.appendChild(el('span','',`<span style="font-size:12px;color:var(--muted)">Hủy duyệt = mở lại kỳ, <b>giữ</b> số liệu. Xóa phiếu = <b>mất</b> số đếm; app sẽ liệt kê đầy đủ những gì bị ảnh hưởng để anh/chị xác nhận.</span>`));
+    }
   }else{
     bar.appendChild(el('span','',`<span style="font-size:12.5px;color:var(--muted)">Chờ Kế toán viên phê duyệt.</span>`));
   }
@@ -3020,19 +3033,79 @@ function rejectSubmission(s){
   toast('Đã từ chối & xóa '+s.id+' · đã báo giám sát');
   renderView();
 }
+// ---- Liệt kê MỌI thứ bị ảnh hưởng khi xóa 1 phiếu kiểm kê, để admin xác nhận trước ----
+function subDeleteImpact(s){
+  const key=s.plant+'|'+s.sloc,per=s.period||curPeriod();
+  const del=[],keep=[],warn=[];
+  del.push(`Phiếu ${s.id}: số kiểm đếm của ${Object.keys(s.items||{}).length} mã hàng (${whName(s.plant,s.sloc)} · kỳ tháng ${periodVN(per)}) — mất hẳn, không phục hồi được.`);
+  if(s.status==='Đã duyệt')del.push(`Trạng thái duyệt của ${s.approvedBy||'kế toán'}${s.approvedAt?' lúc '+s.approvedAt:''} → kỳ tháng ${periodVN(per)} MỞ LẠI (nạp Excel / kiểm đếm lại được).`);
+  const op=openingStock[key],opFromThis=!!(op&&op.fromId===s.id);
+  const hasPrev=!!(s.prevOpening&&s.prevOpening.items&&Object.keys(s.prevOpening.items).length);
+  if(opFromThis&&hasPrev)del.push(`TỒN ĐẦU KỲ hiện tại của kho (${Object.keys(op.items||{}).length} mã, do phiếu này chốt) → tự trả về bản duyệt trước (${s.prevOpening.fromId||'kỳ trước'}, ${Object.keys(s.prevOpening.items).length} mã).`);
+  else if(opFromThis)del.push(`TỒN ĐẦU KỲ hiện tại của kho (${Object.keys(op.items||{}).length} mã, do phiếu này chốt) BỊ GỠ HẲN — trước đó kho chưa có tồn, sẽ phải nhập lại từ Excel.`);
+  else if(op)keep.push(`Tồn đầu kỳ hiện tại (${Object.keys(op.items||{}).length} mã, nguồn: ${op.fromId||'nhập Excel'}) — giữ nguyên, không do phiếu này chốt.`);
+  if(opFromThis){
+    const later=submissions.filter(x=>x.plant===s.plant&&x.sloc===s.sloc&&x.id!==s.id&&String(x.period||'')>String(per));
+    if(later.length)warn.push(`${later.length} phiếu kỳ SAU (tháng ${later.map(x=>periodVN(x.period)).join(', ')}) đang tính trên tồn đầu kỳ do phiếu này chốt → số "Xuất (tính)" của các kỳ đó sẽ lệch, phải rà lại sau khi xóa.`);
+  }
+  const cls=(closings||[]).filter(c=>c.plant===s.plant&&c.sloc===s.sloc&&c.period===per);
+  if(cls.length)warn.push(`Kho này còn ${cls.length} bản chốt tồn tháng ${periodVN(per)} (${cls.map(c=>c.status).join(', ')}) — KHÔNG bị xóa theo, phải xử lý riêng ở màn Tồn đầu kỳ.`);
+  const cnt=countLists[key+'|'+per];
+  if(cnt)keep.push(`Danh sách kế toán đã mở kỳ (${Object.keys(cnt.items||{}).length} mã) — giữ nguyên, giám sát đếm lại được ngay.`);
+  keep.push('Nhập kho, điều chuyển, bàn giao ca, kiểm kê đột xuất của kỳ này — giữ nguyên (bảng riêng).');
+  keep.push('Biên bản Excel đã xuất/in — file rời, không ảnh hưởng.');
+  keep.push('Nhật ký (audit log) — giữ nguyên và ghi thêm 1 dòng về lần xóa này.');
+  return {del,keep,warn,opFromThis,hasPrev};
+}
+function subDeleteImpactText(s){
+  const im=subDeleteImpact(s);
+  let t='XÓA PHIẾU KIỂM KÊ '+s.id+'\n'+whName(s.plant,s.sloc)+' · kỳ tháng '+periodVN(s.period||curPeriod())+'\n\n';
+  t+='SẼ BỊ XÓA / THAY ĐỔI:\n'+im.del.map((x,i)=>(i+1)+'. '+x).join('\n');
+  if(im.warn.length)t+='\n\nCẦN LƯU Ý:\n'+im.warn.map(x=>'(!) '+x).join('\n');
+  t+='\n\nKHÔNG BỊ ẢNH HƯỞNG:\n'+im.keep.map(x=>'- '+x).join('\n');
+  t+='\n\nKHÔNG THỂ HOÀN TÁC. Nếu chỉ muốn mở lại kỳ mà GIỮ số liệu, hãy bấm Cancel rồi dùng nút "↩ Hủy duyệt (mở lại kỳ)".\n\nBấm OK để xóa phiếu.';
+  return t;
+}
 // XÓA phiếu kiểm kê đã duyệt (chỉ admin) — trả về nguyên trạng như trước khi up
-function deleteSubmission(s,cb){
+async function deleteSubmission(s,cb){
   if(session.role!=='admin'){toast('Chỉ admin mới xóa được phiếu đã duyệt');return;}
   const key=s.plant+'|'+s.sloc;
-  const opFromThis=openingStock[key]&&openingStock[key].fromId===s.id;
-  const hasPrev=opFromThis&&s.prevOpening&&s.prevOpening.items&&Object.keys(s.prevOpening.items).length;
-  const note=opFromThis?(hasPrev?', và TỒN ĐẦU KỲ sẽ tự trả về số lần duyệt trước ('+(s.prevOpening.fromId||'kỳ trước')+')':', và TỒN ĐẦU KỲ do phiếu này chốt sẽ bị gỡ (trước đó chưa có tồn)'):'';
-  if(!confirm('Xóa phiếu kiểm kê '+s.id+' — '+whName(s.plant,s.sloc)+'?\n\nToàn bộ số liệu phiếu sẽ bị xóa'+note+'. Thao tác không thể hoàn tác.'))return;
+  const im=subDeleteImpact(s);
+  const opFromThis=im.opFromThis,hasPrev=im.opFromThis&&im.hasPrev;
+  if(!confirm(subDeleteImpactText(s)))return;
+  // Xóa trên máy chủ TRƯỚC rồi mới sửa RAM: RLS chặn thì không báo thành công giả nữa
+  const r=await dbDel('submissions',{id:s.id});
+  if(!r.ok){toast('Máy chủ báo lỗi — phiếu CHƯA bị xóa. Xem Console để biết chi tiết.');return;}
+  if(r.count===0){toast('Máy chủ TỪ CHỐI xóa phiếu (thiếu policy DELETE cho admin). Phiếu vẫn còn — dùng "↩ Hủy duyệt (mở lại kỳ)" để mở khóa ngay.');return;}
   submissions=submissions.filter(x=>x.id!==s.id);
-  dbDel('submissions',{id:s.id});
-  if(opFromThis&&hasPrev){openingStock[key]={items:{...s.prevOpening.items},fromId:s.prevOpening.fromId,at:s.prevOpening.at,by:s.prevOpening.by};dbUpsertOpening(s.plant,s.sloc,openingStock[key]);log('Xóa phiếu kiểm kê + hoàn tồn đầu kỳ trước (admin)',`${s.id} · ${whName(s.plant,s.sloc)} → về ${s.prevOpening.fromId||'kỳ trước'}`);toast('Đã xóa '+s.id+' & trả tồn đầu kỳ về lần trước');}
-  else if(opFromThis){delete openingStock[key];dbDel('opening_stock',{plant_code:s.plant,sloc_code:s.sloc});log('Xóa phiếu kiểm kê + gỡ tồn đầu kỳ (admin)',`${s.id} · ${whName(s.plant,s.sloc)}`);toast('Đã xóa '+s.id+' & gỡ tồn đầu kỳ (trước đó chưa có)');}
+  if(opFromThis&&hasPrev){openingStock[key]={items:{...s.prevOpening.items},fromId:s.prevOpening.fromId,at:s.prevOpening.at,by:s.prevOpening.by};await dbUpsertOpening(s.plant,s.sloc,openingStock[key]);log('Xóa phiếu kiểm kê + hoàn tồn đầu kỳ trước (admin)',`${s.id} · ${whName(s.plant,s.sloc)} → về ${s.prevOpening.fromId||'kỳ trước'}`);toast('Đã xóa '+s.id+' & trả tồn đầu kỳ về lần trước');}
+  else if(opFromThis){delete openingStock[key];await dbDel('opening_stock',{plant_code:s.plant,sloc_code:s.sloc});log('Xóa phiếu kiểm kê + gỡ tồn đầu kỳ (admin)',`${s.id} · ${whName(s.plant,s.sloc)}`);toast('Đã xóa '+s.id+' & gỡ tồn đầu kỳ (trước đó chưa có)');}
   else{log('Xóa phiếu kiểm kê (admin)',`${s.id} · ${whName(s.plant,s.sloc)}`);toast('Đã xóa phiếu '+s.id);}
+  cb&&cb();
+}
+// HỦY DUYỆT phiếu (chỉ admin) — mở lại kỳ mà KHÔNG mất số liệu phiếu.
+// Dùng được cả khi RLS chưa cho DELETE, vì đây chỉ là UPDATE status (quyền admin đã có sẵn để duyệt).
+async function unapproveSubmission(s,cb){
+  if(session.role!=='admin'){toast('Chỉ admin mới hủy duyệt được');return;}
+  const key=s.plant+'|'+s.sloc,per=s.period||curPeriod();
+  const op=openingStock[key],opFromThis=!!(op&&op.fromId===s.id);
+  const hasPrev=!!(s.prevOpening&&s.prevOpening.items&&Object.keys(s.prevOpening.items).length);
+  let t='HỦY DUYỆT PHIẾU '+s.id+'\n'+whName(s.plant,s.sloc)+' · kỳ tháng '+periodVN(per)+'\n\n';
+  t+='SẼ THAY ĐỔI:\n1. Phiếu về trạng thái "Chờ duyệt" — kỳ tháng '+periodVN(per)+' MỞ LẠI (nạp Excel / kiểm đếm lại được).\n';
+  t+='2. Số kiểm đếm của '+Object.keys(s.items||{}).length+' mã trong phiếu: GIỮ NGUYÊN (kế toán duyệt lại là chốt lại).\n';
+  if(opFromThis&&hasPrev)t+='3. Tồn đầu kỳ do phiếu này chốt → trả về bản duyệt trước ('+(s.prevOpening.fromId||'kỳ trước')+', '+Object.keys(s.prevOpening.items).length+' mã).\n';
+  else if(opFromThis)t+='3. Tồn đầu kỳ do phiếu này chốt ('+Object.keys(op.items||{}).length+' mã) sẽ bị GỠ — trước đó kho chưa có tồn.\n';
+  else t+='3. Tồn đầu kỳ của kho: giữ nguyên (không do phiếu này chốt).\n';
+  t+='\nKhông có dữ liệu nào bị xóa hẳn. Bấm OK để hủy duyệt.';
+  if(!confirm(t))return;
+  const r=await dbUpd('submissions',{id:s.id},{status:'Chờ duyệt',approved_by:null,approved_at:null});
+  if(!r.ok){toast('Máy chủ báo lỗi — phiếu CHƯA đổi. Xem Console.');return;}
+  if(r.count===0){toast('Máy chủ từ chối cập nhật (RLS) — phiếu vẫn đang duyệt. Cần thêm policy UPDATE cho admin.');return;}
+  s.status='Chờ duyệt';s.approvedBy=null;s.approvedAt=null;
+  if(opFromThis&&hasPrev){openingStock[key]={items:{...s.prevOpening.items},fromId:s.prevOpening.fromId,at:s.prevOpening.at,by:s.prevOpening.by};await dbUpsertOpening(s.plant,s.sloc,openingStock[key]);}
+  else if(opFromThis){delete openingStock[key];await dbDel('opening_stock',{plant_code:s.plant,sloc_code:s.sloc});}
+  log('Hủy duyệt phiếu kiểm kê (admin)',`${s.id} · ${whName(s.plant,s.sloc)} · kỳ ${periodVN(per)}`);
+  toast('Đã mở lại kỳ tháng '+periodVN(per)+' cho '+whName(s.plant,s.sloc)+' — số liệu phiếu vẫn giữ');
   cb&&cb();
 }
 
