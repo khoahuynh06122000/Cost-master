@@ -720,17 +720,24 @@ async function nextKKIdServer(period){
   return pfx+String(mx+1).padStart(3,'0');
 }
 // Chèn phiếu; nếu trùng mã (submissions_pkey) thì nhảy số kế tiếp và thử lại. Cập nhật sub.id tại chỗ.
+// Trả về TRUE chỉ khi máy chủ thực sự nhận phiếu. Nơi gọi BẮT BUỘC kiểm tra kết quả:
+// trước đây hàm này thất bại vẫn để nơi gọi báo "Đã gửi phiếu" + xóa nháp => mất trắng số đã đếm.
 async function insSubmissionSafe(sub){
-  if(!sb)return;
+  if(!sb)return true;
   for(let i=0;i<6;i++){
     const row={id:sub.id,plant_code:sub.plant,sloc_code:sub.sloc,user_name:sub.user,role:sub.role,status:sub.status,count:sub.count,items:sub.items,period:sub.period};
-    const {error}=await sb.from('submissions').insert(row);
-    if(!error)return;
+    const {data,error}=await sb.from('submissions').insert(row).select();
+    if(!error){
+      // RLS chặn kiểu "không thấy dòng vừa chèn" => coi như CHƯA lưu, không báo thành công giả
+      if(Array.isArray(data)&&data.length===0){console.error('submissions: INSERT 0 dòng',row);toast('⚠ Máy chủ không nhận phiếu (quyền RLS) — phiếu CHƯA được lưu.');return false;}
+      return true;
+    }
     const msg=String((error&&(error.message||error.code))||'');
     if(/duplicate|pkey|23505|already exists/i.test(msg)){sub.id=await nextKKIdServer(sub.period||curPeriod());continue;}
-    console.error('submissions',error);toast('Lỗi lưu máy chủ: '+msg);return;
+    console.error('submissions',error);toast('Lỗi lưu máy chủ: '+msg);return false;
   }
   toast('Trùng mã phiếu nhiều lần — hãy F5 rồi gửi lại.');
+  return false;
 }
 
 /* ===== Danh mục vật tư THEO PLANT (không dùng chung) ===== */
@@ -1608,7 +1615,8 @@ function commitKKUpload(r,period,cb){
   if(sb&&matArr.length)sb.from('materials').upsert(matArr).then(({error})=>{if(error)console.error('materials',error);afterMat();}); else afterMat();
   (async()=>{
     const sub={id:await nextKKIdServer(period),plant:r.plant,sloc:r.sloc,user:session.name+' (nhập từ Excel)',role:ROLES[session.role].label,time:now(),period:period,status:'Chờ duyệt',items:{...r.items},count:r.ok};
-    await insSubmissionSafe(sub);
+    const okIns=await insSubmissionSafe(sub);
+    if(!okIns){alert('CHƯA TẠO ĐƯỢC PHIẾU trên máy chủ — file Excel vẫn còn, hãy thử nạp lại. Nếu vẫn lỗi thì báo admin (quyền RLS).');return;}
     submissions.unshift(sub);
     log('Nhập phiếu kiểm kê từ Excel',`${sub.id} · ${whName(sub.plant,sub.sloc)} · kỳ ${periodVN(period)} · ${sub.count} mã`);
     toast('✓ Đã tạo phiếu '+sub.id+' ('+sub.count+' mã) — Chờ duyệt');
@@ -2401,7 +2409,13 @@ function renderCountSheet(v){
     if(!confirm(msg))return;
     (async()=>{
       const sub={id:await nextKKIdServer(counting.period||curPeriod()),plant:counting.plant,sloc:counting.sloc,user:session.name,role:ROLES[session.role].label,time:now(),period:counting.period||curPeriod(),status:'Chờ duyệt',items:{...items},count:n};
-      await insSubmissionSafe(sub);
+      const okIns=await insSubmissionSafe(sub);
+      if(!okIns){
+        // KHÔNG xóa nháp, KHÔNG ghi nhật ký "đã gửi": số đã đếm phải còn nguyên để gửi lại
+        saveDrafts();
+        alert('CHƯA GỬI ĐƯỢC PHIẾU LÊN MÁY CHỦ.\n\n'+n+' mã vừa nhập VẪN CÒN ở nháp trên máy này — không mất, tải lại trang vẫn thấy.\n\nHãy làm theo thứ tự:\n1. Kiểm tra mạng, bấm "Hoàn thành & Gửi" lại.\n2. Vẫn lỗi thì bấm "📥 Xuất biên bản (in ký)" để giữ số ra file Excel.\n3. Chụp màn hình gửi admin — tài khoản có thể chưa được cấp quyền gửi phiếu kiểm kê.');
+        return;
+      }
       submissions.unshift(sub);log('Gửi phiếu kiểm kê',`${sub.id} · ${whName(sub.plant,sub.sloc)} · kỳ ${periodVN(sub.period)} · ${n} mã`);
       learnMaterials(MATS);
       delete drafts[key];saveDrafts();counting=null;toast('Đã gửi phiếu '+sub.id+' ('+n+' mã)');renderView();
