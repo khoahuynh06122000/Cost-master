@@ -690,6 +690,7 @@ let profiles=[];       // tài khoản người dùng (đồng bộ từ Supabas
 let userPlants={};     // { user_id: [plant_code,...] } — plant distinct (giữ cho các màn cũ)
 let userWh={};         // { user_id: [{plant,sloc}] } — quyền tới từng kho (sloc); sloc=null nghĩa cả plant
 let dashPlantKK='';    // plant đang lọc ở dashboard Kiểm kê ('' = tất cả)
+let dashPeriodKK='';   // kỳ (tháng) đang lọc ở dashboard Kiểm kê ('' = tất cả tháng)
 let dashSlocKK='';     // sloc đang lọc ở dashboard Kiểm kê ('' = tất cả kho của plant)
 let dashPlantSC='';    // plant đang lọc ở dashboard Bàn giao ca
 let dashSlocSC='';     // sloc đang lọc ở dashboard Bàn giao ca
@@ -1579,9 +1580,18 @@ function barBlock(title,data,fmt){
   });
   wrap.appendChild(b);return wrap;
 }
-function dashFilterCard(curPlant,curSloc,onPickPlant,onPickSloc){
+// opts (tùy chọn) = {periods:[...], period:'2026-08', onPickPeriod:fn} -> thêm ô lọc theo tháng.
+// Không truyền opts thì thẻ lọc y như cũ, các dashboard khác không đổi.
+function dashFilterCard(curPlant,curSloc,onPickPlant,onPickSloc,opts){
   const card=el('div','card');const b=el('div','card-b');
-  b.innerHTML=`<div class="section-eyebrow">🔎 Lọc theo điểm bán / kho</div>`;
+  b.innerHTML=`<div class="section-eyebrow">🔎 Lọc theo ${opts&&opts.periods?'tháng / ':''}điểm bán / kho</div>`;
+  if(opts&&opts.periods){
+    const pf=el('label','field','<span>Kỳ kiểm kê (tháng)</span>');const sel=el('select','input');
+    const oAll=el('option',null,'Tất cả tháng');oAll.value='';sel.appendChild(oAll);
+    opts.periods.forEach(p=>{const o=el('option',null,'Tháng '+periodVN(p)+(p===curPeriod()?' (hiện tại)':''));o.value=p;if(opts.period===p)o.selected=true;sel.appendChild(o);});
+    sel.onchange=()=>opts.onPickPeriod(sel.value);pf.appendChild(sel);
+    pf.style.marginBottom='10px';b.appendChild(pf);
+  }
   const row=el('div','grid2');
   const pf=el('label','field','<span>Điểm bán (Plant)</span>');const psel=el('select','input');
   const oAll=el('option',null,'Tất cả điểm bán');oAll.value='';psel.appendChild(oAll);
@@ -1812,11 +1822,16 @@ function renderKiemkeDash(v){
   ]);
 }
 function kkDashList(v){
+  // Danh sách tháng lấy từ chính các phiếu đang có (mới nhất trước) — chỉ hiện tháng thật có dữ liệu
+  const periods=[...new Set(submissions.map(s=>s.period).filter(Boolean))].sort().reverse();
+  if(dashPeriodKK&&periods.indexOf(dashPeriodKK)<0)dashPeriodKK=''; // tháng đã hết phiếu -> về tất cả
   v.appendChild(dashFilterCard(dashPlantKK,dashSlocKK,
     val=>{dashPlantKK=val;dashSlocKK='';renderView();},
-    val=>{dashSlocKK=val;renderView();}));
+    val=>{dashSlocKK=val;renderView();},
+    {periods,period:dashPeriodKK,onPickPeriod:val=>{dashPeriodKK=val;renderView();}}));
   let rows=dashPlantKK?submissions.filter(s=>s.plant===dashPlantKK):submissions;
   if(dashPlantKK&&dashSlocKK)rows=rows.filter(s=>s.sloc===dashSlocKK);
+  if(dashPeriodKK)rows=rows.filter(s=>s.period===dashPeriodKK);
   const total=rows.length;
   const cho=rows.filter(s=>s.status==='Chờ duyệt').length;
   const duyet=rows.filter(s=>s.status==='Đã duyệt').length;
@@ -1831,18 +1846,22 @@ function kkDashList(v){
   let bars;
   if(dashPlantKK){const bySloc={};rows.forEach(s=>{bySloc[s.sloc]=(bySloc[s.sloc]||0)+1;});bars=Object.entries(bySloc).map(([sl,n])=>[whName(dashPlantKK,sl),n]).sort((a,b)=>b[1]-a[1]).slice(0,12);}
   else{const byPlant={};rows.forEach(s=>{byPlant[s.plant]=(byPlant[s.plant]||0)+1;});bars=Object.entries(byPlant).map(([p,n])=>[plantName(p),n]).sort((a,b)=>b[1]-a[1]).slice(0,10);}
-  v.appendChild(barBlock(dashPlantKK?'Số phiếu theo kho':'Số phiếu theo điểm bán (top 10)',bars));
+  const perLbl=dashPeriodKK?' · tháng '+periodVN(dashPeriodKK):'';
+  v.appendChild(barBlock((dashPlantKK?'Số phiếu theo kho':'Số phiếu theo điểm bán (top 10)')+perLbl,bars));
   const card=el('div','card');
-  card.appendChild(el('div','card-h',`<span class="ct">Phiếu gần đây</span><span class="badge badge-soft">${total}</span>`));
+  card.appendChild(el('div','card-h',`<span class="ct">${dashPeriodKK?'Phiếu tháng '+periodVN(dashPeriodKK):'Phiếu gần đây'}</span><span class="badge badge-soft">${total}</span>`));
   const body=el('div');
-  if(!total)body.appendChild(el('div','empty',`<div class="big">Chưa có phiếu</div><div>Khi điểm bán gửi số, phiếu sẽ hiện ở đây.</div>`));
+  if(!total)body.appendChild(el('div','empty',dashPeriodKK
+    ?`<div class="big">Tháng ${periodVN(dashPeriodKK)} chưa có phiếu</div><div>Không có phiếu nào khớp bộ lọc hiện tại. Chọn "Tất cả tháng" để xem lại toàn bộ.</div>`
+    :`<div class="big">Chưa có phiếu</div><div>Khi điểm bán gửi số, phiếu sẽ hiện ở đây.</div>`));
   else{
     const w=el('div','tbl-wrap');const tbl=el('table');
-    tbl.innerHTML=`<thead><tr><th>Mã</th><th>Kho</th><th>Người gửi</th><th>Thời gian</th><th class="num">Số mã</th><th>Trạng thái</th><th></th></tr></thead>`;
+    tbl.innerHTML=`<thead><tr><th>Mã</th><th>Kho</th><th>Kỳ</th><th>Người gửi</th><th>Thời gian</th><th class="num">Số mã</th><th>Trạng thái</th><th></th></tr></thead>`;
     const tb=el('tbody');
-    rows.slice(0,50).forEach(s=>{const tr=el('tr',null,`<td class="cell-strong tnum">${s.id}</td><td><div class="cell-strong">${whName(s.plant,s.sloc)}</div><div class="cell-sub">${plantName(s.plant)}</div></td><td>${s.user}</td><td class="tnum" style="font-size:12.5px">${s.time}</td><td class="num cell-strong tnum">${s.count}</td><td>${statusBadge(s.status)}</td><td><button class="btn btn-ghost btn-sm">Chi tiết</button></td>`);
+    rows.slice(0,50).forEach(s=>{const tr=el('tr',null,`<td class="cell-strong tnum">${s.id}</td><td><div class="cell-strong">${whName(s.plant,s.sloc)}</div><div class="cell-sub">${plantName(s.plant)}</div></td><td class="tnum" style="font-size:12.5px">${s.period?'Tháng '+periodVN(s.period):'—'}</td><td>${s.user}</td><td class="tnum" style="font-size:12.5px">${s.time}</td><td class="num cell-strong tnum">${s.count}</td><td>${statusBadge(s.status)}</td><td><button class="btn btn-ghost btn-sm">Chi tiết</button></td>`);
       tr.querySelector('button').onclick=()=>showDetail(s);tb.appendChild(tr);});
     tbl.appendChild(tb);w.appendChild(tbl);body.appendChild(w);
+    if(total>50)body.appendChild(el('div','list-hint',`Đang hiện 50 phiếu mới nhất trong ${total} phiếu — lọc theo tháng hoặc theo điểm bán để xem hết.`));
   }
   card.appendChild(body);v.appendChild(card);
 }
