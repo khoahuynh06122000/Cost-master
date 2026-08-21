@@ -288,6 +288,20 @@
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   .toast svg{color:var(--accent)}
 
+  /* Hộp lỗi ghi dữ liệu — KHÔNG tự tắt, người dùng phải bấm Đóng (để kịp chụp màn hình) */
+  .errbox{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:400;width:min(560px,94vw);
+    background:var(--surface);border:2px solid var(--red);border-radius:14px;box-shadow:var(--shadow-lg);overflow:hidden}
+  .errbox-h{background:var(--red);color:#fff;padding:12px 16px;font-weight:800;font-size:14px;display:flex;gap:8px;align-items:center}
+  .errbox-b{padding:14px 16px;max-height:56vh;overflow:auto}
+  .errbox-b ul{margin:0 0 10px;padding-left:20px}
+  .errbox-b li{font-size:13px;line-height:1.6;color:var(--ink);margin-bottom:4px}
+  .errbox-ctx{font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:9px;margin-top:4px;line-height:1.7}
+  .errbox-det{margin:10px 0 0;padding:9px 11px;background:var(--surface-2);border:1px solid var(--line);border-radius:9px;
+    font-family:ui-monospace,Consolas,monospace;font-size:11.5px;color:var(--ink);white-space:pre-wrap;word-break:break-word}
+  .errbox-f{display:flex;gap:9px;justify-content:flex-end;padding:11px 16px;border-top:1px solid var(--line);background:var(--surface-2);flex-wrap:wrap}
+  .errbox-scrim{position:fixed;inset:0;background:rgba(11,43,40,.45);z-index:399}
+  html.dark .errbox-scrim{background:rgba(0,0,0,.6)}
+
   .scrim{position:fixed;inset:0;background:rgba(11,43,40,.5);z-index:40;display:none}
 
   /* responsive */
@@ -697,6 +711,42 @@ const $=s=>document.querySelector(s);
 const el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;};
 function toast(msg){const t=$('#toast');t.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>'+msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200);}
 function now(){return new Date().toLocaleString('vi-VN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit',year:'numeric'});}
+/* ===== HỘP LỖI GHI DỮ LIỆU — KHÔNG TỰ TẮT =====
+   Mọi lần dữ liệu KHÔNG lên được máy chủ đều phải hiện hộp này và ĐỨNG NGUYÊN đến khi
+   người dùng bấm Đóng, để bộ phận kịp chụp màn hình gửi admin. toast() 2,2 giây là không đủ. */
+const TBL_VN={submissions:'phiếu kiểm kê',opening_stock:'tồn đầu kỳ',transfers:'điều chuyển',shifts:'bàn giao ca',spot_checks:'kiểm kê đột xuất',receipts:'nhập kho',closing_stock:'chốt tồn tháng',count_lists:'danh sách mở kỳ',materials:'danh mục vật tư',plant_materials:'danh mục kho',profiles:'người dùng'};
+function tblVN(t){return TBL_VN[t]||t;}
+function errBox(title,lines,detail){
+  const old=document.getElementById('errBox');if(old)old.remove();
+  const oldS=document.getElementById('errBoxScrim');if(oldS)oldS.remove();
+  const scrim=document.createElement('div');scrim.className='errbox-scrim';scrim.id='errBoxScrim';
+  const box=document.createElement('div');box.className='errbox';box.id='errBox';
+  const ctx=['Thời điểm: <b>'+now()+'</b>'];
+  try{if(session)ctx.push('Người dùng: <b>'+session.name+'</b> ('+((ROLES[session.role]||{}).label||session.role)+')');}catch(e){}
+  const body=(lines||[]).map(x=>'<li>'+x+'</li>').join('');
+  box.innerHTML=`<div class="errbox-h">⚠ ${title||'Không lưu được lên máy chủ'}</div>
+    <div class="errbox-b">
+      <ul>${body}</ul>
+      <div class="errbox-ctx">${ctx.join('<br>')}</div>
+      ${detail?`<pre class="errbox-det">${String(detail).replace(/</g,'&lt;')}</pre>`:''}
+    </div>
+    <div class="errbox-f">
+      <button class="btn btn-ghost btn-sm" id="errCopy">📋 Sao chép nội dung lỗi</button>
+      <button class="btn btn-primary btn-sm" id="errClose">Đã đọc — Đóng</button>
+    </div>`;
+  document.body.appendChild(scrim);document.body.appendChild(box);
+  const plain=[title||'',...(lines||[]),...ctx,detail||''].join('\n').replace(/<[^>]*>/g,'');
+  box.querySelector('#errCopy').onclick=()=>{
+    const b=box.querySelector('#errCopy');
+    const done=()=>{b.textContent='✓ Đã sao chép — dán vào Zalo/Teams gửi admin';};
+    try{navigator.clipboard.writeText(plain).then(done,()=>{});}
+    catch(e){const ta=document.createElement('textarea');ta.value=plain;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');done();}catch(e2){}ta.remove();}
+  };
+  const close=()=>{box.remove();scrim.remove();};
+  box.querySelector('#errClose').onclick=close;
+  // KHÔNG đóng khi bấm ra ngoài và KHÔNG tự hết giờ — chỉ nút Đóng mới tắt được
+  return box;
+}
 function log(action,detail){const e={time:now(),user:session?session.name:'—',role:session?ROLES[session.role].label:'—',action,detail};auditLog.unshift(e);
   if(sb&&session)dbIns('audit_log',{user_name:e.user,role:e.role,action,detail});}
 function plantsList(){const s=new Set(),o=[];DATA.warehouses.forEach(w=>{if(!s.has(w.plant)){s.add(w.plant);o.push({plant:w.plant,name:w.plant_name});}});return o.sort((a,b)=>a.name.localeCompare(b.name,'vi'));}
@@ -739,7 +789,9 @@ async function insSubmissionSafe(sub){
     const {data,error}=await sb.from('submissions').insert(row).select();
     if(!error){
       // RLS chặn kiểu "không thấy dòng vừa chèn" => coi như CHƯA lưu, không báo thành công giả
-      if(Array.isArray(data)&&data.length===0){console.error('submissions: INSERT 0 dòng',row);toast('⚠ Máy chủ không nhận phiếu (quyền RLS) — phiếu CHƯA được lưu.');return false;}
+      if(Array.isArray(data)&&data.length===0){console.error('submissions: INSERT 0 dòng',row);
+        errBox('Máy chủ KHÔNG nhận phiếu kiểm kê',['Máy chủ nhận yêu cầu nhưng <b>không tạo dòng nào</b> — do quyền (RLS) chưa cho tài khoản này gửi phiếu.','Số đã đếm <b>vẫn còn ở nháp</b> trên máy này, tải lại trang vẫn thấy.','Chụp màn hình này gửi admin để cấp quyền, rồi gửi lại.'],'Bảng: submissions\nMã phiếu: '+sub.id+'\nKho: '+whName(sub.plant,sub.sloc)+' ('+sub.plant+'/'+sub.sloc+')\nKỳ: '+(sub.period||'')+'\nSố mã: '+sub.count+'\nSố dòng tạo: 0');
+        return false;}
       return true;
     }
     const msg=String((error&&(error.message||error.code))||'');
@@ -753,10 +805,12 @@ async function insSubmissionSafe(sub){
       sub.id=pfx+ymd+'-'+(n+1);
       continue;
     }
-    console.error('submissions',error);toast('Lỗi lưu máy chủ: '+msg);return false;
+    console.error('submissions',error);
+    errBox('Không gửi được phiếu kiểm kê lên máy chủ',['Phiếu <b>CHƯA</b> được lưu. Số đã đếm <b>vẫn còn ở nháp</b> trên máy này.','Kiểm tra mạng rồi bấm gửi lại. Vẫn lỗi thì chụp màn hình này gửi admin.'],'Bảng: submissions\nMã phiếu: '+sub.id+'\nKho: '+whName(sub.plant,sub.sloc)+' ('+sub.plant+'/'+sub.sloc+')\nKỳ: '+(sub.period||'')+'\nSố mã: '+sub.count+'\n'+msg);
+    return false;
   }
   console.error('submissions: trùng mã sau 20 lần thử',tried);
-  toast('Không cấp được mã phiếu (đã thử '+tried.length+' số đều trùng) — phiếu CHƯA lưu, số vẫn còn ở nháp.');
+  errBox('Không cấp được mã phiếu',['Đã thử <b>'+tried.length+'</b> mã đều bị trùng — phiếu <b>CHƯA</b> lưu.','Số đã đếm <b>vẫn còn ở nháp</b>, không mất. Tải lại trang rồi gửi lại.','Chụp màn hình này gửi admin.'],'Bảng: submissions\nKho: '+whName(sub.plant,sub.sloc)+' ('+sub.plant+'/'+sub.sloc+')\nCác mã đã thử:\n'+tried.join('\n'));
   return false;
 }
 
@@ -1019,15 +1073,30 @@ function showFreshPill(){
 }
 function hideFreshPill(){const b=document.getElementById('freshPill');if(b)b.remove();}
 // các hàm ghi (đẩy lên Supabase; đồng bộ 45s sẽ cập nhật các thiết bị khác)
-async function dbIns(table,row){if(!sb)return;const {error}=await sb.from(table).insert(row);if(error){console.error(table,error);toast('Lỗi lưu máy chủ: '+error.message);}}
+// audit_log/notifications lỗi thì chỉ ghi Console — không dựng hộp lỗi chắn màn vì không ảnh hưởng số liệu nghiệp vụ
+const TBL_QUIET=['audit_log','notifications'];
+async function dbIns(table,row){if(!sb)return;const {error}=await sb.from(table).insert(row);if(error){console.error(table,error);
+  if(TBL_QUIET.indexOf(table)>=0)return;
+  errBox('Không lưu được '+tblVN(table)+' lên máy chủ',['Dữ liệu vừa nhập <b>CHƯA</b> lên máy chủ. Máy khác sẽ không thấy, tải lại trang là mất.','Chụp màn hình này gửi admin, rồi thử lại.'],'Bảng: '+table+'\n'+(error.message||'')+(error.code?'\nMã lỗi: '+error.code:''));}}
 // dbUpd/dbDel dùng .select() để BIẾT thực sự có bao nhiêu dòng đổi trên máy chủ.
 // RLS chặn UPDATE/DELETE thì Supabase KHÔNG trả error, chỉ trả 0 dòng => trước đây app im lặng
 // và vẫn xóa trong RAM (báo thành công giả, F5 là dữ liệu quay lại). Nay trả {ok,count} để nơi gọi kiểm tra.
-async function dbUpd(table,match,patch){if(!sb)return {ok:true,count:null};const {data,error}=await sb.from(table).update(patch).match(match).select();if(error){console.error(table,error);toast('Lỗi cập nhật: '+error.message);return {ok:false,count:0,error};}const n=Array.isArray(data)?data.length:null;if(n===0){console.warn(table+': UPDATE 0 dòng',match);toast('⚠ Máy chủ không cập nhật dòng nào ('+table+') — có thể do quyền RLS. Tải lại trang để xem số thật.');}return {ok:true,count:n};}
-async function dbDel(table,match){if(!sb)return {ok:true,count:null};const {data,error}=await sb.from(table).delete().match(match).select();if(error){console.error(table,error);toast('Lỗi xóa trên máy chủ ('+table+'): '+error.message);return {ok:false,count:0,error};}const n=Array.isArray(data)?data.length:null;if(n===0){console.warn(table+': DELETE 0 dòng',match);toast('⚠ Máy chủ không xóa dòng nào ('+table+') — có thể do quyền RLS. Tải lại trang để xem số thật.');}return {ok:true,count:n};}
-async function dbUpsert(table,row){if(!sb)return;const {error}=await sb.from(table).upsert(row);if(error){console.error(table,error);toast('Lỗi lưu máy chủ: '+error.message);}}
-async function dbUpsertOpening(plant,sloc,obj){if(!sb)return;const {error}=await sb.from('opening_stock').upsert({plant_code:plant,sloc_code:sloc,items:obj.items,from_id:obj.fromId,set_by:obj.by,set_at:new Date().toISOString()});if(error){console.error('opening',error);}}
-async function dbUpsertCountList(plant,sloc,period,items){if(!sb)return;const {error}=await sb.from('count_lists').upsert({plant_code:plant,sloc_code:sloc,period,items,created_by:session.name,created_at:new Date().toISOString()});if(error){console.error('count_lists',error);toast('Lỗi lưu danh sách kiểm kê: '+error.message);}}
+async function dbUpd(table,match,patch){if(!sb)return {ok:true,count:null};const {data,error}=await sb.from(table).update(patch).match(match).select();
+  if(error){console.error(table,error);errBox('Không cập nhật được '+tblVN(table)+' trên máy chủ',['Thay đổi vừa làm <b>CHƯA</b> được ghi. Tải lại trang là mất.','Chụp màn hình này gửi admin.'],'Bảng: '+table+'\n'+JSON.stringify(match)+'\n'+(error.message||'')+(error.code?'\nMã lỗi: '+error.code:''));return {ok:false,count:0,error};}
+  const n=Array.isArray(data)?data.length:null;
+  if(n===0){console.warn(table+': UPDATE 0 dòng',match);errBox('Máy chủ từ chối cập nhật '+tblVN(table),['Máy chủ nhận yêu cầu nhưng <b>không đổi dòng nào</b> — gần như luôn là do quyền (RLS) chưa cho tài khoản này sửa.','Thay đổi trên màn hình chỉ là tạm; tải lại trang sẽ về số cũ.','Chụp màn hình này gửi admin để cấp quyền.'],'Bảng: '+table+'\nĐiều kiện: '+JSON.stringify(match)+'\nSố dòng đổi: 0');}
+  return {ok:true,count:n};}
+async function dbDel(table,match){if(!sb)return {ok:true,count:null};const {data,error}=await sb.from(table).delete().match(match).select();
+  if(error){console.error(table,error);errBox('Không xóa được '+tblVN(table)+' trên máy chủ',['Dòng dữ liệu <b>vẫn còn</b> trên máy chủ. Tải lại trang sẽ thấy nó quay lại.','Chụp màn hình này gửi admin.'],'Bảng: '+table+'\n'+JSON.stringify(match)+'\n'+(error.message||'')+(error.code?'\nMã lỗi: '+error.code:''));return {ok:false,count:0,error};}
+  const n=Array.isArray(data)?data.length:null;
+  if(n===0){console.warn(table+': DELETE 0 dòng',match);errBox('Máy chủ từ chối xóa '+tblVN(table),['Máy chủ nhận yêu cầu nhưng <b>không xóa dòng nào</b> — gần như luôn là do quyền (RLS) chưa cho tài khoản này xóa.','Trên màn hình có thể thấy đã mất, nhưng tải lại trang là nó quay lại.','Chụp màn hình này gửi admin.'],'Bảng: '+table+'\nĐiều kiện: '+JSON.stringify(match)+'\nSố dòng xóa: 0');}
+  return {ok:true,count:n};}
+async function dbUpsert(table,row){if(!sb)return;const {error}=await sb.from(table).upsert(row);if(error){console.error(table,error);
+  errBox('Không lưu được '+tblVN(table)+' lên máy chủ',['Dữ liệu vừa nhập <b>CHƯA</b> lên máy chủ. Tải lại trang là mất.','Chụp màn hình này gửi admin, rồi thử lại.'],'Bảng: '+table+'\n'+(error.message||'')+(error.code?'\nMã lỗi: '+error.code:''));}}
+async function dbUpsertOpening(plant,sloc,obj){if(!sb)return;const {error}=await sb.from('opening_stock').upsert({plant_code:plant,sloc_code:sloc,items:obj.items,from_id:obj.fromId,set_by:obj.by,set_at:new Date().toISOString()});if(error){console.error('opening',error);
+  errBox('Không lưu được tồn đầu kỳ lên máy chủ',['Tồn đầu kỳ của kho <b>'+whName(plant,sloc)+'</b> <b>CHƯA</b> được ghi lên máy chủ.','Các kỳ sau sẽ tính sai nếu không xử lý. Chụp màn hình này gửi admin.'],'Bảng: opening_stock\nKho: '+plant+'/'+sloc+'\n'+(error.message||'')+(error.code?'\nMã lỗi: '+error.code:''));}}
+async function dbUpsertCountList(plant,sloc,period,items){if(!sb)return;const {error}=await sb.from('count_lists').upsert({plant_code:plant,sloc_code:sloc,period,items,created_by:session.name,created_at:new Date().toISOString()});if(error){console.error('count_lists',error);
+  errBox('Không lưu được danh sách mở kỳ',['Danh sách kiểm kê của kho <b>'+whName(plant,sloc)+'</b> kỳ tháng <b>'+periodVN(period)+'</b> <b>CHƯA</b> lên máy chủ — giám sát sẽ không thấy danh sách để đếm.','Chụp màn hình này gửi admin, rồi nạp lại.'],'Bảng: count_lists\nKho: '+plant+'/'+sloc+' · kỳ '+period+'\n'+(error.message||'')+(error.code?'\nMã lỗi: '+error.code:''));}}
 
 /* ============ LOGIN ============ */
 function fillRegPlants(){const s=$('#regPlant');if(!s||s._filled)return;s._filled=true;
@@ -1636,7 +1705,7 @@ function commitKKUpload(r,period,cb){
   (async()=>{
     const sub={id:await nextKKId(r.plant,r.sloc),plant:r.plant,sloc:r.sloc,user:session.name+' (nhập từ Excel)',role:ROLES[session.role].label,time:now(),period:period,status:'Chờ duyệt',items:{...r.items},count:r.ok};
     const okIns=await insSubmissionSafe(sub);
-    if(!okIns){alert('CHƯA TẠO ĐƯỢC PHIẾU trên máy chủ — file Excel vẫn còn, hãy thử nạp lại. Nếu vẫn lỗi thì báo admin (quyền RLS).');return;}
+    if(!okIns)return; // insSubmissionSafe đã dựng hộp lỗi chi tiết, không hiện thêm để khỏi che
     submissions.unshift(sub);
     log('Nhập phiếu kiểm kê từ Excel',`${sub.id} · ${whName(sub.plant,sub.sloc)} · kỳ ${periodVN(period)} · ${sub.count} mã`);
     toast('✓ Đã tạo phiếu '+sub.id+' ('+sub.count+' mã) — Chờ duyệt');
@@ -2430,12 +2499,9 @@ function renderCountSheet(v){
     (async()=>{
       const sub={id:await nextKKId(counting.plant,counting.sloc),plant:counting.plant,sloc:counting.sloc,user:session.name,role:ROLES[session.role].label,time:now(),period:counting.period||curPeriod(),status:'Chờ duyệt',items:{...items},count:n};
       const okIns=await insSubmissionSafe(sub);
-      if(!okIns){
-        // KHÔNG xóa nháp, KHÔNG ghi nhật ký "đã gửi": số đã đếm phải còn nguyên để gửi lại
-        saveDrafts();
-        alert('CHƯA GỬI ĐƯỢC PHIẾU LÊN MÁY CHỦ.\n\n'+n+' mã vừa nhập VẪN CÒN ở nháp trên máy này — không mất, tải lại trang vẫn thấy.\n\nHãy làm theo thứ tự:\n1. Kiểm tra mạng, bấm "Hoàn thành & Gửi" lại.\n2. Vẫn lỗi thì bấm "📥 Xuất biên bản (in ký)" để giữ số ra file Excel.\n3. Chụp màn hình gửi admin — tài khoản có thể chưa được cấp quyền gửi phiếu kiểm kê.');
-        return;
-      }
+      // KHÔNG xóa nháp, KHÔNG ghi nhật ký "đã gửi": số đã đếm phải còn nguyên để gửi lại.
+      // insSubmissionSafe đã dựng hộp lỗi chi tiết (không tự tắt) — không hiện thêm gì để khỏi che nó.
+      if(!okIns){saveDrafts();return;}
       submissions.unshift(sub);log('Gửi phiếu kiểm kê',`${sub.id} · ${whName(sub.plant,sub.sloc)} · kỳ ${periodVN(sub.period)} · ${n} mã`);
       learnMaterials(MATS);
       delete drafts[key];saveDrafts();counting=null;toast('Đã gửi phiếu '+sub.id+' ('+n+' mã)');renderView();
