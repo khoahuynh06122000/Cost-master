@@ -724,8 +724,12 @@ async function nextKKIdServer(period){
 // trước đây hàm này thất bại vẫn để nơi gọi báo "Đã gửi phiếu" + xóa nháp => mất trắng số đã đếm.
 async function insSubmissionSafe(sub){
   if(!sb)return true;
-  for(let i=0;i<6;i++){
+  const per=sub.period||curPeriod();
+  const pfx='KK-'+String(per).replace(/-/g,'')+'-';
+  const tried=[];
+  for(let i=0;i<20;i++){
     const row={id:sub.id,plant_code:sub.plant,sloc_code:sub.sloc,user_name:sub.user,role:sub.role,status:sub.status,count:sub.count,items:sub.items,period:sub.period};
+    tried.push(sub.id);
     const {data,error}=await sb.from('submissions').insert(row).select();
     if(!error){
       // RLS chặn kiểu "không thấy dòng vừa chèn" => coi như CHƯA lưu, không báo thành công giả
@@ -733,10 +737,19 @@ async function insSubmissionSafe(sub){
       return true;
     }
     const msg=String((error&&(error.message||error.code))||'');
-    if(/duplicate|pkey|23505|already exists/i.test(msg)){sub.id=await nextKKIdServer(sub.period||curPeriod());continue;}
+    if(/duplicate|pkey|23505|already exists/i.test(msg)){
+      // KHÔNG tin nextKKIdServer một mình: nếu RLS che phiếu của kho khác thì nó trả về ĐÚNG số vừa
+      // trùng => vòng lặp mù, thử 6 lần cùng một số rồi bỏ cuộc (đã làm mất 1 phiếu 114 mã ngày 21/08/2026).
+      // Nay luôn tự tăng qua số vừa thử, lấy max với số máy chủ gợi ý.
+      const curN=parseInt(String(sub.id).slice(pfx.length),10)||0;
+      const srvN=parseInt(String(await nextKKIdServer(per)).slice(pfx.length),10)||0;
+      sub.id=pfx+String(Math.max(curN+1,srvN)).padStart(3,'0');
+      continue;
+    }
     console.error('submissions',error);toast('Lỗi lưu máy chủ: '+msg);return false;
   }
-  toast('Trùng mã phiếu nhiều lần — hãy F5 rồi gửi lại.');
+  console.error('submissions: trùng mã sau 20 lần thử',tried);
+  toast('Không cấp được mã phiếu (đã thử '+tried.length+' số đều trùng) — phiếu CHƯA lưu, số vẫn còn ở nháp.');
   return false;
 }
 
