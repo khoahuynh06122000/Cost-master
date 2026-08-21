@@ -705,27 +705,33 @@ function whName(p,s){const w=DATA.warehouses.find(x=>x.plant===p&&x.sloc===s);re
 function plantName(p){const w=DATA.warehouses.find(x=>x.plant===p);return w?w.plant_name:p;}
 function initials(n){return (n||'?').trim().split(/\s+/).slice(-1)[0][0].toUpperCase();}
 function uid(p){return p+Date.now().toString(36).slice(-5).toUpperCase()+Math.floor(Math.random()*90+10);}
-// Số phiếu kiểm kê chạy tuần tự theo từng tháng: KK-202607-001, KK-202607-002...
-function nextKKId(period){
-  const pfx='KK-'+String(period||curPeriod()).replace(/-/g,'')+'-';
-  let mx=0;submissions.forEach(x=>{if(x.id&&x.id.indexOf(pfx)===0){const n=parseInt(x.id.slice(pfx.length),10);if(n>mx)mx=n;}});
-  return pfx+String(mx+1).padStart(3,'0');
-}
-// Sinh mã phiếu dựa trên dữ liệu MỚI NHẤT từ Supabase (không chỉ máy đang giữ) -> tránh trùng mã
-async function nextKKIdServer(period){
-  const pfx='KK-'+String(period||curPeriod()).replace(/-/g,'')+'-';
-  let mx=0;
-  submissions.forEach(x=>{if(x.id&&x.id.indexOf(pfx)===0){const n=parseInt(x.id.slice(pfx.length),10);if(!isNaN(n)&&n>mx)mx=n;}});
-  if(sb){try{const {data}=await sb.from('submissions').select('id').like('id',pfx+'%').order('id',{ascending:false}).limit(1);if(data&&data[0]){const n=parseInt(String(data[0].id).slice(pfx.length),10);if(!isNaN(n)&&n>mx)mx=n;}}catch(e){}}
-  return pfx+String(mx+1).padStart(3,'0');
+/* ===== QUY ƯỚC MÃ PHIẾU KIỂM KÊ (áp dụng từ 21/08/2026) =====
+   KK-<plant>-<sloc>-<YYYYMMDD>      ví dụ: KK-1052-2048-20260821
+   - Địa điểm kiểm kê = khóa kép plant + sloc (sloc trùng nhau giữa các plant nên phải có cả hai).
+   - Ngày = ngày thực hiện kiểm kê, dạng YYYYMMDD để mã tự sắp theo thời gian.
+   - Kỳ kiểm kê KHÔNG nằm trong mã, vẫn ở cột `period` riêng.
+   - Cùng kho + cùng ngày mà kiểm kê nhiều lần: thêm hậu tố -2, -3... (KK-1052-2048-20260821-2)
+   Vì mã đã mang địa điểm, hai kho gửi cùng lúc KHÔNG BAO GIỜ trùng mã nữa —
+   đây là gốc của vụ mất phiếu 114 mã NH Brasseries ngày 21/08/2026.
+   Mã cũ (KK-202607-011) giữ nguyên, không đổi ngược. */
+function kkYmd(d){const dt=d?new Date(d):new Date();return dt.getFullYear()+String(dt.getMonth()+1).padStart(2,'0')+String(dt.getDate()).padStart(2,'0');}
+function kkIdBase(plant,sloc,d){return 'KK-'+plant+'-'+sloc+'-'+kkYmd(d);}
+// Mã kế tiếp cho kho + ngày: hỏi cả máy chủ để tránh trùng khi 2 máy gửi cùng lúc
+async function nextKKId(plant,sloc,d){
+  const base=kkIdBase(plant,sloc,d);
+  const taken=new Set();
+  submissions.forEach(x=>{if(x.id&&String(x.id).indexOf(base)===0)taken.add(String(x.id));});
+  if(sb){try{const {data}=await sb.from('submissions').select('id').like('id',base+'%');(data||[]).forEach(r=>taken.add(String(r.id)));}catch(e){}}
+  if(!taken.has(base))return base;
+  for(let i=2;i<500;i++){const c=base+'-'+i;if(!taken.has(c))return c;}
+  return base+'-'+Date.now().toString(36).slice(-4).toUpperCase();
 }
 // Chèn phiếu; nếu trùng mã (submissions_pkey) thì nhảy số kế tiếp và thử lại. Cập nhật sub.id tại chỗ.
 // Trả về TRUE chỉ khi máy chủ thực sự nhận phiếu. Nơi gọi BẮT BUỘC kiểm tra kết quả:
 // trước đây hàm này thất bại vẫn để nơi gọi báo "Đã gửi phiếu" + xóa nháp => mất trắng số đã đếm.
 async function insSubmissionSafe(sub){
   if(!sb)return true;
-  const per=sub.period||curPeriod();
-  const pfx='KK-'+String(per).replace(/-/g,'')+'-';
+  const pfx='KK-'+sub.plant+'-'+sub.sloc+'-';
   const tried=[];
   for(let i=0;i<20;i++){
     const row={id:sub.id,plant_code:sub.plant,sloc_code:sub.sloc,user_name:sub.user,role:sub.role,status:sub.status,count:sub.count,items:sub.items,period:sub.period};
@@ -738,12 +744,13 @@ async function insSubmissionSafe(sub){
     }
     const msg=String((error&&(error.message||error.code))||'');
     if(/duplicate|pkey|23505|already exists/i.test(msg)){
-      // KHÔNG tin nextKKIdServer một mình: nếu RLS che phiếu của kho khác thì nó trả về ĐÚNG số vừa
-      // trùng => vòng lặp mù, thử 6 lần cùng một số rồi bỏ cuộc (đã làm mất 1 phiếu 114 mã ngày 21/08/2026).
-      // Nay luôn tự tăng qua số vừa thử, lấy max với số máy chủ gợi ý.
-      const curN=parseInt(String(sub.id).slice(pfx.length),10)||0;
-      const srvN=parseInt(String(await nextKKIdServer(per)).slice(pfx.length),10)||0;
-      sub.id=pfx+String(Math.max(curN+1,srvN)).padStart(3,'0');
+      // Tự tăng hậu tố dựa trên chính mã vừa thử — KHÔNG hỏi lại máy chủ, vì RLS có thể che
+      // phiếu của kho khác và trả về đúng mã vừa trùng => vòng lặp mù (mất phiếu 21/08/2026).
+      const rest=String(sub.id).indexOf(pfx)===0?String(sub.id).slice(pfx.length):'';
+      const parts=rest?rest.split('-'):[];
+      const ymd=parts[0]||kkYmd();
+      const n=parseInt(parts[1]||'1',10)||1;
+      sub.id=pfx+ymd+'-'+(n+1);
       continue;
     }
     console.error('submissions',error);toast('Lỗi lưu máy chủ: '+msg);return false;
@@ -1627,7 +1634,7 @@ function commitKKUpload(r,period,cb){
   const afterMat=()=>{if(sb&&r.newCodesForPlant.length)sb.from('plant_materials').upsert(r.newCodesForPlant.map(c=>({plant_code:r.plant,code:c}))).then(({error})=>{if(error)console.error('plant_materials',error);});};
   if(sb&&matArr.length)sb.from('materials').upsert(matArr).then(({error})=>{if(error)console.error('materials',error);afterMat();}); else afterMat();
   (async()=>{
-    const sub={id:await nextKKIdServer(period),plant:r.plant,sloc:r.sloc,user:session.name+' (nhập từ Excel)',role:ROLES[session.role].label,time:now(),period:period,status:'Chờ duyệt',items:{...r.items},count:r.ok};
+    const sub={id:await nextKKId(r.plant,r.sloc),plant:r.plant,sloc:r.sloc,user:session.name+' (nhập từ Excel)',role:ROLES[session.role].label,time:now(),period:period,status:'Chờ duyệt',items:{...r.items},count:r.ok};
     const okIns=await insSubmissionSafe(sub);
     if(!okIns){alert('CHƯA TẠO ĐƯỢC PHIẾU trên máy chủ — file Excel vẫn còn, hãy thử nạp lại. Nếu vẫn lỗi thì báo admin (quyền RLS).');return;}
     submissions.unshift(sub);
@@ -2408,7 +2415,7 @@ function renderCountSheet(v){
   bXls.onclick=()=>{
     const n=filled();if(n===0){toast('Chưa nhập mã nào để xuất');return;}
     const clean={};Object.entries(items).forEach(([c,val])=>{if(val!==''&&val!=null)clean[c]=Number(val);});
-    exportBBKK({id:'KK-'+(counting.period||curPeriod()),plant:counting.plant,sloc:counting.sloc,user:session.name,role:ROLES[session.role].label,time:now(),period:counting.period||curPeriod(),items:clean});
+    exportBBKK({id:kkIdBase(counting.plant,counting.sloc),plant:counting.plant,sloc:counting.sloc,user:session.name,role:ROLES[session.role].label,time:now(),period:counting.period||curPeriod(),items:clean});
   };
   bDone.onclick=()=>{
     const n=filled();if(n===0){toast('Chưa nhập mã nào');return;}
@@ -2421,7 +2428,7 @@ function renderCountSheet(v){
     msg+=`\n\nSau khi gửi sẽ chuyển sang trạng thái Chờ duyệt.`;
     if(!confirm(msg))return;
     (async()=>{
-      const sub={id:await nextKKIdServer(counting.period||curPeriod()),plant:counting.plant,sloc:counting.sloc,user:session.name,role:ROLES[session.role].label,time:now(),period:counting.period||curPeriod(),status:'Chờ duyệt',items:{...items},count:n};
+      const sub={id:await nextKKId(counting.plant,counting.sloc),plant:counting.plant,sloc:counting.sloc,user:session.name,role:ROLES[session.role].label,time:now(),period:counting.period||curPeriod(),status:'Chờ duyệt',items:{...items},count:n};
       const okIns=await insSubmissionSafe(sub);
       if(!okIns){
         // KHÔNG xóa nháp, KHÔNG ghi nhật ký "đã gửi": số đã đếm phải còn nguyên để gửi lại
