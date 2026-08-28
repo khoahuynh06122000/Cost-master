@@ -663,6 +663,7 @@ const TABS={
 
 let session=null,activeTab=null;
 let submissions=[],drafts={},transfers=[],auditLog=[];
+let trReqs=[];  // phiếu yêu cầu điều chuyển / hủy hao hụt (bảng transfer_requests) — có duyệt 2 bên
 
 /* ===== NHÁP BỀN: số đang nhập được lưu vào máy, reload/mất mạng vẫn còn ===== */
 const DRAFT_LS='kk_drafts_v1';
@@ -815,6 +816,41 @@ async function insSubmissionSafe(sub){
   return false;
 }
 
+/* ===== PHIẾU YÊU CẦU ĐIỀU CHUYỂN / HỦY — MÃ PHIẾU & QUYỀN DUYỆT =====
+   Mã theo đúng quy ước phiếu kiểm kê: <tiền tố>-<plant>-<sloc>-<YYYYMMDD>, trùng ngày thì -2, -3...
+   DC = xin hàng / đẩy hàng (lấy kho NGUỒN làm địa điểm) · HH = hủy, hao hụt. */
+function dcIdBase(kind,plant,sloc,d){return (kind==='huy'?'HH-':'DC-')+plant+'-'+sloc+'-'+kkYmd(d);}
+async function nextDCId(kind,plant,sloc,d){
+  const base=dcIdBase(kind,plant,sloc,d);
+  const taken=new Set();
+  trReqs.forEach(x=>{if(x.id&&String(x.id).indexOf(base)===0)taken.add(String(x.id));});
+  if(sb){try{const {data}=await sb.from('transfer_requests').select('id').like('id',base+'%');(data||[]).forEach(r=>taken.add(String(r.id)));}catch(e){}}
+  if(!taken.has(base))return base;
+  for(let i=2;i<500;i++){const c=base+'-'+i;if(!taken.has(c))return c;}
+  return base+'-'+Date.now().toString(36).slice(-4).toUpperCase();
+}
+// Kho mà người đang đăng nhập được thao tác, dạng ['plant|sloc', ...]
+function myWhKeys(){
+  const out=[];allowedPlants().forEach(p=>allowedSlocsOf(p.plant).forEach(w=>out.push(p.plant+'|'+w.sloc)));
+  return out;
+}
+// Phiếu này có đang chờ CHÍNH MÌNH duyệt không?
+//  - xin hàng  -> giám sát kho NGUỒN duyệt (người mất hàng)
+//  - đẩy hàng  -> giám sát kho ĐÍCH xác nhận (người nhận hàng)
+//  - hủy/hao hụt -> kế toán/admin duyệt (ăn thẳng vào chi phí)
+function isMyApproval(r){
+  if(r.status!=='Chờ duyệt')return false;
+  if(r.kind==='huy')return isPrivileged();
+  const key=r.kind==='xin'?(r.fromPlant+'|'+r.fromSloc):(r.toPlant+'|'+r.toSloc);
+  return session&&session.role==='admin'?true:myWhKeys().indexOf(key)>=0;
+}
+function pendingForMe(){return trReqs.filter(isMyApproval);}
+function dcKindLabel(k){return k==='xin'?'Xin hàng':k==='day'?'Đẩy hàng':'Hủy / hao hụt';}
+function dcStatusBadge(st){
+  if(st==='Đã duyệt')return '<span class="badge badge-done">✓ Đã duyệt</span>';
+  if(st==='Từ chối')return '<span class="badge" style="background:#F7E4E4;color:var(--red)">✕ Từ chối</span>';
+  return '<span class="badge badge-wait">⏳ Chờ duyệt</span>';
+}
 /* ===== Danh mục vật tư THEO PLANT (không dùng chung) ===== */
 const masterByCode={};DATA.materials.forEach(m=>masterByCode[m.code]=m);
 // Học tên vật tư khi biết được (từ danh sách mở kỳ, phiếu đếm, phiếu nhập...) và đẩy lên danh mục tổng `materials` để hết "?" ở mọi nơi
@@ -937,6 +973,20 @@ function movementsOf(plant,sloc,period){
     if(t.fromKey===key)tout[t.code]=(tout[t.code]||0)+Number(t.qty||0);});
   return {buy,tin,tout};
 }
+/* ===== TỒN ƯỚC TÍNH CỦA 1 KHO TẠI THỜI ĐIỂM HIỆN TẠI =====
+   = Tồn đầu kỳ + Nhập mua + ĐC đến − ĐC đi (trong kỳ).
+   Gọi là ƯỚC TÍNH vì app chưa có số xuất bán — phần đã bán ra chưa được trừ.
+   Dùng để dựng danh sách mã cho phép điều chuyển (chỉ mã còn hàng ở kho nguồn). */
+function stockNow(plant,sloc,period){
+  const key=plant+'|'+sloc,per=period||curPeriod();
+  const dk=(openingStock[key]&&openingStock[key].items)||{};
+  const mv=movementsOf(plant,sloc,per);
+  const out={};
+  new Set([...Object.keys(dk),...Object.keys(mv.buy),...Object.keys(mv.tin),...Object.keys(mv.tout)]).forEach(c=>{
+    out[c]=Number(dk[c]||0)+Number(mv.buy[c]||0)+Number(mv.tin[c]||0)-Number(mv.tout[c]||0);
+  });
+  return out;
+}
 // Bảng dòng kho cho 1 phiếu kiểm kê: mỗi mã → ĐK, Nhập mua, ĐC đến, ĐC đi, Tồn cuối (đếm), Xuất (tính)
 function inventoryFlow(s){
   const key=s.plant+'|'+s.sloc;const period=s.period||curPeriod();
@@ -985,7 +1035,7 @@ function viewHasTyped(){try{return Array.prototype.some.call(document.querySelec
   i=>i.type!=='file'&&i.type!=='checkbox'&&i.type!=='radio'&&String(i.value||'').trim()!=='');}catch(e){return false;}}
 function inEntry(){return !!(counting||shiftEntry||ocrPreviewOpen||typingNow()||viewHasTyped());}
 // Chữ ký dữ liệu để phát hiện có thay đổi thật (thêm/sửa/xóa/duyệt) sau mỗi lần tải ngầm
-function syncSig(){try{return [submissions,transfers,receipts,closings,spotChecks,shifts,notifications]
+function syncSig(){try{return [submissions,transfers,receipts,closings,spotChecks,shifts,notifications,trReqs]
   .map(a=>Array.isArray(a)?a.length+':'+JSON.stringify(a).length:'0').join('|')+'|op'+Object.keys(openingStock||{}).length;}catch(e){return '';}}
 async function fetchAllRows(table,cols){
   const out=[];let from=0;const step=1000;
@@ -1025,6 +1075,11 @@ async function dbLoadAll(){
     notifications=(nt&&nt.data?nt.data:[]).map(r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,message:r.message,kind:r.kind,by:r.created_by,read:!!r.read_flag,time:fmt(r.created_at)}));
     closings=(rc&&rc.data?rc.data:[]).map(r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,period:r.period,items:r.items||{},recon:r.recon||{},explain:r.explain||{},status:r.status||'Chờ duyệt',by:r.created_by,approvedBy:r.approved_by,approvedAt:r.approved_at?fmt(r.approved_at):null,prevOpening:r.prev_opening||null,time:fmt(r.created_at)}));
     try{const rp=await sb.from('receipts').select('*').order('created_at',{ascending:false}).limit(2000);receipts=(rp.data||[]).map(r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,code:r.code,name:r.name,uom:r.uom,qty:Number(r.qty)||0,date:r.date,period:r.period||periodOfDate(r.date),note:r.note,by:r.created_by,time:fmt(r.created_at)}));}catch(e){receipts=[];console.warn('Chưa có bảng receipts (nhập kho) — bỏ qua',e&&e.message);}
+    try{const tq=await sb.from('transfer_requests').select('*').order('created_at',{ascending:false}).limit(500);
+      trReqs=(tq.data||[]).map(r=>({id:r.id,kind:r.kind,fromPlant:r.from_plant,fromSloc:r.from_sloc,toPlant:r.to_plant,toSloc:r.to_sloc,
+        items:r.items||{},reason:r.reason||'',status:r.status||'Chờ duyệt',period:r.period||null,
+        by:r.created_by,time:fmt(r.created_at),approvedBy:r.approved_by,approvedAt:r.approved_at?fmt(r.approved_at):null,rejectNote:r.reject_note||''}));
+    }catch(e){trReqs=[];console.warn('Chưa có bảng transfer_requests — bỏ qua',e&&e.message);}
     try{const cl2=await sb.from('count_lists').select('*');countLists={};(cl2.data||[]).forEach(r=>{countLists[r.plant_code+'|'+r.sloc_code+'|'+r.period]={items:r.items||{},by:r.created_by,at:r.created_at?fmt(r.created_at):''};});}catch(e){countLists={};console.warn('Chưa có bảng count_lists — bỏ qua',e&&e.message);}
     if(session&&(session.role==='admin'||session.role==='giam_sat')){try{const pr=await sb.from('profiles').select('*').order('created_at',{ascending:false});profiles=pr.data||[];}catch(e){}
       try{const up=await sb.from('user_plants').select('*');userPlants={};userWh={};(up.data||[]).forEach(r=>{
@@ -2339,11 +2394,15 @@ function renderKiemke(v){
     c.innerHTML=`<div class="hub-ic">${ico}</div><div class="hub-t">${title}${active?' <span class="badge badge-done" style="font-size:9px;vertical-align:middle">đang chọn</span>':''}</div><div class="hub-s">${desc}</div>`;
     return c;
   }
-  const cE=methodCard(HIC.sheet,'Up Excel','Nạp file Excel có sẵn (Mã hàng, ĐVT, Số lượng) để tạo phiếu nhanh.',kkMethod==='excel');
-  cE.onclick=()=>{kkMethod='excel';counting=null;renderView();};
+  // Up Excel: CHỈ kế toán/admin. Các vai còn lại chỉ kiểm đếm tay trên danh sách có sẵn.
+  if(isPrivileged()){
+    const cE=methodCard(HIC.sheet,'Up Excel','Nạp file Excel có sẵn (Mã hàng, ĐVT, Số lượng) để tạo phiếu nhanh.',kkMethod==='excel');
+    cE.onclick=()=>{kkMethod='excel';counting=null;renderView();};
+    mgrid.appendChild(cE);
+  }else if(kkMethod==='excel')kkMethod='';
   const cD=methodCard(HIC.box,'Kiểm đếm trực tiếp','Gõ số đếm thực tế từng mã ngay trên máy, có đối chiếu tồn đầu kỳ.',kkMethod==='direct');
   cD.onclick=()=>{kkMethod='direct';counting={plant:kkSel.plant,sloc:kkSel.sloc,period:kkPeriod};renderView();setTimeout(()=>{const c=$('#countCard');if(c)c.scrollIntoView({behavior:'smooth',block:'start'});},60);};
-  mgrid.appendChild(cE);mgrid.appendChild(cD);mb.appendChild(mgrid);mCard.appendChild(mb);v.appendChild(mCard);
+  mgrid.appendChild(cD);mb.appendChild(mgrid);mCard.appendChild(mb);v.appendChild(mCard);
   // panel Up Excel (khi chọn); Kiểm đếm trực tiếp do khối 'counting' bên dưới lo
   if(kkMethod==='excel')renderKKUpload(v,{plant:kkSel.plant,sloc:kkSel.sloc,period:kkPeriod});
 
@@ -2625,16 +2684,32 @@ function renderDieuchuyen(v){
   const c=ensureNkCtx();
   const nRc=receipts.filter(r=>r.plant===c.plant&&r.sloc===c.sloc&&((r.period||periodOfDate(r.date))===c.period)).length;
   const nTr=transfers.filter(t=>(t.period||'')===c.period).length;
-  renderHubView(v,'dieuchuyen',[
+  const nCho=pendingForMe().length;
+  const nMine=trReqs.filter(r=>r.by===session.name&&r.status==='Chờ duyệt').length;
+  const acts=[
     {k:'nk',ico:HIC.box,title:'Nhập kho mua mới',sub:'Hàng nhà cung cấp về kho — gõ tay hoặc quét ảnh phiếu',n:nRc?nRc+' dòng đã nhập kỳ này':'',render:dcNhapKho},
-    {k:'dc',ico:HIC.swap,title:'Điều chuyển giữa kho',sub:'Trừ kho nguồn, cộng kho đích trong cùng kỳ',n:nTr?nTr+' phiếu kỳ này':'',render:dcDieuChuyen},
-    {k:'xls',ico:HIC.sheet,title:'Nạp Excel điều chuyển',sub:'File tải từ SharePoint — xem trước từng dòng rồi mới lưu',warm:true,render:dcNapExcel},
-    {k:'ds',ico:HIC.list,title:'Xem lại & xuất file',sub:'Toàn bộ phiếu điều chuyển đã lưu, xuất CSV',render:dcXemLai},
-  ]);
+    {k:'xin',ico:HIC.swap,title:'Xin hàng từ kho khác',sub:'Kho mình thiếu — lập yêu cầu, giám sát kho kia duyệt mới trừ hàng',n:nMine?nMine+' phiếu mình đang chờ':'',render:v2=>dcRequestForm(v2,'xin')},
+    {k:'day',ico:HIC.swap,title:'Đẩy hàng sang kho khác',sub:'Chủ động chuyển đi — kho nhận xác nhận thì mới ghi sổ',render:v2=>dcRequestForm(v2,'day')},
+    {k:'huy',ico:HIC.warn,title:'Hủy / hao hụt',sub:'Hàng hỏng, đổ bỏ, mất — kế toán duyệt rồi mới trừ kho',render:v2=>dcRequestForm(v2,'huy')},
+    {k:'duyet',ico:HIC.clock,title:'Chờ tôi duyệt',sub:'Phiếu kho khác gửi tới — duyệt, sửa số thực giao hoặc từ chối',n:nCho?nCho+' phiếu chờ':'',warm:!!nCho,render:dcChoDuyet},
+    {k:'ds',ico:HIC.list,title:'Xem lại & xuất file',sub:'Phiếu yêu cầu và sổ điều chuyển đã ghi, xuất CSV',n:nTr?nTr+' dòng sổ kỳ này':'',render:dcXemLai},
+  ];
+  // Nạp Excel điều chuyển: chỉ kế toán/admin — các vai còn lại gõ tay trên danh sách có sẵn
+  if(isPrivileged())acts.push({k:'xls',ico:HIC.sheet,title:'Nạp Excel điều chuyển',sub:'File SharePoint — ghi nhận việc đã xảy ra, vào thẳng sổ',render:dcNapExcel});
+  renderHubView(v,'dieuchuyen',acts);
 }
 function dcXemLai(v){
-  const card=el('div','card');
-  card.appendChild(el('div','card-h',`<div><span class="ct">Phiếu điều chuyển đã lưu</span><div class="cs">${transfers.length} phiếu</div></div><button class="btn btn-ghost btn-sm" onclick="exportTransfers()">⬇ Xuất CSV</button>`));
+  // 1) Phiếu yêu cầu của chính mình / kho mình — theo dõi trạng thái duyệt
+  const mineKeys=myWhKeys();
+  const rq=trReqs.filter(r=>r.by===session.name||mineKeys.indexOf(r.fromPlant+'|'+r.fromSloc)>=0||(r.toPlant&&mineKeys.indexOf(r.toPlant+'|'+r.toSloc)>=0)||isPrivileged());
+  const rc=el('div','card');
+  rc.appendChild(el('div','card-h',`<div><span class="ct">Phiếu yêu cầu điều chuyển / hủy</span><div class="cs">Trạng thái duyệt của phiếu liên quan tới kho mình</div></div><span class="badge badge-soft">${rq.length}</span>`));
+  const rb=el('div');rc.appendChild(rb);v.appendChild(rc);
+  if(!rq.length)rb.appendChild(el('div','empty',`<div class="big">Chưa có phiếu yêu cầu</div><div>Lập phiếu ở mục Xin hàng / Đẩy hàng / Hủy — hao hụt.</div>`));
+  else rq.slice(0,40).forEach(r=>rb.appendChild(dcReqCard(r,false)));
+  // 2) Sổ điều chuyển đã ghi (chỉ có dòng của phiếu ĐÃ DUYỆT và các dòng nạp từ Excel)
+  const card=el('div','card');card.style.marginTop='16px';
+  card.appendChild(el('div','card-h',`<div><span class="ct">Sổ điều chuyển đã ghi</span><div class="cs">${transfers.length} dòng — chỉ ghi khi phiếu được duyệt</div></div><button class="btn btn-ghost btn-sm" onclick="exportTransfers()">⬇ Xuất CSV</button>`));
   const body=el('div');body.id='transList';card.appendChild(body);v.appendChild(card);renderTransList();
 }
 function dcNapExcel(v){
@@ -2665,64 +2740,226 @@ function dcNapExcel(v){
     ib.appendChild(fin);ib.appendChild(prev);impCard.appendChild(ib);v.appendChild(impCard);
   }
 }
-function dcDieuChuyen(v){
+/* ================== LẬP PHIẾU ĐIỀU CHUYỂN / HỦY ==================
+   Một form dùng chung 3 loại:
+     xin — kho MÌNH nhận, chọn kho NGUỒN của người khác; giám sát kho nguồn duyệt
+     day — kho MÌNH giao, chọn kho ĐÍCH; giám sát kho đích xác nhận đã nhận
+     huy — chỉ kho MÌNH, hàng ra khỏi hệ thống; kế toán duyệt
+   Danh sách hàng = mã ĐANG CÓ TỒN ở kho nguồn (tồn ước tính), gõ số trực tiếp trên list. */
+function dcRequestForm(v,kind){
+  const mine=allowedPlants();
+  if(!mine.length){v.appendChild(el('div','card','<div class="card-b"><div class="empty"><div class="big">Chưa được gán kho</div><div>Liên hệ Quản trị viên.</div></div></div>'));return;}
   const card=el('div','card');const b=el('div','card-b');
-  b.appendChild(el('div','note','<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span>Điều chuyển phát sinh bất kỳ lúc nào có hàng về/xuất. Nhập ngay tại đây, không cần chờ cuối kỳ.</span>'));
+  const head=kind==='xin'?['🙋 Xin hàng từ kho khác','Chọn kho có hàng, gõ số cần xin. Giám sát kho đó duyệt thì hàng mới trừ của họ và cộng cho kho mình.']
+    :kind==='day'?['📤 Đẩy hàng sang kho khác','Chọn hàng kho mình muốn chuyển đi. Kho nhận xác nhận thì mới ghi vào sổ.']
+    :['🗑 Hủy / hao hụt','Hàng hỏng, đổ bỏ, mất. Kế toán duyệt thì mới trừ khỏi kho — không cộng cho kho nào.'];
+  b.innerHTML=`<div class="section-eyebrow">${head[0]}</div><div style="font-size:12px;color:var(--muted);margin:6px 0 12px">${head[1]}</div>`;
 
-  const g=el('div','grid2');
-  const fDate=el('label','field','<span>Ngày</span>');const iDate=el('input','input');iDate.type='date';iDate.valueAsDate=new Date();fDate.appendChild(iDate);
-  const fReason=el('label','field','<span>Loại / Lý do</span>');const sReason=el('select','input');
-  ['Điều chuyển giữa kho','Suất ăn nhân viên','Thử món / nghiên cứu','Hao hụt sơ chế','Nhập từ kho tổng'].forEach(x=>sReason.appendChild(el('option',null,x)));
-  fReason.appendChild(sReason);g.appendChild(fDate);g.appendChild(fReason);b.appendChild(g);
-
-  const fMat=el('label','field','<span>Mã hàng</span>');
-  const acw=el('div','ac-wrap');const iMat=el('input','input');iMat.placeholder='Gõ mã hoặc tên hàng…';iMat.autocomplete='off';
-  const dd=el('div','ac-dd');let chosen=null;
-  iMat.oninput=()=>{chosen=null;iUomTag.textContent='';const q=iMat.value.trim().toLowerCase();if(!q){dd.style.display='none';return;}
-    const res=DATA.materials.filter(m=>m.code.includes(q)||m.name.toLowerCase().includes(q)).slice(0,30);dd.innerHTML='';
-    if(!res.length){if(q.length>=2){dd.innerHTML='<div class="ac-item" style="cursor:default"><div class="n" style="color:var(--red)">Không tồn tại mã "'+iMat.value.trim()+'"</div><div class="s">Chưa có trong hệ thống — có thể thêm mã mới bên dưới</div></div>';dd.style.display='block';}else{dd.style.display='none';}return;}
-    res.forEach(m=>{const it=el('div','ac-item',`<div class="n">${m.name}</div><div class="s">${m.code} · ${m.uom}</div>`);
-      it.onclick=()=>{chosen=m;iMat.value=`${m.name} (${m.code})`;dd.style.display='none';iUomTag.textContent='· '+m.uom;};dd.appendChild(it);});
-    dd.style.display='block';};
-  document.addEventListener('click',e=>{if(!acw.contains(e.target))dd.style.display='none';});
-  acw.appendChild(iMat);acw.appendChild(dd);fMat.appendChild(acw);b.appendChild(fMat);
-
-  const fQty=el('label','field','<span>Số lượng chuyển <span id="uomTag" style="color:var(--muted);font-weight:500"></span></span>');
-  const iQty=el('input','input qty-big');iQty.type='number';iQty.step='any';iQty.min='0';iQty.placeholder='0';iQty.inputMode='decimal';fQty.appendChild(iQty);
-  const iUomTag=fQty.querySelector('#uomTag');
-  // Picker kho 2 cấp: chọn Điểm bán (Plant) -> hiện Kho (Sloc). Mở FULL tất cả điểm bán.
-  function whPicker(labelTxt,extLbl,plants,restrict){
-    const wrap=el('label','field',`<span>${labelTxt}</span>`);
+  // --- Chọn kho nguồn / kho đích ---
+  // xin: nguồn = kho người khác (mở full), đích = kho mình
+  // day/huy: nguồn = kho mình, đích = kho người khác (day) hoặc không có (huy)
+  function whPick(lbl,onlyMine,onChange){
+    const wrap=el('label','field',`<span>${lbl}</span>`);
     const row=el('div');row.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:8px';
     const pSel=el('select','input'),sSel=el('select','input');
-    const oe=el('option',null,extLbl);oe.value='EXT';pSel.appendChild(oe);
-    plants.forEach(p=>{const o=el('option',null,p.name);o.value=p.plant;pSel.appendChild(o);});
-    function fillS(){sSel.innerHTML='';if(pSel.value==='EXT'){sSel.disabled=true;sSel.appendChild(el('option',null,'—'));return;}sSel.disabled=false;(restrict?allowedSlocsOf:slocsOf)(pSel.value).forEach(w=>{const o=el('option',null,w.sloc_name+' ('+w.sloc+')');o.value=w.sloc;sSel.appendChild(o);});}
-    pSel.onchange=fillS;fillS();
-    row.appendChild(pSel);row.appendChild(sSel);wrap.appendChild(row);
-    return {wrap,key:()=>pSel.value==='EXT'?'EXT':pSel.value+'|'+sSel.value};
+    (onlyMine?mine:plantsList()).forEach(p=>{const o=el('option',null,p.name);o.value=p.plant;pSel.appendChild(o);});
+    function fillS(){sSel.innerHTML='';((onlyMine?allowedSlocsOf:slocsOf)(pSel.value)||[]).forEach(w=>{const o=el('option',null,w.sloc_name+' ('+w.sloc+')');o.value=w.sloc;sSel.appendChild(o);});}
+    pSel.onchange=()=>{fillS();onChange&&onChange();};sSel.onchange=()=>onChange&&onChange();
+    fillS();row.appendChild(pSel);row.appendChild(sSel);wrap.appendChild(row);
+    return {wrap,plant:()=>pSel.value,sloc:()=>sSel.value};
   }
-  const myPlants=isPrivileged()?plantsList():allowedPlants();  // Từ kho = kho mình phụ trách
-  const pFrom=whPicker('Từ kho (nguồn)','— Kho tổng / nhập ngoài —',myPlants,true); // Từ = lọc theo quyền sloc
-  const pTo=whPicker('Đến kho (đích)','— Xuất ngoài / hao hụt —',plantsList(),false);  // Đến = full
-  b.appendChild(fQty);
-  const g3=el('div','grid2');g3.appendChild(pFrom.wrap);g3.appendChild(pTo.wrap);b.appendChild(g3);
+  const listWrap=el('div');
+  const src=whPick(kind==='xin'?'Xin từ kho nào (kho nguồn)':(kind==='huy'?'Kho có hàng hủy':'Kho mình (kho nguồn)'),kind!=='xin',()=>drawList());
+  const dst=kind==='huy'?null:whPick(kind==='xin'?'Về kho mình (kho nhận)':'Chuyển đến kho nào (kho nhận)',kind==='xin',null);
+  const g=el('div','grid2');g.appendChild(src.wrap);if(dst)g.appendChild(dst.wrap);b.appendChild(g);
+  const fR=el('label','field','<span>Lý do / diễn giải</span>');
+  const iR=el('input','input');iR.placeholder=kind==='huy'?'VD: hàng hết hạn, vỡ trong bảo quản…':'VD: bù hàng bán chạy cuối tuần…';
+  fR.appendChild(iR);fR.style.marginTop='10px';b.appendChild(fR);
+  b.appendChild(listWrap);
 
-  const addBtn=el('button','btn btn-primary','<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Thêm phiếu điều chuyển');
-  addBtn.onclick=()=>{if(!chosen){toast('Chưa chọn mã hàng');return;}if(!iQty.value||Number(iQty.value)<=0){toast('Nhập số lượng hợp lệ');return;}
-    const fk=pFrom.key(),tk=pTo.key();
-    const t={date:iDate.value,code:chosen.code,name:chosen.name,uom:chosen.uom,qty:iQty.value,reason:sReason.value,
-      from:fk==='EXT'?'Kho tổng/ngoài':whName(...fk.split('|')),
-      to:tk==='EXT'?'Xuất ngoài':whName(...tk.split('|')),
-      fromKey:fk,toKey:tk,period:periodOfDate(iDate.value),user:session.name,time:now()};
-    transfers.unshift(t);log('Nhập điều chuyển',`${chosen.name} · ${iQty.value} ${chosen.uom} · ${t.reason}`);
-    dbIns('transfers',{date:t.date,code:t.code,name:t.name,uom:t.uom,qty:Number(t.qty),from_wh:t.from,to_wh:t.to,from_key:t.fromKey,to_key:t.toKey,period:t.period,reason:t.reason,user_name:t.user});
-    toast('Đã thêm phiếu điều chuyển');iMat.value='';chosen=null;iQty.value='';iUomTag.textContent='';renderTransList();};
-  b.appendChild(addBtn);card.appendChild(b);v.appendChild(card);
-
-  const listCard=el('div','card');listCard.style.marginTop='16px';
-  listCard.appendChild(el('div','card-h',`<div><span class="ct">Phiếu điều chuyển trong phiên</span></div><button class="btn btn-ghost btn-sm" onclick="exportTransfers()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Xuất CSV</button>`));
-  const body=el('div');body.id='transList';listCard.appendChild(body);v.appendChild(listCard);renderTransList();
+  const picked={}; // code -> {qty, exp}
+  function drawList(){
+    listWrap.innerHTML='';
+    const p=src.plant(),s=src.sloc();
+    if(!p||!s)return;
+    const per=curPeriod();
+    const stock=stockNow(p,s,per);
+    const rows=Object.keys(stock).filter(c=>Number(stock[c])>0)
+      .map(c=>{const m=masterByCode[c]||{name:c,uom:''};return {code:c,name:m.name||c,uom:m.uom||'',ton:stock[c]};})
+      .sort((a,b2)=>(a.name||'').localeCompare(b2.name||'','vi'));
+    listWrap.appendChild(el('div',null,`<div style="font-weight:800;font-size:13px;margin:16px 0 4px">Hàng đang có ở ${whName(p,s)} <span style="color:var(--muted);font-weight:500">· ${rows.length} mã</span></div>
+      <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px">Tồn <b>ước tính</b> = tồn đầu kỳ + nhập mua + ĐC đến − ĐC đi. Chưa trừ phần đã bán ra, nên chỉ để tham khảo khi chọn hàng.</div>`));
+    if(!rows.length){listWrap.appendChild(el('div','empty',`<div class="big">Kho này chưa có hàng</div><div>Chưa có tồn đầu kỳ và chưa có phát sinh nhập trong kỳ ${periodVN(per)}.</div>`));return;}
+    const sw=el('div','search-wrap');sw.style.margin='0 0 10px';
+    const si=el('input');si.placeholder='Tìm theo mã hoặc tên hàng… ('+rows.length+' mã)';sw.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>';
+    sw.appendChild(si);listWrap.appendChild(sw);
+    // cnt phải tạo TRƯỚC khi dựng dòng: upd() chạy ngay lúc tạo dòng và có đụng vào nó
+    const cnt=el('span');cnt.style.cssText='font-size:12.5px;color:var(--muted);font-weight:600';
+    const w=el('div','tbl-wrap');w.style.cssText='max-height:440px;overflow:auto';const tbl=el('table');
+    tbl.innerHTML=`<thead><tr><th>Tên hàng</th><th>ĐVT</th><th class="num">Tồn ước tính</th><th class="num">${kind==='huy'?'SL hủy':'SL xin'}</th><th>HSD (ghi chú)</th></tr></thead>`;
+    const tb=el('tbody');
+    rows.forEach(r=>{
+      const tr=el('tr',null,`<td><div class="cell-strong">${r.name}</div><div class="cell-sub tnum">${r.code}</div></td>
+        <td><span class="badge badge-uom">${r.uom}</span></td>
+        <td class="num tnum" style="color:var(--muted)">${r.ton}</td>
+        <td class="num"><input class="input q" type="number" step="any" min="0" style="width:110px;text-align:right" placeholder="0"></td>
+        <td><input class="input e" style="width:150px" placeholder="—"></td>`);
+      const q=tr.querySelector('.q'),e2=tr.querySelector('.e');
+      q.value=picked[r.code]?picked[r.code].qty:'';e2.value=picked[r.code]?picked[r.code].exp:'';
+      const upd=()=>{const val=q.value;
+        if(val===''||Number(val)<=0){delete picked[r.code];}
+        else picked[r.code]={qty:Number(val),exp:e2.value.trim(),name:r.name,uom:r.uom,ton:r.ton};
+        tr.style.background=picked[r.code]?'var(--green-bg)':'';
+        if(picked[r.code]&&Number(val)>Number(r.ton))q.style.color='var(--red)';else q.style.color='';
+        cnt.textContent=Object.keys(picked).length+' mã đã chọn';};
+      q.oninput=upd;e2.oninput=upd;upd();
+      tb.appendChild(tr);});
+    tbl.appendChild(tb);w.appendChild(tbl);listWrap.appendChild(w);
+    si.oninput=()=>{const qq=si.value.trim().toLowerCase();[...tb.children].forEach(tr=>{tr.style.display=tr.textContent.toLowerCase().includes(qq)?'':'none';});};
+    const bar=el('div');bar.style.cssText='display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap';
+    cnt.textContent=Object.keys(picked).length+' mã đã chọn';
+    const bSend=el('button','btn btn-primary',kind==='huy'?'Gửi phiếu hủy cho kế toán duyệt':'Gửi phiếu — chờ kho kia duyệt');
+    bSend.onclick=()=>submitReq();
+    bar.appendChild(bSend);bar.appendChild(cnt);listWrap.appendChild(bar);
+  }
+  async function submitReq(){
+    const codes=Object.keys(picked);
+    if(!codes.length){toast('Chưa chọn mã nào');return;}
+    const fp=src.plant(),fs=src.sloc();
+    const tp=dst?dst.plant():null,ts=dst?dst.sloc():null;
+    if(dst&&fp===tp&&fs===ts){toast('Kho nguồn và kho nhận đang trùng nhau');return;}
+    const items={};codes.forEach(c=>{items[c]={name:picked[c].name,uom:picked[c].uom,qtyReq:picked[c].qty,qtyOk:picked[c].qty,exp:picked[c].exp||''};});
+    const id=await nextDCId(kind,fp,fs);
+    const row={id,kind,from_plant:fp,from_sloc:fs,to_plant:tp,to_sloc:ts,items,reason:iR.value.trim(),status:'Chờ duyệt',created_by:session.name};
+    if(sb){
+      const {data,error}=await sb.from('transfer_requests').insert(row).select();
+      if(error){console.error('transfer_requests',error);
+        errBox('Không gửi được phiếu lên máy chủ',['Phiếu <b>CHƯA</b> được lưu — kho kia sẽ không thấy gì.','Số vừa gõ vẫn còn trên màn hình, thử gửi lại.','Chụp màn hình này gửi admin.'],'Bảng: transfer_requests\nMã phiếu: '+id+'\n'+(error.message||'')+(error.code?'\nMã lỗi: '+error.code:''));return;}
+      if(Array.isArray(data)&&data.length===0){
+        errBox('Máy chủ KHÔNG nhận phiếu',['Máy chủ nhận yêu cầu nhưng <b>không tạo dòng nào</b> — do quyền (RLS).','Chụp màn hình này gửi admin.'],'Bảng: transfer_requests\nMã phiếu: '+id+'\nSố dòng tạo: 0');return;}
+    }
+    trReqs.unshift({id,kind,fromPlant:fp,fromSloc:fs,toPlant:tp,toSloc:ts,items,reason:row.reason,status:'Chờ duyệt',period:null,by:session.name,time:now(),approvedBy:null,approvedAt:null,rejectNote:''});
+    // báo cho bên phải duyệt
+    const who=kind==='huy'?null:(kind==='xin'?{p:fp,s:fs}:{p:tp,s:ts});
+    if(who){
+      const msg=`${dcKindLabel(kind)}: ${whName(fp,fs)} → ${tp?whName(tp,ts):'hủy'} · ${codes.length} mã · phiếu ${id} do ${session.name} lập. Vào "Chờ tôi duyệt" để xử lý.`;
+      const nt={id:uid('NT'),plant:who.p,sloc:who.s,message:msg,kind:'transfer',by:session.name,time:now(),read:false};
+      notifications.unshift(nt);
+      dbIns('notifications',{id:nt.id,plant_code:who.p,sloc_code:who.s,message:msg,kind:'transfer',created_by:session.name,read_flag:false});
+    }
+    log('Lập phiếu '+dcKindLabel(kind),`${id} · ${whName(fp,fs)}${tp?' → '+whName(tp,ts):''} · ${codes.length} mã`);
+    toast('Đã gửi phiếu '+id+' — chờ duyệt');
+    Object.keys(picked).forEach(k=>delete picked[k]);
+    renderView();
+  }
+  drawList();
+  card.appendChild(b);v.appendChild(card);
+}
+/* ================== DUYỆT PHIẾU ================== */
+function dcChoDuyet(v){
+  const list=pendingForMe();
+  const card=el('div','card');
+  card.appendChild(el('div','card-h',`<div><span class="ct">Phiếu chờ tôi duyệt</span><div class="cs">Duyệt xong hàng mới trừ kho nguồn và cộng kho nhận, tính vào kỳ theo NGÀY DUYỆT</div></div><span class="badge ${list.length?'badge-wait':'badge-soft'}">${list.length}</span>`));
+  const body=el('div');card.appendChild(body);v.appendChild(card);
+  if(!list.length){body.appendChild(el('div','empty',`<div class="big">Không có phiếu nào chờ mình</div><div>Khi kho khác xin hàng của kho mình, hoặc đẩy hàng sang kho mình, phiếu sẽ hiện ở đây.</div>`));return;}
+  list.forEach(r=>body.appendChild(dcReqCard(r,true)));
+}
+function dcReqCard(r,canAct){
+  const wrap=el('div','card-b');wrap.style.borderTop='1px solid var(--line)';
+  const codes=Object.keys(r.items||{});
+  const lock=[];
+  const per=curPeriod();
+  if(periodLocked(r.fromPlant,r.fromSloc,per))lock.push(whName(r.fromPlant,r.fromSloc));
+  if(r.toPlant&&periodLocked(r.toPlant,r.toSloc,per))lock.push(whName(r.toPlant,r.toSloc));
+  wrap.appendChild(el('div',null,`<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+    <span class="badge badge-soft">${dcKindLabel(r.kind)}</span>
+    <b class="tnum" style="font-size:13.5px">${r.id}</b>
+    ${dcStatusBadge(r.status)}
+    <span style="font-size:12.5px;color:var(--muted)">${whName(r.fromPlant,r.fromSloc)}${r.toPlant?' → '+whName(r.toPlant,r.toSloc):' → hủy/hao hụt'} · ${codes.length} mã · ${r.by} · ${r.time}</span>
+  </div>${r.reason?`<div style="font-size:12.5px;color:var(--muted);margin-bottom:8px">Lý do: <b>${r.reason}</b></div>`:''}`));
+  const w=el('div','tbl-wrap');const tbl=el('table');
+  tbl.innerHTML=`<thead><tr><th>Tên hàng</th><th>ĐVT</th><th class="num">SL xin</th>${canAct?'<th class="num">SL thực giao</th>':'<th class="num">SL duyệt</th>'}<th>HSD</th></tr></thead>`;
+  const tb=el('tbody');const inputs={};
+  codes.forEach(c=>{const it=r.items[c];
+    const tr=el('tr',null,`<td><div class="cell-strong">${it.name||c}</div><div class="cell-sub tnum">${c}</div></td>
+      <td><span class="badge badge-uom">${it.uom||''}</span></td>
+      <td class="num tnum">${it.qtyReq}</td>
+      <td class="num">${canAct?'<input class="input q" type="number" step="any" min="0" style="width:110px;text-align:right">':'<span class="cell-strong tnum">'+(it.qtyOk!=null?it.qtyOk:it.qtyReq)+'</span>'}</td>
+      <td style="font-size:12px;color:var(--muted)">${it.exp||'—'}</td>`);
+    if(canAct){const q=tr.querySelector('.q');q.value=(it.qtyOk!=null?it.qtyOk:it.qtyReq);inputs[c]=q;}
+    tb.appendChild(tr);});
+  tbl.appendChild(tb);w.appendChild(tbl);wrap.appendChild(w);
+  if(canAct){
+    const bar=el('div');bar.style.cssText='display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;align-items:center';
+    if(lock.length){
+      bar.appendChild(el('div','note',`<span>🔒 Không duyệt được: kho <b>${lock.join(', ')}</b> đã chốt kiểm kê tháng ${periodVN(per)}. Duyệt vào kỳ đã khóa sẽ làm sai số đã ký. Xử lý phiếu kiểm kê trước, hoặc chờ sang kỳ mới.</span>`));
+    }else{
+      const bOk=el('button','btn btn-primary','✓ Duyệt & ghi sổ');
+      bOk.onclick=()=>{const qs={};Object.keys(inputs).forEach(c=>qs[c]=Number(inputs[c].value||0));approveTransferReq(r,qs);};
+      const bNo=el('button','btn btn-ghost','✕ Từ chối');bNo.style.color='var(--red)';
+      bNo.onclick=()=>rejectTransferReq(r);
+      bar.appendChild(bOk);bar.appendChild(bNo);
+      bar.appendChild(el('span','',`<span style="font-size:12px;color:var(--muted)">Sửa được cột <b>SL thực giao</b> trước khi duyệt. Ghi số 0 là mã đó không giao.</span>`));
+    }
+    wrap.appendChild(bar);
+  }else if(r.status==='Từ chối'&&r.rejectNote){
+    wrap.appendChild(el('div','note',`<span>✕ Từ chối bởi <b>${r.approvedBy||'—'}</b> ${r.approvedAt||''} · Lý do: ${r.rejectNote}</span>`));
+  }else if(r.status==='Đã duyệt'){
+    wrap.appendChild(el('div','note',`<span>✓ Duyệt bởi <b>${r.approvedBy||'—'}</b> ${r.approvedAt||''} · đã ghi vào sổ kho kỳ tháng ${periodVN(r.period||'')}</span>`));
+  }
+  return wrap;
+}
+// DUYỆT: ghi các dòng vào sổ transfers với NGÀY DUYỆT, rồi khóa phiếu lại
+async function approveTransferReq(r,qtys){
+  const d=new Date();
+  const dateStr=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  const per=periodOfDate(dateStr);
+  // Chặn kỳ đã khóa ở CẢ HAI đầu — kiểm lại ngay lúc bấm, phòng phiếu mở lâu trên màn
+  const lock=[];
+  if(periodLocked(r.fromPlant,r.fromSloc,per))lock.push(whName(r.fromPlant,r.fromSloc));
+  if(r.toPlant&&periodLocked(r.toPlant,r.toSloc,per))lock.push(whName(r.toPlant,r.toSloc));
+  if(lock.length){errBox('Kỳ đã khóa — không duyệt được',[`Kho <b>${lock.join(', ')}</b> đã chốt kiểm kê tháng ${periodVN(per)}.`,'Ghi thêm điều chuyển vào kỳ đã chốt sẽ làm sai biên bản đã ký.'],'Phiếu: '+r.id+'\nKỳ theo ngày duyệt: '+per);return;}
+  const codes=Object.keys(r.items||{}).filter(c=>Number(qtys[c]||0)>0);
+  if(!codes.length){toast('Tất cả số thực giao đang là 0 — nếu không giao gì thì bấm Từ chối');return;}
+  const items={...r.items};
+  Object.keys(items).forEach(c=>{items[c]={...items[c],qtyOk:Number(qtys[c]||0)};});
+  const upd=await dbUpd('transfer_requests',{id:r.id},{status:'Đã duyệt',items,period:per,approved_by:session.name,approved_at:new Date().toISOString()});
+  if(!upd.ok||upd.count===0)return;   // dbUpd đã dựng hộp lỗi
+  // Ghi sổ: mỗi mã 1 dòng transfers. Hủy/hao hụt thì đầu đến để trống (hàng ra khỏi hệ thống).
+  const fromNm=whName(r.fromPlant,r.fromSloc),toNm=r.toPlant?whName(r.toPlant,r.toSloc):'Hủy / hao hụt';
+  const fromKey=r.fromPlant+'|'+r.fromSloc,toKey=r.toPlant?(r.toPlant+'|'+r.toSloc):'HUY';
+  const reason=(r.kind==='huy'?'Hủy/hao hụt':dcKindLabel(r.kind))+(r.reason?': '+r.reason:'')+' · '+r.id;
+  for(const c of codes){
+    const it=items[c];
+    const rec={date:dateStr,code:c,name:it.name||c,uom:it.uom||'',qty:Number(qtys[c]||0),from:fromNm,to:toNm,fromKey,toKey,period:per,reason,user:session.name,time:now()};
+    transfers.unshift(rec);
+    await dbIns('transfers',{date:rec.date,code:rec.code,name:rec.name,uom:rec.uom,qty:rec.qty,from_wh:rec.from,to_wh:rec.to,from_key:rec.fromKey,to_key:rec.toKey,period:rec.period,reason:rec.reason,user_name:rec.user});
+  }
+  r.status='Đã duyệt';r.items=items;r.period=per;r.approvedBy=session.name;r.approvedAt=now();
+  const back=r.kind==='xin'?{p:r.toPlant,s:r.toSloc}:(r.kind==='day'?{p:r.fromPlant,s:r.fromSloc}:null);
+  if(back){
+    const msg=`Phiếu ${r.id} (${dcKindLabel(r.kind)}) đã được ${session.name} DUYỆT · ${codes.length} mã đã ghi sổ kỳ tháng ${periodVN(per)}.`;
+    const nt={id:uid('NT'),plant:back.p,sloc:back.s,message:msg,kind:'transfer',by:session.name,time:now(),read:false};
+    notifications.unshift(nt);
+    dbIns('notifications',{id:nt.id,plant_code:back.p,sloc_code:back.s,message:msg,kind:'transfer',created_by:session.name,read_flag:false});
+  }
+  log('Duyệt '+dcKindLabel(r.kind),`${r.id} · ${fromNm} → ${toNm} · ${codes.length} mã · kỳ ${periodVN(per)}`);
+  toast('✓ Đã duyệt '+r.id+' — ghi sổ '+codes.length+' mã vào kỳ tháng '+periodVN(per));
+  renderView();
+}
+async function rejectTransferReq(r){
+  const note=prompt('Lý do từ chối (người lập sẽ thấy):')||'';
+  if(!confirm('Từ chối phiếu '+r.id+'?\n\nPhiếu được GIỮ LẠI với trạng thái Từ chối kèm lý do — không xóa, không ghi vào sổ kho.'))return;
+  const upd=await dbUpd('transfer_requests',{id:r.id},{status:'Từ chối',reject_note:note,approved_by:session.name,approved_at:new Date().toISOString()});
+  if(!upd.ok||upd.count===0)return;
+  r.status='Từ chối';r.rejectNote=note;r.approvedBy=session.name;r.approvedAt=now();
+  const back=r.kind==='xin'?{p:r.toPlant,s:r.toSloc}:{p:r.fromPlant,s:r.fromSloc};
+  const msg=`Phiếu ${r.id} (${dcKindLabel(r.kind)}) đã bị ${session.name} TỪ CHỐI.${note?' Lý do: '+note:''}`;
+  const nt={id:uid('NT'),plant:back.p,sloc:back.s,message:msg,kind:'transfer',by:session.name,time:now(),read:false};
+  notifications.unshift(nt);
+  dbIns('notifications',{id:nt.id,plant_code:back.p,sloc_code:back.s,message:msg,kind:'transfer',created_by:session.name,read_flag:false});
+  log('Từ chối '+dcKindLabel(r.kind),`${r.id}${note?' · '+note:''}`);
+  toast('Đã từ chối '+r.id);renderView();
 }
 // ---- Nhập kho (mua mới): gõ tay hoặc quét ảnh — dùng kho/kỳ đã ghim ----
 function dcNhapKho(v){
