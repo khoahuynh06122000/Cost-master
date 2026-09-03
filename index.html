@@ -851,6 +851,18 @@ function isMyApproval(r){
 }
 function pendingForMe(){return trReqs.filter(isMyApproval);}
 function dcKindLabel(k){return k==='xin'?'Xin hàng':k==='day'?'Đẩy hàng':'Hủy / hao hụt';}
+// Ai là người phải duyệt phiếu này — để kế toán/admin biết phiếu đang tắc ở đâu
+function dcWhoApproves(r){
+  if(r.kind==='huy')return 'Kế toán';
+  return r.kind==='xin'?('Giám sát '+whName(r.fromPlant,r.fromSloc)+' (kho cho hàng)')
+                       :('Giám sát '+whName(r.toPlant,r.toSloc)+' (kho nhận hàng)');
+}
+// Phiếu đang ở bước nào trong quy trình 3 bước: lập → duyệt → ghi sổ
+function dcStepLine(r){
+  if(r.status==='Chờ duyệt')return `<span style="color:var(--accent-600);font-weight:700">Bước 2/3 — đang chờ ${dcWhoApproves(r)} duyệt</span>`;
+  if(r.status==='Từ chối')return `<span style="color:var(--red);font-weight:700">Dừng ở bước 2 — ${dcWhoApproves(r)} đã từ chối</span>`;
+  return `<span style="color:var(--green);font-weight:700">Bước 3/3 — đã duyệt & ghi sổ</span>`;
+}
 function dcStatusBadge(st){
   if(st==='Đã duyệt')return '<span class="badge badge-done">✓ Đã duyệt</span>';
   if(st==='Từ chối')return '<span class="badge" style="background:#F7E4E4;color:var(--red)">✕ Từ chối</span>';
@@ -2904,7 +2916,9 @@ function dcReqCard(r,canAct){
     <b class="tnum" style="font-size:13.5px">${r.id}</b>
     ${dcStatusBadge(r.status)}
     <span style="font-size:12.5px;color:var(--muted)">${whName(r.fromPlant,r.fromSloc)}${r.toPlant?' → '+whName(r.toPlant,r.toSloc):' → hủy/hao hụt'} · ${codes.length} mã · ${r.by} · ${r.time}</span>
-  </div>${r.reason?`<div style="font-size:12.5px;color:var(--muted);margin-bottom:8px">Lý do: <b>${r.reason}</b></div>`:''}`));
+  </div>
+  <div style="font-size:12.5px;margin-bottom:8px">${dcStepLine(r)}</div>
+  ${r.reason?`<div style="font-size:12.5px;color:var(--muted);margin-bottom:8px">Lý do: <b>${r.reason}</b></div>`:''}`));
   const w=el('div','tbl-wrap');const tbl=el('table');
   tbl.innerHTML=`<thead><tr><th>Tên hàng</th><th>ĐVT</th><th class="num">SL xin</th>${canAct?'<th class="num">SL thực giao</th>':'<th class="num">SL duyệt</th>'}<th>HSD</th></tr></thead>`;
   const tb=el('tbody');const inputs={};
@@ -2912,9 +2926,12 @@ function dcReqCard(r,canAct){
     const tr=el('tr',null,`<td><div class="cell-strong">${it.name||c}</div><div class="cell-sub tnum">${c}</div></td>
       <td><span class="badge badge-uom">${it.uom||''}</span></td>
       <td class="num tnum">${it.qtyReq}</td>
-      <td class="num">${canAct?'<input class="input q" type="number" step="any" min="0" style="width:110px;text-align:right">':'<span class="cell-strong tnum">'+(it.qtyOk!=null?it.qtyOk:it.qtyReq)+'</span>'}</td>
+      <td class="num">${canAct?'<input class="input q" type="number" step="any" min="0" max="'+it.qtyReq+'" style="width:110px;text-align:right">':'<span class="cell-strong tnum">'+(it.qtyOk!=null?it.qtyOk:it.qtyReq)+'</span>'}</td>
       <td style="font-size:12px;color:var(--muted)">${it.exp||'—'}</td>`);
-    if(canAct){const q=tr.querySelector('.q');q.value=(it.qtyOk!=null?it.qtyOk:it.qtyReq);inputs[c]=q;}
+    if(canAct){const q=tr.querySelector('.q');q.value=(it.qtyOk!=null?it.qtyOk:it.qtyReq);inputs[c]=q;
+      // Cho được nhiều nhất bằng số đã xin — chỉ được hạ xuống theo thực tế, không được vống lên
+      const cap=Number(it.qtyReq)||0;
+      q.oninput=()=>{if(Number(q.value)>cap){q.value=cap;q.style.color='var(--red)';toast('Không cho quá số đã xin ('+cap+' '+(it.uom||'')+')');}else q.style.color='';};}
     tb.appendChild(tr);});
   tbl.appendChild(tb);w.appendChild(tbl);wrap.appendChild(w);
   if(canAct){
@@ -2938,11 +2955,18 @@ function dcReqCard(r,canAct){
     const nItems=Object.keys(r.items||{}).filter(c=>Number(r.items[c].qtyOk!=null?r.items[c].qtyOk:r.items[c].qtyReq)>0).length;
     wrap.appendChild(el('div','note',`<span>✓ Duyệt bởi <b>${r.approvedBy||'—'}</b> ${r.approvedAt||''} · kỳ tháng ${periodVN(r.period||'')} · sổ có <b>${nBook}</b>/${nItems} dòng</span>`));
     if(nBook<nItems)wrap.appendChild(el('div','note',`<span style="color:var(--red)">⚠ Phiếu đã duyệt nhưng sổ điều chuyển <b>thiếu ${nItems-nBook} dòng</b> — hàng chưa bị trừ kho. Admin mở lại phiếu rồi duyệt lại sau khi đã cấp quyền ghi sổ.</span>`));
-    if(session.role==='admin'){
+  }
+  // Hàng nút riêng của admin — hiện với MỌI trạng thái phiếu
+  if(session&&session.role==='admin'){
+    const bar2=el('div');bar2.style.cssText='display:flex;gap:9px;margin-top:10px;flex-wrap:wrap;align-items:center';
+    if(r.status==='Đã duyệt'){
       const bRe=el('button','btn btn-ghost btn-sm','↩ Mở lại phiếu (admin)');bRe.style.color='var(--accent-600)';
-      bRe.onclick=()=>reopenTransferReq(r);
-      const bar2=el('div');bar2.style.cssText='margin-top:10px';bar2.appendChild(bRe);wrap.appendChild(bar2);
+      bRe.onclick=()=>reopenTransferReq(r);bar2.appendChild(bRe);
     }
+    const bDel=el('button','btn btn-ghost btn-sm','🗑 Xóa phiếu (admin)');bDel.style.color='var(--red)';
+    bDel.onclick=()=>deleteTransferReq(r);bar2.appendChild(bDel);
+    bar2.appendChild(el('span','',`<span style="font-size:12px;color:var(--muted)">Mở lại = duyệt lại, giữ số. Xóa = mất phiếu; app liệt kê đầy đủ hệ quả để xác nhận.</span>`));
+    wrap.appendChild(bar2);
   }
   return wrap;
 }
@@ -2956,6 +2980,13 @@ async function approveTransferReq(r,qtys){
   if(periodLocked(r.fromPlant,r.fromSloc,per))lock.push(whName(r.fromPlant,r.fromSloc));
   if(r.toPlant&&periodLocked(r.toPlant,r.toSloc,per))lock.push(whName(r.toPlant,r.toSloc));
   if(lock.length){errBox('Kỳ đã khóa — không duyệt được',[`Kho <b>${lock.join(', ')}</b> đã chốt kiểm kê tháng ${periodVN(per)}.`,'Ghi thêm điều chuyển vào kỳ đã chốt sẽ làm sai biên bản đã ký.'],'Phiếu: '+r.id+'\nKỳ theo ngày duyệt: '+per);return;}
+  // Không cho duyệt nhiều hơn số đã xin — chặn cả ở đây, không chỉ dựa vào ô input
+  const over=Object.keys(r.items||{}).filter(c=>Number(qtys[c]||0)>Number(r.items[c].qtyReq||0));
+  if(over.length){
+    errBox('Số cho vượt số đã xin',[
+      'Chỉ được cho <b>tối đa bằng số đã xin</b>, hạ xuống theo thực tế thì được.',
+      over.map(c=>`<b>${r.items[c].name||c}</b>: xin ${r.items[c].qtyReq} → đang định cho ${qtys[c]}`).join('<br>')
+    ],'Phiếu: '+r.id+'\nMã vượt: '+over.join(', '));return;}
   const codes=Object.keys(r.items||{}).filter(c=>Number(qtys[c]||0)>0);
   if(!codes.length){toast('Tất cả số thực giao đang là 0 — nếu không giao gì thì bấm Từ chối');return;}
   const items={...r.items};
@@ -3032,6 +3063,33 @@ async function reopenTransferReq(r){
   r.status='Chờ duyệt';r.period=null;r.approvedBy=null;r.approvedAt=null;
   log('Mở lại phiếu điều chuyển (admin)',`${r.id} · xóa ${cleaned} dòng sổ`);
   toast('Đã mở lại '+r.id+' — chờ duyệt lại');renderView();
+}
+// XÓA HẲN phiếu (chỉ admin) — kèm mọi dòng sổ do phiếu này sinh ra
+async function deleteTransferReq(r){
+  if(session.role!=='admin'){toast('Chỉ admin mới xóa được phiếu');return;}
+  const rows=transfers.filter(t=>t.reason&&String(t.reason).includes(r.id));
+  const codes=Object.keys(r.items||{});
+  let t='XÓA PHIẾU '+r.id+'\n'+dcKindLabel(r.kind)+' · '+whName(r.fromPlant,r.fromSloc)+(r.toPlant?' → '+whName(r.toPlant,r.toSloc):' → hủy')+'\n\n';
+  t+='SẼ BỊ XÓA:\n1. Toàn bộ phiếu và số lượng của '+codes.length+' mã (xin, thực giao, HSD) — mất hẳn.\n';
+  t+='2. '+(rows.length?rows.length+' dòng đã ghi trong sổ điều chuyển của phiếu này → hàng sẽ được CỘNG TRẢ về kho nguồn và trừ khỏi kho nhận khi tính lại.':'Không có dòng nào trong sổ (phiếu chưa duyệt hoặc chưa ghi được).')+'\n';
+  t+='3. Vết duyệt/từ chối của phiếu (ai duyệt, lúc nào, lý do).\n\n';
+  t+='KHÔNG BỊ ẢNH HƯỞNG:\n- Nhật ký (audit log) giữ nguyên và ghi thêm 1 dòng về lần xóa này.\n- Thông báo đã gửi cho các kho vẫn còn.\n\n';
+  t+='KHÔNG THỂ HOÀN TÁC.'+(r.status==='Đã duyệt'?'\n\n⚠ Phiếu này ĐÃ DUYỆT — nếu chỉ muốn duyệt lại thì bấm Cancel rồi dùng "↩ Mở lại phiếu".':'')+'\n\nBấm OK để xóa.';
+  if(!confirm(t))return;
+  let cleaned=0;
+  for(const x of rows){const del=await dbDel('transfers',{reason:x.reason,code:x.code,period:x.period});if(del.ok&&del.count)cleaned+=del.count;}
+  if(rows.length&&cleaned<rows.length){
+    errBox('Chưa xóa hết dòng sổ — DỪNG, chưa xóa phiếu',[
+      `Chỉ xóa được ${cleaned}/${rows.length} dòng sổ của phiếu này.`,
+      'Phiếu <b>vẫn còn</b> để anh/chị không mất dấu các dòng sổ chưa dọn được.',
+      'Chụp màn hình này gửi admin kiểm quyền xóa bảng sổ điều chuyển.'
+    ],'Phiếu: '+r.id+'\nDọn được: '+cleaned+'/'+rows.length);return;}
+  const del=await dbDel('transfer_requests',{id:r.id});
+  if(!del.ok||del.count===0)return;   // dbDel đã dựng hộp lỗi
+  transfers=transfers.filter(t2=>!(t2.reason&&String(t2.reason).includes(r.id)));
+  trReqs=trReqs.filter(x=>x.id!==r.id);
+  log('Xóa phiếu điều chuyển (admin)',`${r.id} · ${dcKindLabel(r.kind)} · ${whName(r.fromPlant,r.fromSloc)} · xóa kèm ${cleaned} dòng sổ`);
+  toast('Đã xóa phiếu '+r.id+(cleaned?' & '+cleaned+' dòng sổ':''));renderView();
 }
 async function rejectTransferReq(r){
   const note=prompt('Lý do từ chối (người lập sẽ thấy):')||'';
