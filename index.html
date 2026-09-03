@@ -840,9 +840,14 @@ function myWhKeys(){
 //  - hủy/hao hụt -> kế toán/admin duyệt (ăn thẳng vào chi phí)
 function isMyApproval(r){
   if(r.status!=='Chờ duyệt')return false;
-  if(r.kind==='huy')return isPrivileged();
+  if(session&&session.role==='admin')return true;   // admin toàn quyền xử lý mọi phiếu
+  if(r.kind==='huy')return isPrivileged();          // hủy/hao hụt: kế toán duyệt
+  // xin/đẩy: PHẢI đúng giám sát của kho đó. Dùng session.wh (kho được gán) chứ KHÔNG dùng
+  // myWhKeys() — với kế toán hàm đó nở ra toàn bộ kho, thành ra kế toán bấm thay giám sát,
+  // mất luôn ý nghĩa kiểm soát 2 bên (kế toán không ở kho, không biết hàng có thật về hay không).
   const key=r.kind==='xin'?(r.fromPlant+'|'+r.fromSloc):(r.toPlant+'|'+r.toSloc);
-  return session&&session.role==='admin'?true:myWhKeys().indexOf(key)>=0;
+  const a=String(key).split('|');
+  return (session&&session.wh?session.wh:[]).some(w=>w.plant===a[0]&&(!w.sloc||w.sloc===a[1]));
 }
 function pendingForMe(){return trReqs.filter(isMyApproval);}
 function dcKindLabel(k){return k==='xin'?'Xin hàng':k==='day'?'Đẩy hàng':'Hủy / hao hụt';}
@@ -1972,11 +1977,34 @@ function shiftDashList(v){
 }
 
 function renderDieuchuyenDash(v){
-  v.appendChild(el('div','page-head',`<div><h1>Điều chuyển</h1><div class="ph-sub">Chọn việc cần làm — xuất file cho SAP hoặc theo dõi phiếu bộ phận đã nhập.</div></div>`));
+  v.appendChild(el('div','page-head',`<div><h1>Điều chuyển</h1><div class="ph-sub">Chọn việc cần làm — duyệt phiếu, theo dõi phiếu yêu cầu, xuất file cho SAP.</div></div>`));
+  const nCho=pendingForMe().length;
+  const nYC=trReqs.filter(r=>r.status==='Chờ duyệt').length;
   renderHubView(v,'dieuchuyenDash',[
-    {k:'sap',ico:HIC.sheet,title:'Xuất Excel mẫu SAP',sub:'Xuất phiếu điều chuyển trong tháng đúng mẫu import SAP',warm:true,render:dcSapExport},
-    {k:'theodoi',ico:HIC.list,title:'Theo dõi phiếu điều chuyển',sub:'Thống kê theo lý do và danh sách phiếu gần đây',n:transfers.length?transfers.length+' phiếu':'',render:dcDashList},
+    // Kế toán phải duyệt phiếu HỦY / hao hụt, admin duyệt được mọi phiếu -> thiếu mục này thì
+    // phiếu hủy nằm treo mãi không ai xử lý được.
+    {k:'duyet',ico:HIC.clock,title:'Chờ tôi duyệt',sub:'Phiếu hủy / hao hụt cần kế toán duyệt (admin duyệt được mọi phiếu)',n:nCho?nCho+' phiếu chờ':'',warm:!!nCho,render:dcChoDuyet},
+    {k:'yc',ico:HIC.eye,title:'Toàn bộ phiếu yêu cầu',sub:'Mọi phiếu xin / đẩy / hủy của các điểm bán, đối chiếu phiếu với sổ',n:nYC?nYC+' phiếu chưa duyệt':'',render:dcAllReqs},
+    {k:'theodoi',ico:HIC.list,title:'Theo dõi sổ điều chuyển',sub:'Thống kê theo lý do và các dòng đã ghi sổ',n:transfers.length?transfers.length+' dòng sổ':'',render:dcDashList},
+    {k:'sap',ico:HIC.sheet,title:'Xuất Excel mẫu SAP',sub:'Xuất phiếu điều chuyển trong tháng đúng mẫu import SAP',render:dcSapExport},
+    {k:'xls',ico:HIC.sheet,title:'Nạp Excel điều chuyển',sub:'File SharePoint — ghi nhận việc đã xảy ra, vào thẳng sổ',render:dcNapExcel},
   ]);
+}
+// Toàn bộ phiếu yêu cầu (kế toán/admin) — lọc theo trạng thái, có nút mở lại phiếu cho admin
+let dcReqFilter='all';
+function dcAllReqs(v){
+  const card=el('div','card');
+  card.appendChild(el('div','card-h',`<div><span class="ct">Phiếu yêu cầu điều chuyển / hủy</span><div class="cs">Phiếu chỉ ghi vào sổ khi được duyệt. Dòng "sổ có N/M" cho biết phiếu đã xuống sổ đủ chưa.</div></div><span class="badge badge-soft">${trReqs.length}</span>`));
+  const bar=el('div','card-b');bar.style.cssText='display:flex;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--line)';
+  [['all','Tất cả'],['Chờ duyệt','⏳ Chờ duyệt'],['Đã duyệt','✓ Đã duyệt'],['Từ chối','✕ Từ chối']].forEach(([k,lbl])=>{
+    const b2=el('button','btn btn-sm '+(dcReqFilter===k?'btn-brand':'btn-ghost'),lbl+(k==='all'?'':' ('+trReqs.filter(r=>r.status===k).length+')'));
+    b2.onclick=()=>{dcReqFilter=k;renderView();};bar.appendChild(b2);});
+  card.appendChild(bar);
+  const body=el('div');card.appendChild(body);v.appendChild(card);
+  const list=dcReqFilter==='all'?trReqs:trReqs.filter(r=>r.status===dcReqFilter);
+  if(!list.length){body.appendChild(el('div','empty',`<div class="big">Không có phiếu</div><div>Chưa có phiếu nào khớp bộ lọc này.</div>`));return;}
+  list.slice(0,60).forEach(r=>body.appendChild(dcReqCard(r,isMyApproval(r))));
+  if(list.length>60)body.appendChild(el('div','list-hint',`Đang hiện 60 phiếu mới nhất trong ${list.length} phiếu.`));
 }
 function dcSapExport(v){
   { // Xuất Excel điều chuyển theo mẫu SAP (kế toán + admin)
