@@ -852,6 +852,55 @@ function isMyApproval(r){
 }
 function pendingForMe(){return trReqs.filter(isMyApproval);}
 function dcKindLabel(k){return k==='xin'?'Xin hàng':k==='day'?'Đẩy hàng':'Hủy / hao hụt';}
+/* ---- Chống phiếu trùng ----
+   Trùng = cùng loại + cùng cặp kho + cùng tập (mã : số xin). Hai người cùng lập, hoặc bấm gửi
+   hai lần vì lần đầu báo lỗi, đều sinh ra phiếu y hệt — với phiếu đẩy thì thành chuyển hàng 2 lần. */
+function dcSig(r){
+  const it=r.items||{};
+  return [r.kind,r.fromPlant,r.fromSloc,r.toPlant||'HUY',r.toSloc||'',
+    Object.keys(it).sort().map(c=>c+':'+(Number(it[c].qtyReq)||0)).join(',')].join('|');
+}
+// Phiếu trùng đang "còn sống": chờ duyệt (chưa xử lý), hoặc phiếu cùng ngày đã ghi sổ rồi
+function dcFindDup(kind,fp,fs,tp,ts,items,excludeId){
+  const sig=dcSig({kind,fromPlant:fp,fromSloc:fs,toPlant:tp,toSloc:ts,items});
+  const today='-'+kkYmd();
+  return trReqs.find(r=>r.id!==excludeId&&dcSig(r)===sig
+    &&(r.status==='Chờ duyệt'||(r.status==='Đã duyệt'&&String(r.id).indexOf(today)>=0)));
+}
+// Dọn phiếu trùng đã tồn tại (admin): mỗi nhóm giữ 1 phiếu, xóa các bản trùng CHƯA ghi sổ.
+// Phiếu Đã duyệt không tự xóa — nó đã xuống sổ, xóa im lặng là làm sai tồn.
+async function dcCleanDups(){
+  if(session.role!=='admin'){toast('Chỉ admin mới dọn được');return;}
+  const groups={};
+  trReqs.forEach(r=>{(groups[dcSig(r)]=groups[dcSig(r)]||[]).push(r);});
+  const drop=[],keepDone=[];
+  Object.values(groups).forEach(g=>{
+    if(g.length<2)return;
+    const done=g.filter(r=>r.status==='Đã duyệt');
+    if(done.length>1){keepDone.push(done);return;}          // nhiều phiếu đã ghi sổ -> để admin tự xử
+    const keep=done[0]||g.slice().sort((a,b)=>String(a.id).localeCompare(String(b.id)))[0];
+    g.forEach(r=>{if(r.id!==keep.id&&r.status!=='Đã duyệt')drop.push({r,keep});});
+  });
+  if(keepDone.length){
+    errBox('Có phiếu trùng ĐÃ GHI SỔ — không tự xóa',[
+      'Các nhóm dưới đây có <b>nhiều hơn một</b> phiếu đã duyệt cùng nội dung, tức hàng có thể đã bị chuyển hai lần.',
+      'App <b>không</b> tự xóa loại này vì phải quyết định giữ dòng sổ nào. Anh/chị xem từng phiếu rồi bấm 🗑 Xóa phiếu cho bản dư.',
+      keepDone.map(g=>g.map(r=>r.id).join(' ↔ ')).join('<br>')
+    ],'Số nhóm cần xử lý tay: '+keepDone.length);
+  }
+  if(!drop.length){if(!keepDone.length)toast('Không có phiếu trùng nào cần dọn');return;}
+  let t='DỌN '+drop.length+' PHIẾU TRÙNG\n\nCác phiếu dưới đây trùng hoàn toàn (cùng loại, cùng cặp kho, cùng mã & số lượng) với một phiếu khác và CHƯA ghi sổ:\n\n';
+  drop.forEach(({r,keep})=>{t+='• Xóa '+r.id+' ['+r.status+'] — trùng với '+keep.id+' ['+keep.status+'] sẽ được giữ\n';});
+  t+='\nKHÔNG THỂ HOÀN TÁC. Bấm OK để xóa.';
+  if(!confirm(t))return;
+  let okN=0;
+  for(const {r} of drop){
+    const del=await dbDel('transfer_requests',{id:r.id});
+    if(del.ok&&del.count){trReqs=trReqs.filter(x=>x.id!==r.id);okN++;}
+  }
+  log('Dọn phiếu điều chuyển trùng (admin)',`xóa ${okN}/${drop.length} phiếu`);
+  toast('Đã dọn '+okN+'/'+drop.length+' phiếu trùng');renderView();
+}
 // Ai là người phải duyệt phiếu này — để kế toán/admin biết phiếu đang tắc ở đâu
 function dcWhoApproves(r){
   if(r.kind==='huy')return 'Kế toán';
@@ -1816,6 +1865,27 @@ function parseCountListFile(file,cb){
     cb({items,ok,bad});
   },err=>toast('Lỗi đọc file: '+((err&&err.message)||err)));
 }
+// XÓA danh sách mở kỳ (kế toán mở nhầm kho / nhầm kỳ). Không đụng tới phiếu kiểm kê đã gửi.
+async function deleteCountList(plant,sloc,period,cb){
+  const key=plant+'|'+sloc+'|'+period;
+  const cl=countLists[key];
+  if(!cl){toast('Kho này chưa mở kỳ');return;}
+  const n=Object.keys(cl.items||{}).length;
+  const subs=submissions.filter(s=>s.plant===plant&&s.sloc===sloc&&s.period===period);
+  let t='XÓA KỲ ĐÃ MỞ\n'+whName(plant,sloc)+' · kỳ tháng '+periodVN(period)+'\n\n';
+  t+='SẼ BỊ XÓA:\n1. Danh sách '+n+' mã kế toán đã mở cho kho này (mở bởi '+(cl.by||'—')+' '+(cl.at||'')+').\n';
+  t+='2. Giám sát vào màn kiểm đếm sẽ KHÔNG còn thấy danh sách này — màn đếm quay về lấy mã từ tồn đầu kỳ + danh mục kho.\n\n';
+  t+='KHÔNG BỊ ẢNH HƯỞNG:\n- '+(subs.length?subs.length+' phiếu kiểm kê đã gửi của kho này (trạng thái: '+subs.map(s=>s.status).join(', ')+') — GIỮ NGUYÊN, số đã đếm không mất.':'Chưa có phiếu kiểm kê nào của kho/kỳ này.')+'\n';
+  t+='- Tồn đầu kỳ, nhập kho, điều chuyển: giữ nguyên.\n\n';
+  t+='Sau khi xóa, anh/chị nạp lại file danh mục cho đúng kho là mở kỳ lại được.\n\nBấm OK để xóa.';
+  if(!confirm(t))return;
+  const del=await dbDel('count_lists',{plant_code:plant,sloc_code:sloc,period});
+  if(!del.ok||del.count===0)return;   // dbDel đã dựng hộp lỗi
+  delete countLists[key];
+  log('Xóa kỳ đã mở',`${whName(plant,sloc)} · kỳ ${periodVN(period)} · ${n} mã`);
+  toast('Đã xóa kỳ đã mở của '+whName(plant,sloc)+' — mở lại được');
+  cb&&cb();
+}
 function renderOpenCountCard(v){
   const card=el('div','card');card.style.cssText='margin-bottom:14px;border:1.5px solid var(--brand)';
   const b=el('div','card-b');
@@ -1839,7 +1909,16 @@ function renderOpenCountCard(v){
   tpl2.appendChild(bTpl2);tpl2.appendChild(el('span',null,'<span style="font-size:11.5px;color:var(--muted)">Tải mẫu (Mã/Tên/ĐVT) rồi chỉnh theo SAP</span>'));
   b.appendChild(stat);b.appendChild(tpl2);b.appendChild(fin);b.appendChild(prev);
   function curKey(){return plantSel.value+'|'+slocSel.value+'|'+perSel.value;}
-  function refresh(){const cl=countLists[curKey()];stat.innerHTML=cl?`<span class="badge badge-done">Đã mở kỳ: ${Object.keys(cl.items||{}).length} mã · ${cl.by||''} ${cl.at||''}</span>`:'<span class="badge" style="background:#FEF3E0;color:var(--accent-600)">Chưa mở kỳ cho kho này</span>';prev.innerHTML='';fin.value='';}
+  function refresh(){
+    const cl=countLists[curKey()];
+    stat.innerHTML=cl?`<span class="badge badge-done">Đã mở kỳ: ${Object.keys(cl.items||{}).length} mã · ${cl.by||''} ${cl.at||''}</span>`:'<span class="badge" style="background:#FEF3E0;color:var(--accent-600)">Chưa mở kỳ cho kho này</span>';
+    // Mở nhầm kho / nhầm kỳ thì phải xóa được, không thì danh sách sai nằm đó mãi
+    if(cl){
+      const bDel=el('button','btn btn-ghost btn-sm','🗑 Xóa kỳ đã mở');bDel.style.cssText='color:var(--red);margin-left:8px';
+      bDel.onclick=()=>deleteCountList(plantSel.value,slocSel.value,perSel.value,()=>{refresh();renderView();});
+      stat.appendChild(bDel);
+    }
+    prev.innerHTML='';fin.value='';}
   slocSel.onchange=refresh;perSel.onchange=refresh;refresh();
   fin.onchange=e=>{const f=e.target.files[0];if(!f)return;
     parseCountListFile(f,res=>{
@@ -2008,7 +2087,16 @@ function renderDieuchuyenDash(v){
 let dcReqFilter='all';
 function dcAllReqs(v){
   const card=el('div','card');
-  card.appendChild(el('div','card-h',`<div><span class="ct">Phiếu yêu cầu điều chuyển / hủy</span><div class="cs">Phiếu chỉ ghi vào sổ khi được duyệt. Dòng "sổ có N/M" cho biết phiếu đã xuống sổ đủ chưa.</div></div><span class="badge badge-soft">${trReqs.length}</span>`));
+  const hd=el('div','card-h',`<div><span class="ct">Phiếu yêu cầu điều chuyển / hủy</span><div class="cs">Phiếu chỉ ghi vào sổ khi được duyệt. Dòng "sổ có N/M" cho biết phiếu đã xuống sổ đủ chưa.</div></div>`);
+  if(session.role==='admin'){
+    const nDup=(()=>{const g={};trReqs.forEach(r=>{(g[dcSig(r)]=g[dcSig(r)]||[]).push(r);});
+      return Object.values(g).filter(x=>x.length>1).reduce((a,x)=>a+x.length-1,0);})();
+    const bC=el('button','btn btn-ghost btn-sm','🧹 Dọn phiếu trùng'+(nDup?' ('+nDup+')':''));
+    if(nDup)bC.style.color='var(--red)';
+    bC.onclick=dcCleanDups;hd.appendChild(bC);
+  }
+  hd.appendChild(el('span','badge badge-soft',String(trReqs.length)));
+  card.appendChild(hd);
   const bar=el('div','card-b');bar.style.cssText='display:flex;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--line)';
   [['all','Tất cả'],['Chờ duyệt','⏳ Chờ duyệt'],['Đã duyệt','✓ Đã duyệt'],['Từ chối','✕ Từ chối']].forEach(([k,lbl])=>{
     const b2=el('button','btn btn-sm '+(dcReqFilter===k?'btn-brand':'btn-ghost'),lbl+(k==='all'?'':' ('+trReqs.filter(r=>r.status===k).length+')'));
@@ -2879,6 +2967,15 @@ function dcRequestForm(v,kind){
       if(lk.length){errBox('Kỳ đã khóa — không chuyển hàng được',[`Kho <b>${lk.join(', ')}</b> đã chốt kiểm kê tháng ${periodVN(per0)}.`,'Ghi thêm điều chuyển vào kỳ đã chốt sẽ làm sai biên bản đã ký.'],'Kỳ: '+per0);return;}
     }
     const items={};codes.forEach(c=>{items[c]={name:picked[c].name,uom:picked[c].uom,qtyReq:picked[c].qty,qtyOk:picked[c].qty,exp:picked[c].exp||''};});
+    // Chặn phiếu trùng ngay từ gốc — nhất là phiếu đẩy, vì nó ghi sổ ngay nên trùng = chuyển 2 lần
+    const dup=dcFindDup(kind,fp,fs,tp,ts,items);
+    if(dup){
+      errBox('Phiếu này đã có rồi — không tạo thêm',[
+        `Phiếu <b>${dup.id}</b> (${dcStatusBadge(dup.status).replace(/<[^>]*>/g,'')}) có <b>đúng nội dung này</b>: cùng cặp kho, cùng ${codes.length} mã, cùng số lượng.`,
+        dup.status==='Đã duyệt'?'Phiếu đó <b>đã ghi sổ hôm nay</b> — hàng đã chuyển. Tạo thêm là chuyển hai lần.':'Phiếu đó đang chờ duyệt, không cần lập lại.',
+        'Muốn chuyển thêm thật thì sửa số lượng cho khác đi, hoặc để phiếu cũ xử lý xong trước.'
+      ],'Phiếu đã có: '+dup.id+'\nTrạng thái: '+dup.status+'\nNgười lập: '+(dup.by||'')+' · '+(dup.time||''));
+      return;}
     const id=await nextDCId(kind,fp,fs);
     const row={id,kind,from_plant:fp,from_sloc:fs,to_plant:tp,to_sloc:ts,items,reason:iR.value.trim(),status:'Chờ duyệt',created_by:session.name};
     if(sb){
