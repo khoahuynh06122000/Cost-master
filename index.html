@@ -2905,7 +2905,16 @@ function dcReqCard(r,canAct){
   }else if(r.status==='Từ chối'&&r.rejectNote){
     wrap.appendChild(el('div','note',`<span>✕ Từ chối bởi <b>${r.approvedBy||'—'}</b> ${r.approvedAt||''} · Lý do: ${r.rejectNote}</span>`));
   }else if(r.status==='Đã duyệt'){
-    wrap.appendChild(el('div','note',`<span>✓ Duyệt bởi <b>${r.approvedBy||'—'}</b> ${r.approvedAt||''} · đã ghi vào sổ kho kỳ tháng ${periodVN(r.period||'')}</span>`));
+    // Đối chiếu phiếu với sổ: cột reason của mỗi dòng sổ có mang mã phiếu nên đếm được
+    const nBook=transfers.filter(t=>t.reason&&String(t.reason).includes(r.id)).length;
+    const nItems=Object.keys(r.items||{}).filter(c=>Number(r.items[c].qtyOk!=null?r.items[c].qtyOk:r.items[c].qtyReq)>0).length;
+    wrap.appendChild(el('div','note',`<span>✓ Duyệt bởi <b>${r.approvedBy||'—'}</b> ${r.approvedAt||''} · kỳ tháng ${periodVN(r.period||'')} · sổ có <b>${nBook}</b>/${nItems} dòng</span>`));
+    if(nBook<nItems)wrap.appendChild(el('div','note',`<span style="color:var(--red)">⚠ Phiếu đã duyệt nhưng sổ điều chuyển <b>thiếu ${nItems-nBook} dòng</b> — hàng chưa bị trừ kho. Admin mở lại phiếu rồi duyệt lại sau khi đã cấp quyền ghi sổ.</span>`));
+    if(session.role==='admin'){
+      const bRe=el('button','btn btn-ghost btn-sm','↩ Mở lại phiếu (admin)');bRe.style.color='var(--accent-600)';
+      bRe.onclick=()=>reopenTransferReq(r);
+      const bar2=el('div');bar2.style.cssText='margin-top:10px';bar2.appendChild(bRe);wrap.appendChild(bar2);
+    }
   }
   return wrap;
 }
@@ -2923,17 +2932,48 @@ async function approveTransferReq(r,qtys){
   if(!codes.length){toast('Tất cả số thực giao đang là 0 — nếu không giao gì thì bấm Từ chối');return;}
   const items={...r.items};
   Object.keys(items).forEach(c=>{items[c]={...items[c],qtyOk:Number(qtys[c]||0)};});
-  const upd=await dbUpd('transfer_requests',{id:r.id},{status:'Đã duyệt',items,period:per,approved_by:session.name,approved_at:new Date().toISOString()});
-  if(!upd.ok||upd.count===0)return;   // dbUpd đã dựng hộp lỗi
-  // Ghi sổ: mỗi mã 1 dòng transfers. Hủy/hao hụt thì đầu đến để trống (hàng ra khỏi hệ thống).
+  // Ghi sổ: mỗi mã 1 dòng transfers. Hủy/hao hụt thì đầu đến là 'HUY' (hàng ra khỏi hệ thống).
   const fromNm=whName(r.fromPlant,r.fromSloc),toNm=r.toPlant?whName(r.toPlant,r.toSloc):'Hủy / hao hụt';
   const fromKey=r.fromPlant+'|'+r.fromSloc,toKey=r.toPlant?(r.toPlant+'|'+r.toSloc):'HUY';
   const reason=(r.kind==='huy'?'Hủy/hao hụt':dcKindLabel(r.kind))+(r.reason?': '+r.reason:'')+' · '+r.id;
+  // GHI SỔ TRƯỚC, đánh dấu Đã duyệt SAU. Làm ngược lại thì RLS chặn ghi sổ sẽ để phiếu
+  // ở trạng thái Đã duyệt mà sổ trống — hai bên tưởng xong việc trong khi hàng chưa hề trừ.
+  const done=[];
   for(const c of codes){
     const it=items[c];
-    const rec={date:dateStr,code:c,name:it.name||c,uom:it.uom||'',qty:Number(qtys[c]||0),from:fromNm,to:toNm,fromKey,toKey,period:per,reason,user:session.name,time:now()};
-    transfers.unshift(rec);
-    await dbIns('transfers',{date:rec.date,code:rec.code,name:rec.name,uom:rec.uom,qty:rec.qty,from_wh:rec.from,to_wh:rec.to,from_key:rec.fromKey,to_key:rec.toKey,period:rec.period,reason:rec.reason,user_name:rec.user});
+    const row={date:dateStr,code:c,name:it.name||c,uom:it.uom||'',qty:Number(qtys[c]||0),
+      from_wh:fromNm,to_wh:toNm,from_key:fromKey,to_key:toKey,period:per,reason,user_name:session.name};
+    let ok=false,emsg='';
+    if(sb){
+      const {data,error}=await sb.from('transfers').insert(row).select();
+      if(error){emsg=(error.message||'')+(error.code?' (mã '+error.code+')':'');}
+      else if(Array.isArray(data)&&data.length===0){emsg='Máy chủ nhận yêu cầu nhưng không tạo dòng nào (quyền RLS).';}
+      else ok=true;
+    }else ok=true;
+    if(ok){done.push(c);transfers.unshift({date:row.date,code:c,name:row.name,uom:row.uom,qty:row.qty,from:fromNm,to:toNm,fromKey,toKey,period:per,reason,user:session.name,time:now()});continue;}
+    // Ghi lỗi giữa đường: dọn các dòng vừa ghi (khóa dọn = cột reason có mang mã phiếu) rồi báo thật
+    let cleaned=0;
+    for(const cc of done){
+      const del=await dbDel('transfers',{reason,code:cc,period:per});
+      if(del.ok&&del.count)cleaned+=del.count;
+      transfers=transfers.filter(t=>!(t.reason===reason&&t.code===cc));
+    }
+    errBox('Không ghi được điều chuyển vào sổ — phiếu VẪN CHỜ DUYỆT',[
+      'Máy chủ từ chối ghi sổ nên phiếu <b>không</b> được đánh dấu đã duyệt. Hàng <b>chưa</b> bị trừ kho.',
+      done.length?`${done.length} mã ghi trước đó đã được dọn lại (${cleaned} dòng xóa thành công) để sổ không lệch.`:'Chưa mã nào được ghi vào sổ.',
+      done.length&&cleaned<done.length?'⚠ CÓ DÒNG DỌN KHÔNG THÀNH CÔNG — báo admin kiểm sổ điều chuyển của phiếu này ngay.':'Bấm Duyệt lại sau khi admin cấp quyền.',
+      'Chụp màn hình này gửi admin.'
+    ],'Bảng: transfers\nPhiếu: '+r.id+'\nMã lỗi ở: '+c+'\n'+emsg+'\nĐã ghi rồi: '+(done.join(', ')||'(không)')+'\nDọn được: '+cleaned+'/'+done.length);
+    return;
+  }
+  const upd=await dbUpd('transfer_requests',{id:r.id},{status:'Đã duyệt',items,period:per,approved_by:session.name,approved_at:new Date().toISOString()});
+  if(!upd.ok||upd.count===0){   // dbUpd đã dựng hộp lỗi — sổ đã ghi nhưng phiếu chưa chốt được
+    errBox('Sổ đã ghi nhưng KHÔNG chốt được phiếu',[
+      `${done.length} mã đã ghi vào sổ điều chuyển (hàng đã trừ kho), nhưng máy chủ không cho cập nhật trạng thái phiếu.`,
+      'Phiếu vẫn hiện là Chờ duyệt — <b>ĐỪNG bấm Duyệt lại</b>, sẽ ghi sổ lần hai.',
+      'Báo admin xử lý phiếu này bằng tay.'
+    ],'Bảng: transfer_requests\nPhiếu: '+r.id+'\nĐã ghi sổ: '+done.join(', '));
+    return;
   }
   r.status='Đã duyệt';r.items=items;r.period=per;r.approvedBy=session.name;r.approvedAt=now();
   const back=r.kind==='xin'?{p:r.toPlant,s:r.toSloc}:(r.kind==='day'?{p:r.fromPlant,s:r.fromSloc}:null);
@@ -2946,6 +2986,24 @@ async function approveTransferReq(r,qtys){
   log('Duyệt '+dcKindLabel(r.kind),`${r.id} · ${fromNm} → ${toNm} · ${codes.length} mã · kỳ ${periodVN(per)}`);
   toast('✓ Đã duyệt '+r.id+' — ghi sổ '+codes.length+' mã vào kỳ tháng '+periodVN(per));
   renderView();
+}
+// MỞ LẠI phiếu đã duyệt (chỉ admin) — dùng khi phiếu bị đánh dấu duyệt mà sổ chưa ghi được.
+// Dọn luôn các dòng sổ của phiếu (nếu có) để duyệt lại không bị ghi hai lần.
+async function reopenTransferReq(r){
+  if(session.role!=='admin'){toast('Chỉ admin mới mở lại được phiếu');return;}
+  const rows=transfers.filter(t=>t.reason&&String(t.reason).includes(r.id));
+  if(!confirm('MỞ LẠI PHIẾU '+r.id+'\n\nPhiếu về trạng thái Chờ duyệt để người có quyền duyệt lại.\n'
+    +(rows.length?rows.length+' dòng đã ghi trong sổ điều chuyển của phiếu này sẽ bị XÓA để duyệt lại không ghi trùng.\n':'Sổ điều chuyển hiện không có dòng nào của phiếu này.\n')
+    +'\nSố lượng trong phiếu giữ nguyên. Bấm OK để mở lại.'))return;
+  let cleaned=0;
+  for(const t of rows){const del=await dbDel('transfers',{reason:t.reason,code:t.code,period:t.period});if(del.ok&&del.count)cleaned+=del.count;}
+  if(rows.length&&cleaned<rows.length){toast('Chỉ xóa được '+cleaned+'/'+rows.length+' dòng sổ — kiểm lại trước khi duyệt lại');}
+  transfers=transfers.filter(t=>!(t.reason&&String(t.reason).includes(r.id)));
+  const upd=await dbUpd('transfer_requests',{id:r.id},{status:'Chờ duyệt',period:null,approved_by:null,approved_at:null});
+  if(!upd.ok||upd.count===0)return;
+  r.status='Chờ duyệt';r.period=null;r.approvedBy=null;r.approvedAt=null;
+  log('Mở lại phiếu điều chuyển (admin)',`${r.id} · xóa ${cleaned} dòng sổ`);
+  toast('Đã mở lại '+r.id+' — chờ duyệt lại');renderView();
 }
 async function rejectTransferReq(r){
   const note=prompt('Lý do từ chối (người lập sẽ thấy):')||'';
