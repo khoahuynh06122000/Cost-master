@@ -842,11 +842,12 @@ function isMyApproval(r){
   if(r.status!=='Chờ duyệt')return false;
   if(session&&session.role==='admin')return true;   // admin toàn quyền xử lý mọi phiếu
   if(r.kind==='huy')return isPrivileged();          // hủy/hao hụt: kế toán duyệt
-  // xin/đẩy: PHẢI đúng giám sát của kho đó. Dùng session.wh (kho được gán) chứ KHÔNG dùng
-  // myWhKeys() — với kế toán hàm đó nở ra toàn bộ kho, thành ra kế toán bấm thay giám sát,
-  // mất luôn ý nghĩa kiểm soát 2 bên (kế toán không ở kho, không biết hàng có thật về hay không).
-  const key=r.kind==='xin'?(r.fromPlant+'|'+r.fromSloc):(r.toPlant+'|'+r.toSloc);
-  const a=String(key).split('|');
+  // Chỉ BÊN CHO HÀNG duyệt (kho nguồn) — kho nhận không phải xác nhận gì, được thêm hàng thì
+  // không có lý do chặn. Phiếu đẩy vốn ghi sổ ngay lúc lập; chỉ khi ghi sổ trượt nó mới nằm
+  // Chờ duyệt, và người xử lý lại vẫn là giám sát kho nguồn (chính người đã lập).
+  // Dùng session.wh (kho được gán) chứ KHÔNG dùng myWhKeys() — với kế toán hàm đó nở ra toàn
+  // bộ kho, thành ra kế toán bấm thay giám sát, mất ý nghĩa kiểm soát.
+  const a=[r.fromPlant,r.fromSloc];
   return (session&&session.wh?session.wh:[]).some(w=>w.plant===a[0]&&(!w.sloc||w.sloc===a[1]));
 }
 function pendingForMe(){return trReqs.filter(isMyApproval);}
@@ -854,14 +855,15 @@ function dcKindLabel(k){return k==='xin'?'Xin hàng':k==='day'?'Đẩy hàng':'H
 // Ai là người phải duyệt phiếu này — để kế toán/admin biết phiếu đang tắc ở đâu
 function dcWhoApproves(r){
   if(r.kind==='huy')return 'Kế toán';
-  return r.kind==='xin'?('Giám sát '+whName(r.fromPlant,r.fromSloc)+' (kho cho hàng)')
-                       :('Giám sát '+whName(r.toPlant,r.toSloc)+' (kho nhận hàng)');
+  return 'Giám sát '+whName(r.fromPlant,r.fromSloc)+' (kho cho hàng)';
 }
-// Phiếu đang ở bước nào trong quy trình 3 bước: lập → duyệt → ghi sổ
+// Phiếu đang ở bước nào. Xin/hủy đi 3 bước (lập → duyệt → ghi sổ);
+// đẩy hàng chỉ 2 bước vì bên cho là người lập, ghi sổ ngay.
 function dcStepLine(r){
-  if(r.status==='Chờ duyệt')return `<span style="color:var(--accent-600);font-weight:700">Bước 2/3 — đang chờ ${dcWhoApproves(r)} duyệt</span>`;
+  const n=r.kind==='day'?2:3;
+  if(r.status==='Chờ duyệt')return `<span style="color:var(--accent-600);font-weight:700">Bước 2/${n} — đang chờ ${dcWhoApproves(r)} duyệt${r.kind==='day'?' lại (lần ghi sổ trước bị trượt)':''}</span>`;
   if(r.status==='Từ chối')return `<span style="color:var(--red);font-weight:700">Dừng ở bước 2 — ${dcWhoApproves(r)} đã từ chối</span>`;
-  return `<span style="color:var(--green);font-weight:700">Bước 3/3 — đã duyệt & ghi sổ</span>`;
+  return `<span style="color:var(--green);font-weight:700">Bước ${n}/${n} — đã ghi sổ${r.kind==='day'?' (kho nhận không cần xác nhận)':''}</span>`;
 }
 function dcStatusBadge(st){
   if(st==='Đã duyệt')return '<span class="badge badge-done">✓ Đã duyệt</span>';
@@ -2729,7 +2731,7 @@ function renderDieuchuyen(v){
   const acts=[
     {k:'nk',ico:HIC.box,title:'Nhập kho mua mới',sub:'Hàng nhà cung cấp về kho — gõ tay hoặc quét ảnh phiếu',n:nRc?nRc+' dòng đã nhập kỳ này':'',render:dcNhapKho},
     {k:'xin',ico:HIC.swap,title:'Xin hàng từ kho khác',sub:'Kho mình thiếu — lập yêu cầu, giám sát kho kia duyệt mới trừ hàng',n:nMine?nMine+' phiếu mình đang chờ':'',render:v2=>dcRequestForm(v2,'xin')},
-    {k:'day',ico:HIC.swap,title:'Đẩy hàng sang kho khác',sub:'Chủ động chuyển đi — kho nhận xác nhận thì mới ghi sổ',render:v2=>dcRequestForm(v2,'day')},
+    {k:'day',ico:HIC.swap,title:'Đẩy hàng sang kho khác',sub:'Chủ động chuyển đi — trừ kho mình và cộng kho nhận NGAY, không cần ai duyệt',render:v2=>dcRequestForm(v2,'day')},
     {k:'huy',ico:HIC.warn,title:'Hủy / hao hụt',sub:'Hàng hỏng, đổ bỏ, mất — kế toán duyệt rồi mới trừ kho',render:v2=>dcRequestForm(v2,'huy')},
     {k:'duyet',ico:HIC.clock,title:'Chờ tôi duyệt',sub:'Phiếu kho khác gửi tới — duyệt, sửa số thực giao hoặc từ chối',n:nCho?nCho+' phiếu chờ':'',warm:!!nCho,render:dcChoDuyet},
     {k:'ds',ico:HIC.list,title:'Xem lại & xuất file',sub:'Phiếu yêu cầu và sổ điều chuyển đã ghi, xuất CSV',n:nTr?nTr+' dòng sổ kỳ này':'',render:dcXemLai},
@@ -2791,7 +2793,7 @@ function dcRequestForm(v,kind){
   if(!mine.length){v.appendChild(el('div','card','<div class="card-b"><div class="empty"><div class="big">Chưa được gán kho</div><div>Liên hệ Quản trị viên.</div></div></div>'));return;}
   const card=el('div','card');const b=el('div','card-b');
   const head=kind==='xin'?['🙋 Xin hàng từ kho khác','Chọn kho có hàng, gõ số cần xin. Giám sát kho đó duyệt thì hàng mới trừ của họ và cộng cho kho mình.']
-    :kind==='day'?['📤 Đẩy hàng sang kho khác','Chọn hàng kho mình muốn chuyển đi. Kho nhận xác nhận thì mới ghi vào sổ.']
+    :kind==='day'?['📤 Đẩy hàng sang kho khác','Chọn hàng kho mình muốn chuyển đi. Bấm gửi là GHI SỔ NGAY: trừ kho mình, cộng kho nhận. Kho nhận chỉ được thông báo, không phải xác nhận.']
     :['🗑 Hủy / hao hụt','Hàng hỏng, đổ bỏ, mất. Kế toán duyệt thì mới trừ khỏi kho — không cộng cho kho nào.'];
   b.innerHTML=`<div class="section-eyebrow">${head[0]}</div><div style="font-size:12px;color:var(--muted);margin:6px 0 12px">${head[1]}</div>`;
 
@@ -2858,7 +2860,7 @@ function dcRequestForm(v,kind){
     si.oninput=()=>{const qq=si.value.trim().toLowerCase();[...tb.children].forEach(tr=>{tr.style.display=tr.textContent.toLowerCase().includes(qq)?'':'none';});};
     const bar=el('div');bar.style.cssText='display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap';
     cnt.textContent=Object.keys(picked).length+' mã đã chọn';
-    const bSend=el('button','btn btn-primary',kind==='huy'?'Gửi phiếu hủy cho kế toán duyệt':'Gửi phiếu — chờ kho kia duyệt');
+    const bSend=el('button','btn btn-primary',kind==='huy'?'Gửi phiếu hủy cho kế toán duyệt':(kind==='day'?'Chuyển hàng & ghi sổ ngay':'Gửi phiếu xin — chờ kho cho duyệt'));
     bSend.onclick=()=>submitReq();
     bar.appendChild(bSend);bar.appendChild(cnt);listWrap.appendChild(bar);
   }
@@ -2868,6 +2870,14 @@ function dcRequestForm(v,kind){
     const fp=src.plant(),fs=src.sloc();
     const tp=dst?dst.plant():null,ts=dst?dst.sloc():null;
     if(dst&&fp===tp&&fs===ts){toast('Kho nguồn và kho nhận đang trùng nhau');return;}
+    // Phiếu ĐẨY ghi sổ ngay (bên cho chính là người lập, bên nhận không phải xác nhận) nên phải
+    // chặn kỳ đã khóa NGAY LÚC LẬP — nếu để lọt xuống bước ghi sổ thì phiếu treo mà không ai duyệt.
+    if(kind==='day'){
+      const per0=curPeriod(),lk=[];
+      if(periodLocked(fp,fs,per0))lk.push(whName(fp,fs));
+      if(periodLocked(tp,ts,per0))lk.push(whName(tp,ts));
+      if(lk.length){errBox('Kỳ đã khóa — không chuyển hàng được',[`Kho <b>${lk.join(', ')}</b> đã chốt kiểm kê tháng ${periodVN(per0)}.`,'Ghi thêm điều chuyển vào kỳ đã chốt sẽ làm sai biên bản đã ký.'],'Kỳ: '+per0);return;}
+    }
     const items={};codes.forEach(c=>{items[c]={name:picked[c].name,uom:picked[c].uom,qtyReq:picked[c].qty,qtyOk:picked[c].qty,exp:picked[c].exp||''};});
     const id=await nextDCId(kind,fp,fs);
     const row={id,kind,from_plant:fp,from_sloc:fs,to_plant:tp,to_sloc:ts,items,reason:iR.value.trim(),status:'Chờ duyệt',created_by:session.name};
@@ -2878,18 +2888,25 @@ function dcRequestForm(v,kind){
       if(Array.isArray(data)&&data.length===0){
         errBox('Máy chủ KHÔNG nhận phiếu',['Máy chủ nhận yêu cầu nhưng <b>không tạo dòng nào</b> — do quyền (RLS).','Chụp màn hình này gửi admin.'],'Bảng: transfer_requests\nMã phiếu: '+id+'\nSố dòng tạo: 0');return;}
     }
-    trReqs.unshift({id,kind,fromPlant:fp,fromSloc:fs,toPlant:tp,toSloc:ts,items,reason:row.reason,status:'Chờ duyệt',period:null,by:session.name,time:now(),approvedBy:null,approvedAt:null,rejectNote:''});
-    // báo cho bên phải duyệt
-    const who=kind==='huy'?null:(kind==='xin'?{p:fp,s:fs}:{p:tp,s:ts});
+    const rec={id,kind,fromPlant:fp,fromSloc:fs,toPlant:tp,toSloc:ts,items,reason:row.reason,status:'Chờ duyệt',period:null,by:session.name,time:now(),approvedBy:null,approvedAt:null,rejectNote:''};
+    trReqs.unshift(rec);
+    log('Lập phiếu '+dcKindLabel(kind),`${id} · ${whName(fp,fs)}${tp?' → '+whName(tp,ts):''} · ${codes.length} mã`);
+    Object.keys(picked).forEach(k=>delete picked[k]);
+    if(kind==='day'){
+      // ĐẨY HÀNG: bên cho đã là người lập nên duyệt luôn, ghi sổ ngay. Kho nhận chỉ được thông báo.
+      const qs={};codes.forEach(c=>qs[c]=items[c].qtyReq);
+      await approveTransferReq(rec,qs);   // hàm này tự ghi sổ, tự báo kho nhận, tự dựng hộp lỗi nếu trượt
+      return;
+    }
+    // XIN / HỦY: báo cho bên phải duyệt
+    const who=kind==='xin'?{p:fp,s:fs}:null;
     if(who){
-      const msg=`${dcKindLabel(kind)}: ${whName(fp,fs)} → ${tp?whName(tp,ts):'hủy'} · ${codes.length} mã · phiếu ${id} do ${session.name} lập. Vào "Chờ tôi duyệt" để xử lý.`;
+      const msg=`Xin hàng: ${whName(fp,fs)} → ${whName(tp,ts)} · ${codes.length} mã · phiếu ${id} do ${session.name} lập. Vào "Chờ tôi duyệt" để xử lý.`;
       const nt={id:uid('NT'),plant:who.p,sloc:who.s,message:msg,kind:'transfer',by:session.name,time:now(),read:false};
       notifications.unshift(nt);
       dbIns('notifications',{id:nt.id,plant_code:who.p,sloc_code:who.s,message:msg,kind:'transfer',created_by:session.name,read_flag:false});
     }
-    log('Lập phiếu '+dcKindLabel(kind),`${id} · ${whName(fp,fs)}${tp?' → '+whName(tp,ts):''} · ${codes.length} mã`);
     toast('Đã gửi phiếu '+id+' — chờ duyệt');
-    Object.keys(picked).forEach(k=>delete picked[k]);
     renderView();
   }
   drawList();
@@ -3035,9 +3052,13 @@ async function approveTransferReq(r,qtys){
     return;
   }
   r.status='Đã duyệt';r.items=items;r.period=per;r.approvedBy=session.name;r.approvedAt=now();
-  const back=r.kind==='xin'?{p:r.toPlant,s:r.toSloc}:(r.kind==='day'?{p:r.fromPlant,s:r.fromSloc}:null);
+  // Báo cho KHO NHẬN (cả xin lẫn đẩy): với xin là "yêu cầu của bạn đã được cho", với đẩy là
+  // "có hàng vừa chuyển tới, đã cộng vào kho" — chỉ để biết, không phải làm gì.
+  const back=r.toPlant?{p:r.toPlant,s:r.toSloc}:null;
   if(back){
-    const msg=`Phiếu ${r.id} (${dcKindLabel(r.kind)}) đã được ${session.name} DUYỆT · ${codes.length} mã đã ghi sổ kỳ tháng ${periodVN(per)}.`;
+    const msg=r.kind==='day'
+      ? `${whName(r.fromPlant,r.fromSloc)} vừa chuyển ${codes.length} mã sang kho bạn (phiếu ${r.id}) · đã cộng vào kho, kỳ tháng ${periodVN(per)}. Không cần xác nhận, chỉ cần kiểm hàng thực nhận.`
+      : `Phiếu ${r.id} (xin hàng) đã được ${session.name} DUYỆT · ${codes.length} mã đã ghi sổ kỳ tháng ${periodVN(per)}.`;
     const nt={id:uid('NT'),plant:back.p,sloc:back.s,message:msg,kind:'transfer',by:session.name,time:now(),read:false};
     notifications.unshift(nt);
     dbIns('notifications',{id:nt.id,plant_code:back.p,sloc_code:back.s,message:msg,kind:'transfer',created_by:session.name,read_flag:false});
