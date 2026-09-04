@@ -2649,37 +2649,61 @@ function renderCountSheet(v){
     </div>`;
   card.appendChild(tb);
 
-  // ----- Thêm mã ngoài danh mục (CHỈ thêm, không có xóa dòng) -----
+  // ----- Thêm mã CHƯA CÓ TRÊN KHO (chỉ thêm, không xóa dòng) -----
+  // Mã phải có sẵn trong DANH MỤC TỔNG (bảng materials trên Supabase). Gõ tên/mã -> đổ gợi ý
+  // để chọn; gõ tên lạ không khớp mã nào thì KHÔNG cho thêm, tránh đẻ mã rác lúc đang đếm.
   const addBox=el('div','addrow');
-  addBox.innerHTML=`<div style="font-weight:800;font-size:12.5px;margin-bottom:4px">➕ Đếm thêm mã ngoài danh sách</div>
-    <div style="font-size:11.5px;color:var(--muted);margin-bottom:9px">Thực tế có hàng mà danh sách chưa liệt kê thì thêm vào đây. Gõ mã có sẵn để lấy tên tự động, hoặc khai mã mới. <b>Chỉ thêm được, không xóa dòng</b> — đã đếm là phải giữ lại dấu vết.</div>`;
+  addBox.innerHTML='<div style="font-weight:800;font-size:12.5px;margin-bottom:4px">➕ Đếm thêm mã chưa có trên kho</div>'+
+    '<div style="font-size:11.5px;color:var(--muted);margin-bottom:9px">Thực tế có hàng mà danh sách kho chưa liệt kê thì thêm ở đây. <b>Chỉ chọn được mã đã có trong danh mục tổng</b> — gõ tên hoặc mã rồi bấm vào gợi ý. Mã lạ chưa có trong danh mục thì nhờ kế toán thêm vào danh mục trước. <b>Chỉ thêm được, không xóa dòng.</b></div>';
   const arRow=el('div');arRow.style.cssText='display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end';
-  const mkF=(lbl,ph,wid)=>{const f=el('label','field');f.style.cssText='margin:0;min-width:'+wid;f.innerHTML='<span>'+lbl+'</span>';const i2=el('input','input');i2.placeholder=ph;f.appendChild(i2);arRow.appendChild(f);return i2;};
-  const iCode=mkF('Mã hàng','VD: 10000123','160px');
-  const iName=mkF('Tên hàng','Tên hàng','220px');
-  const iUom=mkF('ĐVT','KG / CHAI…','110px');
-  const bAdd=el('button','btn btn-brand btn-sm','Thêm vào danh sách đếm');bAdd.style.height='38px';
+  const fFind=el('label','field');fFind.style.cssText='margin:0;flex:1;min-width:280px';
+  fFind.innerHTML='<span>Tìm trong danh mục tổng</span>';
+  const acw=el('div','ac-wrap');
+  const iFind=el('input','input');iFind.placeholder='Gõ tên hàng hoặc mã…';iFind.autocomplete='off';
+  const dd=el('div','ac-dd');
+  acw.appendChild(iFind);acw.appendChild(dd);fFind.appendChild(acw);arRow.appendChild(fFind);
+  const bAdd=el('button','btn btn-brand btn-sm','Thêm vào danh sách đếm');bAdd.style.height='38px';bAdd.disabled=true;bAdd.style.opacity='.5';
   arRow.appendChild(bAdd);addBox.appendChild(arRow);
   const arMsg=el('div');arMsg.style.cssText='font-size:12px;margin-top:8px';addBox.appendChild(arMsg);
-  iCode.oninput=()=>{const c=iCode.value.trim();const m=masterByCode[c];
-    if(m){iName.value=m.name||'';iUom.value=m.uom||'';arMsg.innerHTML='<span style="color:var(--green)">✓ Có trong danh mục tổng: '+m.name+'</span>';}
-    else arMsg.innerHTML=c?'<span style="color:var(--muted)">Mã mới — điền tên & ĐVT rồi thêm</span>':'';};
+  let picked=null;
+  function setPicked(m){
+    picked=m;
+    bAdd.disabled=!m;bAdd.style.opacity=m?'':'.5';
+    arMsg.innerHTML=m?('<span style="color:var(--green)">✓ Đã chọn: <b>'+m.name+'</b> ('+m.code+' · '+(m.uom||'—')+')</span>'):'';
+  }
+  iFind.oninput=()=>{
+    setPicked(null);
+    const q=iFind.value.trim().toLowerCase();
+    if(q.length<1){dd.style.display='none';return;}
+    const onSheet=new Set(MATS.map(x=>x.code));
+    const res=DATA.materials.filter(m=>!onSheet.has(m.code)&&(String(m.code).toLowerCase().includes(q)||String(m.name||'').toLowerCase().includes(q))).slice(0,40);
+    dd.innerHTML='';
+    if(!res.length){
+      const already=DATA.materials.some(m=>onSheet.has(m.code)&&(String(m.code).toLowerCase().includes(q)||String(m.name||'').toLowerCase().includes(q)));
+      dd.innerHTML='<div class="ac-item" style="cursor:default"><div class="n" style="color:var(--red)">'+
+        (already?'Mã này đã có sẵn trong danh sách đếm bên dưới':'Không có mã nào khớp trong danh mục tổng')+'</div>'+
+        '<div class="s">'+(already?'Dùng ô tìm kiếm bên dưới để nhập số cho mã đó.':'Chỉ đếm được mã đã có trong danh mục. Nhờ kế toán thêm mã vào Danh mục VT trước.')+'</div></div>';
+      dd.style.display='block';return;}
+    res.forEach(m=>{
+      const it=el('div','ac-item','<div class="n">'+m.name+'</div><div class="s">'+m.code+' · '+(m.uom||'')+'</div>');
+      it.onclick=()=>{iFind.value=m.name+' ('+m.code+')';dd.style.display='none';setPicked(m);};
+      dd.appendChild(it);});
+    dd.style.display='block';
+  };
+  document.addEventListener('click',e=>{if(!acw.contains(e.target))dd.style.display='none';});
   bAdd.onclick=()=>{
-    const c=iCode.value.trim();
-    if(!c){arMsg.innerHTML='<span style="color:var(--red)">Chưa nhập mã hàng</span>';return;}
+    if(!picked){arMsg.innerHTML='<span style="color:var(--red)">Phải chọn một mã từ danh sách gợi ý</span>';return;}
+    const c=picked.code;
     if(MATS.some(x=>x.code===c)){arMsg.innerHTML='<span style="color:var(--red)">Mã '+c+' đã có sẵn trong danh sách bên dưới</span>';return;}
-    const nm=iName.value.trim()||(masterByCode[c]&&masterByCode[c].name)||c;
-    const um=iUom.value.trim()||(masterByCode[c]&&masterByCode[c].uom)||'';
-    MATS.push({code:c,name:nm,uom:um});
+    MATS.push({code:c,name:picked.name,uom:picked.uom||''});
     MATS.sort((a,b)=>(a.name||'').localeCompare(b.name||'','vi'));
     total=MATS.length;
-    learnMaterials([{code:c,name:nm,uom:um}]);
     if(!plantMaterials[counting.plant])plantMaterials[counting.plant]=[];
     if(!plantMaterials[counting.plant].includes(c)){plantMaterials[counting.plant].push(c);
       if(sb)sb.from('plant_materials').upsert({plant_code:counting.plant,code:c}).then(({error})=>{if(error)console.error('plant_materials',error);});}
-    log('Thêm mã ngoài danh mục khi kiểm kê',`${c} · ${nm} · ${whName(counting.plant,counting.sloc)}`);
-    arMsg.innerHTML='<span style="color:var(--green)">✓ Đã thêm '+nm+' — dùng ô tìm bên dưới để nhập số</span>';
-    iCode.value='';iName.value='';iUom.value='';
+    log('Thêm mã chưa có trên kho khi kiểm kê',c+' · '+picked.name+' · '+whName(counting.plant,counting.sloc));
+    arMsg.innerHTML='<span style="color:var(--green)">✓ Đã thêm <b>'+picked.name+'</b> vào danh sách — dùng ô tìm bên dưới để nhập số</span>';
+    iFind.value='';picked=null;bAdd.disabled=true;bAdd.style.opacity='.5';
     renderList($('#searchBox')?$('#searchBox').value:'');updateCnt();
   };
   card.appendChild(addBox);
@@ -2902,7 +2926,6 @@ function renderDieuchuyen(v){
   const acts=[
     {k:'nk',ico:HIC.box,title:'Nhập kho mua mới',sub:'Hàng nhà cung cấp về kho — gõ tay hoặc quét ảnh phiếu',n:nRc?nRc+' dòng đã nhập kỳ này':'',render:dcNhapKho},
     {k:'xin',ico:HIC.swap,title:'Xin hàng từ kho khác',sub:'Kho mình thiếu — lập yêu cầu, giám sát kho kia duyệt mới trừ hàng',n:nMine?nMine+' phiếu mình đang chờ':'',render:v2=>dcRequestForm(v2,'xin')},
-    {k:'day',ico:HIC.swap,title:'Đẩy hàng sang kho khác',sub:'Chủ động chuyển đi — trừ kho mình và cộng kho nhận NGAY, không cần ai duyệt',render:v2=>dcRequestForm(v2,'day')},
     {k:'huy',ico:HIC.warn,title:'Hủy / hao hụt',sub:'Hàng hỏng, đổ bỏ, mất — kế toán duyệt rồi mới trừ kho',render:v2=>dcRequestForm(v2,'huy')},
     {k:'duyet',ico:HIC.clock,title:'Chờ tôi duyệt',sub:'Phiếu kho khác gửi tới — duyệt, sửa số thực giao hoặc từ chối',n:nCho?nCho+' phiếu chờ':'',warm:!!nCho,render:dcChoDuyet},
     {k:'ds',ico:HIC.list,title:'Xem lại & xuất file',sub:'Phiếu yêu cầu và sổ điều chuyển đã ghi, xuất CSV',n:nTr?nTr+' dòng sổ kỳ này':'',render:dcXemLai},
