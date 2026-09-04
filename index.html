@@ -2738,19 +2738,6 @@ function renderCountSheet(v){
   card.appendChild(nt);
 
   // ----- File bar: tải mẫu + nạp file -----
-  const fb=el('div','filebar');
-  fb.innerHTML=`
-    <div class="fb-left">
-      <div class="fb-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-      <div><div class="fb-t">Tùy chọn: nhập nhanh bằng Excel</div><div class="fb-s">Bình thường chỉ cần điền số vào danh sách NVL bên dưới. Nếu muốn nhập nhanh: tải mẫu về điền rồi nạp lên.</div></div>
-    </div>
-    <div class="fb-btns">
-      <button class="btn btn-ghost btn-sm" id="btnTpl"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Tải file mẫu</button>
-      <button class="btn btn-brand btn-sm" id="btnUp"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Nạp file đã điền</button>
-      <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none">
-    </div>`;
-  card.appendChild(fb);
-  const importMsg=el('div');importMsg.id='importMsg';importMsg.style.padding='0 16px';card.appendChild(importMsg);
 
   const tb=el('div','toolbar');
   // Danh sách NVL để đếm = tồn đầu kỳ đã lưu ∪ danh mục gán cho kho (hiện sẵn tên NVL)
@@ -2917,10 +2904,8 @@ function renderCountSheet(v){
   $('#searchBox').oninput=e=>renderList(e.target.value);
   tb.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{tb.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));c.classList.add('active');curFilter=c.dataset.f;renderList($('#searchBox').value);});
 
-  // ----- File template + import wiring -----
-  $('#btnTpl').onclick=()=>downloadTemplate();
-  $('#btnUp').onclick=()=>$('#fileInput').click();
-  $('#fileInput').onchange=e=>{const f=e.target.files[0];if(f)importCountFile(f,items,()=>{renderList($('#searchBox').value);updateCnt();autosaved();saveDrafts();});e.target.value='';};
+  // Khối nhập nhanh bằng Excel đã bỏ khỏi màn kiểm đếm: chỉ kế toán/admin được up Excel,
+  // các vai còn lại gõ tay trên danh sách có sẵn (rule sếp 04/09/2026).
 
   const act=el('div','sticky-actions');const rowb=el('div','btn-row');
   const bDraft=el('button','btn btn-ghost','<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Lưu nháp');
@@ -5611,78 +5596,6 @@ ${facts}`;
   }finally{btn.disabled=false;}
 }
 
-/* ============ FILE MẪU & NẠP FILE ============ */
-function downloadTemplate(){
-  if(!counting){toast('Chưa chọn kho');return;}
-  const mats=materialsForPlant(counting.plant);
-  if(!mats.length){toast('Plant chưa có danh mục vật tư');return;}
-  const wsData=[['Mã hàng','Tên hàng','ĐVT','Số lượng thực đếm']];
-  mats.forEach(m=>wsData.push([m.code,m.name,m.uom,'']));
-  const wb=XLSX.utils.book_new();
-  const ws=XLSX.utils.aoa_to_sheet(wsData);
-  ws['!cols']=[{wch:14},{wch:52},{wch:8},{wch:18}];
-  // ép cột mã hàng thành text để Excel không cắt số 0 đầu
-  const range=XLSX.utils.decode_range(ws['!ref']);
-  for(let r=1;r<=range.e.r;r++){const c=XLSX.utils.encode_cell({r,c:0});if(ws[c]){ws[c].t='s';ws[c].z='@';}}
-  XLSX.utils.book_append_sheet(wb,ws,'KiemKe');
-  const fname=`MauKiemKe_${counting.sloc}_${counting.plant}.xlsx`;
-  XLSX.writeFile(wb,fname);
-  log('Tải file mẫu kiểm kê',`${whName(counting.plant,counting.sloc)}`);
-  toast('Đã tải '+fname);
-}
-function norm(s){return String(s==null?'':s).toLowerCase().replace(/\s+/g,'').replace(/[̀-ͯ]/g,'');}
-function importCountFile(file,items,done){
-  const msg=$('#importMsg');
-  const reader=new FileReader();
-  const isCsv=/\.csv$/i.test(file.name);
-  reader.onload=e=>{
-    try{
-      let wb;
-      if(isCsv){wb=XLSX.read(e.target.result,{type:'string'});}
-      else{wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});}
-      const ws=wb.Sheets[wb.SheetNames[0]];
-      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-      if(!rows.length){throw new Error('File rỗng');}
-      // tìm dòng tiêu đề: dòng có chứa "mã" và ("số lượng" hoặc "sl")
-      let hIdx=0;
-      for(let i=0;i<Math.min(rows.length,10);i++){
-        const cells=rows[i].map(norm);
-        if(cells.some(c=>c.includes('mã')||c.includes('mahang')||c.includes('code'))){hIdx=i;break;}
-      }
-      const header=rows[hIdx].map(norm);
-      const codeCol=header.findIndex(c=>c.includes('mãhàng')||c.includes('mahang')||c==='mã'||c==='ma'||c.includes('code')||c.includes('material'));
-      let qtyCol=header.findIndex(c=>c.includes('sốlượng')||c.includes('soluong')||c==='sl'||c.includes('qty')||c.includes('quantity')||c.includes('thựcđếm')||c.includes('thucdem'));
-      if(codeCol<0){throw new Error('Không tìm thấy cột "Mã hàng"');}
-      if(qtyCol<0){qtyCol=header.length-1;} // fallback: cột cuối
-      const valid=new Map((counting?materialsForPlant(counting.plant):DATA.materials).map(m=>[m.code,m]));
-      let ok=0,unmatched=[],skipped=0;
-      for(let i=hIdx+1;i<rows.length;i++){
-        const row=rows[i];if(!row||row.length===0)continue;
-        let code=String(row[codeCol]==null?'':row[codeCol]).trim();
-        if(code.endsWith('.0'))code=code.slice(0,-2);
-        if(!code)continue;
-        const raw=row[qtyCol];
-        if(raw===''||raw==null){continue;} // để trống = không đếm mã đó
-        const qty=Number(String(raw).replace(',','.'));
-        if(isNaN(qty)||qty<0){skipped++;continue;}
-        if(valid.has(code)){items[code]=String(qty);ok++;}
-        else{if(unmatched.length<8)unmatched.push(code);}
-      }
-      let html=`<div class="imp-res imp-ok"><b>✓ Đã nạp ${ok} mã</b> vào danh sách.`;
-      if(unmatched.length)html+=` <span class="imp-warn">${unmatched.length===8?'≥8':unmatched.length} mã không khớp danh mục (bỏ qua): ${unmatched.join(', ')}…</span>`;
-      if(skipped)html+=` <span class="imp-warn">${skipped} dòng số lượng không hợp lệ (bỏ qua).</span>`;
-      html+=`</div>`;
-      msg.innerHTML=html;
-      log('Nạp file kiểm kê',`${whName(counting.plant,counting.sloc)} · ${ok} mã từ ${file.name}`);
-      toast('Đã nạp '+ok+' mã từ file');
-      done&&done();
-    }catch(err){
-      msg.innerHTML=`<div class="imp-res imp-err"><b>Không đọc được file.</b> ${err.message}. Hãy dùng đúng file mẫu, hoặc kiểm tra file có cột "Mã hàng" và "Số lượng".</div>`;
-      toast('Lỗi đọc file');
-    }
-  };
-  if(isCsv)reader.readAsText(file);else reader.readAsArrayBuffer(file);
-}
 
 /* ============ EXPORT ============ */
 function dl(name,rows){const csv=rows.map(r=>r.map(c=>{c=(c==null?'':String(c));return /[",\n]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c;}).join(',')).join('\n');
