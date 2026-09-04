@@ -1897,6 +1897,23 @@ function parseCountListFile(file,cb){
     cb({items,ok,bad});
   },err=>toast('Lỗi đọc file: '+((err&&err.message)||err)));
 }
+// Lưu danh sách cần đếm cho 1 kho + kỳ (dùng chung cho cả 2 cách: chọn trên web và nạp Excel)
+function commitCountList(plant,sloc,period,items,cb){
+  const n=Object.keys(items||{}).length;
+  if(!n){toast('Chưa chọn mã nào');return;}
+  countLists[plant+'|'+sloc+'|'+period]={items,by:session.name,at:now()};
+  dbUpsertCountList(plant,sloc,period,items);
+  learnMaterials(Object.keys(items).map(c=>({code:c,name:items[c].name,uom:items[c].uom})));
+  const msg='Kế toán đã mở kỳ kiểm kê tháng '+periodVN(period)+' cho kho '+whName(plant,sloc)+' — '+n+' mã cần đếm. Vào app → tab Kiểm kê → chọn kho → "Kiểm đếm trực tiếp" để đếm.';
+  const note={id:uid('NT'),plant:plant,sloc:sloc,message:msg,kind:'countlist',by:session.name,time:now(),read:false};
+  notifications.unshift(note);
+  dbIns('notifications',{id:note.id,plant_code:plant,sloc_code:sloc,message:msg,kind:'countlist',created_by:session.name,read_flag:false});
+  const url=location.origin+location.pathname+'?kk='+encodeURIComponent(plant+'|'+sloc+'|'+period);
+  if(getCfg().teams)sendTeamsText('🗂 <b>MỞ KỲ KIỂM KÊ</b> — tháng '+periodVN(period)+'<br>Kho: '+whName(plant,sloc)+'<br>Số mã cần đếm: '+n+'<br>👉 <a href="'+url+'">Bấm vào đây để mở màn kiểm đếm</a>');
+  log('Mở kỳ kiểm kê (kế toán)',whName(plant,sloc)+' · kỳ '+periodVN(period)+' · '+n+' mã');
+  toast(getCfg().teams?'✓ Đã mở kỳ, gửi Teams + thông báo giám sát':'✓ Đã mở kỳ & thông báo giám sát (Teams chưa cấu hình — Cài đặt AI)');
+  cb&&cb();
+}
 // XÓA danh sách mở kỳ (kế toán mở nhầm kho / nhầm kỳ). Không đụng tới phiếu kiểm kê đã gửi.
 async function deleteCountList(plant,sloc,period,cb){
   const key=plant+'|'+sloc+'|'+period;
@@ -1931,7 +1948,7 @@ function renderOpenCountCard(v){
   const perF=el('label','field');perF.style.marginTop='10px';perF.innerHTML='<span>Kỳ kiểm kê (tháng)</span>';
   const perSel=el('select','input');periodOptions(12).forEach(pp=>{const o=el('option',null,'Tháng '+periodVN(pp)+(pp===curPeriod()?' (hiện tại)':''));o.value=pp;perSel.appendChild(o);});perF.appendChild(perSel);b.appendChild(perF);
   function fillSloc(){slocSel.innerHTML='';allowedSlocsOf(plantSel.value).forEach(w=>{const o=el('option',null,`${w.sloc_name} (${w.sloc})`);o.value=w.sloc;slocSel.appendChild(o);});}
-  plantSel.onchange=()=>{fillSloc();refresh();};fillSloc();
+  plantSel.onchange=()=>{fillSloc();Object.keys(sel).forEach(c=>delete sel[c]);refresh();drawWeb();};fillSloc();
   const stat=el('div');stat.style.cssText='font-size:12px;margin:10px 0';
   const fin=el('input');fin.type='file';fin.accept='.xlsx,.xls,.csv';fin.style.cssText='font-size:12.5px';
   const prev=el('div');prev.style.marginTop='10px';
@@ -1939,7 +1956,90 @@ function renderOpenCountCard(v){
   const bTpl2=el('button','btn btn-ghost btn-sm','⬇ Tải file mẫu danh mục');
   bTpl2.onclick=()=>{const rows=templateRowsFor(plantSel.value,slocSel.value,perSel.value);if(!rows.length)rows.push(['VD-001','Ví dụ: Nước suối 500ml','CHAI']);downloadTemplateXlsx(`Mau_danh_muc_${plantSel.value}_${slocSel.value}.xlsx`,['Mã hàng','Tên hàng','ĐVT'],rows);};
   tpl2.appendChild(bTpl2);tpl2.appendChild(el('span',null,'<span style="font-size:11.5px;color:var(--muted)">Tải mẫu (Mã/Tên/ĐVT) rồi chỉnh theo SAP</span>'));
-  b.appendChild(stat);b.appendChild(tpl2);b.appendChild(fin);b.appendChild(prev);
+  // ---- Hai cách mở kỳ: chọn ngay trên web (mặc định) hoặc nạp file Excel ----
+  const seg=el('div');seg.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 4px';
+  const bWeb=el('button','btn btn-brand btn-sm','🖱 Chọn danh sách trên web');
+  const bXls2=el('button','btn btn-ghost btn-sm','📄 Nạp file Excel');
+  seg.appendChild(bWeb);seg.appendChild(bXls2);
+  const webPane=el('div'),xlsPane=el('div');
+  function setMode(m){
+    bWeb.className='btn btn-sm '+(m==='web'?'btn-brand':'btn-ghost');
+    bXls2.className='btn btn-sm '+(m==='xls'?'btn-brand':'btn-ghost');
+    webPane.style.display=m==='web'?'':'none';xlsPane.style.display=m==='xls'?'':'none';
+    if(m==='web')drawWeb();
+  }
+  bWeb.onclick=()=>setMode('web');bXls2.onclick=()=>setMode('xls');
+  b.appendChild(stat);b.appendChild(seg);b.appendChild(webPane);
+  xlsPane.appendChild(tpl2);xlsPane.appendChild(fin);xlsPane.appendChild(prev);b.appendChild(xlsPane);
+
+  // ----- Chọn danh sách ngay trên web: tick mã của kho, thêm mã từ danh mục tổng -----
+  const sel={};   // code -> {name,uom}
+  function poolOf(plant,sloc,period){
+    const set=new Set();
+    (plantMaterials[plant]||[]).forEach(c=>set.add(c));
+    const op=openingStock[plant+'|'+sloc];if(op&&op.items)Object.keys(op.items).forEach(c=>set.add(c));
+    const mv=movementsOf(plant,sloc,period);
+    [mv.buy,mv.tin,mv.tout].forEach(o=>Object.keys(o||{}).forEach(c=>set.add(c)));
+    Object.keys(sel).forEach(c=>set.add(c));
+    return [...set].map(c=>{const m=masterByCode[c]||{name:c,uom:''};return {code:c,name:m.name||c,uom:m.uom||''};})
+      .sort((x,y)=>(x.name||'').localeCompare(y.name||'','vi'));
+  }
+  function drawWeb(){
+    webPane.innerHTML='';
+    const plant=plantSel.value,sloc=slocSel.value,period=perSel.value;
+    if(!plant||!sloc)return;
+    const cl=countLists[plant+'|'+sloc+'|'+period];
+    if(cl&&cl.items&&!Object.keys(sel).length)Object.keys(cl.items).forEach(c=>{sel[c]={name:cl.items[c].name||c,uom:cl.items[c].uom||''};});
+    const pool=poolOf(plant,sloc,period);
+    webPane.appendChild(el('div',null,'<div style="font-size:12px;color:var(--muted);margin:6px 0 8px">Tick những mã cần đếm cho kho <b>'+whName(plant,sloc)+'</b> kỳ tháng <b>'+periodVN(period)+'</b>. Danh sách lấy từ danh mục kho + tồn đầu kỳ + mã có phát sinh trong kỳ. Thiếu mã nào thì tìm thêm ở ô dưới.</div>'));
+    const arw=el('div','ac-wrap');arw.style.cssText='max-width:420px;margin-bottom:10px';
+    const iAdd=el('input','input');iAdd.placeholder='Thêm mã chưa có trong danh sách — gõ tên hoặc mã…';iAdd.autocomplete='off';
+    const dd2=el('div','ac-dd');arw.appendChild(iAdd);arw.appendChild(dd2);webPane.appendChild(arw);
+    iAdd.oninput=()=>{
+      const q=iAdd.value.trim().toLowerCase();if(!q){dd2.style.display='none';return;}
+      const have=new Set(pool.map(x=>x.code));
+      const res=DATA.materials.filter(m=>!have.has(m.code)&&(String(m.code).toLowerCase().includes(q)||String(m.name||'').toLowerCase().includes(q))).slice(0,30);
+      dd2.innerHTML='';
+      if(!res.length){dd2.innerHTML='<div class="ac-item" style="cursor:default"><div class="n" style="color:var(--red)">Không có mã nào khớp trong danh mục tổng</div><div class="s">Mã lạ phải thêm vào Danh mục VT trước.</div></div>';dd2.style.display='block';return;}
+      res.forEach(m=>{const it=el('div','ac-item','<div class="n">'+m.name+'</div><div class="s">'+m.code+' · '+(m.uom||'')+'</div>');
+        it.onclick=()=>{sel[m.code]={name:m.name,uom:m.uom||''};iAdd.value='';dd2.style.display='none';drawWeb();};dd2.appendChild(it);});
+      dd2.style.display='block';};
+    document.addEventListener('click',e=>{if(!arw.contains(e.target))dd2.style.display='none';});
+    const tbar=el('div');tbar.style.cssText='display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px';
+    const sw=el('div','search-wrap');sw.style.cssText='flex:1;min-width:220px';
+    sw.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>';
+    const si=el('input');si.placeholder='Lọc trong '+pool.length+' mã…';sw.appendChild(si);
+    const bAll=el('button','btn btn-ghost btn-sm','Chọn tất cả');
+    const bNone=el('button','btn btn-ghost btn-sm','Bỏ chọn hết');
+    const cnt2=el('span');cnt2.style.cssText='font-size:12.5px;font-weight:700;color:var(--brand)';
+    tbar.appendChild(sw);tbar.appendChild(bAll);tbar.appendChild(bNone);tbar.appendChild(cnt2);webPane.appendChild(tbar);
+    const box=el('div');box.style.cssText='max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:12px;padding:6px';
+    webPane.appendChild(box);
+    function upd(){cnt2.textContent=Object.keys(sel).length+' mã đã chọn';}
+    function rows(q){
+      box.innerHTML='';
+      const list=pool.filter(m=>!q||m.code.toLowerCase().includes(q)||(m.name||'').toLowerCase().includes(q));
+      if(!list.length){box.appendChild(el('div','list-hint','Không có mã khớp.'));return;}
+      list.forEach(m=>{
+        const r=el('label');r.style.cssText='display:flex;gap:10px;align-items:center;padding:7px 9px;border-bottom:1px solid var(--line);cursor:pointer';
+        const cb=el('input');cb.type='checkbox';cb.checked=!!sel[m.code];
+        cb.onchange=()=>{if(cb.checked)sel[m.code]={name:m.name,uom:m.uom};else delete sel[m.code];upd();};
+        const tx=el('div',null,'<div style="font-size:13px;font-weight:600">'+m.name+'</div><div style="font-size:11.5px;color:var(--muted)"><span class="tnum">'+m.code+'</span> · '+(m.uom||'')+'</div>');
+        r.appendChild(cb);r.appendChild(tx);box.appendChild(r);});
+    }
+    si.oninput=()=>rows(si.value.trim().toLowerCase());
+    bAll.onclick=()=>{pool.forEach(m=>sel[m.code]={name:m.name,uom:m.uom});rows(si.value.trim().toLowerCase());upd();};
+    bNone.onclick=()=>{Object.keys(sel).forEach(c=>delete sel[c]);rows(si.value.trim().toLowerCase());upd();};
+    rows('');upd();
+    const brow2=el('div');brow2.style.cssText='display:flex;gap:10px;margin-top:12px;flex-wrap:wrap';
+    const bSave=el('button','btn btn-primary',cl?'✓ Cập nhật danh sách & báo giám sát':'✓ Mở kỳ & gửi cho giám sát');
+    bSave.onclick=()=>{
+      if(!Object.keys(sel).length){toast('Chưa tick mã nào');return;}
+      const items={};Object.keys(sel).forEach(c=>items[c]={name:sel[c].name,uom:sel[c].uom});
+      commitCountList(plant,sloc,period,items,()=>{Object.keys(sel).forEach(c=>delete sel[c]);refresh();renderView();});
+    };
+    brow2.appendChild(bSave);webPane.appendChild(brow2);
+  }
   function curKey(){return plantSel.value+'|'+slocSel.value+'|'+perSel.value;}
   function refresh(){
     const cl=countLists[curKey()];
@@ -1951,7 +2051,9 @@ function renderOpenCountCard(v){
       stat.appendChild(bDel);
     }
     prev.innerHTML='';fin.value='';}
-  slocSel.onchange=refresh;perSel.onchange=refresh;refresh();
+  slocSel.onchange=()=>{Object.keys(sel).forEach(c=>delete sel[c]);refresh();drawWeb();};
+  perSel.onchange=()=>{Object.keys(sel).forEach(c=>delete sel[c]);refresh();drawWeb();};
+  refresh();setMode('web');
   fin.onchange=e=>{const f=e.target.files[0];if(!f)return;
     parseCountListFile(f,res=>{
       if(!res.ok){toast('Không đọc được mã nào trong file');return;}
@@ -1964,21 +2066,7 @@ function renderOpenCountCard(v){
       const brow=el('div');brow.style.cssText='display:flex;gap:10px;margin-top:12px';
       const bOk=el('button','btn btn-primary','✓ Mở kỳ & gửi cho giám sát');
       const bNo=el('button','btn btn-ghost','Hủy');
-      bOk.onclick=()=>{
-        const plant=plantSel.value,sloc=slocSel.value,period=perSel.value;
-        countLists[plant+'|'+sloc+'|'+period]={items:res.items,by:session.name,at:now()};
-        dbUpsertCountList(plant,sloc,period,res.items);
-        learnMaterials(Object.keys(res.items).map(c=>({code:c,name:res.items[c].name,uom:res.items[c].uom})));
-        const msg=`Kế toán đã mở kỳ kiểm kê tháng ${periodVN(period)} cho kho ${whName(plant,sloc)} — ${res.ok} mã cần đếm. Vào app → tab Kiểm kê → chọn kho → "Kiểm đếm trực tiếp" để đếm.`;
-        const note={id:uid('NT'),plant:plant,sloc:sloc,message:msg,kind:'countlist',by:session.name,time:now(),read:false};
-        notifications.unshift(note);
-        dbIns('notifications',{id:note.id,plant_code:plant,sloc_code:sloc,message:msg,kind:'countlist',created_by:session.name,read_flag:false});
-        const url=location.origin+location.pathname+'?kk='+encodeURIComponent(plant+'|'+sloc+'|'+period);
-        if(getCfg().teams)sendTeamsText(`🗂 <b>MỞ KỲ KIỂM KÊ</b> — tháng ${periodVN(period)}<br>Kho: ${whName(plant,sloc)}<br>Số mã cần đếm: ${res.ok}<br>👉 <a href="${url}">Bấm vào đây để mở màn kiểm đếm</a>`);
-        log('Mở kỳ kiểm kê (kế toán)',`${whName(plant,sloc)} · kỳ ${periodVN(period)} · ${res.ok} mã`);
-        toast(getCfg().teams?'✓ Đã mở kỳ, gửi Teams + thông báo giám sát':'✓ Đã mở kỳ & thông báo giám sát (Teams chưa cấu hình — Cài đặt AI)');
-        refresh();renderView();
-      };
+      bOk.onclick=()=>commitCountList(plantSel.value,slocSel.value,perSel.value,res.items,()=>{refresh();renderView();});
       bNo.onclick=()=>{prev.innerHTML='';fin.value='';};
       brow.appendChild(bOk);brow.appendChild(bNo);prev.appendChild(brow);
     });
