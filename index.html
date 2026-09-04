@@ -1089,6 +1089,18 @@ function lastDayVN(p){const a=p.split('-').map(Number);const d=new Date(a[0],a[1
 // lockedSub trả về chính phiếu đang khóa để thông báo cho người dùng biết phải xử lý phiếu nào.
 function lockedSub(plant,sloc,period){return submissions.find(s=>s.plant===plant&&s.sloc===sloc&&s.period===period&&s.status==='Đã duyệt');}
 function periodLocked(plant,sloc,period){return !!lockedSub(plant,sloc,period);}
+/* Kho đã MỞ KỲ kiểm kê thì cấm điều chuyển (rule BLĐ: điều chuyển phải xong TRƯỚC khi mở kỳ).
+   Mở kỳ = kế toán đã chốt danh sách cần đếm; chuyển hàng sau đó là làm lệch số đang đếm. */
+function countOpened(plant,sloc,period){return !!countLists[plant+'|'+sloc+'|'+(period||curPeriod())];}
+// Trả về danh sách kho đang vướng (mở kỳ hoặc đã khóa) để báo cho người dùng biết vướng ở đâu
+function dcBlockers(fp,fs,tp,ts,period){
+  const per=period||curPeriod(),out=[];
+  const chk=(p,s)=>{if(!p)return;
+    if(periodLocked(p,s,per))out.push(whName(p,s)+' — đã chốt kiểm kê tháng '+periodVN(per));
+    else if(countOpened(p,s,per))out.push(whName(p,s)+' — đã mở kỳ kiểm kê tháng '+periodVN(per));};
+  chk(fp,fs);chk(tp,ts);
+  return out;
+}
 function lockMsg(plant,sloc,period){const s=lockedSub(plant,sloc,period);return 'Tháng '+periodVN(period)+' đã khóa cho kho này'+(s?' — do phiếu '+s.id+' đã duyệt'+(s.approvedBy?' bởi '+s.approvedBy:'')+'. Admin vào Kiểm kê → theo dõi & duyệt → mở phiếu đó → "↩ Hủy duyệt" để mở lại kỳ.':'.');}
 
 /* ================= SUPABASE (đồng bộ điện thoại ↔ PC) ================= */
@@ -2559,7 +2571,7 @@ function procNote(){
   const d=el('div','proc-note');
   d.innerHTML=`<div class="pt">📌 QUY TRÌNH BẮT BUỘC</div>
     <ul>
-      <li><b>Điều chuyển phải làm xong TRƯỚC khi kiểm kê.</b> Hàng đã chuyển mà chưa lập phiếu thì số kiểm kê sẽ lệch.</li>
+      <li><b>Điều chuyển phải xong TRƯỚC khi kế toán mở kỳ kiểm kê.</b> Kho đã mở kỳ là app chặn mọi điều chuyển của kho đó trong kỳ.</li>
       <li>Kiểm kê xong có chênh lệch thì <b>KHÔNG được bổ sung phiếu điều chuyển</b> để bù trừ.</li>
       <li>Xử lý chênh lệch: <b>thừa → làm phiếu nhập kho</b> · <b>thiếu → đền tiền</b>.</li>
     </ul>`;
@@ -3029,13 +3041,16 @@ function dcRequestForm(v,kind){
     const fp=src.plant(),fs=src.sloc();
     const tp=dst?dst.plant():null,ts=dst?dst.sloc():null;
     if(dst&&fp===tp&&fs===ts){toast('Kho nguồn và kho nhận đang trùng nhau');return;}
-    // Phiếu ĐẨY ghi sổ ngay (bên cho chính là người lập, bên nhận không phải xác nhận) nên phải
-    // chặn kỳ đã khóa NGAY LÚC LẬP — nếu để lọt xuống bước ghi sổ thì phiếu treo mà không ai duyệt.
-    if(kind==='day'){
-      const per0=curPeriod(),lk=[];
-      if(periodLocked(fp,fs,per0))lk.push(whName(fp,fs));
-      if(periodLocked(tp,ts,per0))lk.push(whName(tp,ts));
-      if(lk.length){errBox('Kỳ đã khóa — không chuyển hàng được',[`Kho <b>${lk.join(', ')}</b> đã chốt kiểm kê tháng ${periodVN(per0)}.`,'Ghi thêm điều chuyển vào kỳ đã chốt sẽ làm sai biên bản đã ký.'],'Kỳ: '+per0);return;}
+    // RULE: điều chuyển phải xong TRƯỚC khi kế toán mở kỳ kiểm kê. Kho đã mở kỳ (hoặc đã chốt)
+    // thì cấm điều chuyển. Chặn ngay lúc LẬP cho MỌI loại phiếu — phiếu đẩy còn ghi sổ ngay.
+    {
+      const per0=curPeriod(),bl=dcBlockers(fp,fs,tp,ts,per0);
+      if(bl.length){
+        errBox('Kho đang kiểm kê — không điều chuyển được',[
+          bl.map(x=>'<b>'+x+'</b>').join('<br>'),
+          'Quy trình: <b>điều chuyển phải xong TRƯỚC khi mở kỳ kiểm kê</b>. Chuyển hàng lúc đang đếm sẽ làm lệch số.',
+          'Cần chuyển thật thì nhờ kế toán vào <b>Kiểm kê → Mở kỳ</b> bấm <b>🗑 Xóa kỳ đã mở</b>, điều chuyển xong rồi mở kỳ lại.'
+        ],'Kỳ: '+per0+'\nKho vướng:\n- '+bl.join('\n- '));return;}
     }
     const items={};codes.forEach(c=>{items[c]={name:picked[c].name,uom:picked[c].uom,qtyReq:picked[c].qty,qtyOk:picked[c].qty,exp:picked[c].exp||''};});
     // Chặn phiếu trùng ngay từ gốc — nhất là phiếu đẩy, vì nó ghi sổ ngay nên trùng = chuyển 2 lần
@@ -3092,10 +3107,8 @@ function dcChoDuyet(v){
 function dcReqCard(r,canAct){
   const wrap=el('div','card-b');wrap.style.borderTop='1px solid var(--line)';
   const codes=Object.keys(r.items||{});
-  const lock=[];
   const per=curPeriod();
-  if(periodLocked(r.fromPlant,r.fromSloc,per))lock.push(whName(r.fromPlant,r.fromSloc));
-  if(r.toPlant&&periodLocked(r.toPlant,r.toSloc,per))lock.push(whName(r.toPlant,r.toSloc));
+  const lock=dcBlockers(r.fromPlant,r.fromSloc,r.toPlant,r.toSloc,per);
   wrap.appendChild(el('div',null,`<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
     <span class="badge badge-soft">${dcKindLabel(r.kind)}</span>
     <b class="tnum" style="font-size:13.5px">${r.id}</b>
@@ -3122,7 +3135,7 @@ function dcReqCard(r,canAct){
   if(canAct){
     const bar=el('div');bar.style.cssText='display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;align-items:center';
     if(lock.length){
-      bar.appendChild(el('div','note',`<span>🔒 Không duyệt được: kho <b>${lock.join(', ')}</b> đã chốt kiểm kê tháng ${periodVN(per)}. Duyệt vào kỳ đã khóa sẽ làm sai số đã ký. Xử lý phiếu kiểm kê trước, hoặc chờ sang kỳ mới.</span>`));
+      bar.appendChild(el('div','note',`<span>🔒 Không duyệt được — ${lock.join(' · ')}. Điều chuyển phải xong TRƯỚC khi mở kỳ kiểm kê. Xử lý phiếu kiểm kê xong (hoặc nhờ kế toán xóa kỳ đã mở) rồi quay lại.</span>`));
     }else{
       const bOk=el('button','btn btn-primary','✓ Duyệt & ghi sổ');
       bOk.onclick=()=>{const qs={};Object.keys(inputs).forEach(c=>qs[c]=Number(inputs[c].value||0));approveTransferReq(r,qs);};
@@ -3161,10 +3174,12 @@ async function approveTransferReq(r,qtys){
   const dateStr=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   const per=periodOfDate(dateStr);
   // Chặn kỳ đã khóa ở CẢ HAI đầu — kiểm lại ngay lúc bấm, phòng phiếu mở lâu trên màn
-  const lock=[];
-  if(periodLocked(r.fromPlant,r.fromSloc,per))lock.push(whName(r.fromPlant,r.fromSloc));
-  if(r.toPlant&&periodLocked(r.toPlant,r.toSloc,per))lock.push(whName(r.toPlant,r.toSloc));
-  if(lock.length){errBox('Kỳ đã khóa — không duyệt được',[`Kho <b>${lock.join(', ')}</b> đã chốt kiểm kê tháng ${periodVN(per)}.`,'Ghi thêm điều chuyển vào kỳ đã chốt sẽ làm sai biên bản đã ký.'],'Phiếu: '+r.id+'\nKỳ theo ngày duyệt: '+per);return;}
+  const lock=dcBlockers(r.fromPlant,r.fromSloc,r.toPlant,r.toSloc,per);
+  if(lock.length){errBox('Kho đang kiểm kê — không duyệt được',[
+    lock.map(x=>'<b>'+x+'</b>').join('<br>'),
+    'Ghi điều chuyển vào kỳ đang đếm / đã chốt sẽ làm sai số kiểm kê.',
+    'Xử lý xong phiếu kiểm kê (hoặc nhờ kế toán xóa kỳ đã mở) rồi quay lại duyệt phiếu này.'
+  ],'Phiếu: '+r.id+'\nKỳ theo ngày duyệt: '+per+'\nKho vướng:\n- '+lock.join('\n- '));return;}
   // Không cho duyệt nhiều hơn số đã xin — chặn cả ở đây, không chỉ dựa vào ô input
   const over=Object.keys(r.items||{}).filter(c=>Number(qtys[c]||0)>Number(r.items[c].qtyReq||0));
   if(over.length){
