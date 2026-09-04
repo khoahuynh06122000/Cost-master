@@ -1156,7 +1156,7 @@ async function dbLoadAll(){
     ]);
     // merge mã vật tư mới (do import tồn đầu kỳ thêm) vào danh mục tổng để bền qua các phiên
     (mt.data||[]).forEach(r=>{if(!r||r.code==null)return;const code=String(r.code).trim();if(!code)return;const nm=r.name!=null?String(r.name).trim():'';const um=r.uom!=null?String(r.uom).trim():'';const ex=masterByCode[code];if(!ex){const m={code,name:nm||code,uom:um};masterByCode[code]=m;DATA.materials.push(m);}else if(nm&&(!ex.name||ex.name==='?'||ex.name===code)){ex.name=nm;if(um&&!ex.uom)ex.uom=um;}});
-    submissions=(su.data||[]).map(r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,user:r.user_name,role:r.role,status:r.status,count:r.count,items:r.items||{},period:r.period||(r.created_at?(new Date(r.created_at).getFullYear()+'-'+String(new Date(r.created_at).getMonth()+1).padStart(2,'0')):''),approvedBy:r.approved_by,approvedAt:r.approved_at?fmt(r.approved_at):null,prevOpening:r.prev_opening||null,time:fmt(r.created_at)}));
+    submissions=(su.data||[]).map(r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,user:r.user_name,role:r.role,status:r.status,count:r.count,items:r.items||{},period:r.period||(r.created_at?(new Date(r.created_at).getFullYear()+'-'+String(new Date(r.created_at).getMonth()+1).padStart(2,'0')):''),approvedBy:r.approved_by,approvedAt:r.approved_at?fmt(r.approved_at):null,prevOpening:r.prev_opening||null,edits:r.edits||[],time:fmt(r.created_at)}));
     transfers=(tr.data||[]).map(r=>({date:r.date,code:r.code,name:r.name,uom:r.uom,qty:r.qty,from:r.from_wh,to:r.to_wh,fromKey:r.from_key||null,toKey:r.to_key||null,period:r.period||null,reason:r.reason,user:r.user_name,time:fmt(r.created_at)}));
     shifts=(sh.data||[]).map(r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,date:r.date,ca:r.ca,fromUser:r.from_user,items:r.items||{},count:r.count,status:r.status,receivedBy:r.received_by,receivedAt:r.received_at?fmt(r.received_at):null,time:fmt(r.created_at)}));
     openingStock={};(op.data||[]).forEach(r=>{openingStock[r.plant_code+'|'+r.sloc_code]={items:r.items||{},fromId:r.from_id,at:r.set_at?fmt(r.set_at):'',by:r.set_by};});
@@ -1713,6 +1713,9 @@ function matPicker(labelTxt,onPick){
 let counting=null;
 let kkSel=null;      // kho đang chọn ở màn Kiểm kê {plant,sloc}
 let kkMethod='';     // hình thức kiểm đếm đang chọn: '' | 'excel' | 'direct'
+let countEditId=null; // đang ĐẾM BỔ SUNG cho phiếu nào (null = đếm mới)
+// Phiếu Chờ duyệt của kho+kỳ — mỗi kho mỗi kỳ chỉ được MỘT phiếu, sửa thì sửa trên phiếu đó
+function pendingSub(plant,sloc,period){return submissions.find(x=>x.plant===plant&&x.sloc===sloc&&x.period===period&&x.status==='Chờ duyệt');}
 /* ============ DASHBOARD XEM DỮ LIỆU (Quản trị viên) ============ */
 function barBlock(title,data,fmt){
   const max=Math.max(1,...data.map(d=>d[1]));
@@ -1841,7 +1844,13 @@ function renderKKUpload(v,fixed){
     bNo.onclick=()=>{prev.innerHTML='';fin.value='';};
     brow.appendChild(bOk);brow.appendChild(bNo);prev.appendChild(brow);
   }
-  fin.onchange=e=>{const f=e.target.files[0];if(f){if(periodLocked(plantSel.value,slocSel.value,perSel.value)){toast(lockMsg(plantSel.value,slocSel.value,perSel.value));fin.value='';return;}importOpeningT6(plantSel.value,slocSel.value,f,renderPrev);}};
+  fin.onchange=e=>{const f=e.target.files[0];if(f){if(periodLocked(plantSel.value,slocSel.value,perSel.value)){toast(lockMsg(plantSel.value,slocSel.value,perSel.value));fin.value='';return;}
+    const _dup=pendingSub(plantSel.value,slocSel.value,perSel.value);
+    if(_dup){fin.value='';errBox('Kho này đã có phiếu chờ duyệt',[
+      'Phiếu <b>'+_dup.id+'</b> ('+_dup.count+' mã, gửi bởi '+_dup.user+') đang chờ duyệt.',
+      'Mỗi kho mỗi kỳ <b>chỉ có một phiếu</b> — nạp thêm file sẽ đẻ phiếu thứ 2 và che mất chênh lệch.',
+      'Cần sửa số thì mở phiếu đó ra duyệt/từ chối, hoặc để bộ phận bấm <b>Đếm bổ sung</b>.'
+    ],'Kho: '+whName(plantSel.value,slocSel.value)+String.fromCharCode(10)+'Phiếu đang chờ: '+_dup.id);return;}importOpeningT6(plantSel.value,slocSel.value,f,renderPrev);}};
   card.appendChild(b);v.appendChild(card);
 }
 // tạo phiếu kiểm kê 'Chờ duyệt' từ dữ liệu đã xem trước
@@ -2529,7 +2538,7 @@ function renderKiemke(v){
   // BƯỚC 1 — kho & kỳ: ghim thành chip, bấm "Đổi kho / kỳ" mới mở ô chọn
   const kctx={plant:kkSel.plant,sloc:kkSel.sloc,period:kkPeriod};
   ctxBar(v,kctx,{period:true,plants:mine},()=>{
-    kkSel={plant:kctx.plant,sloc:kctx.sloc};kkPeriod=kctx.period;kkMethod='';counting=null;renderView();
+    kkSel={plant:kctx.plant,sloc:kctx.sloc};kkPeriod=kctx.period;kkMethod='';counting=null;countEditId=null;renderView();
   });
 
   const p=kkPeriod;const ld=lastDayVN(p);
@@ -2541,6 +2550,25 @@ function renderKiemke(v){
   mb.innerHTML=`<div class="section-eyebrow"><span class="step">2</span>Chọn hình thức kiểm đếm</div>
     <div style="font-size:12.5px;color:var(--muted);margin:2px 0 12px">Kho <b>${whName(kkSel.plant,kkSel.sloc)}</b> · kỳ tháng ${periodVN(kkPeriod)}. Chọn 1 trong 2 cách nhập số kiểm kê:</div>`;
   const mgrid=el('div','hub-grid');
+  const _pend=pendingSub(kkSel.plant,kkSel.sloc,kkPeriod);
+  if(_pend&&countEditId!==_pend.id){
+    // Đã có phiếu chờ duyệt -> KHÔNG cho lập phiếu thứ 2. Muốn thêm/sửa số thì đếm bổ sung
+    // ngay trên phiếu cũ, mọi lần sửa đều ghi vết cho kế toán xem lúc duyệt.
+    const pc=el('div','card');pc.style.cssText='margin-top:14px;border:1.5px solid var(--accent-600)';
+    const pb=el('div','card-b');
+    pb.innerHTML=`<div class="section-eyebrow" style="color:var(--accent-600)">⏳ Kho này đã có phiếu đang chờ duyệt</div>
+      <div style="font-size:12.5px;color:var(--muted);margin:6px 0 10px">Phiếu <b class="tnum">${_pend.id}</b> · ${_pend.count} mã · gửi bởi ${_pend.user} lúc ${_pend.time}${(_pend.edits&&_pend.edits.length)?(' · đã bổ sung '+_pend.edits.length+' lần'):''}.<br>
+      Mỗi kho mỗi kỳ <b>chỉ có một phiếu</b>. Đếm thiếu hay đếm sai thì <b>bổ sung ngay trên phiếu này</b> — không lập phiếu mới. Mọi lần sửa đều được ghi lại để kế toán xem khi duyệt.</div>`;
+    const pr=el('div');pr.style.cssText='display:flex;gap:10px;flex-wrap:wrap';
+    const bEd=el('button','btn btn-primary','➕ Đếm bổ sung phiếu này');
+    bEd.onclick=()=>{
+      drafts[_pend.plant+'|'+_pend.sloc]={items:{...(_pend.items||{})}};saveDrafts();
+      countEditId=_pend.id;kkMethod='direct';counting={plant:_pend.plant,sloc:_pend.sloc,period:_pend.period};
+      renderView();setTimeout(()=>{const c=$('#countCard');if(c)c.scrollIntoView({behavior:'smooth',block:'start'});},60);};
+    const bSee=el('button','btn btn-ghost','Xem phiếu');bSee.onclick=()=>showDetail(_pend);
+    pr.appendChild(bEd);pr.appendChild(bSee);pb.appendChild(pr);pc.appendChild(pb);v.appendChild(pc);
+    return;
+  }
   function methodCard(ico,title,desc,active){
     const c=el('button','hub-tile'+(active?' warm':''));c.type='button';
     if(active)c.style.borderColor='var(--brand)';
@@ -2598,6 +2626,8 @@ function renderCountSheet(v){
   card.appendChild(head);
 
   const nt=el('div');nt.style.padding='14px 16px 0';
+  if(countEditId){const es=submissions.find(x=>x.id===countEditId);
+    nt.appendChild(el('div','note',`<span>➕ <b>Đang đếm bổ sung phiếu ${countEditId}</b>${es?' ('+es.count+' mã đã gửi lúc '+es.time+')':''} — số cũ đã điền sẵn. Sửa hoặc thêm mã rồi bấm <b>Lưu bổ sung</b>; phiếu giữ nguyên mã, mọi thay đổi được ghi lại cho kế toán xem khi duyệt.</span>`));}
   nt.appendChild(procNote());
   const noteTxt = opening
     ? 'Kho này đã có tồn đầu kỳ (từ biên bản duyệt kỳ trước) — hiển thị cột "Đầu kỳ" để đối chiếu khi đếm.'
@@ -2793,7 +2823,10 @@ function renderCountSheet(v){
   const act=el('div','sticky-actions');const rowb=el('div','btn-row');
   const bDraft=el('button','btn btn-ghost','<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Lưu nháp');
   const bXls=el('button','btn btn-ghost','📥 Xuất biên bản (in ký)');
-  const bDone=el('button','btn btn-primary','<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Hoàn thành & Gửi');
+  const _edSub=countEditId?submissions.find(x=>x.id===countEditId):null;
+  const bDone=el('button','btn btn-primary',_edSub
+    ?('💾 Lưu bổ sung vào phiếu '+_edSub.id)
+    :'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Hoàn thành & Gửi');
   bDraft.onclick=()=>{saveDrafts();log('Lưu nháp kiểm kê',`${whName(counting.plant,counting.sloc)} · ${filled()} mã`);autosaved();toast('Đã lưu nháp '+filled()+' mã (giữ được cả khi tải lại trang)');};
   bXls.onclick=()=>{
     const n=filled();if(n===0){toast('Chưa nhập mã nào để xuất');return;}
@@ -2802,21 +2835,62 @@ function renderCountSheet(v){
   };
   bDone.onclick=()=>{
     const n=filled();if(n===0){toast('Chưa nhập mã nào');return;}
-    // kiểm tra trước khi gửi
     const zeros=Object.entries(items).filter(([c,v])=>Number(v)===0).length;
     const devs=MATS.filter(m=>devHigh(m)).length;
-    let msg=`Xác nhận gửi phiếu kiểm kê "${whName(counting.plant,counting.sloc)}"?\n\n• Đã nhập: ${n} mã`;
-    if(zeros)msg+=`\n• Có ${zeros} mã nhập số 0 (sẽ ghi nhận tồn = 0)`;
-    if(devs)msg+=`\n• ⚠ ${devs} mã lệch >50% so tồn đầu kỳ — nên rà lại`;
-    msg+=`\n\nSau khi gửi sẽ chuyển sang trạng thái Chờ duyệt.`;
+    const editing=countEditId?submissions.find(x=>x.id===countEditId):null;
+    if(countEditId&&!editing){toast('Không tìm thấy phiếu đang bổ sung — tải lại trang');return;}
+    // Chặn lập phiếu thứ 2 cho cùng kho + kỳ (kể cả khi ai đó vừa gửi ở máy khác)
+    if(!editing){
+      const dup=pendingSub(counting.plant,counting.sloc,counting.period||curPeriod());
+      if(dup){errBox('Kho này đã có phiếu chờ duyệt',[
+        'Phiếu <b>'+dup.id+'</b> ('+dup.count+' mã, gửi bởi '+dup.user+') đang chờ kế toán duyệt.',
+        'Mỗi kho mỗi kỳ <b>chỉ có một phiếu</b> — không lập phiếu thứ 2 để bổ sung hàng.',
+        'Số vừa đếm vẫn còn ở nháp. Quay ra bấm <b>➕ Đếm bổ sung phiếu này</b> để cộng vào phiếu cũ.'
+      ],'Kho: '+whName(counting.plant,counting.sloc)+'\nKỳ: '+(counting.period||curPeriod())+'\nPhiếu đang chờ: '+dup.id);return;}
+    }
+    // Đếm bổ sung: liệt kê đúng những gì thay đổi so với phiếu cũ
+    let diff=[];
+    if(editing){
+      const oldIt=editing.items||{};
+      new Set([...Object.keys(oldIt),...Object.keys(items)]).forEach(c=>{
+        const o=(oldIt[c]==null||oldIt[c]==='')?null:Number(oldIt[c]);
+        const w=(items[c]==null||items[c]==='')?null:Number(items[c]);
+        if(o===w)return;
+        const m=masterByCode[c]||{name:c,uom:''};
+        diff.push({code:c,name:m.name||c,uom:m.uom||'',from:o,to:w});
+      });
+      if(!diff.length){toast('Chưa thay đổi gì so với phiếu '+editing.id);return;}
+    }
+    let msg;
+    if(editing){
+      msg='ĐẾM BỔ SUNG phiếu '+editing.id+' — '+whName(counting.plant,counting.sloc)+String.fromCharCode(10)+String.fromCharCode(10);
+      msg+=diff.length+' mã thay đổi:'+String.fromCharCode(10);
+      diff.slice(0,15).forEach(d=>{msg+='  • '+d.name+': '+(d.from==null?'(chưa đếm)':d.from)+' → '+(d.to==null?'(bỏ số)':d.to)+String.fromCharCode(10);});
+      if(diff.length>15)msg+='  … và '+(diff.length-15)+' mã nữa'+String.fromCharCode(10);
+      msg+=String.fromCharCode(10)+'Phiếu vẫn giữ mã cũ và vẫn ở trạng thái Chờ duyệt. Mọi thay đổi được GHI LẠI để kế toán xem khi duyệt.';
+    }else{
+      msg='Xác nhận gửi phiếu kiểm kê "'+whName(counting.plant,counting.sloc)+'"?'+String.fromCharCode(10)+String.fromCharCode(10)+'• Đã nhập: '+n+' mã';
+      if(zeros)msg+=String.fromCharCode(10)+'• Có '+zeros+' mã nhập số 0 (sẽ ghi nhận tồn = 0)';
+      if(devs)msg+=String.fromCharCode(10)+'• ⚠ '+devs+' mã lệch >50% so tồn đầu kỳ — nên rà lại';
+      msg+=String.fromCharCode(10)+String.fromCharCode(10)+'Sau khi gửi sẽ chuyển sang trạng thái Chờ duyệt.';
+    }
     if(!confirm(msg))return;
     (async()=>{
-      const sub={id:await nextKKId(counting.plant,counting.sloc),plant:counting.plant,sloc:counting.sloc,user:session.name,role:ROLES[session.role].label,time:now(),period:counting.period||curPeriod(),status:'Chờ duyệt',items:{...items},count:n};
+      if(editing){
+        const ed={at:now(),by:session.name,changes:diff};
+        const edits=(editing.edits||[]).concat([ed]);
+        const upd=await dbUpd('submissions',{id:editing.id},{items:{...items},count:n,edits});
+        if(!upd.ok||upd.count===0){saveDrafts();return;}   // dbUpd đã dựng hộp lỗi
+        editing.items={...items};editing.count=n;editing.edits=edits;
+        log('Đếm bổ sung phiếu kiểm kê',editing.id+' · '+whName(counting.plant,counting.sloc)+' · '+diff.length+' mã đổi');
+        delete drafts[key];saveDrafts();counting=null;countEditId=null;
+        toast('Đã bổ sung '+diff.length+' mã vào phiếu '+editing.id);renderView();return;
+      }
+      const sub={id:await nextKKId(counting.plant,counting.sloc),plant:counting.plant,sloc:counting.sloc,user:session.name,role:ROLES[session.role].label,time:now(),period:counting.period||curPeriod(),status:'Chờ duyệt',items:{...items},count:n,edits:[]};
       const okIns=await insSubmissionSafe(sub);
       // KHÔNG xóa nháp, KHÔNG ghi nhật ký "đã gửi": số đã đếm phải còn nguyên để gửi lại.
-      // insSubmissionSafe đã dựng hộp lỗi chi tiết (không tự tắt) — không hiện thêm gì để khỏi che nó.
       if(!okIns){saveDrafts();return;}
-      submissions.unshift(sub);log('Gửi phiếu kiểm kê',`${sub.id} · ${whName(sub.plant,sub.sloc)} · kỳ ${periodVN(sub.period)} · ${n} mã`);
+      submissions.unshift(sub);log('Gửi phiếu kiểm kê',sub.id+' · '+whName(sub.plant,sub.sloc)+' · kỳ '+periodVN(sub.period)+' · '+n+' mã');
       learnMaterials(MATS);
       delete drafts[key];saveDrafts();counting=null;toast('Đã gửi phiếu '+sub.id+' ('+n+' mã)');renderView();
     })();};
@@ -3629,6 +3703,28 @@ function showDetail(s){
     t2.appendChild(tb2);w2.appendChild(t2);det.appendChild(w2);fw.appendChild(det);card.appendChild(fw);
   }
 
+  // ---- Lịch sử đếm bổ sung: kế toán phải thấy phiếu đã bị sửa những gì trước khi duyệt ----
+  if(s.edits&&s.edits.length){
+    const ec=el('div','card-b');ec.style.borderTop='1px solid var(--line)';
+    const det=document.createElement('details');det.open=true;
+    const sum=document.createElement('summary');
+    sum.style.cssText='cursor:pointer;font-weight:800;font-size:13px;color:var(--accent-600)';
+    sum.textContent='✏️ Phiếu này đã đếm bổ sung '+s.edits.length+' lần — bấm để xem đã sửa gì';
+    det.appendChild(sum);
+    s.edits.slice().reverse().forEach(ed=>{
+      const w=el('div');w.style.cssText='margin:10px 0 4px';
+      w.appendChild(el('div',null,'<div style="font-size:12.5px;font-weight:700;margin-bottom:4px">'+(ed.by||'—')+' · '+(ed.at||'')+' · '+((ed.changes||[]).length)+' mã</div>'));
+      const tw=el('div','tbl-wrap');const t=document.createElement('table');
+      t.innerHTML='<thead><tr><th>Mã</th><th>Tên hàng</th><th class="num">Số cũ</th><th class="num">Số mới</th></tr></thead>';
+      const tb=document.createElement('tbody');
+      (ed.changes||[]).forEach(c=>{
+        const up=(c.to==null?0:c.to)>(c.from==null?0:c.from);
+        tb.appendChild(el('tr',null,'<td class="tnum">'+c.code+'</td><td>'+(c.name||'')+'</td>'+
+          '<td class="num tnum" style="color:var(--muted)">'+(c.from==null?'—':c.from)+'</td>'+
+          '<td class="num cell-strong tnum" style="color:'+(up?'var(--accent-600)':'var(--red)')+'">'+(c.to==null?'—':c.to)+'</td>'));});
+      t.appendChild(tb);tw.appendChild(t);w.appendChild(tw);det.appendChild(w);});
+    ec.appendChild(det);card.appendChild(ec);
+  }
   // ---- Bảng kiểm đếm thực tế (bảng chính, làm nổi bật) ----
   if(!document.getElementById('kkDetailStyle')){const st=document.createElement('style');st.id='kkDetailStyle';st.textContent='.kk-count-tbl td{padding:10px 12px;font-size:13.5px}.kk-count-tbl tbody tr:nth-child(even){background:#F6FAF9}.kk-count-tbl .qbig{font-size:16px;font-weight:800;color:var(--brand)}';document.head.appendChild(st);}
   const openKey=s.plant+'|'+s.sloc;const op=openingStock[openKey]&&s.status!=='Đã duyệt'?openingStock[openKey].items:null;
