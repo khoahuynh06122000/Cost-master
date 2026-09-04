@@ -2,7 +2,15 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0E5C55">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kiểm kê F&B">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <title>Kiểm kê F&B — Sun World Ba Na Hills</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e89217'/%3E%3Ctext x='32' y='45' font-size='30' font-family='Arial,sans-serif' font-weight='bold' fill='white' text-anchor='middle'%3EBN%3C/text%3E%3C/svg%3E">
 <style>
@@ -148,6 +156,14 @@
   .section-eyebrow .step{width:20px;height:20px;border-radius:6px;background:var(--brand);color:#fff;display:grid;place-items:center;font-size:11px}
 
   .field{display:block;margin-bottom:12px}
+  /* Chạy như app trên điện thoại: chừa vùng tai thỏ / thanh vuốt của iPhone */
+  body{padding-bottom:env(safe-area-inset-bottom)}
+  .sticky-actions{padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+  .install-bar{position:fixed;left:12px;right:12px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:9998;
+    display:flex;gap:10px;align-items:center;background:var(--surface);border:1.5px solid var(--brand);
+    border-radius:14px;padding:12px 14px;box-shadow:var(--shadow-lg)}
+  .install-bar .t{flex:1;min-width:0;font-size:12.5px;line-height:1.5}
+  .install-bar b{color:var(--brand)}
   /* Hàng nhập liệu: gom các ô liên quan lên CÙNG MỘT HÀNG, ô ngắn thì hẹp lại.
      Trước đây mỗi ô chiếm trọn chiều ngang nên gõ 1 con số cũng phải kéo mắt hết màn. */
   .form-row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px}
@@ -203,7 +219,17 @@
   .stat .l{font-size:12px;color:var(--muted);font-weight:600;margin-top:4px}
 
   /* tables */
-  .tbl-wrap{overflow:auto}
+  .tbl-wrap{overflow-x:auto;overflow-y:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+  /* ==== CHỐNG LỆCH KHUNG TRÊN MỌI ĐIỆN THOẠI ====
+     Máy 320px (iPhone SE) tới 430px (Pro Max) đều phải vừa khít, không kéo ngang được cả trang.
+     Bảng dài thì CHỈ bảng đó cuộn ngang trong khung của nó, không đẩy cả màn hình. */
+  html,body{max-width:100%;overflow-x:hidden}
+  img,video,canvas,table{max-width:100%}
+  .card,.card-b,.stat,.hub-tile,.item,.note,.empty{min-width:0}
+  .form-row>*{max-width:100%}
+  input,select,textarea,button{max-width:100%}
+  .stats{grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr))}
+  .hub-grid{grid-template-columns:repeat(auto-fit,minmax(min(215px,100%),1fr))}
   table{width:100%;border-collapse:collapse;font-size:13.5px}
   thead th{text-align:left;padding:11px 16px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:800;background:var(--surface-2);border-bottom:1px solid var(--line);position:sticky;top:0}
   tbody td{padding:12px 16px;border-bottom:1px solid var(--line);vertical-align:middle}
@@ -337,6 +363,14 @@
     .login-hero{display:none}
     .login-form{min-height:100vh}
     .grid2{grid-template-columns:1fr}
+    .btn-row,.filter-chips,.chips{flex-wrap:wrap}
+    /* Ngón tay to hơn con trỏ chuột: mọi thứ bấm được phải cao tối thiểu ~40px */
+    .chip{min-height:38px;display:inline-flex;align-items:center;padding:0 14px}
+    .qty{height:44px;font-size:17px}
+    .stepbtn,.lockbtn{min-width:40px;min-height:40px}
+    .btn-sm{min-height:38px}
+    .page-head h1{font-size:20px;line-height:1.25}
+    .card-h{flex-wrap:wrap;gap:8px}
     .content{padding:16px}
     .topbar{padding:0 16px}
     .qty{width:88px}
@@ -1204,6 +1238,7 @@ function dbSubscribe(){
       const before=syncSig();
       await dbLoadAll();
       if(syncSig()!==before)showFreshPill();   // có gì mới -> hiện nút; không đổi -> im lặng
+      notifyTodoChange();                       // và bắn thông báo về điện thoại nếu việc của mình tăng lên
     }catch(e){console.warn('sync',e);}
   },45000);
   // (3) Quay lại tab -> tải ngầm; có mới thì hiện nút, KHÔNG tự vẽ lại
@@ -5700,6 +5735,102 @@ initAuth();
   var p=v.play();if(p&&p.catch)p.catch(function(){});
 })();
 startLoginFX();
+
+/* ================== CHẠY NHƯ APP TRÊN ĐIỆN THOẠI (PWA) ==================
+   - Đăng ký service worker để mở nhanh và còn mở được khi mạng chập chờn.
+   - Gợi ý "Thêm vào màn hình chính" để bộ phận bấm 1 lần là có icon như app.
+   - Xin quyền thông báo; khi đồng bộ thấy việc mới thì bắn thông báo về điện thoại. */
+(function(){
+  if('serviceWorker' in navigator){
+    window.addEventListener('load',()=>{
+      navigator.serviceWorker.register('/sw.js').then(reg=>{
+        // Có bản mới trên máy chủ -> nạp luôn, tránh BP dùng bản cũ mà không biết
+        reg.addEventListener('updatefound',()=>{
+          const w=reg.installing;if(!w)return;
+          w.addEventListener('statechange',()=>{
+            if(w.state==='installed'&&navigator.serviceWorker.controller)w.postMessage('skipWaiting');
+          });
+        });
+      }).catch(e=>console.warn('sw',e));
+      let reloading=false;
+      navigator.serviceWorker.addEventListener('controllerchange',()=>{
+        if(reloading)return;reloading=true;location.reload();
+      });
+    });
+  }
+})();
+
+const PWA_DISMISS='kk_pwa_hide_v1';
+let deferredPrompt=null;
+function isStandalone(){
+  return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
+}
+function isIOS(){return /iphone|ipad|ipod/i.test(navigator.userAgent);}
+function showInstallBar(){
+  if(isStandalone()||document.getElementById('installBar'))return;
+  try{if(localStorage.getItem(PWA_DISMISS))return;}catch(e){}
+  if(!deferredPrompt&&!isIOS())return;          // trình duyệt chưa cho cài thì không quấy
+  const bar=document.createElement('div');bar.className='install-bar';bar.id='installBar';
+  bar.innerHTML=deferredPrompt
+    ? '<div class="t">Cài <b>Kiểm kê F&B</b> vào màn hình chính để mở nhanh như app, khỏi phải vào trình duyệt.</div>'
+    : '<div class="t">Trên iPhone: bấm nút <b>Chia sẻ</b> ở thanh dưới → chọn <b>Thêm vào MH chính</b> để dùng như app.</div>';
+  const row=document.createElement('div');row.style.cssText='display:flex;gap:8px;flex-shrink:0';
+  if(deferredPrompt){
+    const b1=document.createElement('button');b1.className='btn btn-primary btn-sm';b1.textContent='Cài đặt';
+    b1.onclick=async()=>{const d=deferredPrompt;deferredPrompt=null;bar.remove();try{d.prompt();await d.userChoice;}catch(e){}};
+    row.appendChild(b1);
+  }
+  const b2=document.createElement('button');b2.className='btn btn-ghost btn-sm';b2.textContent='Để sau';
+  b2.onclick=()=>{try{localStorage.setItem(PWA_DISMISS,'1');}catch(e){}bar.remove();};
+  row.appendChild(b2);bar.appendChild(row);document.body.appendChild(bar);
+}
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;if(session)showInstallBar();});
+window.addEventListener('appinstalled',()=>{const b=document.getElementById('installBar');if(b)b.remove();toast('✓ Đã thêm Kiểm kê F&B vào màn hình chính');});
+
+/* ---- Thông báo về điện thoại ---- */
+function notifyReady(){return ('Notification' in window)&&Notification.permission==='granted';}
+async function askNotifyPermission(silent){
+  if(!('Notification' in window))return false;
+  if(Notification.permission==='granted')return true;
+  if(Notification.permission==='denied')return false;
+  if(silent)return false;
+  try{return (await Notification.requestPermission())==='granted';}catch(e){return false;}
+}
+// Bắn thông báo hệ thống (hiện trên điện thoại kể cả khi app chạy nền trong trình duyệt)
+async function pushLocal(title,body,tag){
+  if(!notifyReady())return false;
+  try{
+    const reg=('serviceWorker' in navigator)?await navigator.serviceWorker.getRegistration():null;
+    const opt={body,icon:'/icon-192.png',badge:'/icon-192.png',tag:tag||'kiemke',lang:'vi'};
+    if(reg&&reg.showNotification)await reg.showNotification(title,opt); else new Notification(title,opt);
+    return true;
+  }catch(e){console.warn('notify',e);return false;}
+}
+// Số việc đang chờ CHÍNH MÌNH xử lý — dùng để biết có gì mới đáng báo
+function myTodoCount(){
+  try{
+    let n=0;
+    if(typeof pendingForMe==='function')n+=pendingForMe().length;
+    if(typeof pendingUsersForMe==='function')n+=pendingUsersForMe().length;
+    if(session&&(session.role==='ketoan_vien'||session.role==='admin'))
+      n+=submissions.filter(s=>s.status==='Chờ duyệt').length;
+    if(session&&session.wh&&session.wh.length){
+      const mine=new Set(session.wh.map(w=>w.plant+'|'+w.sloc));
+      n+=shifts.filter(s=>s.status==='Chờ nhận'&&mine.has(s.plant+'|'+s.sloc)).length;
+    }
+    return n;
+  }catch(e){return 0;}
+}
+let _todoSeen=null;
+function notifyTodoChange(){
+  const n=myTodoCount();
+  if(_todoSeen===null){_todoSeen=n;return;}
+  if(n>_todoSeen&&notifyReady()){
+    pushLocal('Kiểm kê F&B — có việc cần xử lý',
+      'Bạn đang có '+n+' việc chờ duyệt/xác nhận. Mở app để xem.','todo');
+  }
+  _todoSeen=n;
+}
 </script>
 </body>
 </html>
