@@ -302,6 +302,17 @@
   .errbox-scrim{position:fixed;inset:0;background:rgba(11,43,40,.45);z-index:399}
   html.dark .errbox-scrim{background:rgba(0,0,0,.6)}
 
+  /* Bảng quy trình bắt buộc + dòng đã chốt số ở màn kiểm đếm */
+  .proc-note{border:1.5px solid var(--accent-600);background:#FEF6E7;border-radius:12px;padding:12px 14px;margin-bottom:14px}
+  html.dark .proc-note{background:rgba(214,158,46,.10)}
+  .proc-note .pt{font-weight:800;font-size:13px;color:var(--accent-600);margin-bottom:6px}
+  .proc-note ul{margin:0;padding-left:20px}
+  .proc-note li{font-size:12.5px;line-height:1.65;color:var(--ink)}
+  .qty.locked{background:var(--surface-2);color:var(--muted);font-weight:700;cursor:not-allowed}
+  html.dark .qty.locked{background:rgba(255,255,255,.06)}
+  .lockbtn{border:1px solid var(--line);background:var(--surface);border-radius:9px;width:34px;height:34px;cursor:pointer;font-size:14px;line-height:1}
+  .addrow{border:1px dashed var(--brand);border-radius:12px;padding:12px 14px;margin:10px 16px 0;background:var(--surface-2)}
+
   .scrim{position:fixed;inset:0;background:rgba(11,43,40,.5);z-index:40;display:none}
 
   /* responsive */
@@ -2543,6 +2554,17 @@ function renderKiemke(v){
   }
 }
 function draftKey(){return counting.plant+'|'+counting.sloc;}
+// Quy trình bắt buộc do BLĐ ban hành — hiện ở cả màn kiểm kê lẫn màn điều chuyển
+function procNote(){
+  const d=el('div','proc-note');
+  d.innerHTML=`<div class="pt">📌 QUY TRÌNH BẮT BUỘC</div>
+    <ul>
+      <li><b>Điều chuyển phải làm xong TRƯỚC khi kiểm kê.</b> Hàng đã chuyển mà chưa lập phiếu thì số kiểm kê sẽ lệch.</li>
+      <li>Kiểm kê xong có chênh lệch thì <b>KHÔNG được bổ sung phiếu điều chuyển</b> để bù trừ.</li>
+      <li>Xử lý chênh lệch: <b>thừa → làm phiếu nhập kho</b> · <b>thiếu → đền tiền</b>.</li>
+    </ul>`;
+  return d;
+}
 function renderCountSheet(v){
   const key=draftKey();if(!drafts[key])drafts[key]={items:{}};const items=drafts[key].items;
   const opening=openingStock[key]?openingStock[key].items:null; // tồn đầu kỳ (đã duyệt kỳ trước)
@@ -2564,6 +2586,7 @@ function renderCountSheet(v){
   card.appendChild(head);
 
   const nt=el('div');nt.style.padding='14px 16px 0';
+  nt.appendChild(procNote());
   const noteTxt = opening
     ? 'Kho này đã có tồn đầu kỳ (từ biên bản duyệt kỳ trước) — hiển thị cột "Đầu kỳ" để đối chiếu khi đếm.'
     : 'Chưa có tồn đầu kỳ cho kho này (kỳ đầu tiên) — đếm mù, chỉ hiển thị tên hàng & đơn vị tính.';
@@ -2614,12 +2637,47 @@ function renderCountSheet(v){
     </div>`;
   card.appendChild(tb);
 
+  // ----- Thêm mã ngoài danh mục (CHỈ thêm, không có xóa dòng) -----
+  const addBox=el('div','addrow');
+  addBox.innerHTML=`<div style="font-weight:800;font-size:12.5px;margin-bottom:4px">➕ Đếm thêm mã ngoài danh sách</div>
+    <div style="font-size:11.5px;color:var(--muted);margin-bottom:9px">Thực tế có hàng mà danh sách chưa liệt kê thì thêm vào đây. Gõ mã có sẵn để lấy tên tự động, hoặc khai mã mới. <b>Chỉ thêm được, không xóa dòng</b> — đã đếm là phải giữ lại dấu vết.</div>`;
+  const arRow=el('div');arRow.style.cssText='display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end';
+  const mkF=(lbl,ph,wid)=>{const f=el('label','field');f.style.cssText='margin:0;min-width:'+wid;f.innerHTML='<span>'+lbl+'</span>';const i2=el('input','input');i2.placeholder=ph;f.appendChild(i2);arRow.appendChild(f);return i2;};
+  const iCode=mkF('Mã hàng','VD: 10000123','160px');
+  const iName=mkF('Tên hàng','Tên hàng','220px');
+  const iUom=mkF('ĐVT','KG / CHAI…','110px');
+  const bAdd=el('button','btn btn-brand btn-sm','Thêm vào danh sách đếm');bAdd.style.height='38px';
+  arRow.appendChild(bAdd);addBox.appendChild(arRow);
+  const arMsg=el('div');arMsg.style.cssText='font-size:12px;margin-top:8px';addBox.appendChild(arMsg);
+  iCode.oninput=()=>{const c=iCode.value.trim();const m=masterByCode[c];
+    if(m){iName.value=m.name||'';iUom.value=m.uom||'';arMsg.innerHTML='<span style="color:var(--green)">✓ Có trong danh mục tổng: '+m.name+'</span>';}
+    else arMsg.innerHTML=c?'<span style="color:var(--muted)">Mã mới — điền tên & ĐVT rồi thêm</span>':'';};
+  bAdd.onclick=()=>{
+    const c=iCode.value.trim();
+    if(!c){arMsg.innerHTML='<span style="color:var(--red)">Chưa nhập mã hàng</span>';return;}
+    if(MATS.some(x=>x.code===c)){arMsg.innerHTML='<span style="color:var(--red)">Mã '+c+' đã có sẵn trong danh sách bên dưới</span>';return;}
+    const nm=iName.value.trim()||(masterByCode[c]&&masterByCode[c].name)||c;
+    const um=iUom.value.trim()||(masterByCode[c]&&masterByCode[c].uom)||'';
+    MATS.push({code:c,name:nm,uom:um});
+    MATS.sort((a,b)=>(a.name||'').localeCompare(b.name||'','vi'));
+    total=MATS.length;
+    learnMaterials([{code:c,name:nm,uom:um}]);
+    if(!plantMaterials[counting.plant])plantMaterials[counting.plant]=[];
+    if(!plantMaterials[counting.plant].includes(c)){plantMaterials[counting.plant].push(c);
+      if(sb)sb.from('plant_materials').upsert({plant_code:counting.plant,code:c}).then(({error})=>{if(error)console.error('plant_materials',error);});}
+    log('Thêm mã ngoài danh mục khi kiểm kê',`${c} · ${nm} · ${whName(counting.plant,counting.sloc)}`);
+    arMsg.innerHTML='<span style="color:var(--green)">✓ Đã thêm '+nm+' — dùng ô tìm bên dưới để nhập số</span>';
+    iCode.value='';iName.value='';iUom.value='';
+    renderList($('#searchBox')?$('#searchBox').value:'');updateCnt();
+  };
+  card.appendChild(addBox);
   const listWrap=el('div','list-scroll');const list=el('div');listWrap.appendChild(list);card.appendChild(listWrap);
   v.appendChild(card);
 
-  const MATS=plantMats;
-  const total=MATS.length;
+  let MATS=plantMats;
+  let total=MATS.length;
   let curFilter='all';
+  const unlocked=new Set();   // mã đang mở khóa để sửa (dòng đã nhập mặc định bị khóa)
   function filled(){return Object.values(items).filter(x=>x!==''&&x!=null).length;}
   function updateCnt(){const n=filled();$('#cntNum').textContent=n;$('#cntFill').style.width=Math.min(100,(n/Math.max(1,total))*100*8)+'%';}
   function autosaved(){const l=$('#autosaveLbl');if(l)l.textContent='✓ Đã tự lưu '+new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
@@ -2651,11 +2709,19 @@ function renderCountSheet(v){
         ? `<span class="open-tag" style="background:#FDF1DC;color:var(--accent-600)">✚ phát sinh trong kỳ</span>` : '';
       r.innerHTML=`<div class="item-main"><div class="item-name">${m.name}</div>
         <div class="item-meta"><span class="tnum">${m.code}</span><span class="badge badge-uom">${m.uom}</span>${openTag}${devTag}${movedTag}</div></div>`;
-      // cụm nhập: [-] [ô số] [+]
+      // cụm nhập: [-] [ô số] [+] — nhập xong là KHÓA, muốn sửa phải bấm mở khóa
       const box=el('div','qtybox');
       const bMinus=el('button','stepbtn','−');
       const inp=el('input','qty'+(has?' filled':'')+(dev?' warn':''));inp.type='number';inp.min='0';inp.step='any';inp.placeholder='0';inp.value=has?items[m.code]:'';inp.inputMode='decimal';
       const bPlus=el('button','stepbtn','+');
+      const bLock=el('button','lockbtn','🔓');bLock.type='button';bLock.title='Mở khóa để sửa số';
+      function setLock(on){
+        inp.readOnly=on;inp.classList.toggle('locked',on);
+        bMinus.disabled=on;bPlus.disabled=on;
+        bMinus.style.opacity=bPlus.style.opacity=on?'.35':'';
+        bLock.style.display=on?'':'none';
+        bLock.textContent=on?'🔒':'🔓';
+      }
       function commit(redrawTags){
         if(inp.value===''){delete items[m.code];inp.classList.remove('filled');r.classList.remove('on');}
         else{items[m.code]=inp.value;inp.classList.add('filled');r.classList.add('on');}
@@ -2663,10 +2729,14 @@ function renderCountSheet(v){
         if(redrawTags){const d=devHigh(m);inp.classList.toggle('warn',d);}
       }
       inp.oninput=()=>commit(false);
-      inp.onblur=()=>renderTagsFor(r,m,inp);
+      inp.onblur=()=>{renderTagsFor(r,m,inp);
+        // Rời ô mà đã có số -> chốt lại, khóa dòng
+        if(hasVal(m.code)){unlocked.delete(m.code);setLock(true);}};
+      bLock.onclick=()=>{unlocked.add(m.code);setLock(false);inp.focus();inp.select();};
       bMinus.onclick=()=>{let x=Number(inp.value||0)-1;if(x<0)x=0;inp.value=String(x);commit(true);renderTagsFor(r,m,inp);};
       bPlus.onclick=()=>{let x=Number(inp.value||0)+1;inp.value=String(x);commit(true);renderTagsFor(r,m,inp);};
-      box.appendChild(bMinus);box.appendChild(inp);box.appendChild(bPlus);
+      box.appendChild(bMinus);box.appendChild(inp);box.appendChild(bPlus);box.appendChild(bLock);
+      setLock(has&&!unlocked.has(m.code));
       r.appendChild(box);list.appendChild(r);
     });
   }
@@ -2809,6 +2879,7 @@ function ensureNkCtx(){
 }
 function renderDieuchuyen(v){
   v.appendChild(el('div','page-head',`<div><h1>Nhập kho & Điều chuyển</h1><div class="ph-sub">Chọn việc cần làm — máy chỉ mở đúng phần đó. Số nhập kho và điều chuyển tự cộng/trừ vào tồn khi kiểm kê để tính Xuất kho.</div></div>`));
+  v.appendChild(procNote());
   const mine=allowedPlants();
   if(!mine.length){v.appendChild(el('div','card','<div class="card-b"><div class="empty"><div class="big">Chưa được gán điểm bán</div><div>Liên hệ Quản trị viên để được gán điểm bán.</div></div></div>'));return;}
   const c=ensureNkCtx();
