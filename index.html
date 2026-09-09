@@ -140,6 +140,11 @@
   .topbar .loc-chip{margin-left:auto;display:flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--line);border-radius:20px;padding:6px 13px;font-size:12.5px;font-weight:600;color:var(--ink-soft)}
   .topbar .loc-chip .g{width:7px;height:7px;border-radius:50%;background:var(--green)}
   .content{padding:26px;overflow:auto;flex:1}
+  /* .content KHONG duoc la vung cuon, neu khong .sticky-actions se khong dinh duoc day man:
+     sticky bam theo vung cuon gan nhat, ma .content cao bang noi dung nen khong bao gio cuon.
+     Cuon thuc su o <body>. 'clip visible' = van chan tran ngang, nhung nha truc doc cho body.
+     Trinh duyet cu khong hieu 'clip' thi bo dong nay -> giu overflow:auto nhu truoc, khong vo. */
+  .content{overflow:clip visible}
   .content-inner{max-width:none;margin:0 auto}
 
   .page-head{margin-bottom:20px;display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
@@ -338,7 +343,11 @@
   html.dark .errbox-scrim{background:rgba(0,0,0,.6)}
 
   /* Bảng quy trình bắt buộc + dòng đã chốt số ở màn kiểm đếm */
-  .proc-note{border:1.5px solid var(--accent-600);background:#FEF6E7;border-radius:12px;padding:12px 14px;margin-bottom:14px}
+  .proc-note{border:1.5px solid var(--accent-600);background:#FEF6E7;border-radius:12px;padding:10px 14px;margin-bottom:14px}
+  .proc-note>summary{cursor:pointer;font-weight:800;font-size:13px;color:var(--accent-600);list-style-position:inside}
+  .proc-note>summary .pm{font-weight:600;color:var(--muted);font-size:12px}
+  .proc-note[open]>summary{margin-bottom:6px}
+  .proc-note[open]>summary .pm{display:none}
   html.dark .proc-note{background:rgba(214,158,46,.10)}
   .proc-note .pt{font-weight:800;font-size:13px;color:var(--accent-600);margin-bottom:6px}
   .proc-note ul{margin:0;padding-left:20px}
@@ -528,6 +537,14 @@
   .ctx-lb{font-size:12px;color:var(--muted)}
   .ctx-chip{font-size:12px;font-weight:800;padding:4px 11px;border-radius:20px;background:rgba(14,92,85,.10);color:var(--brand)}
   .ctx-pick{display:none;width:100%;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:10px;margin-top:4px}
+  /* Chon kho khi lap phieu dieu chuyen (viec 1a/1b) */
+  .wh-fixed{display:inline-flex;align-items:center;gap:8px;min-height:42px;padding:8px 12px;border-radius:11px;
+    border:1.5px solid var(--green-line);background:var(--green-bg);font-size:13.5px;font-weight:700;color:var(--ink)}
+  .wh-fixed .sub{font-weight:500;font-size:12px;color:var(--muted)}
+  .wh-chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px}
+  .wh-chips .chip{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .wh-more{display:none;grid-template-columns:1fr 1fr;gap:8px;width:100%;margin-top:8px}
+  @media(max-width:640px){.wh-more{grid-template-columns:1fr}}
   .qty-big{height:52px;text-align:center;font-size:22px;font-weight:800;max-width:170px}
   .readout{font-size:12.5px;color:var(--muted);margin-top:5px;min-height:16px}
   .readout b{color:var(--accent-600);font-weight:800}
@@ -689,6 +706,17 @@ const IC={
   shift:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/><path d="M17 3l1.5 1.5M7 3L5.5 4.5"/></svg>',
   report:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h2v5H8zm4-3h2v8h-2zm4 2h2v6h-2z"/></svg>',
 };
+
+/* ===== TIM KIEM BO DAU (viec 4, 09/09/2026) =====
+   BP go tren dien thoai gan nhu khong bo dau: go "sua" phai ra "Sua tuoi", "duong" ra "Duong".
+   Truoc day cac o tim dung .toLowerCase().includes() tho -> go khong dau la ra RONG,
+   BP tuong kho khong co hang / app hong. Bo ca khoang trang de "bosua" khop "Bo sua". */
+function vnNorm(s){return String(s==null?'':s).normalize('NFD').toLowerCase()
+  .replace(/[\u0300-\u036f]/g,'').replace(/\u0111/g,'d').replace(/\s+/g,'');}
+const _vnCache=new Map();   // code -> "manorm|tennorm" (1501 ma, khoi tinh lai moi lan go)
+function matKey(m){const c=(m&&m.code)||'';let k=_vnCache.get(c);
+  if(k===undefined){k=vnNorm(c)+'|'+vnNorm((m&&m.name)||'');_vnCache.set(c,k);}return k;}
+function matHit(m,qn){return !qn||matKey(m).indexOf(qn)>=0;}
 
 /* ============ STATE ============ */
 const ROLES={
@@ -984,7 +1012,7 @@ function learnMaterials(list){
     if(!nm||nm==='?'||nm===it.code)return; // chỉ học khi có TÊN thật
     const cur=masterByCode[it.code];
     if(!cur){const m={code:it.code,name:nm,uom:it.uom||''};masterByCode[it.code]=m;DATA.materials.push(m);batch.push(m);}
-    else if(!cur.name||cur.name==='?'||cur.name===it.code){cur.name=nm;if(it.uom&&!cur.uom)cur.uom=it.uom;batch.push({code:cur.code,name:cur.name,uom:cur.uom||''});}
+    else if(!cur.name||cur.name==='?'||cur.name===it.code){cur.name=nm;_vnCache.delete(cur.code);if(it.uom&&!cur.uom)cur.uom=it.uom;batch.push({code:cur.code,name:cur.name,uom:cur.uom||''});}
   });
   if(sb&&batch.length){try{sb.from('materials').upsert(batch).then(({error})=>{if(error)console.error('learnMaterials',error);});}catch(e){console.error(e);}}
   return batch.length;
@@ -1746,8 +1774,8 @@ function matPicker(labelTxt,onPick){
   const f=el('label','field',`<span>${labelTxt||'Mã hàng'}</span>`);
   const acw=el('div','ac-wrap');const inp=el('input','input');inp.placeholder='Gõ mã hoặc tên hàng…';inp.autocomplete='off';
   const dd=el('div','ac-dd');
-  inp.oninput=()=>{onPick(null);const q=inp.value.trim().toLowerCase();if(!q){dd.style.display='none';return;}
-    const res=DATA.materials.filter(m=>m.code.includes(q)||m.name.toLowerCase().includes(q)).slice(0,30);dd.innerHTML='';
+  inp.oninput=()=>{onPick(null);const q=vnNorm(inp.value);if(!q){dd.style.display='none';return;}
+    const res=DATA.materials.filter(m=>matHit(m,q)).slice(0,30);dd.innerHTML='';
     if(!res.length){if(q.length>=2){dd.innerHTML='<div class="ac-item" style="cursor:default"><div class="n" style="color:var(--red)">Không tồn tại mã "'+inp.value.trim()+'"</div><div class="s">Chưa có trong hệ thống — thêm mã mới bên dưới</div></div>';dd.style.display='block';}else dd.style.display='none';return;}
     res.forEach(m=>{const it=el('div','ac-item',`<div class="n">${m.name}</div><div class="s">${m.code} · ${m.uom}</div>`);
       it.onclick=()=>{inp.value=`${m.name} (${m.code})`;dd.style.display='none';onPick(m);};dd.appendChild(it);});
@@ -2045,9 +2073,9 @@ function renderOpenCountCard(v){
     const iAdd=el('input','input');iAdd.placeholder='Thêm mã chưa có trong danh sách — gõ tên hoặc mã…';iAdd.autocomplete='off';
     const dd2=el('div','ac-dd');arw.appendChild(iAdd);arw.appendChild(dd2);webPane.appendChild(arw);
     iAdd.oninput=()=>{
-      const q=iAdd.value.trim().toLowerCase();if(!q){dd2.style.display='none';return;}
+      const q=vnNorm(iAdd.value);if(!q){dd2.style.display='none';return;}
       const have=new Set(pool.map(x=>x.code));
-      const res=DATA.materials.filter(m=>!have.has(m.code)&&(String(m.code).toLowerCase().includes(q)||String(m.name||'').toLowerCase().includes(q))).slice(0,30);
+      const res=DATA.materials.filter(m=>!have.has(m.code)&&matHit(m,q)).slice(0,30);
       dd2.innerHTML='';
       if(!res.length){dd2.innerHTML='<div class="ac-item" style="cursor:default"><div class="n" style="color:var(--red)">Không có mã nào khớp trong danh mục tổng</div><div class="s">Mã lạ phải thêm vào Danh mục VT trước.</div></div>';dd2.style.display='block';return;}
       res.forEach(m=>{const it=el('div','ac-item','<div class="n">'+m.name+'</div><div class="s">'+m.code+' · '+(m.uom||'')+'</div>');
@@ -2067,7 +2095,7 @@ function renderOpenCountCard(v){
     function upd(){cnt2.textContent=Object.keys(sel).length+' mã đã chọn';}
     function rows(q){
       box.innerHTML='';
-      const list=pool.filter(m=>!q||m.code.toLowerCase().includes(q)||(m.name||'').toLowerCase().includes(q));
+      const list=pool.filter(m=>matHit(m,q));
       if(!list.length){box.appendChild(el('div','list-hint','Không có mã khớp.'));return;}
       list.forEach(m=>{
         const r=el('label');r.style.cssText='display:flex;gap:10px;align-items:center;padding:7px 9px;border-bottom:1px solid var(--line);cursor:pointer';
@@ -2076,9 +2104,9 @@ function renderOpenCountCard(v){
         const tx=el('div',null,'<div style="font-size:13px;font-weight:600">'+m.name+'</div><div style="font-size:11.5px;color:var(--muted)"><span class="tnum">'+m.code+'</span> · '+(m.uom||'')+'</div>');
         r.appendChild(cb);r.appendChild(tx);box.appendChild(r);});
     }
-    si.oninput=()=>rows(si.value.trim().toLowerCase());
-    bAll.onclick=()=>{pool.forEach(m=>sel[m.code]={name:m.name,uom:m.uom});rows(si.value.trim().toLowerCase());upd();};
-    bNone.onclick=()=>{Object.keys(sel).forEach(c=>delete sel[c]);rows(si.value.trim().toLowerCase());upd();};
+    si.oninput=()=>rows(vnNorm(si.value));
+    bAll.onclick=()=>{pool.forEach(m=>sel[m.code]={name:m.name,uom:m.uom});rows(vnNorm(si.value));upd();};
+    bNone.onclick=()=>{Object.keys(sel).forEach(c=>delete sel[c]);rows(vnNorm(si.value));upd();};
     rows('');upd();
     const brow2=el('div');brow2.style.cssText='display:flex;gap:10px;margin-top:12px;flex-wrap:wrap';
     const bSave=el('button','btn btn-primary',cl?'✓ Cập nhật danh sách & báo giám sát':'✓ Mở kỳ & gửi cho giám sát');
@@ -2732,9 +2760,13 @@ function renderKiemke(v){
 }
 function draftKey(){return counting.plant+'|'+counting.sloc;}
 // Quy trình bắt buộc do BLĐ ban hành — hiện ở cả màn kiểm kê lẫn màn điều chuyển
-function procNote(){
-  const d=el('div','proc-note');
-  d.innerHTML=`<div class="pt">📌 QUY TRÌNH BẮT BUỘC</div>
+// Banner quy trình: mặc định THU 1 DÒNG cho khỏi chiếm nửa màn điện thoại (việc 6).
+// Tự bung khi kho của người dùng ĐANG MỞ KỲ kiểm kê — lúc đó app chặn điều chuyển,
+// đúng lúc BP cần đọc lý do.
+function procNote(open){
+  const d=el('details','proc-note');
+  if(open)d.open=true;
+  d.innerHTML=`<summary class="pt">📌 QUY TRÌNH BẮT BUỘC <span class="pm">— bấm để xem</span></summary>
     <ul>
       <li><b>Điều chuyển phải xong TRƯỚC khi kế toán mở kỳ kiểm kê.</b> Kho đã mở kỳ là app chặn mọi điều chuyển của kho đó trong kỳ.</li>
       <li>Kiểm kê xong có chênh lệch thì <b>KHÔNG được bổ sung phiếu điều chuyển</b> để bù trừ.</li>
@@ -2810,7 +2842,7 @@ function renderCountSheet(v){
   addBox.innerHTML='<div style="font-weight:800;font-size:12.5px;margin-bottom:4px">➕ Đếm thêm mã chưa có trên kho</div>'+
     '<div style="font-size:11.5px;color:var(--muted);margin-bottom:9px">Thực tế có hàng mà danh sách kho chưa liệt kê thì thêm ở đây. <b>Chỉ chọn được mã đã có trong danh mục tổng</b> — gõ tên hoặc mã rồi bấm vào gợi ý. Mã lạ chưa có trong danh mục thì nhờ kế toán thêm vào danh mục trước. <b>Chỉ thêm được, không xóa dòng.</b></div>';
   const arRow=el('div');arRow.style.cssText='display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end';
-  const fFind=el('label','field');fFind.style.cssText='margin:0;flex:1;min-width:280px';
+  const fFind=el('label','field');fFind.style.cssText='margin:0;flex:1;min-width:min(280px,100%)';   // min(...) de may 320px khong bi tran
   fFind.innerHTML='<span>Tìm trong danh mục tổng</span>';
   const acw=el('div','ac-wrap');
   const iFind=el('input','input');iFind.placeholder='Gõ tên hàng hoặc mã…';iFind.autocomplete='off';
@@ -2827,13 +2859,13 @@ function renderCountSheet(v){
   }
   iFind.oninput=()=>{
     setPicked(null);
-    const q=iFind.value.trim().toLowerCase();
+    const q=vnNorm(iFind.value);
     if(q.length<1){dd.style.display='none';return;}
     const onSheet=new Set(MATS.map(x=>x.code));
-    const res=DATA.materials.filter(m=>!onSheet.has(m.code)&&(String(m.code).toLowerCase().includes(q)||String(m.name||'').toLowerCase().includes(q))).slice(0,40);
+    const res=DATA.materials.filter(m=>!onSheet.has(m.code)&&matHit(m,q)).slice(0,40);
     dd.innerHTML='';
     if(!res.length){
-      const already=DATA.materials.some(m=>onSheet.has(m.code)&&(String(m.code).toLowerCase().includes(q)||String(m.name||'').toLowerCase().includes(q)));
+      const already=DATA.materials.some(m=>onSheet.has(m.code)&&matHit(m,q));
       dd.innerHTML='<div class="ac-item" style="cursor:default"><div class="n" style="color:var(--red)">'+
         (already?'Mã này đã có sẵn trong danh sách đếm bên dưới':'Không có mã nào khớp trong danh mục tổng')+'</div>'+
         '<div class="s">'+(already?'Dùng ô tìm kiếm bên dưới để nhập số cho mã đó.':'Chỉ đếm được mã đã có trong danh mục. Nhờ kế toán thêm mã vào Danh mục VT trước.')+'</div></div>';
@@ -2878,10 +2910,10 @@ function renderCountSheet(v){
   }
 
   function renderList(q){
-    q=(q||'').trim().toLowerCase();list.innerHTML='';
+    q=vnNorm(q);list.innerHTML='';
     if(total===0){list.appendChild(el('div','list-hint','Kho này chưa có danh sách vật tư đã lưu. Kế toán viên up tồn đầu kỳ cho kho, hoặc gán mã ở tab "Danh mục VT" để hiện danh sách NVL đếm.'));return;}
     let pool;
-    if(q){pool=MATS.filter(m=>m.code.includes(q)||m.name.toLowerCase().includes(q));}
+    if(q){pool=MATS.filter(m=>matHit(m,q));}
     else{const en=MATS.filter(m=>hasVal(m.code));const rest=MATS.filter(m=>!hasVal(m.code));pool=[...en,...rest];}
     if(curFilter==='done')pool=pool.filter(m=>hasVal(m.code));
     else if(curFilter==='todo')pool=pool.filter(m=>!hasVal(m.code));
@@ -3111,7 +3143,11 @@ function ensureNkCtx(){
 }
 function renderDieuchuyen(v){
   v.appendChild(el('div','page-head',`<div><h1>Nhập kho & Điều chuyển</h1><div class="ph-sub">Chọn việc cần làm — máy chỉ mở đúng phần đó. Số nhập kho và điều chuyển tự cộng/trừ vào tồn khi kiểm kê để tính Xuất kho.</div></div>`));
-  v.appendChild(procNote());
+  {  // kho của BP đang mở kỳ -> bung sẵn banner, vì lúc này app chặn điều chuyển
+    const _per=curPeriod();
+    const _op=(session&&session.wh?session.wh:[]).some(w=>w.sloc&&countOpened(w.plant,w.sloc,_per));
+    v.appendChild(procNote(_op));
+  }
   const mine=allowedPlants();
   if(!mine.length){v.appendChild(el('div','card','<div class="card-b"><div class="empty"><div class="big">Chưa được gán điểm bán</div><div>Liên hệ Quản trị viên để được gán điểm bán.</div></div></div>'));return;}
   const c=ensureNkCtx();
@@ -3137,7 +3173,7 @@ function dcXemLai(v){
   const rc=el('div','card');
   rc.appendChild(el('div','card-h',`<div><span class="ct">Phiếu yêu cầu điều chuyển / hủy</span><div class="cs">Trạng thái duyệt của phiếu liên quan tới kho mình</div></div><span class="badge badge-soft">${rq.length}</span>`));
   const rb=el('div');rc.appendChild(rb);v.appendChild(rc);
-  if(!rq.length)rb.appendChild(el('div','empty',`<div class="big">Chưa có phiếu yêu cầu</div><div>Lập phiếu ở mục Xin hàng / Đẩy hàng / Hủy — hao hụt.</div>`));
+  if(!rq.length)rb.appendChild(el('div','empty',`<div class="big">Chưa có phiếu yêu cầu</div><div>Lập phiếu ở mục <b>Xin hàng từ kho khác</b> hoặc <b>Hủy / hao hụt</b>.</div>`));
   else rq.slice(0,40).forEach(r=>rb.appendChild(dcReqCard(r,false)));
   // 2) Sổ điều chuyển đã ghi (chỉ có dòng của phiếu ĐÃ DUYỆT và các dòng nạp từ Excel)
   const card=el('div','card');card.style.marginTop='16px';
@@ -3172,37 +3208,89 @@ function dcNapExcel(v){
     ib.appendChild(fin);ib.appendChild(prev);impCard.appendChild(ib);v.appendChild(impCard);
   }
 }
+/* Kho hay xin gan day — luu tren may cua chinh nguoi dung, khong can bang moi tren Supabase.
+   BP xin di xin lai vai kho co dinh; truoc day moi lan phai cuon danh sach 36 diem ban. */
+const DC_RECENT='kk_dc_recent_v1';
+function dcRecent(){try{const a=JSON.parse(localStorage.getItem(DC_RECENT)||'[]');
+  return Array.isArray(a)?a.filter(x=>typeof x==='string').slice(0,3):[];}catch(e){return [];}}
+function dcRecentPush(pl,sl){try{const k=pl+'|'+sl;const a=dcRecent().filter(x=>x!==k);a.unshift(k);
+  localStorage.setItem(DC_RECENT,JSON.stringify(a.slice(0,3)));}catch(e){}}
+
 /* ================== LẬP PHIẾU ĐIỀU CHUYỂN / HỦY ==================
    Một form dùng chung 3 loại:
      xin — kho MÌNH nhận, chọn kho NGUỒN của người khác; giám sát kho nguồn duyệt
-     day — kho MÌNH giao, chọn kho ĐÍCH; giám sát kho đích xác nhận đã nhận
      huy — chỉ kho MÌNH, hàng ra khỏi hệ thống; kế toán duyệt
+   (loại 'day' — đẩy hàng — đã bỏ 04/09/2026; phiếu cũ vẫn xem/duyệt được ở màn theo dõi)
    Danh sách hàng = mã ĐANG CÓ TỒN ở kho nguồn (tồn ước tính), gõ số trực tiếp trên list. */
 function dcRequestForm(v,kind){
   const mine=allowedPlants();
   if(!mine.length){v.appendChild(el('div','card','<div class="card-b"><div class="empty"><div class="big">Chưa được gán kho</div><div>Liên hệ Quản trị viên.</div></div></div>'));return;}
   const card=el('div','card');const b=el('div','card-b');
   const head=kind==='xin'?['🙋 Xin hàng từ kho khác','Chọn kho có hàng, gõ số cần xin. Giám sát kho đó duyệt thì hàng mới trừ của họ và cộng cho kho mình.']
-    :kind==='day'?['📤 Đẩy hàng sang kho khác','Chọn hàng kho mình muốn chuyển đi. Bấm gửi là GHI SỔ NGAY: trừ kho mình, cộng kho nhận. Kho nhận chỉ được thông báo, không phải xác nhận.']
     :['🗑 Hủy / hao hụt','Hàng hỏng, đổ bỏ, mất. Kế toán duyệt thì mới trừ khỏi kho — không cộng cho kho nào.'];
   b.innerHTML=`<div class="section-eyebrow">${head[0]}</div><div style="font-size:12px;color:var(--muted);margin:6px 0 12px">${head[1]}</div>`;
 
-  // --- Chọn kho nguồn / kho đích ---
-  // xin: nguồn = kho người khác (mở full), đích = kho mình
-  // day/huy: nguồn = kho mình, đích = kho người khác (day) hoặc không có (huy)
-  function whPick(lbl,onlyMine,onChange){
-    const wrap=el('label','field',`<span>${lbl}</span>`);
-    const row=el('div');row.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:8px';
+  /* --- Kho của MÌNH, gom thành một danh sách phẳng (điểm bán · kho) ---
+     Trước đây mỗi đầu kho là 2 dropdown (điểm bán + sloc) = 4 dropdown cho một phiếu.
+     BP chỉ có 1 kho vẫn phải bấm qua cả 4. Giờ: 1 kho -> hiện chip, không hỏi;
+     nhiều kho -> đúng 1 dropdown. (việc 1a) */
+  const myWh=[];
+  mine.forEach(pp=>allowedSlocsOf(pp.plant).forEach(w=>myWh.push({plant:pp.plant,sloc:w.sloc,label:w.sloc_name+' ('+w.sloc+')',pname:pp.name})));
+  if(!myWh.length){v.appendChild(el('div','card','<div class="card-b"><div class="empty"><div class="big">Chưa được gán kho (sloc)</div><div>Liên hệ Quản trị viên để gán kho cụ thể.</div></div></div>'));return;}
+  function whPickMine(lbl,onChange){
+    const wrap=el('div','field',`<span>${lbl}</span>`);
+    if(myWh.length===1){
+      const w=myWh[0];
+      wrap.appendChild(el('div','wh-fixed',`${w.label}<span class="sub">${w.pname}</span>`));
+      return {wrap,plant:()=>w.plant,sloc:()=>w.sloc};
+    }
+    const sel=el('select','input');
+    myWh.forEach((w,i)=>{const o=el('option',null,w.pname+' · '+w.label);o.value=String(i);sel.appendChild(o);});
+    sel.onchange=()=>onChange&&onChange();
+    wrap.appendChild(sel);
+    return {wrap,plant:()=>myWh[Number(sel.value)].plant,sloc:()=>myWh[Number(sel.value)].sloc};
+  }
+  /* --- Kho NGUỒN khi xin hàng: chip "hay xin gần đây" bấm 1 lần là xong (việc 1b).
+     Chưa chọn kho thì KHÔNG vẽ bảng hàng — trước đây app mặc định kho đầu bảng chữ cái
+     ("BNC-Hội Chợ Châu Âu") rồi dựng luôn bảng 200 dòng của kho không liên quan. */
+  function whPickOther(lbl,onChange){
+    const wrap=el('div','field',`<span>${lbl}</span>`);
+    const chips=el('div','wh-chips');
+    const more=el('div','wh-more');
     const pSel=el('select','input'),sSel=el('select','input');
-    (onlyMine?mine:plantsList()).forEach(p=>{const o=el('option',null,p.name);o.value=p.plant;pSel.appendChild(o);});
-    function fillS(){sSel.innerHTML='';((onlyMine?allowedSlocsOf:slocsOf)(pSel.value)||[]).forEach(w=>{const o=el('option',null,w.sloc_name+' ('+w.sloc+')');o.value=w.sloc;sSel.appendChild(o);});}
-    pSel.onchange=()=>{fillS();onChange&&onChange();};sSel.onchange=()=>onChange&&onChange();
-    fillS();row.appendChild(pSel);row.appendChild(sSel);wrap.appendChild(row);
-    return {wrap,plant:()=>pSel.value,sloc:()=>sSel.value};
+    plantsList().forEach(pp=>{const o=el('option',null,pp.name);o.value=pp.plant;pSel.appendChild(o);});
+    function fillS(){sSel.innerHTML='';(slocsOf(pSel.value)||[]).forEach(w=>{const o=el('option',null,w.sloc_name+' ('+w.sloc+')');o.value=w.sloc;sSel.appendChild(o);});}
+    fillS();
+    more.appendChild(pSel);more.appendChild(sSel);
+    let cur=null;
+    const isMine=(pl,sl)=>myWh.some(w=>w.plant===pl&&w.sloc===sl);
+    function paint(){
+      chips.innerHTML='';
+      const rec=dcRecent().map(k=>k.split('|'))
+        .filter(a=>a.length===2&&DATA.warehouses.some(w=>w.plant===a[0]&&w.sloc===a[1])&&!isMine(a[0],a[1]));
+      if(cur&&!rec.some(a=>a[0]===cur.plant&&a[1]===cur.sloc))rec.unshift([cur.plant,cur.sloc]);
+      rec.slice(0,3).forEach(a=>{
+        const on=!!cur&&cur.plant===a[0]&&cur.sloc===a[1];
+        const c=el('button','chip'+(on?' active':''),whName(a[0],a[1]));c.type='button';
+        c.title=plantName(a[0])+' · sloc '+a[1];
+        c.onclick=()=>{more.style.display='none';set(a[0],a[1]);};
+        chips.appendChild(c);
+      });
+      const bMore=el('button','chip',rec.length?'+ Kho khác…':'Chọn kho nguồn…');bMore.type='button';
+      bMore.onclick=()=>{more.style.display=more.style.display==='grid'?'none':'grid';};
+      chips.appendChild(bMore);
+      if(!rec.length&&!cur)more.style.display='grid';
+    }
+    function set(pl,sl){cur={plant:pl,sloc:sl};pSel.value=pl;fillS();sSel.value=sl;paint();onChange&&onChange();}
+    pSel.onchange=()=>{fillS();cur={plant:pSel.value,sloc:sSel.value};paint();onChange&&onChange();};
+    sSel.onchange=()=>{cur={plant:pSel.value,sloc:sSel.value};paint();onChange&&onChange();};
+    wrap.appendChild(chips);wrap.appendChild(more);paint();
+    return {wrap,plant:()=>cur?cur.plant:'',sloc:()=>cur?cur.sloc:''};
   }
   const listWrap=el('div');
-  const src=whPick(kind==='xin'?'Xin từ kho nào (kho nguồn)':(kind==='huy'?'Kho có hàng hủy':'Kho mình (kho nguồn)'),kind!=='xin',()=>drawList());
-  const dst=kind==='huy'?null:whPick(kind==='xin'?'Về kho mình (kho nhận)':'Chuyển đến kho nào (kho nhận)',kind==='xin',null);
+  const src=kind==='xin'?whPickOther('Xin từ kho nào',()=>drawList())
+                        :whPickMine('Kho có hàng hủy',()=>drawList());
+  const dst=kind==='xin'?whPickMine('Xin về kho mình',null):null;
   const g=el('div','grid2');g.appendChild(src.wrap);if(dst)g.appendChild(dst.wrap);b.appendChild(g);
   const fR=el('label','field','<span>Lý do / diễn giải</span>');
   const iR=el('input','input');iR.placeholder=kind==='huy'?'VD: hàng hết hạn, vỡ trong bảo quản…':'VD: bù hàng bán chạy cuối tuần…';
@@ -3210,10 +3298,23 @@ function dcRequestForm(v,kind){
   b.appendChild(listWrap);
 
   const picked={}; // code -> {qty, exp}
+  /* --- Nút gửi DÍNH ĐÁY màn hình (việc 2) ---
+     Trước đây nút nằm cuối bảng: kho 200 mã thì gõ số ở dòng 3 phải cuộn hết bảng mới bấm được. */
+  const act=el('div','sticky-actions');
+  const bar=el('div');bar.style.cssText='display:flex;gap:10px;align-items:center;flex-wrap:wrap';
+  const bSend=el('button','btn btn-primary',kind==='huy'?'Gửi phiếu hủy cho kế toán duyệt':'Gửi phiếu xin — chờ kho cho duyệt');
+  const cnt=el('span');cnt.style.cssText='font-size:12.5px;color:var(--muted);font-weight:600';
+  bSend.onclick=()=>submitReq();
+  bar.appendChild(bSend);bar.appendChild(cnt);act.appendChild(bar);
+  function updCnt(){const k=Object.keys(picked).length;cnt.textContent=k?k+' mã đã chọn':'Chưa chọn mã nào';}
+  updCnt();
   function drawList(){
     listWrap.innerHTML='';
     const p=src.plant(),s=src.sloc();
-    if(!p||!s)return;
+    if(!p||!s){   // chua chon kho nguon -> noi ro, khong dung bang hang cua kho khong lien quan
+      listWrap.appendChild(el('div','empty','<div class="big">Chọn kho nguồn trước</div><div>Bấm một kho ở hàng chip phía trên (hoặc "Chọn kho nguồn…") để xem hàng đang có.</div>'));
+      act.style.display='none';return;}
+    act.style.display='';
     const per=curPeriod();
     const stock=stockNow(p,s,per);
     const rows=Object.keys(stock).filter(c=>Number(stock[c])>0)
@@ -3221,12 +3322,10 @@ function dcRequestForm(v,kind){
       .sort((a,b2)=>(a.name||'').localeCompare(b2.name||'','vi'));
     listWrap.appendChild(el('div',null,`<div style="font-weight:800;font-size:13px;margin:16px 0 4px">Hàng đang có ở ${whName(p,s)} <span style="color:var(--muted);font-weight:500">· ${rows.length} mã</span></div>
       <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px">Tồn <b>ước tính</b> = tồn đầu kỳ + nhập mua + ĐC đến − ĐC đi. Chưa trừ phần đã bán ra, nên chỉ để tham khảo khi chọn hàng.</div>`));
-    if(!rows.length){listWrap.appendChild(el('div','empty',`<div class="big">Kho này chưa có hàng</div><div>Chưa có tồn đầu kỳ và chưa có phát sinh nhập trong kỳ ${periodVN(per)}.</div>`));return;}
+    if(!rows.length){listWrap.appendChild(el('div','empty',`<div class="big">${whName(p,s)} chưa có hàng</div><div>Chưa có tồn đầu kỳ và chưa có phát sinh nhập trong kỳ ${periodVN(per)}.</div>`));act.style.display='none';return;}
     const sw=el('div','search-wrap');sw.style.margin='0 0 10px';
     const si=el('input');si.placeholder='Tìm theo mã hoặc tên hàng… ('+rows.length+' mã)';sw.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>';
     sw.appendChild(si);listWrap.appendChild(sw);
-    // cnt phải tạo TRƯỚC khi dựng dòng: upd() chạy ngay lúc tạo dòng và có đụng vào nó
-    const cnt=el('span');cnt.style.cssText='font-size:12.5px;color:var(--muted);font-weight:600';
     const w=el('div','tbl-wrap');w.style.cssText='max-height:440px;overflow:auto';const tbl=el('table');
     tbl.innerHTML=`<thead><tr><th>Tên hàng</th><th>ĐVT</th><th class="num">Tồn ước tính</th><th class="num">${kind==='huy'?'SL hủy':'SL xin'}</th><th>HSD (ghi chú)</th></tr></thead>`;
     const tb=el('tbody');
@@ -3236,6 +3335,7 @@ function dcRequestForm(v,kind){
         <td class="num tnum" style="color:var(--muted)">${r.ton}</td>
         <td class="num"><input class="input q" type="number" step="any" min="0" style="width:110px;text-align:right" placeholder="0"></td>
         <td><input class="input e" style="width:150px" placeholder="—"></td>`);
+      tr.dataset.k=vnNorm(r.code)+'|'+vnNorm(r.name);   // khoa tim khong dau (viec 4)
       const q=tr.querySelector('.q'),e2=tr.querySelector('.e');
       q.value=picked[r.code]?picked[r.code].qty:'';e2.value=picked[r.code]?picked[r.code].exp:'';
       const upd=()=>{const val=q.value;
@@ -3243,21 +3343,18 @@ function dcRequestForm(v,kind){
         else picked[r.code]={qty:Number(val),exp:e2.value.trim(),name:r.name,uom:r.uom,ton:r.ton};
         tr.style.background=picked[r.code]?'var(--green-bg)':'';
         if(picked[r.code]&&Number(val)>Number(r.ton))q.style.color='var(--red)';else q.style.color='';
-        cnt.textContent=Object.keys(picked).length+' mã đã chọn';};
+        updCnt();};
       q.oninput=upd;e2.oninput=upd;upd();
       tb.appendChild(tr);});
     tbl.appendChild(tb);w.appendChild(tbl);listWrap.appendChild(w);
-    si.oninput=()=>{const qq=si.value.trim().toLowerCase();[...tb.children].forEach(tr=>{tr.style.display=tr.textContent.toLowerCase().includes(qq)?'':'none';});};
-    const bar=el('div');bar.style.cssText='display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap';
-    cnt.textContent=Object.keys(picked).length+' mã đã chọn';
-    const bSend=el('button','btn btn-primary',kind==='huy'?'Gửi phiếu hủy cho kế toán duyệt':(kind==='day'?'Chuyển hàng & ghi sổ ngay':'Gửi phiếu xin — chờ kho cho duyệt'));
-    bSend.onclick=()=>submitReq();
-    bar.appendChild(bSend);bar.appendChild(cnt);listWrap.appendChild(bar);
+    si.oninput=()=>{const qq=vnNorm(si.value);[...tb.children].forEach(tr=>{tr.style.display=(!qq||(tr.dataset.k||'').indexOf(qq)>=0)?'':'none';});};
+    updCnt();
   }
   async function submitReq(){
     const codes=Object.keys(picked);
     if(!codes.length){toast('Chưa chọn mã nào');return;}
     const fp=src.plant(),fs=src.sloc();
+    if(!fp||!fs){toast('Chưa chọn kho nguồn');return;}
     const tp=dst?dst.plant():null,ts=dst?dst.sloc():null;
     if(dst&&fp===tp&&fs===ts){toast('Kho nguồn và kho nhận đang trùng nhau');return;}
     // RULE: điều chuyển phải xong TRƯỚC khi kế toán mở kỳ kiểm kê. Kho đã mở kỳ (hoặc đã chốt)
@@ -3294,12 +3391,7 @@ function dcRequestForm(v,kind){
     trReqs.unshift(rec);
     log('Lập phiếu '+dcKindLabel(kind),`${id} · ${whName(fp,fs)}${tp?' → '+whName(tp,ts):''} · ${codes.length} mã`);
     Object.keys(picked).forEach(k=>delete picked[k]);
-    if(kind==='day'){
-      // ĐẨY HÀNG: bên cho đã là người lập nên duyệt luôn, ghi sổ ngay. Kho nhận chỉ được thông báo.
-      const qs={};codes.forEach(c=>qs[c]=items[c].qtyReq);
-      await approveTransferReq(rec,qs);   // hàm này tự ghi sổ, tự báo kho nhận, tự dựng hộp lỗi nếu trượt
-      return;
-    }
+    if(kind==='xin')dcRecentPush(fp,fs);   // lần sau kho này lên chip, bấm 1 lần là xong
     // XIN / HỦY: báo cho bên phải duyệt
     const who=kind==='xin'?{p:fp,s:fs}:null;
     if(who){
@@ -3312,6 +3404,7 @@ function dcRequestForm(v,kind){
     renderView();
   }
   drawList();
+  b.appendChild(act);
   card.appendChild(b);v.appendChild(card);
 }
 /* ================== DUYỆT PHIẾU ================== */
@@ -3537,7 +3630,6 @@ function dcNhapKho(v){
   const ctx=ensureNkCtx();
   ctxBar(b,ctx,{period:true,plants:mine},()=>{renderList();updRead();});
   const plantSel={get value(){return ctx.plant;}},slocSel={get value(){return ctx.sloc;}},perSel={get value(){return ctx.period;}};
-  function fillSloc(){}
   // chọn cách nhập: gõ tay hoặc quét ảnh phiếu
   const seg=el('div');seg.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 14px';
   const bTay=el('button','btn btn-brand btn-sm','⌨ Gõ tay từng dòng');
@@ -3551,17 +3643,15 @@ function dcNhapKho(v){
     scanWrap.style.display=m==='anh'?'block':'none';
   }
   bTay.onclick=()=>setMode('tay');bAnh.onclick=()=>setMode('anh');
-  // HÀNG 1: ngày + nút Hôm nay + nhà cung cấp (gọn trên một dòng)
+  // HÀNG 1: ngày (mặc định hôm nay) + nhà cung cấp — gọn trên một dòng
   const g=el('div','form-row');
   const fDate=el('label','field f-date','<span>Ngày nhập</span>');const iDate=el('input','input');iDate.type='date';iDate.valueAsDate=new Date();fDate.appendChild(iDate);
-  const bToday=el('button','btn btn-ghost btn-sm f-btn','Hôm nay');bToday.type='button';
-  bToday.onclick=()=>{iDate.valueAsDate=new Date();};
   const fNote=el('label','field f-grow','<span>Nhà cung cấp / Ghi chú</span>');const iNote=el('input','input');iNote.placeholder='VD: NCC ABC, số hóa đơn…';fNote.appendChild(iNote);
-  g.appendChild(fDate);g.appendChild(bToday);g.appendChild(fNote);formWrap.appendChild(g);
+  g.appendChild(fDate);g.appendChild(fNote);formWrap.appendChild(g);
   const fMat=el('label','field f-grow','<span>Mã hàng</span>');
   const acw=el('div','ac-wrap');const iMat=el('input','input');iMat.placeholder='Gõ mã hoặc tên hàng…';iMat.autocomplete='off';
   const dd=el('div','ac-dd');let chosen=null;
-  iMat.oninput=()=>{chosen=null;updRead();const q=iMat.value.trim().toLowerCase();if(!q){dd.style.display='none';return;}const res=DATA.materials.filter(m=>m.code.includes(q)||m.name.toLowerCase().includes(q)).slice(0,30);dd.innerHTML='';if(!res.length){if(q.length>=2){dd.innerHTML='<div class="ac-item" style="cursor:default"><div class="n" style="color:var(--red)">Không tồn tại mã "'+iMat.value.trim()+'"</div><div class="s">Chưa có trong hệ thống — có thể thêm mã mới bên dưới</div></div>';dd.style.display='block';}else{dd.style.display='none';}return;}res.forEach(m=>{const it=el('div','ac-item',`<div class="n">${m.name}</div><div class="s">${m.code} · ${m.uom}</div>`);it.onclick=()=>{chosen=m;iMat.value=`${m.name} (${m.code})`;dd.style.display='none';updRead();};dd.appendChild(it);});dd.style.display='block';};
+  iMat.oninput=()=>{chosen=null;updRead();const q=vnNorm(iMat.value);if(!q){dd.style.display='none';return;}const res=DATA.materials.filter(m=>matHit(m,q)).slice(0,30);dd.innerHTML='';if(!res.length){if(q.length>=2){dd.innerHTML='<div class="ac-item" style="cursor:default"><div class="n" style="color:var(--red)">Không tồn tại mã "'+iMat.value.trim()+'"</div><div class="s">Chưa có trong hệ thống — có thể thêm mã mới bên dưới</div></div>';dd.style.display='block';}else{dd.style.display='none';}return;}res.forEach(m=>{const it=el('div','ac-item',`<div class="n">${m.name}</div><div class="s">${m.code} · ${m.uom}</div>`);it.onclick=()=>{chosen=m;iMat.value=`${m.name} (${m.code})`;dd.style.display='none';updRead();};dd.appendChild(it);});dd.style.display='block';};
   document.addEventListener('click',e=>{if(!acw.contains(e.target))dd.style.display='none';});
   acw.appendChild(iMat);acw.appendChild(dd);fMat.appendChild(acw);
   // ---- BP tự thêm mã mới nếu không có trong hệ thống ----
@@ -4250,10 +4340,10 @@ function renderShiftEntry(v){
   function saved(){const l=$('#shSave');if(l)l.textContent='✓ Đã tự lưu '+new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
   function dev(m){if(!opening)return false;const o=Number(opening[m.code]),q=Number(items[m.code]);if(!hasVal(m.code)||isNaN(o)||o<=0||isNaN(q))return false;return Math.abs(q-o)/o>0.5;}
   function draw(q){
-    q=(q||'').trim().toLowerCase();list.innerHTML='';
+    q=vnNorm(q);list.innerHTML='';
     if(total===0){list.appendChild(el('div','list-hint','Điểm bán này chưa có danh mục vật tư. Kế toán viên thêm ở tab "Danh mục VT".'));return;}
     let pool;
-    if(q)pool=MATS.filter(m=>m.code.includes(q)||m.name.toLowerCase().includes(q));
+    if(q)pool=MATS.filter(m=>matHit(m,q));
     else{const en=MATS.filter(m=>hasVal(m.code));const rest=MATS.filter(m=>!hasVal(m.code));pool=[...en,...rest];}
     if(cf==='done')pool=pool.filter(m=>hasVal(m.code));else if(cf==='todo')pool=pool.filter(m=>!hasVal(m.code));
     const shown=pool.slice(0,q?150:(cf==='all'?total:200));
@@ -4423,8 +4513,8 @@ function renderProgress(v){
   v.appendChild(card);
 
   function draw(q){
-    q=(q||'').trim().toLowerCase();holder.innerHTML='';
-    let rows=whs.filter(w=>!q||w.sloc_name.toLowerCase().includes(q)||w.plant_name.toLowerCase().includes(q)||w.sloc.includes(q));
+    q=vnNorm(q);holder.innerHTML='';
+    let rows=whs.filter(w=>!q||(vnNorm(w.sloc_name)+'|'+vnNorm(w.plant_name)+'|'+w.sloc).indexOf(q)>=0);
     if(fStatus!=='all')rows=rows.filter(w=>statusOf(w.plant,w.sloc).k===fStatus);
     const tbl=el('table');
     tbl.innerHTML=`<thead><tr><th>Kho (Sloc)</th><th>Điểm bán (Plant)</th><th>Trạng thái</th><th></th></tr></thead>`;
@@ -4976,8 +5066,8 @@ function renderUsers(view){
   const body=el('div');card.appendChild(body);view.appendChild(card);
   const stB={active:['✓ Kích hoạt','var(--green-bg)','var(--green)'],pending:['⏳ Chờ duyệt','#FDF1DC','var(--accent-600)'],disabled:['🔒 Khóa','var(--red-bg)','var(--red)']};
   function drawList(){
-    const q=userSearch.trim().toLowerCase();
-    const list=profiles.filter(p=>(!userRoleF||(p.role||'')===userRoleF)&&(!userStatusF||(p.status||'pending')===userStatusF)&&(!q||(p.full_name||'').toLowerCase().includes(q)||(p.email||'').toLowerCase().includes(q)));
+    const q=vnNorm(userSearch);
+    const list=profiles.filter(p=>(!userRoleF||(p.role||'')===userRoleF)&&(!userStatusF||(p.status||'pending')===userStatusF)&&(!q||(vnNorm(p.full_name)+'|'+vnNorm(p.email)).indexOf(q)>=0));
     body.innerHTML='';
     if(!list.length){body.appendChild(el('div',null,`<div style="padding:26px;text-align:center;color:var(--muted);font-size:13px">Không có tài khoản phù hợp bộ lọc.</div>`));return;}
     list.forEach(p=>{
@@ -5185,7 +5275,7 @@ function catTong(v){
     function drawMC(q){
       q=(q||'').trim().toLowerCase();listWrap.innerHTML='';
       let arr=DATA.materials.slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'','vi'));
-      if(q)arr=arr.filter(m=>m.code.toLowerCase().includes(q)||(m.name||'').toLowerCase().includes(q));
+      if(q)arr=arr.filter(m=>matHit(m,q));
       const shown=arr.slice(0,500);
       const w=el('div','tbl-wrap');w.style.cssText='max-height:52vh;overflow:auto';const tbl=el('table');
       tbl.innerHTML=`<thead><tr><th>Mã hàng</th><th>Tên hàng</th><th>ĐVT</th></tr></thead>`;
@@ -5316,7 +5406,7 @@ function catPlant(v){
         q=(q||'').trim().toLowerCase();addList.innerHTML='';
         if(!q){addList.appendChild(el('div','list-hint','Gõ để tìm mã trong kho tổng.'));return;}
         const set=new Set(assigned);
-        const res=DATA.materials.filter(m=>!set.has(m.code)&&(m.code.includes(q)||m.name.toLowerCase().includes(q))).slice(0,60);
+        const res=DATA.materials.filter(m=>!set.has(m.code)&&matHit(m,q)).slice(0,60);
         if(!res.length){addList.appendChild(el('div','list-hint','Không tìm thấy (hoặc đã thêm hết).'));return;}
         res.forEach(m=>{
           const r=el('div','item');
@@ -5733,6 +5823,24 @@ initAuth();
   v.addEventListener('loadedmetadata',function(){v.playbackRate=SLOW;});
   v.playbackRate=SLOW;
   var p=v.play();if(p&&p.catch)p.catch(function(){});
+})();
+/* ===== Enter la gui luon o man dang nhap / dang ky / quen mat khau =====
+   Truoc day go xong mat khau bam Enter khong an gi, phai voi tay bam nut. */
+(function bindAuthEnter(){
+  const map={liEmail:doSignIn,liPass:doSignIn,fgEmail:doForgot,
+             rsPass:doResetPassword,rsPass2:doResetPassword,
+             regName:doSignUp,regEmail:doSignUp,regPass:doSignUp};
+  let busy=false;   // chong bam Enter lien tiep tao 2 lan goi may chu
+  Object.keys(map).forEach(id=>{
+    const e=document.getElementById(id);if(!e)return;
+    e.addEventListener('keydown',ev=>{
+      if(ev.key!=='Enter'||ev.isComposing)return;
+      ev.preventDefault();
+      if(busy)return;busy=true;
+      try{Promise.resolve(map[id]()).catch(()=>{}).finally(()=>{busy=false;});}
+      catch(err){busy=false;console.error('authEnter',err);}
+    });
+  });
 })();
 startLoginFX();
 
