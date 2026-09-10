@@ -186,6 +186,9 @@
   .input:disabled{background:var(--surface-2);color:var(--ink-soft);cursor:not-allowed}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 
+  /* .btn dat display:inline-flex nen no DE BEP thuoc tinh hidden cua the button.
+     Da lam nut 'Duyet voi so da sua' hien san du chua bam 'Sua so'. Khai bao nay chan tan goc. */
+  [hidden]{display:none!important}
   .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 18px;border-radius:10px;font-weight:700;font-size:14px;transition:transform .05s,background .14s,box-shadow .14s;white-space:nowrap}
   .btn:active{transform:translateY(1px)}
   .btn svg{flex:none}
@@ -360,6 +363,9 @@
   .scrim{position:fixed;inset:0;background:rgba(11,43,40,.5);z-index:40;display:none}
 
   /* responsive */
+  @media (max-width:360px){
+    .topbar .loc-chip{display:none}   /* may hep nhat: bo chip diem ban de con cho nut chuong */
+  }
   @media (max-width:900px){
     #app{grid-template-columns:1fr}
     .sidebar{position:fixed;top:0;left:0;width:264px;z-index:50;transform:translateX(-100%);transition:transform .22s}
@@ -381,7 +387,12 @@
     .page-head h1{font-size:20px;line-height:1.25}
     .card-h{flex-wrap:wrap;gap:8px}
     .content{padding:16px}
-    .topbar{padding:0 16px}
+    .topbar{padding:0 12px;gap:9px}
+    /* Topbar co them nut chuong -> phai co lai, khong duoc day nut ra ngoai man 320px */
+    .topbar .pt{font-size:15px;min-width:0;overflow:hidden;text-overflow:ellipsis}
+    .topbar .loc-chip{max-width:38vw;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding:6px 10px}
+    .topbar .loc-chip #locText{overflow:hidden;text-overflow:ellipsis}
+    .bellbtn,.topbar-dark{width:36px;height:36px}
     .qty{width:88px}
   }
   /* ===== Dark mode TOÀN APP (html.dark) — mặc định sáng ===== */
@@ -537,6 +548,83 @@
   .ctx-lb{font-size:12px;color:var(--muted)}
   .ctx-chip{font-size:12px;font-weight:800;padding:4px 11px;border-radius:20px;background:rgba(14,92,85,.10);color:var(--brand)}
   .ctx-pick{display:none;width:100%;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:10px;margin-top:4px}
+  /* Bang chon hang khi lap phieu (viec 8/9, 10/09/2026)
+     >640px: bang binh thuong. <=640px: moi dong thanh MOT THE xep doc -> het keo ngang.
+     Do that o 390px: khung 316px nhung bang rong 589px, phai keo ngang 273px moi dong. */
+  .picklist{max-height:440px;overflow:auto}
+  .picklist .only-sm{display:none}
+  .picklist .qtybox{justify-content:flex-end}
+  .picklist .qtybox .stepbtn{display:none}
+  @media(max-width:640px){
+    .picklist{max-height:none;overflow:visible}          /* het cuon-trong-cuon */
+    .picklist table,.picklist tbody,.picklist tr,.picklist td{display:block;width:100%}
+    .picklist thead{display:none}
+    .picklist table{min-width:0}
+    .picklist tr{border:1.5px solid var(--line);border-radius:12px;background:var(--surface);
+      margin-bottom:10px;padding:11px 13px}
+    .picklist tr.on{border-color:var(--green-line);background:var(--green-bg)}
+    .picklist td{border:none!important;padding:0!important;text-align:left!important}
+    .picklist td.c-uom,.picklist td.c-ton{display:none}  /* da gop vao dong phu duoi ten */
+    .picklist td.c-qty{margin-top:9px}
+    .picklist .only-sm{display:inline}
+    .picklist .cell-strong{font-size:14.5px;line-height:1.35}
+    .picklist .cell-sub{margin-top:3px;font-size:12px}
+    .picklist .qtybox{justify-content:center;gap:10px}
+    .picklist .qtybox .stepbtn{display:grid;min-width:46px;min-height:46px;font-size:24px}
+    .picklist .qtybox .q{width:96px!important;height:46px;font-size:18px;text-align:center!important}
+  }
+  /* Chuong thong bao tren topbar (10/09/2026) */
+  .bellbtn{position:relative;width:38px;height:38px;border-radius:11px;border:1px solid var(--line-strong);
+    background:var(--surface);display:grid;place-items:center;color:var(--ink-soft);flex:none}
+  .bellbtn:hover{background:var(--surface-2)}
+  .bellbtn.ring{animation:bellring .6s ease 2}
+  @keyframes bellring{0%,100%{transform:rotate(0)}25%{transform:rotate(-12deg)}75%{transform:rotate(12deg)}}
+  .bellbtn .bdot{position:absolute;top:-5px;right:-5px;min-width:19px;height:19px;padding:0 5px;border-radius:12px;
+    background:var(--red);color:#fff;font-size:11px;font-weight:800;display:grid;place-items:center;
+    border:2px solid var(--surface);line-height:1}
+  .notif-scrim{position:fixed;inset:0;background:rgba(15,23,32,.34);z-index:180;display:none}
+  .notif-scrim.show{display:block}
+  .notif-pop{position:fixed;z-index:181;top:66px;right:14px;width:min(380px,calc(100vw - 24px));
+    max-height:min(70vh,560px);display:none;flex-direction:column;background:var(--surface);
+    border:1px solid var(--line-strong);border-radius:16px;box-shadow:var(--shadow-lg);overflow:hidden}
+  .notif-pop.show{display:flex}
+  @media(max-width:640px){
+    .notif-pop{top:auto;left:8px;right:8px;bottom:8px;width:auto;max-height:76vh;
+      padding-bottom:env(safe-area-inset-bottom)}
+  }
+  .notif-h{display:flex;align-items:center;gap:10px;padding:13px 15px;border-bottom:1px solid var(--line);flex:none}
+  .notif-h .t{font-weight:800;font-size:14.5px;flex:1}
+  .notif-list{overflow:auto;flex:1;-webkit-overflow-scrolling:touch}
+  .notif-it{display:flex;gap:11px;padding:12px 15px;border-bottom:1px solid var(--line);cursor:pointer;text-align:left;
+    width:100%;background:none;border-left:none;border-right:none;border-top:none;color:inherit}
+  .notif-it:hover{background:var(--surface-2)}
+  .notif-it.unread{background:rgba(14,92,85,.07)}
+  .notif-it .ic{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:16px;
+    background:var(--surface-2);flex:none}
+  .notif-it .bd{flex:1;min-width:0}
+  .notif-it .ti{font-size:13px;font-weight:700;margin-bottom:2px}
+  .notif-it.unread .ti{color:var(--brand)}
+  .notif-it .ms{font-size:12.5px;line-height:1.5;color:var(--ink-soft);white-space:pre-line;word-break:break-word}
+  .notif-it .tm{font-size:11px;color:var(--muted);margin-top:4px}
+  .notif-it .nd{width:9px;height:9px;border-radius:50%;background:var(--brand);flex:none;margin-top:12px}
+  .notif-f{padding:10px 15px;border-top:1px solid var(--line);flex:none;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  html.dark .bellbtn{background:rgba(255,255,255,.05)}
+  html.dark .notif-it.unread{background:rgba(159,230,216,.08)}
+  html.dark .notif-it .ic{background:rgba(255,255,255,.07)}
+  /* Bang mot phieu dang duyet — cung kieu the xep doc duoi 640px (viec 10) */
+  .reqtbl .only-sm{display:none}
+  @media(max-width:640px){
+    .reqtbl table,.reqtbl tbody,.reqtbl tr,.reqtbl td{display:block;width:100%}
+    .reqtbl thead{display:none}
+    .reqtbl table{min-width:0}
+    .reqtbl tr{border:1.5px solid var(--line);border-radius:12px;background:var(--surface);
+      margin-bottom:9px;padding:10px 12px}
+    .reqtbl td{border:none!important;padding:0!important;text-align:left!important}
+    .reqtbl td.c-uom,.reqtbl td.c-req,.reqtbl td.c-exp{display:none}
+    .reqtbl td.c-ok{margin-top:8px;display:flex;justify-content:center}
+    .reqtbl .only-sm{display:inline}
+    .reqtbl .q{width:110px!important;height:46px;font-size:18px;text-align:center!important}
+  }
   /* Chon kho khi lap phieu dieu chuyen (viec 1a/1b) */
   .wh-fixed{display:inline-flex;align-items:center;gap:8px;min-height:42px;padding:8px 12px;border-radius:11px;
     border:1.5px solid var(--green-line);background:var(--green-bg);font-size:13.5px;font-weight:700;color:var(--ink)}
@@ -650,10 +738,22 @@
       </button>
       <div class="pt" id="pageTitle">—</div>
       <div class="loc-chip" id="locChip"><span class="g"></span><span id="locText">—</span></div>
+      <button class="bellbtn" id="bellBtn" onclick="toggleNotifPop()" title="Thông báo" aria-label="Thông báo">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+      </button>
       <button class="topbar-dark" id="darkToggle" onclick="toggleDark()" title="Chuyển nền tối / sáng" aria-label="Chuyển nền tối sáng">🌙</button>
     </header>
     <div class="content"><div class="content-inner" id="view"></div></div>
   </div>
+</div>
+
+<div class="notif-scrim" id="notifScrim" onclick="closeNotifPop()"></div>
+<div class="notif-pop" id="notifPop">
+  <div class="notif-h"><span class="t">Thông báo</span>
+    <button class="btn btn-ghost btn-sm" id="notifReadAll" onclick="markAllNotifRead()">Đánh dấu đã đọc</button>
+    <button class="btn btn-ghost btn-sm" onclick="closeNotifPop()" aria-label="Đóng">✕</button></div>
+  <div class="notif-list" id="notifList"></div>
+  <div class="notif-f" id="notifFoot"></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -1197,6 +1297,16 @@ function viewHasTyped(){try{return Array.prototype.some.call(document.querySelec
   i=>i.type!=='file'&&i.type!=='checkbox'&&i.type!=='radio'&&String(i.value||'').trim()!=='');}catch(e){return false;}}
 function inEntry(){return !!(counting||shiftEntry||ocrPreviewOpen||typingNow()||viewHasTyped());}
 // Chữ ký dữ liệu để phát hiện có thay đổi thật (thêm/sửa/xóa/duyệt) sau mỗi lần tải ngầm
+// Chi tai bang notifications — dung cho luc app chay nen: nhe hon dbLoadAll rat nhieu
+async function loadNotifsOnly(){
+  if(!sb)return false;
+  try{
+    const {data,error}=await sb.from('notifications').select('*').order('created_at',{ascending:false}).limit(200);
+    if(error||!data)return false;
+    notifications=data.map(r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,message:r.message,kind:r.kind,by:r.created_by,read:!!r.read_flag,time:fmt(r.created_at)}));
+    return true;
+  }catch(e){console.warn('loadNotifsOnly',e);return false;}
+}
 function syncSig(){try{return [submissions,transfers,receipts,closings,spotChecks,shifts,notifications,trReqs]
   .map(a=>Array.isArray(a)?a.length+':'+JSON.stringify(a).length:'0').join('|')+'|op'+Object.keys(openingStock||{}).length;}catch(e){return '';}}
 async function fetchAllRows(table,cols){
@@ -1261,12 +1371,18 @@ function dbSubscribe(){
   // (2) Đồng bộ nhẹ 45s: chỉ TẢI dữ liệu ngầm. TUYỆT ĐỐI KHÔNG tự vẽ lại (tránh nhảy màn).
   //     Nếu có thay đổi thật -> chỉ hiện nút "Có dữ liệu mới" để người dùng chủ động bấm.
   window._pollT=setInterval(async()=>{
-    if(!session||document.visibilityState!=='visible')return;
+    if(!session)return;
+    // App chạy nền (đổi tab / khóa màn): KHÔNG tải lại toàn bộ, chỉ kiểm thông báo.
+    // Trước đây thoát luôn nên thông báo chỉ đến khi đang nhìn màn hình — gần như vô dụng.
+    if(document.visibilityState!=='visible'){
+      try{if(await loadNotifsOnly())notifyTodoChange();}catch(e){}
+      return;
+    }
     try{
       const before=syncSig();
       await dbLoadAll();
       if(syncSig()!==before)showFreshPill();   // có gì mới -> hiện nút; không đổi -> im lặng
-      notifyTodoChange();                       // và bắn thông báo về điện thoại nếu việc của mình tăng lên
+      notifyTodoChange();                       // và bắn thông báo về máy nếu có thông báo / việc mới
     }catch(e){console.warn('sync',e);}
   },45000);
   // (3) Quay lại tab -> tải ngầm; có mới thì hiện nút, KHÔNG tự vẽ lại
@@ -1457,6 +1573,11 @@ function enterApp(){
   activeTab=ROLES[session.role].tabs[0];renderNav();
   $('#view').innerHTML='<div class="empty"><div class="big">Đang tải dữ liệu…</div></div>';
   dbLoadAll().then(()=>{if(pendingKK){try{applyDeepLinkKK(pendingKK);}catch(e){console.error(e);}pendingKK=null;}renderView();dbSubscribe();
+    try{_notifSeen=new Set(myNotifs().map(x=>x.id));paintBell();}catch(e){}
+    setTimeout(()=>{   // lần đầu vào app: mời bật thông báo nếu đang có việc chờ mình
+      try{if(('Notification' in window)&&Notification.permission==='default'&&myTodoCount()>0)
+        toast('🔔 Bấm hình chuông trên đầu trang để bật báo về máy khi có phiếu mới');}catch(e){}
+    },2600);
     if(session.role==='giam_sat'||session.role==='bep_truong'){
       const p=curPeriod();const ld=lastDayVN(p);
       setTimeout(()=>toast(`🗓 Kỳ kiểm kê tháng ${periodVN(p)} · hạn chốt ${ld.str}. Nhớ cập nhật số liệu để kế toán duyệt.`),500);
@@ -3323,32 +3444,61 @@ function dcRequestForm(v,kind){
     listWrap.appendChild(el('div',null,`<div style="font-weight:800;font-size:13px;margin:16px 0 4px">Hàng đang có ở ${whName(p,s)} <span style="color:var(--muted);font-weight:500">· ${rows.length} mã</span></div>
       <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px">Tồn <b>ước tính</b> = tồn đầu kỳ + nhập mua + ĐC đến − ĐC đi. Chưa trừ phần đã bán ra, nên chỉ để tham khảo khi chọn hàng.</div>`));
     if(!rows.length){listWrap.appendChild(el('div','empty',`<div class="big">${whName(p,s)} chưa có hàng</div><div>Chưa có tồn đầu kỳ và chưa có phát sinh nhập trong kỳ ${periodVN(per)}.</div>`));act.style.display='none';return;}
-    const sw=el('div','search-wrap');sw.style.margin='0 0 10px';
+    const sw=el('div','search-wrap');sw.style.margin='0 0 8px';
     const si=el('input');si.placeholder='Tìm theo mã hoặc tên hàng… ('+rows.length+' mã)';sw.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>';
     sw.appendChild(si);listWrap.appendChild(sw);
-    const w=el('div','tbl-wrap');w.style.cssText='max-height:440px;overflow:auto';const tbl=el('table');
-    tbl.innerHTML=`<thead><tr><th>Tên hàng</th><th>ĐVT</th><th class="num">Tồn ước tính</th><th class="num">${kind==='huy'?'SL hủy':'SL xin'}</th><th>HSD (ghi chú)</th></tr></thead>`;
+    // Viec 5: loc nhanh ve DUNG nhung ma da go so, de ra soat truoc khi gui
+    const fbar=el('div');fbar.style.cssText='display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px';
+    const bOnly=el('button','chip');bOnly.type='button';
+    let onlyPicked=false;
+    fbar.appendChild(bOnly);listWrap.appendChild(fbar);
+    const w=el('div','tbl-wrap picklist');const tbl=el('table');
+    tbl.innerHTML=`<thead><tr><th>Tên hàng</th><th>ĐVT</th><th class="num">Tồn ước tính</th><th class="num">${kind==='huy'?'SL hủy':'SL xin'}</th></tr></thead>`;
     const tb=el('tbody');
+    const q3=x=>String(Math.round((Number(x)||0)*1000)/1000);
     rows.forEach(r=>{
-      const tr=el('tr',null,`<td><div class="cell-strong">${r.name}</div><div class="cell-sub tnum">${r.code}</div></td>
-        <td><span class="badge badge-uom">${r.uom}</span></td>
-        <td class="num tnum" style="color:var(--muted)">${r.ton}</td>
-        <td class="num"><input class="input q" type="number" step="any" min="0" style="width:110px;text-align:right" placeholder="0"></td>
-        <td><input class="input e" style="width:150px" placeholder="—"></td>`);
+      // Duoi 640px cac cot DVT / Ton bi an di, nen phai gop san vao dong phu duoi ten hang
+      const tr=el('tr',null,`<td class="c-name"><div class="cell-strong">${r.name}</div>
+          <div class="cell-sub"><span class="tnum">${r.code}</span><span class="only-sm"> · ${r.uom||'—'} · tồn ~${q3(r.ton)}</span></div></td>
+        <td class="c-uom"><span class="badge badge-uom">${r.uom}</span></td>
+        <td class="c-ton num tnum" style="color:var(--muted)">${q3(r.ton)}</td>
+        <td class="c-qty num"><div class="qtybox">
+          <button type="button" class="stepbtn minus" aria-label="Bớt">−</button>
+          <input class="input q" type="number" step="any" min="0" inputmode="decimal" style="width:110px;text-align:right" placeholder="0">
+          <button type="button" class="stepbtn plus" aria-label="Thêm">+</button></div></td>`);
       tr.dataset.k=vnNorm(r.code)+'|'+vnNorm(r.name);   // khoa tim khong dau (viec 4)
-      const q=tr.querySelector('.q'),e2=tr.querySelector('.e');
-      q.value=picked[r.code]?picked[r.code].qty:'';e2.value=picked[r.code]?picked[r.code].exp:'';
+      const q=tr.querySelector('.q');
+      q.value=picked[r.code]?picked[r.code].qty:'';
       const upd=()=>{const val=q.value;
         if(val===''||Number(val)<=0){delete picked[r.code];}
-        else picked[r.code]={qty:Number(val),exp:e2.value.trim(),name:r.name,uom:r.uom,ton:r.ton};
+        else picked[r.code]={qty:Number(val),exp:'',name:r.name,uom:r.uom,ton:r.ton};
+        tr.classList.toggle('on',!!picked[r.code]);
         tr.style.background=picked[r.code]?'var(--green-bg)':'';
         if(picked[r.code]&&Number(val)>Number(r.ton))q.style.color='var(--red)';else q.style.color='';
-        updCnt();};
-      q.oninput=upd;e2.oninput=upd;upd();
+        updCnt();applyFilter();};
+      // Nut −/+ chi hien tren dien thoai: ngon tay bam nut de hon go ban phim so
+      const step=d=>{const cur=Number(q.value)||0;const nx=Math.round((cur+d)*1000)/1000;
+        q.value=nx>0?nx:'';upd();};
+      tr.querySelector('.minus').onclick=()=>step(-1);
+      tr.querySelector('.plus').onclick=()=>step(1);
+      q.oninput=upd;upd();
       tb.appendChild(tr);});
     tbl.appendChild(tb);w.appendChild(tbl);listWrap.appendChild(w);
-    si.oninput=()=>{const qq=vnNorm(si.value);[...tb.children].forEach(tr=>{tr.style.display=(!qq||(tr.dataset.k||'').indexOf(qq)>=0)?'':'none';});};
-    updCnt();
+    function applyFilter(){
+      const qq=vnNorm(si.value);let shown=0;
+      [...tb.children].forEach(tr=>{
+        const hitQ=!qq||(tr.dataset.k||'').indexOf(qq)>=0;
+        const hitP=!onlyPicked||tr.classList.contains('on');
+        const ok=hitQ&&hitP;tr.style.display=ok?'':'none';if(ok)shown++;});
+      const nk=Object.keys(picked).length;
+      bOnly.textContent=onlyPicked?('◀ Xem lại đủ '+rows.length+' mã'):('Chỉ xem '+nk+' mã đã chọn');
+      bOnly.classList.toggle('active',onlyPicked);
+      bOnly.disabled=!nk&&!onlyPicked;bOnly.style.opacity=(!nk&&!onlyPicked)?'.45':'';
+      if(onlyPicked&&!shown){onlyPicked=false;applyFilter();}
+    }
+    bOnly.onclick=()=>{onlyPicked=!onlyPicked;applyFilter();};
+    si.oninput=()=>applyFilter();
+    applyFilter();
   }
   async function submitReq(){
     const codes=Object.keys(picked);
@@ -3413,7 +3563,7 @@ function dcChoDuyet(v){
   const card=el('div','card');
   card.appendChild(el('div','card-h',`<div><span class="ct">Phiếu chờ tôi duyệt</span><div class="cs">Duyệt xong hàng mới trừ kho nguồn và cộng kho nhận, tính vào kỳ theo NGÀY DUYỆT</div></div><span class="badge ${list.length?'badge-wait':'badge-soft'}">${list.length}</span>`));
   const body=el('div');card.appendChild(body);v.appendChild(card);
-  if(!list.length){body.appendChild(el('div','empty',`<div class="big">Không có phiếu nào chờ mình</div><div>Khi kho khác xin hàng của kho mình, hoặc đẩy hàng sang kho mình, phiếu sẽ hiện ở đây.</div>`));return;}
+  if(!list.length){body.appendChild(el('div','empty',`<div class="big">Không có phiếu nào chờ mình</div><div>Khi kho khác xin hàng của kho mình, phiếu sẽ hiện ở đây.</div>`));return;}
   list.forEach(r=>body.appendChild(dcReqCard(r,true)));
 }
 function dcReqCard(r,canAct){
@@ -3429,32 +3579,67 @@ function dcReqCard(r,canAct){
   </div>
   <div style="font-size:12.5px;margin-bottom:8px">${dcStepLine(r)}</div>
   ${r.reason?`<div style="font-size:12.5px;color:var(--muted);margin-bottom:8px">Lý do: <b>${r.reason}</b></div>`:''}`));
-  const w=el('div','tbl-wrap');const tbl=el('table');
-  tbl.innerHTML=`<thead><tr><th>Tên hàng</th><th>ĐVT</th><th class="num">SL xin</th>${canAct?'<th class="num">SL thực giao</th>':'<th class="num">SL duyệt</th>'}<th>HSD</th></tr></thead>`;
-  const tb=el('tbody');const inputs={};
-  codes.forEach(c=>{const it=r.items[c];
-    const tr=el('tr',null,`<td><div class="cell-strong">${it.name||c}</div><div class="cell-sub tnum">${c}</div></td>
-      <td><span class="badge badge-uom">${it.uom||''}</span></td>
-      <td class="num tnum">${it.qtyReq}</td>
-      <td class="num">${canAct?'<input class="input q" type="number" step="any" min="0" max="'+it.qtyReq+'" style="width:110px;text-align:right">':'<span class="cell-strong tnum">'+(it.qtyOk!=null?it.qtyOk:it.qtyReq)+'</span>'}</td>
-      <td style="font-size:12px;color:var(--muted)">${it.exp||'—'}</td>`);
-    if(canAct){const q=tr.querySelector('.q');q.value=(it.qtyOk!=null?it.qtyOk:it.qtyReq);inputs[c]=q;
-      // Cho được nhiều nhất bằng số đã xin — chỉ được hạ xuống theo thực tế, không được vống lên
-      const cap=Number(it.qtyReq)||0;
-      q.oninput=()=>{if(Number(q.value)>cap){q.value=cap;q.style.color='var(--red)';toast('Không cho quá số đã xin ('+cap+' '+(it.uom||'')+')');}else q.style.color='';};}
-    tb.appendChild(tr);});
-  tbl.appendChild(tb);w.appendChild(tbl);wrap.appendChild(w);
+  /* Bảng chi tiết mã KHÔNG dựng sẵn nữa (việc 10).
+     Trước đây mọi phiếu bung hết bảng: 3 phiếu 45 mã = màn cao 5740px, giám sát phải cuộn
+     ~7 màn hình chỉ để bấm một nút. Giờ chỉ dựng khi bấm "Sửa số" hoặc "Xem chi tiết". */
+  const tblHost=el('div');tblHost.hidden=true;wrap.appendChild(tblHost);
+  const inputs={};let built=false;
+  function buildTable(){
+    if(built)return;built=true;
+    const w=el('div','tbl-wrap reqtbl');const tbl=el('table');
+    tbl.innerHTML=`<thead><tr><th>Tên hàng</th><th>ĐVT</th><th class="num">SL xin</th>${canAct?'<th class="num">SL thực giao</th>':'<th class="num">SL duyệt</th>'}<th>HSD</th></tr></thead>`;
+    const tb=el('tbody');
+    codes.forEach(c=>{const it=r.items[c];
+      const tr=el('tr',null,`<td class="c-name"><div class="cell-strong">${it.name||c}</div>
+          <div class="cell-sub"><span class="tnum">${c}</span><span class="only-sm"> · ${it.uom||'—'} · xin ${it.qtyReq}</span></div></td>
+        <td class="c-uom"><span class="badge badge-uom">${it.uom||''}</span></td>
+        <td class="c-req num tnum">${it.qtyReq}</td>
+        <td class="c-ok num">${canAct?'<input class="input q" type="number" step="any" min="0" inputmode="decimal" max="'+it.qtyReq+'" style="width:110px;text-align:right">':'<span class="cell-strong tnum">'+(it.qtyOk!=null?it.qtyOk:it.qtyReq)+'</span>'}</td>
+        <td class="c-exp" style="font-size:12px;color:var(--muted)">${it.exp||'—'}</td>`);
+      if(canAct){const q=tr.querySelector('.q');q.value=(it.qtyOk!=null?it.qtyOk:it.qtyReq);inputs[c]=q;
+        // Cho được nhiều nhất bằng số đã xin — chỉ được hạ xuống theo thực tế, không được vống lên
+        const cap=Number(it.qtyReq)||0;
+        q.oninput=()=>{if(Number(q.value)>cap){q.value=cap;q.style.color='var(--red)';toast('Không cho quá số đã xin ('+cap+' '+(it.uom||'')+')');}else q.style.color='';};}
+      tb.appendChild(tr);});
+    tbl.appendChild(tb);w.appendChild(tbl);tblHost.appendChild(w);
+  }
+  function showTable(){buildTable();tblHost.hidden=false;}
+  if(!canAct){
+    // Phiếu chỉ để xem: ít mã thì mở luôn, nhiều mã thì thu lại cho đỡ dài màn
+    if(codes.length<=6)showTable();
+    else{
+      const bMore=el('button','btn btn-ghost btn-sm','▾ Xem chi tiết '+codes.length+' mã');
+      bMore.style.marginTop='6px';
+      bMore.onclick=()=>{if(tblHost.hidden){showTable();bMore.textContent='▴ Thu gọn';}
+        else{tblHost.hidden=true;bMore.textContent='▾ Xem chi tiết '+codes.length+' mã';}};
+      wrap.appendChild(bMore);
+    }
+  }
   if(canAct){
     const bar=el('div');bar.style.cssText='display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;align-items:center';
     if(lock.length){
       bar.appendChild(el('div','note',`<span>🔒 Không duyệt được — ${lock.join(' · ')}. Điều chuyển phải xong TRƯỚC khi mở kỳ kiểm kê. Xử lý phiếu kiểm kê xong (hoặc nhờ kế toán xóa kỳ đã mở) rồi quay lại.</span>`));
     }else{
-      const bOk=el('button','btn btn-primary','✓ Duyệt & ghi sổ');
+      // Trường hợp phổ biến nhất: giao đúng số đã xin -> MỘT chạm, không phải cuộn bảng
+      const nOk=codes.length;
+      const bFull=el('button','btn btn-primary','✓ Duyệt đủ '+nOk+' mã');
+      bFull.onclick=()=>{
+        const where=r.toPlant?whName(r.toPlant,r.toSloc):'hủy / hao hụt';
+        if(!confirm('Duyệt phiếu '+r.id+'?\n\nGiao ĐỦ số đã xin cho '+nOk+' mã → '+where+'.\nHàng sẽ bị trừ khỏi '+whName(r.fromPlant,r.fromSloc)+' ngay khi duyệt.'))return;
+        const qs={};codes.forEach(c=>qs[c]=Number(r.items[c].qtyReq)||0);
+        approveTransferReq(r,qs);
+      };
+      const bEdit=el('button','btn btn-ghost','✎ Sửa số rồi duyệt');
+      const bOk=el('button','btn btn-primary','✓ Duyệt với số đã sửa');bOk.hidden=true;
+      bEdit.onclick=()=>{showTable();bEdit.hidden=true;bFull.hidden=true;bOk.hidden=false;
+        hint.textContent='Hạ "SL thực giao" theo hàng có thật. Ghi 0 là mã đó không giao. Không cho ghi quá số đã xin.';};
       bOk.onclick=()=>{const qs={};Object.keys(inputs).forEach(c=>qs[c]=Number(inputs[c].value||0));approveTransferReq(r,qs);};
       const bNo=el('button','btn btn-ghost','✕ Từ chối');bNo.style.color='var(--red)';
       bNo.onclick=()=>rejectTransferReq(r);
-      bar.appendChild(bOk);bar.appendChild(bNo);
-      bar.appendChild(el('span','',`<span style="font-size:12px;color:var(--muted)">Sửa được cột <b>SL thực giao</b> trước khi duyệt. Ghi số 0 là mã đó không giao.</span>`));
+      bar.appendChild(bFull);bar.appendChild(bEdit);bar.appendChild(bOk);bar.appendChild(bNo);
+      const hint=el('span');hint.style.cssText='font-size:12px;color:var(--muted);flex-basis:100%';
+      hint.textContent='Giao thiếu so với số xin thì bấm "Sửa số rồi duyệt".';
+      bar.appendChild(hint);
     }
     wrap.appendChild(bar);
   }else if(r.status==='Từ chối'&&r.rejectNote){
@@ -5914,6 +6099,100 @@ async function pushLocal(title,body,tag){
     return true;
   }catch(e){console.warn('notify',e);return false;}
 }
+/* ================== CHUÔNG THÔNG BÁO ==================
+   Thông báo nằm ở bảng `notifications`, gắn theo kho (plant_code + sloc_code).
+   TRẠNG THÁI ĐÃ ĐỌC LƯU TRÊN MÁY TỪNG NGƯỜI, không dùng cột read_flag của bảng:
+   read_flag dùng chung cho mọi người, ai bấm trước là người khác mất thông báo.
+   Đổi máy thì đọc lại từ đầu — chấp nhận được, đổi lại không phải thêm bảng trên Supabase. */
+const NOTIF_READ='kk_notif_read_v1';
+function notifReadSet(){try{const a=JSON.parse(localStorage.getItem(NOTIF_READ)||'[]');
+  return new Set(Array.isArray(a)?a:[]);}catch(e){return new Set();}}
+function notifMarkRead(ids){try{const st=notifReadSet();(ids||[]).forEach(i=>st.add(i));
+  // giữ tối đa 500 id gần nhất cho khỏi phình localStorage
+  localStorage.setItem(NOTIF_READ,JSON.stringify([...st].slice(-500)));}catch(e){}}
+// Thông báo dành cho MÌNH: field user -> đúng kho được gán; kế toán/admin -> xem hết
+function myNotifs(){
+  if(!session)return [];
+  let arr=notifications||[];
+  if(!isPrivileged()){
+    const mine=new Set((session.wh||[]).map(w=>w.plant+'|'+w.sloc));
+    // dữ liệu cũ có thể gán 'cả plant' (sloc rỗng) -> chấp nhận khớp theo plant
+    const myP=new Set((session.plants||[]).filter(x=>x!=='*'));
+    arr=arr.filter(x=>mine.has(x.plant+'|'+x.sloc)||(!x.sloc&&myP.has(x.plant)));
+  }
+  return arr.slice(0,80);
+}
+function unreadNotifs(){const st=notifReadSet();return myNotifs().filter(x=>!st.has(x.id));}
+const NOTIF_ICO={transfer:'🔄',reject:'⚠️',countlist:'🗂',reconcile:'🔁'};
+const NOTIF_TITLE={transfer:'Phiếu điều chuyển',reject:'Biên bản kiểm kê bị từ chối',
+  countlist:'Kế toán đã mở kỳ kiểm kê',reconcile:'Kết quả đối chiếu chốt tồn'};
+function paintBell(){
+  const b=$('#bellBtn');if(!b)return;
+  const nUn=unreadNotifs().length;
+  const old=b.querySelector('.bdot');if(old)old.remove();
+  if(nUn){const d=el('span','bdot',nUn>99?'99+':String(nUn));b.appendChild(d);}
+  b.title=nUn?(nUn+' thông báo chưa đọc'):'Thông báo';
+}
+function toggleNotifPop(){
+  const pop=$('#notifPop');
+  if(pop.classList.contains('show'))closeNotifPop(); else openNotifPop();
+}
+function closeNotifPop(){$('#notifPop').classList.remove('show');$('#notifScrim').classList.remove('show');}
+function openNotifPop(){
+  const pop=$('#notifPop'),list=$('#notifList'),foot=$('#notifFoot');
+  const st=notifReadSet();const arr=myNotifs();
+  list.innerHTML='';
+  if(!arr.length){
+    list.appendChild(el('div','empty','<div class="big">Chưa có thông báo</div><div>Khi phiếu của bạn được duyệt / từ chối, hoặc kế toán mở kỳ kiểm kê, thông báo sẽ hiện ở đây.</div>'));
+  }else arr.forEach(x=>{
+    const un=!st.has(x.id);
+    const it=el('button','notif-it'+(un?' unread':''));it.type='button';
+    it.innerHTML=`<div class="ic">${NOTIF_ICO[x.kind]||'🔔'}</div>
+      <div class="bd"><div class="ti">${NOTIF_TITLE[x.kind]||'Thông báo'}</div>
+        <div class="ms">${String(x.message||'').replace(/</g,'&lt;')}</div>
+        <div class="tm">${whName(x.plant,x.sloc)} · ${x.by||''} · ${x.time||''}</div></div>`;
+    if(un)it.appendChild(el('div','nd'));
+    it.onclick=()=>{notifMarkRead([x.id]);paintBell();closeNotifPop();gotoNotif(x);};
+    list.appendChild(it);
+  });
+  // Chân panel: nút bật thông báo điện thoại nếu chưa cấp quyền
+  foot.innerHTML='';
+  if(!('Notification' in window)){
+    foot.appendChild(el('span','',`<span style="font-size:11.5px;color:var(--muted)">Trình duyệt này không hỗ trợ thông báo hệ thống.</span>`));
+  }else if(Notification.permission==='granted'){
+    foot.appendChild(el('span','',`<span style="font-size:11.5px;color:var(--green)">🔔 Đã bật báo về máy — có phiếu mới sẽ hiện thông báo kể cả khi đang mở app khác.</span>`));
+  }else if(Notification.permission==='denied'){
+    foot.appendChild(el('span','',`<span style="font-size:11.5px;color:var(--muted)">Thông báo đang bị chặn. Mở phần cài đặt của trình duyệt cho trang này để bật lại.</span>`));
+  }else{
+    const bOn=el('button','btn btn-brand btn-sm','🔔 Bật báo về máy');
+    bOn.onclick=async()=>{const ok=await askNotifyPermission(false);
+      if(ok){toast('✓ Đã bật thông báo — có phiếu mới máy sẽ báo');pushLocal('Kiểm kê F&B','Đã bật thông báo. Có phiếu chờ duyệt là máy sẽ báo ngay.','test');}
+      else toast('Chưa bật được thông báo');
+      openNotifPop();};
+    foot.appendChild(bOn);
+    foot.appendChild(el('span','',`<span style="font-size:11.5px;color:var(--muted)">Bật để máy báo như tin nhắn khi có phiếu chờ duyệt.</span>`));
+  }
+  pop.classList.add('show');$('#notifScrim').classList.add('show');
+  paintBell();
+}
+// Bấm vào một thông báo -> nhảy tới đúng màn liên quan
+function gotoNotif(x){
+  const tabs=(ROLES[session.role]||{}).tabs||[];
+  const go=(t,k)=>{if(tabs.indexOf(t)<0)return false;activeTab=t;if(k){hubOpen=hubOpen||{};hubOpen[t]=k;}renderNav();renderView();return true;};
+  if(x.kind==='transfer'){
+    // "Vào Chờ tôi duyệt" = phiếu người khác gửi tới -> mở màn duyệt.
+    // Còn lại là báo kết quả phiếu của chính mình -> mở màn xem lại phiếu.
+    const canDuyet=String(x.message||'').indexOf('Chờ tôi duyệt')>=0;
+    if(go('dieuchuyen',isViewer()?(canDuyet?'duyet':'theodoi'):(canDuyet?'duyet':'ds')))return;
+  }
+  if(x.kind==='reject'||x.kind==='countlist'){if(go('kiemke',null))return;}
+  if(x.kind==='reconcile'){if(go('opening',null))return;}
+  renderView();
+}
+function markAllNotifRead(){
+  notifMarkRead(myNotifs().map(x=>x.id));paintBell();openNotifPop();
+  toast('Đã đánh dấu đã đọc');
+}
 // Số việc đang chờ CHÍNH MÌNH xử lý — dùng để biết có gì mới đáng báo
 function myTodoCount(){
   try{
@@ -5930,7 +6209,33 @@ function myTodoCount(){
   }catch(e){return 0;}
 }
 let _todoSeen=null;
+let _notifSeen=null;   // tập id thông báo đã thấy ở lần đồng bộ trước
 function notifyTodoChange(){
+  // (a) Thông báo MỚI trong bảng notifications -> báo về máy như tin nhắn
+  try{
+    const cur=myNotifs();
+    const ids=new Set(cur.map(x=>x.id));
+    if(_notifSeen===null){_notifSeen=ids;}
+    else{
+      const fresh=cur.filter(x=>!_notifSeen.has(x.id));
+      _notifSeen=ids;
+      if(fresh.length){
+        const st=notifReadSet();
+        const chuaDoc=fresh.filter(x=>!st.has(x.id));
+        if(chuaDoc.length){
+          const f=chuaDoc[0];
+          pushLocal(NOTIF_TITLE[f.kind]||'Kiểm kê F&B',
+            chuaDoc.length>1?(chuaDoc.length+' thông báo mới. '+String(f.message||'').slice(0,90)):String(f.message||''),
+            'notif');
+          const b=$('#bellBtn');
+          if(b){b.classList.remove('ring');void b.offsetWidth;b.classList.add('ring');}
+          toast('🔔 '+(chuaDoc.length>1?(chuaDoc.length+' thông báo mới'):'Có thông báo mới'));
+        }
+      }
+    }
+    paintBell();
+  }catch(e){console.warn('notifWatch',e);}
+  // (b) Số việc chờ chính mình tăng lên -> nhắc thêm một lần
   const n=myTodoCount();
   if(_todoSeen===null){_todoSeen=n;return;}
   if(n>_todoSeen&&notifyReady()){
