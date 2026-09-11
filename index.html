@@ -396,6 +396,14 @@
     .bellbtn,.topbar-dark{width:36px;height:36px}
     .qty{width:88px}
   }
+  /* Chon tieu kho (kho dem) o man kiem dem */
+  .zone-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:9px 0 2px}
+  .zone-bar .lb{font-size:12px;font-weight:800;color:var(--muted);margin-right:2px}
+  .zone-bar .chip{min-height:36px;padding:0 13px}
+  .zone-bar .btn-sm{min-height:36px}
+  .zone-split{font-size:11.5px;color:var(--muted);margin-top:5px;line-height:1.5}
+  .zone-split b{color:var(--ink)}
+  .zone-split .cur{color:var(--brand-ink)}
   /* Chon ca bang NUT thay vi dropdown — lowtech bam nut de hon mo dropdown roi chon */
   .ca-pick{display:flex;gap:8px;flex-wrap:wrap}
   .ca-pick .chip{min-height:42px;padding:0 16px;font-size:13.5px}
@@ -941,6 +949,40 @@ let trReqs=[];  // phiếu yêu cầu điều chuyển / hủy hao hụt (bảng
 const DRAFT_LS='kk_drafts_v1';
 let _draftsRestored=0;
 function draftCount(){let n=0;try{Object.values(drafts||{}).forEach(d=>Object.values((d&&d.items)||{}).forEach(v=>{if(v!==''&&v!=null)n++;}));}catch(e){}return n;}
+/* Nhap kiem dem: d.items LUON LA TONG (moi code cu dung .items nen khong phai sua gi),
+   d.zones = {"Quay nuoc":{ma:so}, ...} la chi tiet tung tieu kho.
+   Kho khong khai tieu kho thi d.zones khong ton tai -> chay y het truoc day. */
+function zoneSum(d,code){
+  if(!d||!d.zones)return null;
+  let t=null;
+  Object.keys(d.zones).forEach(z=>{const v=d.zones[z]&&d.zones[z][code];
+    if(v===''||v==null)return;const x=Number(v);if(isNaN(x))return;t=(t==null?0:t)+x;});
+  return t==null?null:Math.round(t*1000)/1000;
+}
+/* Doi nhap {ten:{ma:so}} -> mang [{name,items}] giu dung thu tu tieu kho da khai.
+   Bo khu khong co so nao de khong luu rac. */
+function zonesForSave(d,zs){
+  if(!d||!d.zones||!zs||!zs.length)return null;
+  const out=[];
+  zs.forEach(z=>{
+    const src=d.zones[z]||{};const it={};
+    Object.keys(src).forEach(c=>{const v=src[c];if(v===''||v==null)return;const x=Number(v);if(!isNaN(x))it[c]=x;});
+    if(Object.keys(it).length)out.push({name:z,items:it});
+  });
+  return out.length?out:null;
+}
+/* Nguoc lai: tu phieu da gui dung lai nhap de dem bo sung */
+function zonesToDraft(zones){
+  const o={};
+  (zones||[]).forEach(z=>{if(!z||!z.name)return;const it={};
+    Object.keys(z.items||{}).forEach(c=>{it[c]=String(z.items[c]);});o[z.name]=it;});
+  return o;
+}
+function zoneRecalc(d,code){
+  const t=zoneSum(d,code);
+  if(t==null)delete d.items[code]; else d.items[code]=String(t);
+  return t;
+}
 function saveDrafts(){try{localStorage.setItem(DRAFT_LS,JSON.stringify({at:Date.now(),d:drafts}));}catch(e){}}
 let _dsT=null;function saveDraftsSoon(){clearTimeout(_dsT);_dsT=setTimeout(saveDrafts,400);}
 function loadDrafts(){
@@ -955,6 +997,47 @@ window.addEventListener('beforeunload',e=>{
   if(!n&&!(typeof shiftEntry!=='undefined'&&shiftEntry)&&!(typeof ocrPreviewOpen!=='undefined'&&ocrPreviewOpen))return;
   e.preventDefault();e.returnValue='';return '';
 });
+/* ===== TIEU KHO (kho dem) =====
+   Mot kho SAP co the chia thanh nhieu tieu kho de chia viec luc go so.
+   Tieu kho KHONG phai kho that: khong co ton rieng, khong nhap kho rieng,
+   khong dieu chuyen. Hang ve van ghi nhan o kho SAP; hang be qua lai giua
+   cac tieu kho khong anh huong gi vi ghi nhan cuoi cung la TONG:
+       So kiem ke kho SAP = tieu kho 1 + tieu kho 2 + ...
+   countZones: key plant|sloc -> ["Quay nuoc","Quay do an"] */
+let countZones={};
+/* Cot submissions.zones co the CHUA duoc tao (admin chua chay SQL).
+   Khi do van phai gui duoc phieu — chi mat phan chi tiet tieu kho. */
+let zoneColOK=true;
+function isMissingZoneCol(err){
+  const m=String((err&&(err.message||err.hint||err.details))||'');
+  return /zones/i.test(m)&&/(column|schema cache|does not exist)/i.test(m);
+}
+function warnZoneCol(){
+  if(warnZoneCol._done)return;warnZoneCol._done=true;
+  toast('⚠ Máy chủ chưa có cột lưu chi tiết tiểu kho — phiếu vẫn gửi bình thường, nhưng chưa lưu được số tách theo khu. Báo admin chạy SQL.');
+}
+function zonesOf(plant,sloc){const a=countZones[plant+'|'+sloc];return Array.isArray(a)?a:[];}
+function canEditZones(plant){
+  if(!session)return false;
+  if(session.role==='admin')return true;
+  if(session.role!=='giam_sat')return false;
+  return (session.plants||[]).indexOf('*')>=0||(session.plants||[]).indexOf(plant)>=0;
+}
+async function saveZones(plant,sloc,list){
+  countZones[plant+'|'+sloc]=list;
+  if(!sb)return true;
+  try{
+    const {error}=await sb.from('count_zones').upsert({plant_code:plant,sloc_code:sloc,zones:list,
+      updated_by:session?session.name:'',updated_at:new Date().toISOString()},{onConflict:'plant_code,sloc_code'});
+    if(error){console.error('count_zones',error);
+      errBox('Không lưu được danh sách tiểu kho',[
+        'Danh sách <b>chưa</b> lên máy chủ — máy khác sẽ không thấy tiểu kho vừa khai.',
+        'Nếu bảng <b>count_zones</b> chưa được tạo thì báo admin chạy SQL.',
+        'Số đã đếm vẫn giữ nguyên, không mất.'],'Bảng: count_zones\n'+(error.message||'')+(error.code?'\nMã lỗi: '+error.code:''));
+      return false;}
+    return true;
+  }catch(e){console.error(e);return false;}
+}
 let openingStock={};   // key plant|sloc -> {items:{code:qty}, fromId, at, by}
 let receipts=[];       // nhập kho mua mới: {id,plant,sloc,code,name,uom,qty,date,period,note,by,time}
 let reports=[];        // báo cáo quản trị do Kế toán viên tạo (Claude) -> Kế toán trưởng đọc
@@ -1059,6 +1142,7 @@ async function insSubmissionSafe(sub){
   const tried=[];
   for(let i=0;i<20;i++){
     const row={id:sub.id,plant_code:sub.plant,sloc_code:sub.sloc,user_name:sub.user,role:sub.role,status:sub.status,count:sub.count,items:sub.items,period:sub.period};
+    if(zoneColOK&&sub.zones&&sub.zones.length)row.zones=sub.zones;   // chi tiet theo tieu kho
     tried.push(sub.id);
     const {data,error}=await sb.from('submissions').insert(row).select();
     if(!error){
@@ -1067,6 +1151,10 @@ async function insSubmissionSafe(sub){
         errBox('Máy chủ KHÔNG nhận phiếu kiểm kê',['Máy chủ nhận yêu cầu nhưng <b>không tạo dòng nào</b> — do quyền (RLS) chưa cho tài khoản này gửi phiếu.','Số đã đếm <b>vẫn còn ở nháp</b> trên máy này, tải lại trang vẫn thấy.','Chụp màn hình này gửi admin để cấp quyền, rồi gửi lại.'],'Bảng: submissions\nMã phiếu: '+sub.id+'\nKho: '+whName(sub.plant,sub.sloc)+' ('+sub.plant+'/'+sub.sloc+')\nKỳ: '+(sub.period||'')+'\nSố mã: '+sub.count+'\nSố dòng tạo: 0');
         return false;}
       return true;
+    }
+    if(isMissingZoneCol(error)&&row.zones!==undefined){
+      zoneColOK=false;delete sub.zones;warnZoneCol();
+      i--;continue;                     // gui lai ngay, khong kem zones
     }
     const msg=String((error&&(error.message||error.code))||'');
     if(/duplicate|pkey|23505|already exists/i.test(msg)){
@@ -1427,7 +1515,8 @@ async function dbLoadAll(){
     ]);
     // merge mã vật tư mới (do import tồn đầu kỳ thêm) vào danh mục tổng để bền qua các phiên
     (mt.data||[]).forEach(r=>{if(!r||r.code==null)return;const code=String(r.code).trim();if(!code)return;const nm=r.name!=null?String(r.name).trim():'';const um=r.uom!=null?String(r.uom).trim():'';const ex=masterByCode[code];if(!ex){const m={code,name:nm||code,uom:um};masterByCode[code]=m;DATA.materials.push(m);}else if(nm&&(!ex.name||ex.name==='?'||ex.name===code)){ex.name=nm;if(um&&!ex.uom)ex.uom=um;}});
-    submissions=(su.data||[]).map(r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,user:r.user_name,role:r.role,status:r.status,count:r.count,items:r.items||{},period:r.period||(r.created_at?(new Date(r.created_at).getFullYear()+'-'+String(new Date(r.created_at).getMonth()+1).padStart(2,'0')):''),approvedBy:r.approved_by,approvedAt:r.approved_at?fmt(r.approved_at):null,prevOpening:r.prev_opening||null,edits:r.edits||[],time:fmt(r.created_at)}));
+    if(su.data&&su.data.length)zoneColOK=Object.prototype.hasOwnProperty.call(su.data[0],'zones');
+    submissions=(su.data||[]).map(r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,user:r.user_name,role:r.role,status:r.status,count:r.count,items:r.items||{},zones:Array.isArray(r.zones)?r.zones:null,period:r.period||(r.created_at?(new Date(r.created_at).getFullYear()+'-'+String(new Date(r.created_at).getMonth()+1).padStart(2,'0')):''),approvedBy:r.approved_by,approvedAt:r.approved_at?fmt(r.approved_at):null,prevOpening:r.prev_opening||null,edits:r.edits||[],time:fmt(r.created_at)}));
     transfers=(tr.data||[]).map(r=>({date:r.date,code:r.code,name:r.name,uom:r.uom,qty:r.qty,from:r.from_wh,to:r.to_wh,fromKey:r.from_key||null,toKey:r.to_key||null,period:r.period||null,reason:r.reason,user:r.user_name,time:fmt(r.created_at)}));
     shifts=(sh.data||[]).map(r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,date:r.date,ca:r.ca,fromUser:r.from_user,items:r.items||{},count:r.count,status:r.status,receivedBy:r.received_by,receivedAt:r.received_at?fmt(r.received_at):null,time:fmt(r.created_at)}));
     openingStock={};(op.data||[]).forEach(r=>{openingStock[r.plant_code+'|'+r.sloc_code]={items:r.items||{},fromId:r.from_id,at:r.set_at?fmt(r.set_at):'',by:r.set_by};});
@@ -1442,6 +1531,9 @@ async function dbLoadAll(){
         items:r.items||{},reason:r.reason||'',status:r.status||'Chờ duyệt',period:r.period||null,
         by:r.created_by,time:fmt(r.created_at),approvedBy:r.approved_by,approvedAt:r.approved_at?fmt(r.approved_at):null,rejectNote:r.reject_note||''}));
     }catch(e){trReqs=[];console.warn('Chưa có bảng transfer_requests — bỏ qua',e&&e.message);}
+    try{const cz=await sb.from('count_zones').select('*');countZones={};
+      (cz.data||[]).forEach(r=>{countZones[r.plant_code+'|'+r.sloc_code]=Array.isArray(r.zones)?r.zones:[];});
+    }catch(e){countZones={};console.warn('Chưa có bảng count_zones — bỏ qua',e&&e.message);}
     try{const cl2=await sb.from('count_lists').select('*');countLists={};(cl2.data||[]).forEach(r=>{countLists[r.plant_code+'|'+r.sloc_code+'|'+r.period]={items:r.items||{},by:r.created_by,at:r.created_at?fmt(r.created_at):''};});}catch(e){countLists={};console.warn('Chưa có bảng count_lists — bỏ qua',e&&e.message);}
     if(session&&(session.role==='admin'||session.role==='giam_sat')){try{const pr=await sb.from('profiles').select('*').order('created_at',{ascending:false});profiles=pr.data||[];}catch(e){}
       try{const up=await sb.from('user_plants').select('*');userPlants={};userWh={};(up.data||[]).forEach(r=>{
@@ -3008,7 +3100,7 @@ function renderKiemke(v){
     const pr=el('div');pr.style.cssText='display:flex;gap:10px;flex-wrap:wrap';
     const bEd=el('button','btn btn-primary','➕ Đếm bổ sung phiếu này');
     bEd.onclick=()=>{
-      drafts[_pend.plant+'|'+_pend.sloc]={items:{...(_pend.items||{})}};saveDrafts();
+      drafts[_pend.plant+'|'+_pend.sloc]={items:{...(_pend.items||{})},zones:zonesToDraft(_pend.zones)};saveDrafts();
       countEditId=_pend.id;kkMethod='direct';counting={plant:_pend.plant,sloc:_pend.sloc,period:_pend.period};
       renderView();setTimeout(()=>{const c=$('#countCard');if(c)c.scrollIntoView({behavior:'smooth',block:'start'});},60);};
     const bSee=el('button','btn btn-ghost','Xem phiếu');bSee.onclick=()=>showDetail(_pend);
@@ -3182,12 +3274,115 @@ function renderCountSheet(v){
     renderList($('#searchBox')?$('#searchBox').value:'');updateCnt();
   };
   card.appendChild(addBox);
+  /* ---- Hàng chọn TIỂU KHO (kho đếm) ----
+     Kho SAP chia thành nhiều tiểu kho để chia việc lúc gõ số. Số gửi đi vẫn là TỔNG.
+     Kho không khai tiểu kho nào -> hàng này không hiện, màn hình y như trước đây. */
+  const zBar=el('div','zone-bar');tb.appendChild(zBar);
+  function drawZoneBar(){
+    zBar.innerHTML='';
+    const zs=zonesOf(counting.plant,counting.sloc);
+    const canEd=canEditZones(counting.plant);
+    if(!zs.length&&!canEd){zBar.style.display='none';return;}
+    zBar.style.display='';
+    if(zs.length){
+
+      const mk=(name,label)=>{const c=el('button','chip'+(curZone===name?' active':''),label);c.type='button';
+        c.onclick=()=>{curZone=name;drawZoneBar();renderList($('#searchBox')?$('#searchBox').value:'');};
+        zBar.appendChild(c);};
+      mk('','Tất cả');
+      zs.forEach(z=>mk(z,z));
+    }
+    if(canEd){
+      const b=el('button','btn btn-ghost btn-sm',zs.length?'⚙':'⚙ Chia tiểu kho để đếm');
+      b.title='Sửa danh sách tiểu kho';
+      b.onclick=()=>zoneEditor();zBar.appendChild(b);
+    }
+  }
+  // Hộp khai tiểu kho
+  function zoneEditor(){
+    const d=drafts[key];
+    let list0=zonesOf(counting.plant,counting.sloc).slice();
+    const sc=el('div','notif-scrim show');sc.style.zIndex='300';
+    const pop=el('div','notif-pop show');pop.style.zIndex='301';
+    const head=el('div','notif-h');head.innerHTML='<span class="t">Tiểu kho của '+whName(counting.plant,counting.sloc)+'</span>';
+    const bX=el('button','btn btn-ghost btn-sm','✕');bX.onclick=()=>{sc.remove();pop.remove();};
+    head.appendChild(bX);pop.appendChild(head);
+    const body=el('div','notif-list');body.style.padding='12px 15px';pop.appendChild(body);
+    const foot=el('div','notif-f');pop.appendChild(foot);
+    function draw(){
+      body.innerHTML='';
+      body.appendChild(el('div',null,'<div style="font-size:12.5px;color:var(--muted);line-height:1.55;margin-bottom:10px">'
+        +'Chia kho thành các <b>khu vực đếm</b> để mỗi người đếm một khu. Số gửi kế toán vẫn là <b>tổng của tất cả khu</b> — '
+        +'hàng về vẫn ghi ở kho này, hàng bê qua lại giữa các khu không ảnh hưởng gì.</div>'));
+      list0.forEach((z,i)=>{
+        const r=el('div');r.style.cssText='display:flex;gap:8px;align-items:center;margin-bottom:8px';
+        const inp=el('input','input');inp.value=z;inp.placeholder='Tên khu vực đếm';
+        inp.oninput=()=>{list0[i]=inp.value;};
+        const bd=el('button','btn btn-ghost btn-sm','🗑');bd.style.color='var(--red)';
+        bd.onclick=()=>{
+          const nz=(d&&d.zones&&d.zones[z])?Object.values(d.zones[z]).filter(v=>v!==''&&v!=null).length:0;
+          if(nz&&!confirm('Xóa "'+z+'"?\n\n'+nz+' mã đã đếm ở khu này sẽ bị TRỪ khỏi tổng.'))return;
+          list0.splice(i,1);draw();};
+        r.appendChild(inp);r.appendChild(bd);body.appendChild(r);
+      });
+      const bAdd2=el('button','btn btn-ghost btn-sm','＋ Thêm khu vực');
+      bAdd2.onclick=()=>{if(list0.length>=12){toast('Tối đa 12 khu vực');return;}list0.push('');draw();};
+      body.appendChild(bAdd2);
+    }
+    foot.innerHTML='';
+    const bOk=el('button','btn btn-primary btn-sm','Lưu danh sách');
+    bOk.onclick=async()=>{
+      const clean=[];const seen=new Set();
+      for(const z of list0){const t=String(z||'').trim();
+        if(!t)continue;
+        if(seen.has(t.toLowerCase())){toast('Tên "'+t+'" bị trùng');return;}
+        seen.add(t.toLowerCase());clean.push(t);}
+      // Số của khu đã bị xóa phải rời khỏi tổng
+      if(d&&d.zones){
+        Object.keys(d.zones).forEach(z=>{if(clean.indexOf(z)<0)delete d.zones[z];});
+        const cs=new Set();Object.values(d.zones).forEach(o=>Object.keys(o).forEach(c=>cs.add(c)));
+        Object.keys(d.items||{}).forEach(c=>cs.add(c));
+        cs.forEach(c=>zoneRecalc(d,c));
+        saveDrafts();
+      }
+      const ok=await saveZones(counting.plant,counting.sloc,clean);
+      sc.remove();pop.remove();
+      if(clean.indexOf(curZone)<0)curZone=clean.length?clean[0]:'';
+      if(ok)toast(clean.length?('✓ Đã lưu '+clean.length+' khu vực đếm'):'Đã bỏ chia khu vực');
+      renderView();
+    };
+    foot.appendChild(bOk);
+    foot.appendChild(el('span','','<span style="font-size:11.5px;color:var(--muted)">Tên khu do bộ phận tự đặt, VD: Kho · Starbuck · Vé · Vườn</span>'));
+    draw();sc.onclick=()=>{sc.remove();pop.remove();};
+    document.body.appendChild(sc);document.body.appendChild(pop);
+  }
   const listWrap=el('div','list-scroll');const list=el('div');listWrap.appendChild(list);card.appendChild(listWrap);
   v.appendChild(card);
 
   let MATS=plantMats;
   let total=MATS.length;
   let curFilter='all';
+  /* curZone = tieu kho dang go so. '' = xem TONG (khoa o, khong cho go)
+     vi go o che do tong se lam tong lech voi cac tieu kho cong lai. */
+  let curZone=(function(){const zs=zonesOf(counting.plant,counting.sloc);return zs.length?zs[0]:'';})();
+  const hasZones=()=>zonesOf(counting.plant,counting.sloc).length>0;
+  const viewOnly=()=>hasZones()&&!curZone;          // dang o chip "Tat ca"
+  function zGet(code){   // so dang hien trong o nhap
+    if(!hasZones())return items[code];
+    const d=drafts[key];
+    if(!curZone)return items[code];                  // tab Tat ca -> xem tong
+    return d.zones&&d.zones[curZone]?d.zones[curZone][code]:'';
+  }
+  function zSet(code,val){   // ghi so vao dung tieu kho roi tinh lai TONG
+    const d=drafts[key];
+    if(!hasZones()||!curZone){
+      if(val===''||val==null)delete items[code]; else items[code]=val;
+      return;
+    }
+    d.zones=d.zones||{};d.zones[curZone]=d.zones[curZone]||{};
+    if(val===''||val==null)delete d.zones[curZone][code]; else d.zones[curZone][code]=val;
+    zoneRecalc(d,code);                              // items[code] = tong cac tieu kho
+  }
   const unlocked=new Set();   // mã đang mở khóa để sửa (dòng đã nhập mặc định bị khóa)
   function filled(){return Object.values(items).filter(x=>x!==''&&x!=null).length;}
   function updateCnt(){const n=filled();$('#cntNum').textContent=n;$('#cntFill').style.width=Math.min(100,(n/Math.max(1,total))*100*8)+'%';}
@@ -3223,7 +3418,8 @@ function renderCountSheet(v){
       // cụm nhập: [-] [ô số] [+] — nhập xong là KHÓA, muốn sửa phải bấm mở khóa
       const box=el('div','qtybox');
       const bMinus=el('button','stepbtn','−');
-      const inp=el('input','qty'+(has?' filled':'')+(dev?' warn':''));inp.type='number';inp.min='0';inp.step='any';inp.placeholder='0';inp.value=has?items[m.code]:'';inp.inputMode='decimal';
+      const inp=el('input','qty'+(has?' filled':'')+(dev?' warn':''));inp.type='number';inp.min='0';inp.step='any';inp.placeholder='0';inp.inputMode='decimal';
+      {const zv=zGet(m.code);inp.value=(zv==null||zv==='')?'':zv;}
       const bPlus=el('button','stepbtn','+');
       const bLock=el('button','lockbtn','🔓');bLock.type='button';bLock.title='Mở khóa để sửa số';
       function setLock(on){
@@ -3234,21 +3430,43 @@ function renderCountSheet(v){
         bLock.textContent=on?'🔒':'🔓';
       }
       function commit(redrawTags){
-        if(inp.value===''){delete items[m.code];inp.classList.remove('filled');r.classList.remove('on');}
-        else{items[m.code]=inp.value;inp.classList.add('filled');r.classList.add('on');}
+        zSet(m.code,inp.value);
+        const coSo=hasVal(m.code);
+        inp.classList.toggle('filled',inp.value!=='');
+        r.classList.toggle('on',coSo);
         updateCnt();autosaved();saveDraftsSoon(); // lưu nháp xuống máy -> reload vẫn còn số
+        drawSplit();
         if(redrawTags){const d=devHigh(m);inp.classList.toggle('warn',d);}
       }
+      // Dòng nhỏ tách số theo từng tiểu kho — để thấy ngay mình đang góp bao nhiêu vào tổng
+      const split=el('div','zone-split');
+      function drawSplit(){
+        if(!hasZones()){split.style.display='none';return;}
+        split.style.display='';
+        const d=drafts[key];const zs=zonesOf(counting.plant,counting.sloc);
+        const parts=zs.map(z=>{const v=(d.zones&&d.zones[z])?d.zones[z][m.code]:'';
+          const txt=(v===''||v==null)?'—':v;
+          return z===curZone?('<span class="cur">'+z+' <b>'+txt+'</b></span>'):(z+' '+txt);});
+        const t=zoneSum(d,m.code);
+        split.innerHTML=parts.join(' · ')+' · Tổng <b>'+(t==null?'—':t)+'</b>';
+      }
+      drawSplit();
       inp.oninput=()=>commit(false);
       inp.onblur=()=>{renderTagsFor(r,m,inp);
         // Rời ô mà đã có số -> chốt lại, khóa dòng
-        if(hasVal(m.code)){unlocked.delete(m.code);setLock(true);}};
+        if(!viewOnly()&&inp.value!==''){unlocked.delete(m.code);setLock(true);}};
       bLock.onclick=()=>{unlocked.add(m.code);setLock(false);inp.focus();inp.select();};
       bMinus.onclick=()=>{let x=Number(inp.value||0)-1;if(x<0)x=0;inp.value=String(x);commit(true);renderTagsFor(r,m,inp);};
       bPlus.onclick=()=>{let x=Number(inp.value||0)+1;inp.value=String(x);commit(true);renderTagsFor(r,m,inp);};
       box.appendChild(bMinus);box.appendChild(inp);box.appendChild(bPlus);box.appendChild(bLock);
-      setLock(has&&!unlocked.has(m.code));
-      r.appendChild(box);list.appendChild(r);
+      // Chip "Tất cả" chỉ để xem: khóa ô, không cho gõ (gõ ở đây sẽ làm tổng lệch với các khu)
+      if(viewOnly()){inp.readOnly=true;inp.classList.add('locked');
+        bMinus.disabled=bPlus.disabled=true;bMinus.style.opacity=bPlus.style.opacity='.35';
+        bLock.style.display='none';}
+      else setLock(has&&!unlocked.has(m.code));
+      r.appendChild(box);
+      if(hasZones())r.appendChild(split);
+      list.appendChild(r);
     });
   }
   function renderTagsFor(r,m,inp){ // cập nhật badge cảnh báo lệch tại chỗ
@@ -3256,7 +3474,7 @@ function renderCountSheet(v){
     const old=meta.querySelector('.warn-tag');if(old)old.remove();
     if(devHigh(m)){const w=el('span','warn-tag','⚠ lệch lớn');meta.appendChild(w);inp.classList.add('warn');}else{inp.classList.remove('warn');}
   }
-  renderList('');updateCnt();
+  drawZoneBar();renderList('');updateCnt();
   $('#searchBox').oninput=e=>renderList(e.target.value);
   tb.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{tb.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));c.classList.add('active');curFilter=c.dataset.f;renderList($('#searchBox').value);});
 
@@ -3322,14 +3540,27 @@ function renderCountSheet(v){
       if(editing){
         const ed={at:now(),by:session.name,changes:diff};
         const edits=(editing.edits||[]).concat([ed]);
-        const upd=await dbUpd('submissions',{id:editing.id},{items:{...items},count:n,edits});
+        const _zs2=zonesForSave(drafts[key],zonesOf(counting.plant,counting.sloc));
+        const patch={items:{...items},count:n,edits};
+        if(zoneColOK&&_zs2)patch.zones=_zs2;    // giu chi tiet tieu kho cua ca hai nguoi cung dem
+        // Cot zones co the chua duoc tao -> thu truoc bang duong im lang, thieu cot thi bo di
+        if(patch.zones&&sb){
+          const {error:e0}=await sb.from('submissions').update(patch).eq('id',editing.id).select();
+          if(e0&&isMissingZoneCol(e0)){zoneColOK=false;delete patch.zones;warnZoneCol();}
+          else if(!e0){editing.items={...items};editing.count=n;editing.edits=edits;if(_zs2)editing.zones=_zs2;
+            log('Đếm bổ sung phiếu kiểm kê',editing.id+' · '+whName(counting.plant,counting.sloc)+' · '+diff.length+' mã đổi');
+            delete drafts[key];saveDrafts();counting=null;countEditId=null;
+            toast('Đã bổ sung '+diff.length+' mã vào phiếu '+editing.id);renderView();return;}
+        }
+        const upd=await dbUpd('submissions',{id:editing.id},patch);
         if(!upd.ok||upd.count===0){saveDrafts();return;}   // dbUpd đã dựng hộp lỗi
-        editing.items={...items};editing.count=n;editing.edits=edits;
+        editing.items={...items};editing.count=n;editing.edits=edits;if(_zs2)editing.zones=_zs2;
         log('Đếm bổ sung phiếu kiểm kê',editing.id+' · '+whName(counting.plant,counting.sloc)+' · '+diff.length+' mã đổi');
         delete drafts[key];saveDrafts();counting=null;countEditId=null;
         toast('Đã bổ sung '+diff.length+' mã vào phiếu '+editing.id);renderView();return;
       }
-      const sub={id:await nextKKId(counting.plant,counting.sloc),plant:counting.plant,sloc:counting.sloc,user:session.name,role:ROLES[session.role].label,time:now(),period:counting.period||curPeriod(),status:'Chờ duyệt',items:{...items},count:n,edits:[]};
+      const _zs=zonesForSave(drafts[key],zonesOf(counting.plant,counting.sloc));
+      const sub={zones:_zs,id:await nextKKId(counting.plant,counting.sloc),plant:counting.plant,sloc:counting.sloc,user:session.name,role:ROLES[session.role].label,time:now(),period:counting.period||curPeriod(),status:'Chờ duyệt',items:{...items},count:n,edits:[]};
       const okIns=await insSubmissionSafe(sub);
       // KHÔNG xóa nháp, KHÔNG ghi nhật ký "đã gửi": số đã đếm phải còn nguyên để gửi lại.
       if(!okIns){saveDrafts();return;}
@@ -4307,7 +4538,44 @@ function showDetail(s){
   const tb=el('tbody');
   rowsCnt.forEach(r=>{const opCell=op?`<td class="num tnum" style="color:var(--muted)">${op[r.code]!=null?op[r.code]:'—'}</td>`:'';
     tb.appendChild(el('tr',null,`<td class="tnum" style="color:var(--muted)">${r.code}</td><td>${r.name}</td><td><span class="badge badge-uom">${r.uom}</span></td>${opCell}<td class="num tnum qbig">${r.qty}</td>`));});
-  tbl.appendChild(tb);w.appendChild(tbl);cb.appendChild(w);card.appendChild(cb);v.appendChild(card);
+  tbl.appendChild(tb);w.appendChild(tbl);cb.appendChild(w);card.appendChild(cb);
+  /* ---- Chi tiết theo TIỂU KHO (kho đếm) ----
+     Số chính thức của phiếu vẫn là cột Tổng; bảng này để giám sát soi lại
+     mình đã điền bao nhiêu ở từng khu. */
+  if(s.zones&&s.zones.length){
+    const zs=s.zones.map(z=>z.name);
+    const zc=el('div','card-b');zc.style.borderTop='1px solid var(--line)';
+    zc.appendChild(el('div',null,`<div class="section-eyebrow" style="margin-bottom:4px">🧾 Chi tiết theo tiểu kho (kho đếm)</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Số chính thức của phiếu là cột <b>Tổng</b> — đúng bằng số đã gửi kế toán.
+      Các cột bên trái cho biết mỗi khu đếm được bao nhiêu.</div>`));
+    const codes=new Set();s.zones.forEach(z=>Object.keys(z.items||{}).forEach(c=>codes.add(c)));
+    Object.keys(s.items||{}).forEach(c=>codes.add(c));
+    const rws=[...codes].map(c=>{const m=masterByCode[c]||{name:c,uom:''};return {code:c,name:m.name||c,uom:m.uom||''};})
+      .sort((a,b)=>(a.name||'').localeCompare(b.name||'','vi'));
+    const zw=el('div','tbl-wrap');const zt=el('table');
+    zt.innerHTML='<thead><tr><th>Tên hàng</th>'+zs.map(z=>'<th class="num">'+z+'</th>').join('')+'<th class="num">Tổng</th></tr></thead>';
+    const ztb=el('tbody');
+    const sumZ={};zs.forEach(z=>sumZ[z]=0);let sumAll=0;
+    rws.forEach(r=>{
+      const cells=zs.map(z=>{const zz=s.zones.find(x=>x.name===z);const v=zz&&zz.items?zz.items[r.code]:null;
+        if(v!=null){sumZ[z]+=Number(v)||0;}
+        return '<td class="num tnum">'+(v==null?'—':v)+'</td>';}).join('');
+      const tot=(s.items||{})[r.code];sumAll+=Number(tot)||0;
+      ztb.appendChild(el('tr',null,'<td><div class="cell-strong">'+r.name+'</div><div class="cell-sub"><span class="tnum">'+r.code+'</span>'
+        +'<span class="only-sm"> · '+(r.uom||'—')+'</span></div></td>'+cells
+        +'<td class="num cell-strong tnum">'+(tot==null?'—':tot)+'</td>'));
+    });
+    const q3=x=>String(Math.round((Number(x)||0)*1000)/1000);
+    ztb.appendChild(el('tr',null,'<td class="cell-strong">Cộng</td>'
+      +zs.map(z=>'<td class="num cell-strong tnum">'+q3(sumZ[z])+'</td>').join('')
+      +'<td class="num cell-strong tnum">'+q3(sumAll)+'</td>'));
+    zt.appendChild(ztb);zw.appendChild(zt);zc.appendChild(zw);
+    const bZx=el('button','btn btn-ghost btn-sm','📥 Xuất biên bản tách theo tiểu kho');
+    bZx.style.marginTop='12px';bZx.onclick=()=>exportBBKK(s,true);
+    zc.appendChild(bZx);
+    card.appendChild(zc);
+  }
+  v.appendChild(card);
 }
 
 /* ---- Xuất BIÊN BẢN KIỂM KÊ ra Excel (đúng mẫu công ty) để in ký ---- */
@@ -4341,7 +4609,9 @@ async function deliverBienBan(s,blob,filename){
   toast(saveDirHandle?'Không ghi được vào thư mục — đã tải về Downloads: '+filename:'Đã tải biên bản: '+filename);
   return false;
 }
-function exportBBKK(s){
+/* byZone=true -> tach cot theo tieu kho dung mau cong ty:
+   TT | Ten hang | DVT | Bao cao | <Kho> <Starbuck> <Ve> <Vuon> | Ghi chu */
+function exportBBKK(s,byZone){
   const esc=t=>String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const wh=whName(s.plant,s.sloc);
   const d=parseTs(s.time)||new Date();
@@ -4351,43 +4621,49 @@ function exportBBKK(s){
     .sort((a,b)=>a.name.localeCompare(b.name,'vi'));
   const C='style="border:1px solid #000;padding:3px 6px;font-family:\'Times New Roman\';font-size:12pt;"';
   const Cc='style="border:1px solid #000;padding:3px 6px;font-family:\'Times New Roman\';font-size:12pt;text-align:center;"';
+  // Tach cot theo tieu kho khi phieu co chi tiet (mau cong ty: Kho | Starbuck | Ve | Vuon)
+  const zList=(byZone&&s.zones&&s.zones.length)?s.zones.map(z=>z.name):[];
+  const NC=6+zList.length;                       // so cot cua bang
+  const zQty=(z,code)=>{const o=s.zones.find(x=>x.name===z);const v=o&&o.items?o.items[code]:null;return v==null?'':v;};
   let body='';
-  rows.forEach((r,i)=>{ body+=`<tr><td ${Cc}>${i+1}</td><td ${C}>${esc(r.name)}</td><td ${Cc}>${esc(r.uom)}</td><td ${Cc}></td><td ${Cc}>${r.qty}</td><td ${C}></td></tr>`; });
-  for(let k=0;k<3;k++) body+=`<tr><td ${Cc} style="height:24px;border:1px solid #000">&nbsp;</td><td ${C}></td><td ${C}></td><td ${C}></td><td ${C}></td><td ${C}></td></tr>`;
+  rows.forEach((r,i)=>{
+    const zc=zList.map(z=>`<td ${Cc}>${zQty(z,r.code)}</td>`).join('');
+    body+=`<tr><td ${Cc}>${i+1}</td><td ${C}>${esc(r.name)}</td><td ${Cc}>${esc(r.uom)}</td><td ${Cc}></td>${zc}<td ${Cc}>${r.qty}</td><td ${C}></td></tr>`; });
+  for(let k=0;k<3;k++){ body+='<tr>'+`<td ${Cc} style="height:24px;border:1px solid #000">&nbsp;</td>`+new Array(NC-1).fill(`<td ${C}></td>`).join('')+'</tr>'; }
   const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
 <head><meta charset="UTF-8"><style>td{font-family:'Times New Roman';font-size:12pt;vertical-align:top} @page{margin:1cm}</style></head>
 <body>
 <table style="width:100%;border-collapse:collapse">
-<tr><td colspan="6" style="text-align:center;font-weight:bold;font-family:'Times New Roman';font-size:12pt">CÔNG TY CỔ PHẦN DỊCH VỤ CÁP TREO BÀ NÀ</td></tr>
-<tr><td colspan="6" style="height:8px"></td></tr>
-<tr><td colspan="6" style="text-align:center;font-weight:bold;font-family:'Times New Roman';font-size:15pt">BIÊN BẢN KIỂM KÊ KHO/TÀI SẢN</td></tr>
-<tr><td colspan="6" style="font-weight:bold;font-family:'Times New Roman';font-size:12pt">BỘ PHẬN/KHO: ${esc(wh)} (${esc(s.plant)}-${esc(s.sloc)})</td></tr>
-<tr><td colspan="6" style="font-family:'Times New Roman';font-size:12pt">Thời điểm kiểm kê: ${ngay}. Thành phần tham gia gồm:</td></tr>
-<tr><td colspan="6" style="font-weight:bold;font-family:'Times New Roman';font-size:12pt">I. TỔ KIỂM KÊ</td></tr>
-<tr><td colspan="6" style="font-family:'Times New Roman';font-size:12pt">1/  Ông/Bà: ${esc(s.approvedBy||'.............................................')}&nbsp;&nbsp;&nbsp;&nbsp;Phòng ban/bộ phận: Kế toán</td></tr>
-<tr><td colspan="6" style="font-weight:bold;font-family:'Times New Roman';font-size:12pt">II. KHO/BỘ PHẬN SỬ DỤNG TÀI SẢN</td></tr>
-<tr><td colspan="6" style="font-family:'Times New Roman';font-size:12pt">1/  Ông/Bà: ${esc(s.user||'')}&nbsp;&nbsp;&nbsp;&nbsp;Phòng ban/bộ phận: ${esc(plantName(s.plant))}</td></tr>
-<tr><td colspan="6" style="font-family:'Times New Roman';font-size:12pt">Cùng tiến hành kiểm kê thực tế vật tư, hàng hóa, tài sản tại kho/bộ phận sử dụng và lập biên bản kiểm kê với nội dung như sau:</td></tr>
-<tr><td colspan="6" style="height:6px"></td></tr>
+<tr><td colspan="${NC}" style="text-align:center;font-weight:bold;font-family:'Times New Roman';font-size:12pt">CÔNG TY CỔ PHẦN DỊCH VỤ CÁP TREO BÀ NÀ</td></tr>
+<tr><td colspan="${NC}" style="height:8px"></td></tr>
+<tr><td colspan="${NC}" style="text-align:center;font-weight:bold;font-family:'Times New Roman';font-size:15pt">BIÊN BẢN KIỂM KÊ KHO/TÀI SẢN</td></tr>
+<tr><td colspan="${NC}" style="font-weight:bold;font-family:'Times New Roman';font-size:12pt">BỘ PHẬN/KHO: ${esc(wh)} (${esc(s.plant)}-${esc(s.sloc)})</td></tr>
+<tr><td colspan="${NC}" style="font-family:'Times New Roman';font-size:12pt">Thời điểm kiểm kê: ${ngay}. Thành phần tham gia gồm:</td></tr>
+<tr><td colspan="${NC}" style="font-weight:bold;font-family:'Times New Roman';font-size:12pt">I. TỔ KIỂM KÊ</td></tr>
+<tr><td colspan="${NC}" style="font-family:'Times New Roman';font-size:12pt">1/  Ông/Bà: ${esc(s.approvedBy||'.............................................')}&nbsp;&nbsp;&nbsp;&nbsp;Phòng ban/bộ phận: Kế toán</td></tr>
+<tr><td colspan="${NC}" style="font-weight:bold;font-family:'Times New Roman';font-size:12pt">II. KHO/BỘ PHẬN SỬ DỤNG TÀI SẢN</td></tr>
+<tr><td colspan="${NC}" style="font-family:'Times New Roman';font-size:12pt">1/  Ông/Bà: ${esc(s.user||'')}&nbsp;&nbsp;&nbsp;&nbsp;Phòng ban/bộ phận: ${esc(plantName(s.plant))}</td></tr>
+<tr><td colspan="${NC}" style="font-family:'Times New Roman';font-size:12pt">Cùng tiến hành kiểm kê thực tế vật tư, hàng hóa, tài sản tại kho/bộ phận sử dụng và lập biên bản kiểm kê với nội dung như sau:</td></tr>
+<tr><td colspan="${NC}" style="height:6px"></td></tr>
 </table>
 <table style="width:100%;border-collapse:collapse">
 <tr>
   <td ${Cc}><b>TT</b></td><td ${Cc}><b>Tên hàng</b></td><td ${Cc}><b>ĐVT</b></td>
-  <td ${Cc}><b>Báo cáo</b></td><td ${Cc}><b>Số lượng kiểm kê</b></td><td ${Cc}><b>Ghi chú</b></td>
+  <td ${Cc}><b>Báo cáo</b></td>${zList.map(z=>`<td ${Cc}><b>${esc(z)}</b></td>`).join('')}<td ${Cc}><b>${zList.length?'Cộng':'Số lượng kiểm kê'}</b></td><td ${Cc}><b>Ghi chú</b></td>
 </tr>
 ${body}
 </table>
 <table style="width:100%;border-collapse:collapse">
-<tr><td colspan="6" style="height:8px"></td></tr>
-<tr><td colspan="6" style="font-family:'Times New Roman';font-size:12pt">Có/Không có hàng hóa kém phẩm chất, hết hạn, gần hết hạn theo xác nhận của bp quản lý kho: .................</td></tr>
-<tr><td colspan="6" style="height:20px"></td></tr>
+<tr><td colspan="${NC}" style="height:8px"></td></tr>
+<tr><td colspan="${NC}" style="font-family:'Times New Roman';font-size:12pt">Có/Không có hàng hóa kém phẩm chất, hết hạn, gần hết hạn theo xác nhận của bp quản lý kho: .................</td></tr>
+<tr><td colspan="${NC}" style="height:20px"></td></tr>
 <tr>
-  <td colspan="3" style="text-align:center;font-weight:bold;font-family:'Times New Roman';font-size:12pt">ĐẠI DIỆN KẾ TOÁN</td>
-  <td colspan="3" style="text-align:center;font-weight:bold;font-family:'Times New Roman';font-size:12pt">ĐẠI DIỆN KIỂM KÊ</td>
+  <td colspan="${Math.ceil(NC/2)}" style="text-align:center;font-weight:bold;font-family:'Times New Roman';font-size:12pt">ĐẠI DIỆN KẾ TOÁN</td>
+  <td colspan="${NC-Math.ceil(NC/2)}" style="text-align:center;font-weight:bold;font-family:'Times New Roman';font-size:12pt">ĐẠI DIỆN KIỂM KÊ</td>
 </tr>
 <tr>
-  <td colspan="3" style="text-align:center;font-family:'Times New Roman';font-size:11pt;font-style:italic">(Ký, ghi rõ họ tên)</td>
-  <td colspan="3" style="text-align:center;font-family:'Times New Roman';font-size:11pt;font-style:italic">(Ký, ghi rõ họ tên)</td>
+  <td colspan="${Math.ceil(NC/2)}" style="text-align:center;font-family:'Times New Roman';font-size:11pt;font-style:italic">(Ký, ghi rõ họ tên)</td>
+  <td colspan="${NC-Math.ceil(NC/2)}" style="text-align:center;font-family:'Times New Roman';font-size:11pt;font-style:italic">(Ký, ghi rõ họ tên)</td>
 </tr>
 </table>
 </body></html>`;
