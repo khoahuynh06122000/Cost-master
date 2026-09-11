@@ -396,6 +396,44 @@
     .bellbtn,.topbar-dark{width:36px;height:36px}
     .qty{width:88px}
   }
+  /* Chon ca bang NUT thay vi dropdown — lowtech bam nut de hon mo dropdown roi chon */
+  .ca-pick{display:flex;gap:8px;flex-wrap:wrap}
+  .ca-pick .chip{min-height:42px;padding:0 16px;font-size:13.5px}
+  /* Bang chi-xem tu 5 cot tro len -> THE tren dien thoai (3C).
+     2 cot dau lam tieu de the; cac cot con lai la dong "nhan: gia tri";
+     o khong co tieu de (thuong la nut) xuong dong rieng, can phai. */
+  @media(max-width:640px){
+    .tbl-wrap.cards{overflow:visible}
+    .tbl-wrap.cards table,.tbl-wrap.cards tbody{display:block;width:100%}
+    .tbl-wrap.cards thead{display:none}
+    .tbl-wrap.cards table{min-width:0}
+    /* tr la flex-wrap: cac o NGAN chay chung mot dong, khong moi o mot dong
+       (moi o mot dong lam the cao 273px = 50 phieu phai vuot 16 man hinh) */
+    .tbl-wrap.cards tr{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 14px;
+      border:1px solid var(--line);border-radius:12px;background:var(--surface);
+      margin:0 0 9px;padding:10px 13px}
+    .tbl-wrap.cards tr:last-child{margin-bottom:0}
+    .tbl-wrap.cards td{display:block;border:none!important;padding:1px 0!important;
+      text-align:left!important;font-size:12.5px;line-height:1.4}
+    .tbl-wrap.cards td.c1{flex:1 0 100%;font-size:14px;font-weight:700}
+    .tbl-wrap.cards td.c2{flex:1 0 100%;color:var(--muted);font-size:12px;margin-bottom:3px;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .tbl-wrap.cards td.cL{display:inline-flex;gap:5px;align-items:baseline;flex:0 1 auto;max-width:100%}
+    .tbl-wrap.cards td.cL::before{content:attr(data-l) ':';color:var(--muted);font-size:11px;
+      font-weight:700;white-space:nowrap}
+    /* Nut o dong cuoi can phai -> moi the cao DEU NHAU (margin-left:auto truoc do
+       lam nut luc cung dong luc xuong dong, cac the so le nhau nhin lon xon). */
+    .tbl-wrap.cards td.cBtn{order:99;flex:1 0 100%;margin-top:6px;display:flex;gap:8px;
+      justify-content:flex-end;flex-wrap:wrap}
+    /* Ca the bam duoc: BP khong phai nham vao dung cai nut nho */
+    .tbl-wrap.cards tr.cTap{cursor:pointer}
+    .tbl-wrap.cards tr.cTap:active{background:var(--surface-2)}
+    .tbl-wrap.cards td.cL.cNoLbl::before{content:none}
+    .tbl-wrap.cards td.cEmpty{display:none}
+    .tbl-wrap.cards td .btn{white-space:nowrap;min-height:38px}
+    .tbl-wrap.cards td .badge{white-space:nowrap}
+    .cards-more{display:block;width:100%;margin-top:4px}
+  }
   /* Dong dem tren dien thoai (3B): ten hang mot dong day du, cum nhap so to o giua.
      Truoc day .item la flex ngang nen ten hang chi duoc 126px -> gay 3 dong, cao 105px. */
   @media(max-width:640px){
@@ -1880,6 +1918,7 @@ function renderView(){
   else if(activeTab==='sodo')renderSoDo(v);
   else if(activeTab==='dieuhanh')renderDieuhanh(v);
   else if(activeTab==='audit')renderAudit(v);
+  try{cardifyTables(v);}catch(e){console.warn('cardify',e);}
 }
 
 /* ============ HUB dùng chung: chọn việc → mở đúng thao tác ============ */
@@ -1895,6 +1934,70 @@ const HIC={
 };
 let hubOpen={};   // {tab: 'khóa việc đang mở'} — nhớ để vẽ lại đúng chỗ
 // acts: [{k,ico,title,sub,n,warm,render(host)}]
+/* Gan nhan cot tu <thead> vao tung <td> de bang hien duoc dang THE tren dien thoai.
+   Chay mot lan sau moi lan ve man -> ap cho MOI bang, ke ca bang viet sau nay.
+   Bang duoi 5 cot khong doi (da vua man 390px). */
+function cardifyTables(root){
+  (root||document).querySelectorAll('.tbl-wrap table').forEach(t=>{
+    const w=t.closest('.tbl-wrap');if(!w)return;
+    const hs=[...t.querySelectorAll('thead th')];
+    if(!hs.length||w.classList.contains('no-cards')){w.classList.remove('cards');return;}
+    // Bo class roi do: bang co RONG HON khung khong? Do tran that thay vi dem so cot —
+    // may 320px co bang 3 cot cung tran 84px, ma bang 5 cot tren may rong lai vua.
+    w.classList.remove('cards');
+    const tran=t.scrollWidth>w.clientWidth+8;
+    if(!tran)return;                                     // vua man -> giu nguyen dang bang
+    w.classList.add('cards');                            // CSS chi an duoi 640px
+    const lbl=hs.map(x=>x.textContent.trim());
+    const trs=[...t.querySelectorAll('tbody tr')];
+    trs.forEach(tr=>{
+      [...tr.children].forEach((td,i)=>{
+        if(td.dataset.l!=null)return;
+        const L=lbl[i]||'';
+        if(i===0){td.classList.add('c1');td.dataset.l='';return;}
+        if(i===1){td.classList.add('c2');td.dataset.l='';return;}
+        if(!L){                                          // cot khong co tieu de
+          td.classList.add(td.querySelector('button,a,.btn')?'cBtn':'cEmpty');td.dataset.l='';return;}
+        const sh=LBL_SHORT[L];
+        if(sh===''){td.dataset.l='';td.classList.add('cL','cNoLbl');return;}
+        td.dataset.l=sh||L;td.classList.add('cL');
+      });
+    });
+    // The chi co DUNG MOT nut -> bam bat cu dau trong the cung duoc (van giu nut cho de thay)
+    trs.forEach(tr=>{
+      if(tr.dataset.tap)return;
+      const bs=tr.querySelectorAll('td.cBtn button,td.cBtn a');
+      if(bs.length!==1)return;
+      tr.dataset.tap='1';tr.classList.add('cTap');
+      tr.addEventListener('click',ev=>{
+        if(ev.target.closest('button,a,input,select,textarea,label'))return;
+        if(!window.matchMedia('(max-width:640px)').matches)return;
+        bs[0].click();
+      });
+    });
+    // Danh sach dai: chi hien CARD_PAGE the dau + nut "Xem them".
+    // Do tren iPhone 13 Pro Max: vung cuon 866px, the ~150px -> ~5,5 the mot man;
+    // 20 the ~ 4 man hinh, vuot 3-4 lan la het. Hon nua thi qua dai.
+    if(trs.length>CARD_PAGE&&w.matches('.cards')&&window.matchMedia('(max-width:640px)').matches){
+      let shown=CARD_PAGE;
+      const more=el('button','btn btn-ghost btn-sm cards-more');
+      const paint=()=>{
+        trs.forEach((tr,i)=>{tr.style.display=i<shown?'':'none';});
+        const left=trs.length-shown;
+        if(left<=0){more.remove();return;}
+        more.textContent='▾ Xem thêm '+Math.min(CARD_PAGE,left)+' (còn '+left+')';
+      };
+      more.onclick=()=>{shown+=CARD_PAGE;paint();};
+      paint();w.appendChild(more);
+    }
+  });
+}
+const CARD_PAGE=20;   // so the hien mot lan tren dien thoai
+/* Nhan cot khi xep doc: rut ngan cho nhieu o vua mot dong.
+   Chuoi rong = bo han nhan (o do da tu noi ro, vd badge trang thai). */
+const LBL_SHORT={'Thời gian':'Lúc','Người gửi':'Gửi','Người nhập':'Bởi','Người giao':'Giao',
+  'Người chốt':'Chốt','Thời điểm chốt':'Chốt lúc','Từ phiếu':'Từ','Hàng hóa':'Hàng',
+  'Trạng thái':'','Lý do':'','Diễn giải':'','Ghi chú':'','Ca':''};
 function renderHubView(v,tab,acts){
   const list=acts.filter(a=>a);
   // Chi co MOT viec thi mo thang, khong bat bam qua mot buoc chon vo nghia
@@ -4514,19 +4617,36 @@ function shiftNew(v){
   const mine=allowedPlants();
   const pick=el('div','card');const b=el('div','card-b');
   b.innerHTML=`<div class="section-eyebrow"><span class="step">1</span>Chọn kho & ca bàn giao</div>`;
-  // 4 ô chọn ngắn -> gom vào MỘT hàng, ngày và ca không cần chiếm nửa màn hình
+  /* Kho của MÌNH thì không hỏi lại — gom thành một danh sách phẳng như màn điều chuyển
+     (trước đây 3 dropdown Điểm bán / Kho / Ca, khối này cao 443px trên iPhone). */
+  const myWh=[];
+  mine.forEach(pp=>allowedSlocsOf(pp.plant).forEach(w=>myWh.push({plant:pp.plant,sloc:w.sloc,label:w.sloc_name+' ('+w.sloc+')',pname:pp.name})));
+  if(!myWh.length){b.appendChild(el('div','empty','<div class="big">Chưa được gán kho</div><div>Liên hệ Quản trị viên để được gán kho cụ thể.</div>'));
+    pick.appendChild(b);v.appendChild(pick);return;}
+  let whIdx=0;
+  const whF=el('div','field','<span>Kho bàn giao</span>');
+  if(myWh.length===1){
+    whF.appendChild(el('div','wh-fixed',`${myWh[0].label}<span class="sub">${myWh[0].pname}</span>`));
+  }else{
+    const wSel=el('select','input');
+    myWh.forEach((w,i)=>{const o=el('option',null,w.pname+' · '+w.label);o.value=String(i);wSel.appendChild(o);});
+    wSel.onchange=()=>{whIdx=Number(wSel.value);};
+    whF.appendChild(wSel);
+  }
+  b.appendChild(whF);
+  // Ca: 3 nút bấm thay dropdown
+  const caF=el('div','field','<span>Ca bàn giao</span>');
+  const caRow=el('div','ca-pick');let ca=CA_LIST[0];
+  CA_LIST.forEach(c=>{const t=el('button','chip'+(c===ca?' active':''),c);t.type='button';
+    t.onclick=()=>{ca=c;[...caRow.children].forEach(x=>x.classList.toggle('active',x.textContent===c));};
+    caRow.appendChild(t);});
+  caF.appendChild(caRow);b.appendChild(caF);
   const row=el('div','form-row');
-  const pl=el('label','field f-grow','<span>Điểm bán</span>');const plantSel=el('select','input');
-  mine.forEach(p=>{const o=el('option',null,p.name);o.value=p.plant;plantSel.appendChild(o);});pl.appendChild(plantSel);
-  const sl=el('label','field f-grow','<span>Kho</span>');const slocSel=el('select','input');sl.appendChild(slocSel);
-  const caF=el('label','field f-date','<span>Ca bàn giao</span>');const caSel=el('select','input');CA_LIST.forEach(c=>caSel.appendChild(el('option',null,c)));caF.appendChild(caSel);
   const dF=el('label','field f-date','<span>Ngày</span>');const dInp=el('input','input');dInp.type='date';dInp.valueAsDate=new Date();dF.appendChild(dInp);
-  row.appendChild(pl);row.appendChild(sl);row.appendChild(caF);row.appendChild(dF);b.appendChild(row);
-  function fillSloc(){slocSel.innerHTML='';allowedSlocsOf(plantSel.value).forEach(w=>{const o=el('option',null,`${w.sloc_name} (${w.sloc})`);o.value=w.sloc;slocSel.appendChild(o);});}
-  plantSel.onchange=fillSloc;fillSloc();
   const startBtn=el('button','btn btn-brand f-btn','Bắt đầu chốt ca');
-  startBtn.onclick=()=>{shiftEntry={plant:plantSel.value,sloc:slocSel.value,ca:caSel.value,date:dInp.value};renderView();setTimeout(()=>{const c=$('#shiftCard');if(c)c.scrollIntoView({behavior:'smooth'});},50);};
-  b.appendChild(startBtn);pick.appendChild(b);v.appendChild(pick);
+  row.appendChild(dF);row.appendChild(startBtn);b.appendChild(row);
+  startBtn.onclick=()=>{shiftEntry={plant:myWh[whIdx].plant,sloc:myWh[whIdx].sloc,ca:ca,date:dInp.value};renderView();setTimeout(()=>{const c=$('#shiftCard');if(c)c.scrollIntoView({behavior:'smooth'});},50);};
+  pick.appendChild(b);v.appendChild(pick);
 
   if(shiftEntry){
     const bCancel=el('button','btn btn-ghost btn-sm','✕ Hủy chốt ca này');bCancel.style.cssText='margin-top:10px;color:var(--red)';
