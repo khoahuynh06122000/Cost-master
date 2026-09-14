@@ -1756,6 +1756,9 @@ function enterApp(){
   $('#view').innerHTML='<div class="empty"><div class="big">Đang tải dữ liệu…</div></div>';
   dbLoadAll().then(()=>{if(pendingKK){try{applyDeepLinkKK(pendingKK);}catch(e){console.error(e);}pendingKK=null;}renderView();dbSubscribe();
     try{_notifSeen=new Set(myNotifs().map(x=>x.id));paintBell();}catch(e){}
+    // Đã cho phép thông báo từ trước -> đăng ký lại máy này với máy chủ đẩy tin.
+    // Cần làm mỗi lần đăng nhập vì subscription có thể bị trình duyệt thu hồi.
+    setTimeout(()=>{try{if(notifyReady())ensurePushSub();}catch(e){}},1500);
     setTimeout(()=>{   // lần đầu vào app: nhắc thông báo chưa đọc + mời bật báo về máy
       try{
         const nUn=unreadNotifs().length;
@@ -2363,9 +2366,7 @@ function commitCountList(plant,sloc,period,items,cb){
   dbUpsertCountList(plant,sloc,period,items);
   learnMaterials(Object.keys(items).map(c=>({code:c,name:items[c].name,uom:items[c].uom})));
   const msg='Kế toán đã mở kỳ kiểm kê tháng '+periodVN(period)+' cho kho '+whName(plant,sloc)+' — '+n+' mã cần đếm. Vào app → tab Kiểm kê → chọn kho → "Kiểm đếm trực tiếp" để đếm.';
-  const note={id:uid('NT'),plant:plant,sloc:sloc,message:msg,kind:'countlist',by:session.name,time:now(),read:false};
-  notifications.unshift(note);
-  dbIns('notifications',{id:note.id,plant_code:plant,sloc_code:sloc,message:msg,kind:'countlist',created_by:session.name,read_flag:false});
+  notifyWh(plant,sloc,msg,'countlist');
   const url=location.origin+location.pathname+'?kk='+encodeURIComponent(plant+'|'+sloc+'|'+period);
   if(getCfg().teams)sendTeamsText('🗂 <b>MỞ KỲ KIỂM KÊ</b> — tháng '+periodVN(period)+'<br>Kho: '+whName(plant,sloc)+'<br>Số mã cần đếm: '+n+'<br>👉 <a href="'+url+'">Bấm vào đây để mở màn kiểm đếm</a>');
   log('Mở kỳ kiểm kê (kế toán)',whName(plant,sloc)+' · kỳ '+periodVN(period)+' · '+n+' mã');
@@ -2891,9 +2892,7 @@ function notifyReconcile(cl,silent){
   let msg=`Chốt tồn tháng ${periodVN(cl.period)} — ${whName(cl.plant,cl.sloc)} (KT lập):\n✅ Khớp ${R.matchCnt||0} · ⚠ Lệch ${R.diffCnt||0} · ➖ thiếu ở bản KT ${R.onlyACnt||0} · ➕ dư ở bản KT ${R.onlyBCnt||0}. Trạng thái: ${cl.status}.`;
   const diff=R.diff||[];
   if(diff.length)msg+=`\nMã lệch: ${diff.slice(0,8).map(r=>r.code).join(', ')}${diff.length>8?'…':''}`;
-  const note={id:uid('NT'),plant:cl.plant,sloc:cl.sloc,message:msg,kind:'reconcile',by:session.name,time:now(),read:false};
-  notifications.unshift(note);
-  dbIns('notifications',{id:note.id,plant_code:cl.plant,sloc_code:cl.sloc,message:msg,kind:'reconcile',created_by:session.name,read_flag:false});
+  notifyWh(cl.plant,cl.sloc,msg,'reconcile');
   log('Chốt tồn tháng (đối chiếu)',`${whName(cl.plant,cl.sloc)} · khớp ${R.matchCnt||0}, lệch ${R.diffCnt||0}`);
   if(!silent)toast('Đã tạo thông báo cho giám sát');
 }
@@ -3948,9 +3947,7 @@ function dcRequestForm(v,kind){
     const who=kind==='xin'?{p:fp,s:fs}:null;
     if(who){
       const msg=`Xin hàng: ${whName(fp,fs)} → ${whName(tp,ts)} · ${codes.length} mã · phiếu ${id} do ${session.name} lập. Vào "Chờ tôi duyệt" để xử lý.`;
-      const nt={id:uid('NT'),plant:who.p,sloc:who.s,message:msg,kind:'transfer',by:session.name,time:now(),read:false};
-      notifications.unshift(nt);
-      dbIns('notifications',{id:nt.id,plant_code:who.p,sloc_code:who.s,message:msg,kind:'transfer',created_by:session.name,read_flag:false});
+      notifyWh(who.p,who.s,msg,'transfer','Có phiếu xin hàng chờ duyệt');
     }
     toast('Đã gửi phiếu '+id+' — chờ duyệt');
     renderView();
@@ -4141,9 +4138,7 @@ async function approveTransferReq(r,qtys){
     const msg=r.kind==='day'
       ? `${whName(r.fromPlant,r.fromSloc)} vừa chuyển ${codes.length} mã sang kho bạn (phiếu ${r.id}) · đã cộng vào kho, kỳ tháng ${periodVN(per)}. Không cần xác nhận, chỉ cần kiểm hàng thực nhận.`
       : `Phiếu ${r.id} (xin hàng) đã được ${session.name} DUYỆT · ${codes.length} mã đã ghi sổ kỳ tháng ${periodVN(per)}.`;
-    const nt={id:uid('NT'),plant:back.p,sloc:back.s,message:msg,kind:'transfer',by:session.name,time:now(),read:false};
-    notifications.unshift(nt);
-    dbIns('notifications',{id:nt.id,plant_code:back.p,sloc_code:back.s,message:msg,kind:'transfer',created_by:session.name,read_flag:false});
+    notifyWh(back.p,back.s,msg,'transfer','Phiếu điều chuyển đã được duyệt');
   }
   log('Duyệt '+dcKindLabel(r.kind),`${r.id} · ${fromNm} → ${toNm} · ${codes.length} mã · kỳ ${periodVN(per)}`);
   toast('✓ Đã duyệt '+r.id+' — ghi sổ '+codes.length+' mã vào kỳ tháng '+periodVN(per));
@@ -4202,9 +4197,7 @@ async function rejectTransferReq(r){
   r.status='Từ chối';r.rejectNote=note;r.approvedBy=session.name;r.approvedAt=now();
   const back=r.kind==='xin'?{p:r.toPlant,s:r.toSloc}:{p:r.fromPlant,s:r.fromSloc};
   const msg=`Phiếu ${r.id} (${dcKindLabel(r.kind)}) đã bị ${session.name} TỪ CHỐI.${note?' Lý do: '+note:''}`;
-  const nt={id:uid('NT'),plant:back.p,sloc:back.s,message:msg,kind:'transfer',by:session.name,time:now(),read:false};
-  notifications.unshift(nt);
-  dbIns('notifications',{id:nt.id,plant_code:back.p,sloc_code:back.s,message:msg,kind:'transfer',created_by:session.name,read_flag:false});
+  notifyWh(back.p,back.s,msg,'transfer','Phiếu điều chuyển bị từ chối');
   log('Từ chối '+dcKindLabel(r.kind),`${r.id}${note?' · '+note:''}`);
   toast('Đã từ chối '+r.id);renderView();
 }
@@ -4696,9 +4689,7 @@ function rejectSubmission(s){
   if(sb)sb.from('submissions').delete().eq('id',s.id).then(({error})=>{if(error)console.error('xóa sub',error);});
   // thông báo cho giám sát của kho
   const msg=`Biên bản kiểm kê ${whName(s.plant,s.sloc)} (kỳ tháng ${periodVN(s.period||curPeriod())}) đã bị Kế toán TỪ CHỐI. Số liệu đã gửi đã bị xóa, vui lòng kiểm kê lại.${reason?' Lý do: '+reason:''}`;
-  const note={id:uid('NT'),plant:s.plant,sloc:s.sloc,message:msg,kind:'reject',by:session.name,time:now(),read:false};
-  notifications.unshift(note);
-  dbIns('notifications',{id:note.id,plant_code:s.plant,sloc_code:s.sloc,message:msg,kind:'reject',created_by:session.name,read_flag:false});
+  notifyWh(s.plant,s.sloc,msg,'reject');
   log('Từ chối biên bản',`${s.id} · ${whName(s.plant,s.sloc)}${reason?' · '+reason:''}`);
   toast('Đã từ chối & xóa '+s.id+' · đã báo giám sát');
   renderView();
@@ -6622,20 +6613,37 @@ function openNotifPop(){
   });
   // Chân panel: nút bật thông báo điện thoại nếu chưa cấp quyền
   foot.innerHTML='';
+  const fmsg=(color,txt)=>foot.appendChild(el('span','',`<span style="font-size:11.5px;color:${color}">${txt}</span>`));
   if(!('Notification' in window)){
-    foot.appendChild(el('span','',`<span style="font-size:11.5px;color:var(--muted)">Trình duyệt này không hỗ trợ thông báo hệ thống.</span>`));
-  }else if(Notification.permission==='granted'){
-    foot.appendChild(el('span','',`<span style="font-size:11.5px;color:var(--green)">🔔 Đã bật báo về máy — có phiếu mới sẽ hiện thông báo kể cả khi đang mở app khác.</span>`));
+    fmsg('var(--muted)','Trình duyệt này không hỗ trợ thông báo hệ thống.');
   }else if(Notification.permission==='denied'){
-    foot.appendChild(el('span','',`<span style="font-size:11.5px;color:var(--muted)">Thông báo đang bị chặn. Mở phần cài đặt của trình duyệt cho trang này để bật lại.</span>`));
+    fmsg('var(--muted)','Thông báo đang bị chặn. Mở phần cài đặt của trình duyệt cho trang này để bật lại.');
+  }else if(Notification.permission==='granted'){
+    // Đã cho phép rồi thì còn phải đăng ký máy này với máy chủ đẩy tin,
+    // nếu không thì app ĐÓNG HẲN sẽ không nhận được gì.
+    fmsg('var(--green)','🔔 Đã bật báo về máy.');
+    const st=el('span');st.style.cssText='font-size:11.5px;color:var(--muted)';
+    st.textContent='Đang kiểm tra báo khi đóng app…';foot.appendChild(st);
+    (async()=>{
+      const key=await vapidPublicKey();
+      if(!key){st.innerHTML='<b>Chỉ báo khi app đang mở hoặc chạy nền.</b> Muốn báo cả khi đóng app thì admin cần cấu hình khóa VAPID trên máy chủ.';return;}
+      const r=await ensurePushSub();
+      if(r.ok)st.innerHTML='<span style="color:var(--green)">✓ Máy này nhận được báo <b>cả khi đã đóng app</b>.</span>';
+      else st.textContent='Chưa nhận được báo khi đóng app — '+(r.why||'')+'. Thử tải lại trang.';
+    })();
   }else{
     const bOn=el('button','btn btn-brand btn-sm','🔔 Bật báo về máy');
-    bOn.onclick=async()=>{const ok=await askNotifyPermission(false);
-      if(ok){toast('✓ Đã bật thông báo — có phiếu mới máy sẽ báo');pushLocal('Kiểm kê F&B','Đã bật thông báo. Có phiếu chờ duyệt là máy sẽ báo ngay.','test');}
-      else toast('Chưa bật được thông báo');
-      openNotifPop();};
+    bOn.onclick=async()=>{
+      const ok=await askNotifyPermission(false);
+      if(!ok){toast('Chưa bật được thông báo');openNotifPop();return;}
+      toast('✓ Đã bật thông báo — đang đăng ký nhận báo khi đóng app…');
+      const r=await ensurePushSub();
+      if(r.ok)pushLocal('Kiểm kê F&B','Đã bật xong. Có phiếu chờ duyệt là máy sẽ báo, kể cả khi bạn đóng app.','test');
+      else pushLocal('Kiểm kê F&B','Đã bật thông báo trong app. Báo khi đóng app chưa dùng được — '+(r.why||''),'test');
+      openNotifPop();
+    };
     foot.appendChild(bOn);
-    foot.appendChild(el('span','',`<span style="font-size:11.5px;color:var(--muted)">Bật để máy báo như tin nhắn khi có phiếu chờ duyệt.</span>`));
+    fmsg('var(--muted)','Bật để máy báo như tin nhắn khi có phiếu chờ duyệt — kể cả lúc bạn đã đóng app.');
   }
   pop.classList.add('show');$('#notifScrim').classList.add('show');
   paintBell();
@@ -6657,6 +6665,95 @@ function gotoNotif(x){
 function markAllNotifRead(){
   notifMarkRead(myNotifs().map(x=>x.id));paintBell();openNotifPop();
   toast('Đã đánh dấu đã đọc');
+}
+/* ================== BÁO VỀ MÁY KHI APP ĐÃ ĐÓNG (Web Push) ==================
+   Thông báo trong app (chuông) chỉ chạy khi app đang mở hoặc chạy nền.
+   Web Push đi qua máy chủ của Google/Apple nên tới được cả khi app đóng hẳn.
+   Máy chủ ký: /api/push-send trên Vercel (khóa VAPID đặt trong biến môi trường).
+   Mỗi máy đăng ký một "subscription" lưu ở bảng push_subs, gắn theo kho. */
+let _vapidKey=null;           // khóa công khai, hỏi máy chủ một lần
+async function vapidPublicKey(){
+  if(_vapidKey!==null)return _vapidKey;
+  try{
+    const r=await fetch('/api/push-send');
+    const j=await r.json();
+    _vapidKey=(j&&j.ready&&j.publicKey)?j.publicKey:'';
+  }catch(e){_vapidKey='';}
+  return _vapidKey;
+}
+function b64ToU8(b64){
+  const pad='='.repeat((4-b64.length%4)%4);
+  const raw=atob((b64+pad).replace(/-/g,'+').replace(/_/g,'/'));
+  const out=new Uint8Array(raw.length);
+  for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);
+  return out;
+}
+function u8ToB64(buf){
+  const b=new Uint8Array(buf);let s2='';
+  for(let i=0;i<b.length;i++)s2+=String.fromCharCode(b[i]);
+  return btoa(s2).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+/* Đăng ký máy này để nhận báo. Gọi sau khi người dùng đã đồng ý cho thông báo. */
+async function ensurePushSub(){
+  try{
+    if(!('serviceWorker' in navigator)||!('PushManager' in window))return {ok:false,why:'Máy không hỗ trợ'};
+    if(!notifyReady())return {ok:false,why:'Chưa bật quyền thông báo'};
+    const key=await vapidPublicKey();
+    if(!key)return {ok:false,why:'Máy chủ chưa cấu hình khóa VAPID'};
+    const reg=await navigator.serviceWorker.ready;
+    let sub=await reg.pushManager.getSubscription();
+    if(sub){
+      // Khóa máy chủ đổi thì đăng ký cũ vô dụng -> hủy rồi đăng ký lại
+      const cur=sub.options&&sub.options.applicationServerKey?u8ToB64(sub.options.applicationServerKey):'';
+      if(cur&&cur!==key){try{await sub.unsubscribe();}catch(e){}sub=null;}
+    }
+    if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64ToU8(key)});
+    const j=sub.toJSON();
+    if(!j||!j.keys||!j.keys.p256dh||!j.keys.auth)return {ok:false,why:'Trình duyệt trả về khóa không hợp lệ'};
+    if(sb&&session){
+      const rows=(session.wh&&session.wh.length?session.wh:[{plant:session.plant,sloc:session.sloc}])
+        .filter(w=>w&&w.plant)
+        .map(w=>({endpoint:sub.endpoint,p256dh:j.keys.p256dh,auth:j.keys.auth,
+                  plant_code:w.plant,sloc_code:w.sloc||'',user_name:session.name,
+                  updated_at:new Date().toISOString()}));
+      if(!rows.length)rows.push({endpoint:sub.endpoint,p256dh:j.keys.p256dh,auth:j.keys.auth,
+        plant_code:'',sloc_code:'',user_name:session.name,updated_at:new Date().toISOString()});
+      const {error}=await sb.from('push_subs').upsert(rows,{onConflict:'endpoint,plant_code,sloc_code'});
+      if(error){console.error('push_subs',error);return {ok:false,why:'Không lưu được lên máy chủ: '+(error.message||'')};}
+    }
+    return {ok:true};
+  }catch(e){console.warn('ensurePushSub',e);return {ok:false,why:(e&&e.message)||'Lỗi không rõ'};}
+}
+/* Gửi báo về máy của những người phụ trách MỘT KHO.
+   Không chặn luồng nghiệp vụ: lỗi gì cũng chỉ ghi Console, việc chính đã xong rồi. */
+async function pushToWh(plant,sloc,title,body,tag){
+  try{
+    if(!sb||!plant)return;
+    let q=sb.from('push_subs').select('endpoint,p256dh,auth').eq('plant_code',plant);
+    if(sloc)q=q.eq('sloc_code',sloc);
+    const {data,error}=await q.limit(200);
+    if(error||!data||!data.length)return;
+    // Một người có thể mở app trên nhiều máy -> bỏ endpoint trùng
+    const seen=new Set();const subs=[];
+    data.forEach(x=>{if(x.endpoint&&!seen.has(x.endpoint)){seen.add(x.endpoint);subs.push(x);}});
+    const r=await fetch('/api/push-send',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({subs,title,body,url:'/',tag:tag||'kiemke'})});
+    const j=await r.json().catch(()=>({}));
+    // Máy đã gỡ app / đổi máy -> dọn đăng ký chết cho khỏi phình bảng
+    if(j&&Array.isArray(j.gone)&&j.gone.length){
+      for(const ep of j.gone){try{await sb.from('push_subs').delete().eq('endpoint',ep);}catch(e){}}
+    }
+  }catch(e){console.warn('pushToWh',e);}
+}
+/* Tạo thông báo cho một kho: ghi vào bảng notifications (để hiện ở chuông)
+   VÀ bắn về máy người phụ trách kho đó. Dùng chung cho mọi loại thông báo. */
+function notifyWh(plant,sloc,msg,kind,title){
+  const nt={id:uid('NT'),plant,sloc,message:msg,kind:kind||'transfer',by:session?session.name:'',time:now(),read:false};
+  notifications.unshift(nt);
+  dbIns('notifications',{id:nt.id,plant_code:plant,sloc_code:sloc,message:msg,kind:nt.kind,
+    created_by:nt.by,read_flag:false});
+  pushToWh(plant,sloc,title||NOTIF_TITLE[nt.kind]||'Kiểm kê F&B',msg,nt.kind);
+  return nt;
 }
 // Số việc đang chờ CHÍNH MÌNH xử lý — dùng để biết có gì mới đáng báo
 function myTodoCount(){
