@@ -1884,6 +1884,16 @@ function inventoryFlow(s){
     return ra;
   };
 
+  /* Nhóm nào ăn vào định lượng kho. Khoa chốt 15/09: chỉ Food và Beverage;
+     Good Other / Coupon / Voucher / Service là hàng khác, không ảnh hưởng. */
+  C.NHOM_TINH = ['food', 'beverage', 'drink'];
+  C.laNhomTinh = function (ten) {
+    var k = vnk(ten);
+    if (!k) return false;
+    for (var i = 0; i < C.NHOM_TINH.length; i++) if (k.indexOf(C.NHOM_TINH[i]) >= 0) return true;
+    return false;
+  };
+
   /* ============================================================
      3. TÍNH LƯỢNG NGUYÊN LIỆU ĐÁNG LẼ ĐÃ DÙNG
      ============================================================ */
@@ -1922,17 +1932,39 @@ function inventoryFlow(s){
     var dsNhom = Object.keys(theoNhom).map(function (t) {
       var g = theoNhom[t], tong = g.slCo + g.slThieu;
       g.pct = tong ? (g.slCo / tong * 100) : 0;
+      g.tinh = C.laNhomTinh(t);
       return g;
     }).sort(function (a, b) { return (b.slCo + b.slThieu) - (a.slCo + a.slThieu); });
 
+    // Chỉ Food + Beverage mới ăn vào định lượng kho. Good Other / Coupon /
+    // Voucher / Service là hàng khác — để chúng trong phép tính thì tỉ lệ bị
+    // kéo xuống oan. ĐƯỜNG LÙI: không nhận ra nhóm nào thuộc diện tính (file
+    // đổi định dạng, mất cột Category) thì tính TẤT CẢ như cũ, đừng ra 0%.
+    var coNhomTinh = dsNhom.some(function (g) { return g.tinh; });
+    var slKhopT = 0, slTongT = 0;
+    dsNhom.forEach(function (g) {
+      if (coNhomTinh && !g.tinh) return;
+      slKhopT += g.slCo; slTongT += g.slCo + g.slThieu;
+    });
+
+    // Danh sách món chưa có định lượng: chỉ giữ nhóm thuộc diện tính, để không
+    // bắt người đọc lọc tay qua coupon/voucher.
+    var thieuTinh = coNhomTinh
+      ? khongKhop.filter(function (x) { return C.laNhomTinh(x.nhom); })
+      : khongKhop;
+
     return {
       usage: usage,
-      khongKhop: khongKhop,
+      khongKhop: thieuTinh,
+      khongKhopTatCa: khongKhop,
       theoNhom: dsNhom,
+      chiFoodBev: coNhomTinh,
       soMa: Object.keys(usage).length,
       soMonKhop: Object.keys(monDung).length,
-      slKhop: slKhop, slTong: slTong,
-      pct: slTong ? (slKhop / slTong * 100) : 0
+      slKhop: slKhopT, slTong: slTongT,
+      slKhopTatCa: slKhop, slTongTatCa: slTong,
+      pct: slTongT ? (slKhopT / slTongT * 100) : 0,
+      pctTatCa: slTong ? (slKhop / slTong * 100) : 0
     };
   };
 
@@ -2116,7 +2148,8 @@ function applyRecipes(rows){
 async function saveSalesUsage(plant,sloc,period,kq,ky){
   if(!sb)return {ok:false,why:'Chưa kết nối máy chủ'};
   const row={plant_code:plant,sloc_code:sloc||'',period:period,
-    usage:kq.usage,missing:kq.khongKhop.slice(0,300),by_group:kq.theoNhom||[],pct:Number(kq.pct.toFixed(2)),
+    usage:kq.usage,missing:kq.khongKhop.slice(0,300),by_group:kq.theoNhom||[],
+    only_fb:!!kq.chiFoodBev,pct:Number(kq.pct.toFixed(2)),
     sl_khop:kq.slKhop,sl_tong:kq.slTong,src:(ky&&ky.diem)||'',
     created_by:session?session.name:'',created_at:new Date().toISOString()};
   try{
@@ -2125,7 +2158,7 @@ async function saveSalesUsage(plant,sloc,period,kq,ky){
       return {ok:false,why:error.message||'Máy chủ từ chối'};}
   }catch(e){return {ok:false,why:(e&&e.message)||'Lỗi không rõ'};}
   salesUsage[clKey(plant,sloc,period)]={usage:kq.usage,missing:row.missing,theoNhom:row.by_group,
-    pct:row.pct,slKhop:kq.slKhop,slTong:kq.slTong,src:row.src,by:row.created_by,at:now()};
+    chiFoodBev:row.only_fb,pct:row.pct,slKhop:kq.slKhop,slTong:kq.slTong,src:row.src,by:row.created_by,at:now()};
   return {ok:true};
 }
 async function saveVarNote(plant,sloc,period,code,note,status){
@@ -2258,7 +2291,8 @@ async function dbLoadAll(){
     }catch(e){recipes={};recipeAlias={};clTblOK=false;console.warn('Chưa có bảng recipes — bỏ qua',e&&e.message);}
     try{const sug=await sb.from('sales_usage').select('*').order('created_at',{ascending:false}).limit(400);
       salesUsage={};(sug.data||[]).forEach(r=>{salesUsage[clKey(r.plant_code,r.sloc_code,r.period)]={
-        usage:r.usage||{},missing:r.missing||[],theoNhom:r.by_group||[],pct:Number(r.pct)||0,slKhop:Number(r.sl_khop)||0,
+        usage:r.usage||{},missing:r.missing||[],theoNhom:r.by_group||[],chiFoodBev:!!r.only_fb,
+        pct:Number(r.pct)||0,slKhop:Number(r.sl_khop)||0,
         slTong:Number(r.sl_tong)||0,src:r.src||'',by:r.created_by,at:fmt(r.created_at)};});
     }catch(e){salesUsage={};clTblOK=false;console.warn('Chưa có bảng sales_usage — bỏ qua',e&&e.message);}
     try{const vn=await sb.from('variance_notes').select('*').limit(3000);
@@ -2964,8 +2998,12 @@ function renderChenhLech(v){
    đồ uống 95% còn đồ ăn 12% — mã thực phẩm chưa dùng để kết luận được. */
 function clBangNhom(host,dsNhom,tieuDe){
   if(!dsNhom||!dsNhom.length)return;
+  const coLoc=dsNhom.some(g=>g.tinh);
+  const trongDien=g=>!coLoc||g.tinh;      // không nhận ra nhóm nào thì tính hết
   const d=el('details');d.style.cssText='margin-top:10px;font-size:13px';
-  const xau=dsNhom.filter(g=>g.pct<50).length;
+  // Chỉ báo động nhóm THUỘC DIỆN TÍNH — coupon/voucher 0% là bình thường,
+  // tô đỏ chúng chỉ làm loãng cảnh báo thật.
+  const xau=dsNhom.filter(g=>trongDien(g)&&g.pct<50).length;
   d.open=xau>0;
   d.innerHTML='<summary style="cursor:pointer;font-weight:600'+(xau?';color:var(--red)':'')+'">'
     +(tieuDe||'Tỉ lệ quy đổi theo nhóm hàng')
@@ -2976,14 +3014,24 @@ function clBangNhom(host,dsNhom,tieuDe){
     +'<th class="num">SL thiếu</th><th class="num">% quy đổi</th></tr></thead>';
   const tb=el('tbody');
   dsNhom.forEach(g=>{
-    const mau=g.pct<50?'var(--red)':(g.pct<90?'var(--amber,#8A5A00)':'var(--green)');
-    tb.appendChild(el('tr',null,'<td>'+g.nhom+'</td>'
+    const trong=trongDien(g);
+    const mau=!trong?'var(--muted)':(g.pct<50?'var(--red)':(g.pct<90?'var(--amber,#8A5A00)':'var(--green)'));
+    const tr=el('tr',null,'<td>'+g.nhom
+      +(trong?'':' <span style="font-size:11px;color:var(--muted)">· không tính</span>')+'</td>'
       +'<td class="num">'+nq(g.co,0)+'</td>'
-      +'<td class="num"'+(g.thieu?' style="color:'+mau+';font-weight:600"':'')+'>'+nq(g.thieu,0)+'</td>'
+      +'<td class="num"'+(g.thieu&&trong?' style="color:'+mau+';font-weight:600"':'')+'>'+nq(g.thieu,0)+'</td>'
       +'<td class="num">'+nq(g.slThieu,0)+'</td>'
-      +'<td class="num" style="color:'+mau+';font-weight:700">'+pc(g.pct)+'</td>'));
+      +'<td class="num" style="color:'+mau+(trong?';font-weight:700':'')+'">'+pc(g.pct)+'</td>');
+    if(!trong)tr.style.opacity='.6';
+    tb.appendChild(tr);
   });
-  t.appendChild(tb);w.appendChild(t);d.appendChild(w);host.appendChild(d);
+  t.appendChild(tb);w.appendChild(t);d.appendChild(w);
+  if(coLoc){
+    const ghi=el('div');ghi.style.cssText='margin-top:6px;font-size:12px;color:var(--muted)';
+    ghi.textContent='Chỉ Food và Beverage được tính vào tỉ lệ — các nhóm khác là hàng không ăn vào định lượng kho.';
+    d.appendChild(ghi);
+  }
+  host.appendChild(d);
 }
 
 /* ---------- ô chọn file dùng chung ---------- */
@@ -3187,17 +3235,25 @@ function clFormDoanhThu(host){
           +'</b>. Kiểm lại trước khi lưu — lưu nhầm kỳ là đối chiếu sai toàn bộ.</div>';
       }
       if(kq.pct<90){
+        const nhomYeu=(kq.theoNhom||[]).filter(g=>(!kq.chiFoodBev||g.tinh)&&g.pct<50)
+          .map(g=>g.nhom+' '+pc(g.pct));
         canh+='<div style="color:var(--amber,#8A5A00);font-weight:600;margin-top:6px">⚠ Mới quy đổi được '
-          +pc(kq.pct)+' sản lượng. Phần chưa quy đổi được làm các mã liên quan <b>hiện lên như đang hao hụt dù không hao</b>.</div>';
+          +pc(kq.pct)+' sản lượng'+(kq.chiFoodBev?' (Food + Beverage)':'')+'. '
+          +(nhomYeu.length?'Yếu nhất: <b>'+nhomYeu.join('</b>, <b>')+'</b>. ':'')
+          +'Phần chưa quy đổi được làm các mã liên quan <b>hiện lên như đang hao hụt dù không hao</b>.</div>';
       }
 
+      const ngoai=kq.slTongTatCa-kq.slTong;
       st.innerHTML='<b>Đọc xong</b> — '+nq(dt.ban.length,0)+' món bán ra'
         +(dt.boTong?' (đã bỏ '+dt.boTong+' dòng cộng của báo cáo)':'')
         +', tổng '+nq(dt.tongSL,0)+' đơn vị.'
         +'<br>Kỳ trong file: <b>'+(dt.ky.tu||'?')+' → '+(dt.ky.den||'?')+'</b>'
         +(dt.ky.diem?' · điểm bán ghi trong file: <b>'+dt.ky.diem+'</b>':'')
         +'<br>Quy ra <b>'+nq(kq.soMa,0)+' mã vật tư</b>, khớp '+nq(kq.slKhop,0)+'/'+nq(kq.slTong,0)
-        +' đơn vị = <b>'+pc(kq.pct)+'</b>.'+canh;
+        +' đơn vị = <b>'+pc(kq.pct)+'</b>'
+        +(kq.chiFoodBev?' <span style="color:var(--muted)">(chỉ tính Food + Beverage'
+            +(ngoai>0?'; '+nq(ngoai,0)+' đơn vị nhóm khác không tính':'')+')</span>':'')
+        +'.'+canh;
 
       clBangNhom(kqBox,kq.theoNhom);
 
@@ -3274,14 +3330,16 @@ function clBang(host){
     return d;};
   st.appendChild(oStat(nq(rows.length,0),'Mã đã đối chiếu'));
   st.appendChild(oStat(nq(vuot.length,0),'Lệch quá '+ng+'%',vuot.length?'var(--red)':''));
-  st.appendChild(oStat(pc(su.pct),'Sản lượng quy đổi được',su.pct<90?'var(--amber,#8A5A00)':'var(--green)'));
+  st.appendChild(oStat(pc(su.pct),su.chiFoodBev?'Quy đổi được (Food + Beverage)':'Sản lượng quy đổi được',
+    su.pct<90?'var(--amber,#8A5A00)':'var(--green)'));
   st.appendChild(oStat(nq(chuaGT.length,0),'Chờ giải trình',chuaGT.length?'var(--amber,#8A5A00)':''));
   host.appendChild(st);
 
   // --- cảnh báo phải thấy trước khi đọc số ---
   if(su.pct<90){
     host.appendChild(clNote('<b>Số lệch dưới đây chưa tin được hết.</b> Mới quy đổi được '
-      +pc(su.pct)+' sản lượng bán ra ('+nq(su.slTong-su.slKhop,0)+' đơn vị chưa có định lượng). '
+      +pc(su.pct)+(su.chiFoodBev?' sản lượng Food + Beverage':' sản lượng bán ra')
+      +' ('+nq(su.slTong-su.slKhop,0)+' đơn vị chưa có định lượng). '
       +'Những mã dính phần chưa quy đổi sẽ hiện như <b>đang hao hụt dù không hao</b>.'
       +((su.missing&&su.missing.length)?' Món chưa có định lượng nhiều nhất: <b>'
         +su.missing.slice(0,3).map(x=>x.ten).join('</b>, <b>')+'</b>.':'')));
