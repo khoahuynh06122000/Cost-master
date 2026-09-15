@@ -1826,12 +1826,16 @@ function inventoryFlow(s){
     var cNhom = timCot(h, 'Category'), cTen = timCot(h, 'Product name'), cSL = timCot(h, 'Quantity');
     if (cTen < 0 || cSL < 0) return { loi: ['Không tìm được cột tên món / số lượng'] };
 
-    var ban = [], boTong = 0, gop = {};
+    var ban = [], boTong = 0, gop = {}, nhomHienTai = '';
     for (var i = iTD + 1; i < rowsBan.length; i++) {
       var r = rowsBan[i] || [];
-      var ten = chu(r[cTen]), nhom = cNhom >= 0 ? chu(r[cNhom]) : '';
+      // PivotTable chỉ ghi tên nhóm ở DÒNG ĐẦU mỗi nhóm, các dòng sau để trống.
+      // Không kéo xuống thì hầu hết món mất nhóm và không thống kê theo nhóm được.
+      var oNhom = cNhom >= 0 ? chu(r[cNhom]) : '';
+      if (oNhom && !/total$/i.test(oNhom)) nhomHienTai = oNhom;
+      var ten = chu(r[cTen]), nhom = nhomHienTai;
       // Dòng cộng của pivot ("Coupon Total", "Grand Total"): cộng vào là đúp số
-      if (/(^|\s)total$/i.test(ten) || /(^|\s)total$/i.test(nhom)) { boTong++; continue; }
+      if (/(^|\s)total$/i.test(ten) || /(^|\s)total$/i.test(oNhom)) { boTong++; continue; }
       if (!ten) continue;
       var sl = so(r[cSL]);
       if (!sl) continue;
@@ -1905,9 +1909,26 @@ function inventoryFlow(s){
     });
 
     khongKhop.sort(function (a, b) { return b.sl - a.sl; });
+
+    // Tách theo nhóm hàng: con số tổng che mất sự thật (đồ uống có thể 95%
+    // trong khi đồ ăn chỉ 12%). Nhìn theo nhóm mới biết mã nào đáng tin.
+    var theoNhom = {};
+    for (var k = 0; k < ban.length; k++) {
+      var b2 = ban[k], ten2 = b2.nhom || '(không rõ nhóm)';
+      var g = theoNhom[ten2] || (theoNhom[ten2] = { nhom: ten2, co: 0, thieu: 0, slCo: 0, slThieu: 0 });
+      if (dl.alias[b2.key] != null && dl.mon[dl.alias[b2.key]]) { g.co++; g.slCo += b2.sl; }
+      else { g.thieu++; g.slThieu += b2.sl; }
+    }
+    var dsNhom = Object.keys(theoNhom).map(function (t) {
+      var g = theoNhom[t], tong = g.slCo + g.slThieu;
+      g.pct = tong ? (g.slCo / tong * 100) : 0;
+      return g;
+    }).sort(function (a, b) { return (b.slCo + b.slThieu) - (a.slCo + a.slThieu); });
+
     return {
       usage: usage,
       khongKhop: khongKhop,
+      theoNhom: dsNhom,
       soMa: Object.keys(usage).length,
       soMonKhop: Object.keys(monDung).length,
       slKhop: slKhop, slTong: slTong,
@@ -2095,7 +2116,7 @@ function applyRecipes(rows){
 async function saveSalesUsage(plant,sloc,period,kq,ky){
   if(!sb)return {ok:false,why:'Chưa kết nối máy chủ'};
   const row={plant_code:plant,sloc_code:sloc||'',period:period,
-    usage:kq.usage,missing:kq.khongKhop.slice(0,300),pct:Number(kq.pct.toFixed(2)),
+    usage:kq.usage,missing:kq.khongKhop.slice(0,300),by_group:kq.theoNhom||[],pct:Number(kq.pct.toFixed(2)),
     sl_khop:kq.slKhop,sl_tong:kq.slTong,src:(ky&&ky.diem)||'',
     created_by:session?session.name:'',created_at:new Date().toISOString()};
   try{
@@ -2103,8 +2124,8 @@ async function saveSalesUsage(plant,sloc,period,kq,ky){
     if(error){if(clThieuBang(error)){clTblOK=false;return {ok:false,why:'Chưa chạy SQL tạo bảng sales_usage'};}
       return {ok:false,why:error.message||'Máy chủ từ chối'};}
   }catch(e){return {ok:false,why:(e&&e.message)||'Lỗi không rõ'};}
-  salesUsage[clKey(plant,sloc,period)]={usage:kq.usage,missing:row.missing,pct:row.pct,
-    slKhop:kq.slKhop,slTong:kq.slTong,src:row.src,by:row.created_by,at:now()};
+  salesUsage[clKey(plant,sloc,period)]={usage:kq.usage,missing:row.missing,theoNhom:row.by_group,
+    pct:row.pct,slKhop:kq.slKhop,slTong:kq.slTong,src:row.src,by:row.created_by,at:now()};
   return {ok:true};
 }
 async function saveVarNote(plant,sloc,period,code,note,status){
@@ -2237,7 +2258,7 @@ async function dbLoadAll(){
     }catch(e){recipes={};recipeAlias={};clTblOK=false;console.warn('Chưa có bảng recipes — bỏ qua',e&&e.message);}
     try{const sug=await sb.from('sales_usage').select('*').order('created_at',{ascending:false}).limit(400);
       salesUsage={};(sug.data||[]).forEach(r=>{salesUsage[clKey(r.plant_code,r.sloc_code,r.period)]={
-        usage:r.usage||{},missing:r.missing||[],pct:Number(r.pct)||0,slKhop:Number(r.sl_khop)||0,
+        usage:r.usage||{},missing:r.missing||[],theoNhom:r.by_group||[],pct:Number(r.pct)||0,slKhop:Number(r.sl_khop)||0,
         slTong:Number(r.sl_tong)||0,src:r.src||'',by:r.created_by,at:fmt(r.created_at)};});
     }catch(e){salesUsage={};clTblOK=false;console.warn('Chưa có bảng sales_usage — bỏ qua',e&&e.message);}
     try{const vn=await sb.from('variance_notes').select('*').limit(3000);
@@ -2939,6 +2960,32 @@ function renderChenhLech(v){
   renderHubView(v,'chenhlech',acts);
 }
 
+/* Bảng % quy đổi theo nhóm hàng. Tổng 80% nghe ổn, nhưng tách ra mới thấy
+   đồ uống 95% còn đồ ăn 12% — mã thực phẩm chưa dùng để kết luận được. */
+function clBangNhom(host,dsNhom,tieuDe){
+  if(!dsNhom||!dsNhom.length)return;
+  const d=el('details');d.style.cssText='margin-top:10px;font-size:13px';
+  const xau=dsNhom.filter(g=>g.pct<50).length;
+  d.open=xau>0;
+  d.innerHTML='<summary style="cursor:pointer;font-weight:600'+(xau?';color:var(--red)':'')+'">'
+    +(tieuDe||'Tỉ lệ quy đổi theo nhóm hàng')
+    +(xau?' — '+xau+' nhóm dưới 50%':'')+'</summary>';
+  const w=el('div','tbl-wrap no-cards');w.style.marginTop='6px';
+  const t=el('table');
+  t.innerHTML='<thead><tr><th>Nhóm hàng</th><th class="num">Món có ĐL</th><th class="num">Món thiếu</th>'
+    +'<th class="num">SL thiếu</th><th class="num">% quy đổi</th></tr></thead>';
+  const tb=el('tbody');
+  dsNhom.forEach(g=>{
+    const mau=g.pct<50?'var(--red)':(g.pct<90?'var(--amber,#8A5A00)':'var(--green)');
+    tb.appendChild(el('tr',null,'<td>'+g.nhom+'</td>'
+      +'<td class="num">'+nq(g.co,0)+'</td>'
+      +'<td class="num"'+(g.thieu?' style="color:'+mau+';font-weight:600"':'')+'>'+nq(g.thieu,0)+'</td>'
+      +'<td class="num">'+nq(g.slThieu,0)+'</td>'
+      +'<td class="num" style="color:'+mau+';font-weight:700">'+pc(g.pct)+'</td>'));
+  });
+  t.appendChild(tb);w.appendChild(t);d.appendChild(w);host.appendChild(d);
+}
+
 /* ---------- ô chọn file dùng chung ---------- */
 function clFilePick(host,nhan,goiY,onFile){
   const row=el('div','form-row');
@@ -3152,12 +3199,15 @@ function clFormDoanhThu(host){
         +'<br>Quy ra <b>'+nq(kq.soMa,0)+' mã vật tư</b>, khớp '+nq(kq.slKhop,0)+'/'+nq(kq.slTong,0)
         +' đơn vị = <b>'+pc(kq.pct)+'</b>.'+canh;
 
+      clBangNhom(kqBox,kq.theoNhom);
+
       if(kq.khongKhop.length){
         const d=el('details');d.style.cssText='margin-top:10px;font-size:13px';
         d.innerHTML='<summary style="cursor:pointer;font-weight:600">Xem '+kq.khongKhop.length
           +' món chưa tra được định lượng</summary>';
         const ul=el('div');ul.style.cssText='margin-top:6px;color:var(--muted)';
-        ul.innerHTML=kq.khongKhop.slice(0,80).map(x=>'• '+nq(x.sl,0)+' — '+x.ten).join('<br>')
+        ul.innerHTML=kq.khongKhop.slice(0,80).map(x=>'• '+nq(x.sl,0)+' — '+x.ten
+          +(x.nhom?' <span style="opacity:.75">['+x.nhom+']</span>':'')).join('<br>')
           +(kq.khongKhop.length>80?'<br>… và '+(kq.khongKhop.length-80)+' món nữa':'');
         d.appendChild(ul);kqBox.appendChild(d);
       }
@@ -3242,6 +3292,7 @@ function clBang(host){
       +'Số lệch của các mã đó vô nghĩa cho tới khi sửa: '
       +lechDvt.slice(0,4).map(r=>r.name+' ('+r.dmUom+' ≠ '+r.uom+')').join(' · ')));
   }
+  if(su.theoNhom&&su.theoNhom.length)clBangNhom(host,su.theoNhom,'Tỉ lệ quy đổi theo nhóm hàng — mã nhóm nào đáng tin');
   host.appendChild(clNote('Doanh thu nạp lúc <b>'+(su.at||'?')+'</b>'
     +(su.by?' bởi '+su.by:'')+(su.src?' · nguồn: '+su.src:'')
     +' · biên bản kiểm kê <b>'+sub.id+'</b>'));
