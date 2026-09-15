@@ -2137,7 +2137,9 @@ async function dbLoadAll(){
     (mt.data||[]).forEach(r=>{if(!r||r.code==null)return;const code=String(r.code).trim();if(!code)return;const nm=r.name!=null?String(r.name).trim():'';const um=r.uom!=null?String(r.uom).trim():'';const ex=masterByCode[code];if(!ex){const m={code,name:nm||code,uom:um};masterByCode[code]=m;DATA.materials.push(m);}else if(nm&&(!ex.name||ex.name==='?'||ex.name===code)){ex.name=nm;if(um&&!ex.uom)ex.uom=um;}});
     if(su.data&&su.data.length)zoneColOK=Object.prototype.hasOwnProperty.call(su.data[0],'zones');
     submissions=(su.data||[]).map(r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,user:r.user_name,role:r.role,status:r.status,count:r.count,items:r.items||{},zones:Array.isArray(r.zones)?r.zones:null,period:r.period||(r.created_at?(new Date(r.created_at).getFullYear()+'-'+String(new Date(r.created_at).getMonth()+1).padStart(2,'0')):''),approvedBy:r.approved_by,approvedAt:r.approved_at?fmt(r.approved_at):null,prevOpening:r.prev_opening||null,edits:r.edits||[],time:fmt(r.created_at)}));
-    transfers=(tr.data||[]).map(r=>({date:r.date,code:r.code,name:r.name,uom:r.uom,qty:r.qty,from:r.from_wh,to:r.to_wh,fromKey:r.from_key||null,toKey:r.to_key||null,period:r.period||null,reason:r.reason,user:r.user_name,time:fmt(r.created_at)}));
+    // id của dòng sổ: bắt buộc phải có thì admin mới xóa được ĐÚNG một dòng dư
+    // (xóa theo reason+code+period sẽ quét sạch cả dòng đúng lẫn dòng trùng).
+    transfers=(tr.data||[]).map(r=>({id:r.id,date:r.date,code:r.code,name:r.name,uom:r.uom,qty:r.qty,from:r.from_wh,to:r.to_wh,fromKey:r.from_key||null,toKey:r.to_key||null,period:r.period||null,reason:r.reason,user:r.user_name,time:fmt(r.created_at)}));
     shifts=(sh.data||[]).map(r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,date:r.date,ca:r.ca,fromUser:r.from_user,items:r.items||{},count:r.count,status:r.status,receivedBy:r.received_by,receivedAt:r.received_at?fmt(r.received_at):null,time:fmt(r.created_at)}));
     openingStock={};(op.data||[]).forEach(r=>{openingStock[r.plant_code+'|'+r.sloc_code]={items:r.items||{},fromId:r.from_id,at:r.set_at?fmt(r.set_at):'',by:r.set_by};});
     plantMaterials={};(pm.data||[]).forEach(r=>{(plantMaterials[r.plant_code]=plantMaterials[r.plant_code]||[]).push(r.code);});
@@ -3714,6 +3716,42 @@ function dcSapExport(v){
     expCard.appendChild(eb);v.appendChild(expCard);
   }
 }
+/* Dấu vân tay một dòng sổ — hai dòng cùng vân tay là bị ghi trùng.
+   KHÔNG tính id vào, vì id chính là thứ phân biệt hai bản ghi trùng nhau. */
+function dcVan(t){
+  return [t.date,t.code,Number(t.qty)||0,t.fromKey||'',t.toKey||'',t.reason||''].join('|');
+}
+/* Đếm xem mỗi vân tay xuất hiện mấy lần trong sổ */
+function dcDemTrung(){
+  const d={};transfers.forEach(t=>{const k=dcVan(t);d[k]=(d[k]||0)+1;});return d;
+}
+/* XÓA MỘT DÒNG SỔ (chỉ admin) — xóa theo id nên không đụng dòng khác.
+   Dùng khi sổ bị ghi trùng, hoặc cần gỡ một dòng ghi nhầm. */
+async function deleteTransferRow(t,laTrung){
+  if(!session||session.role!=='admin'){toast('Chỉ admin mới xóa được dòng sổ');return false;}
+  if(t.id==null){errBox('Không xóa được dòng này',[
+    'Dòng sổ chưa có mã định danh (id) — có thể do bản dữ liệu cũ.',
+    'Tải lại trang rồi thử lại. Nếu vẫn vậy, xóa cả phiếu ở màn Toàn bộ phiếu yêu cầu.'
+  ],'Mã hàng: '+t.code);return false;}
+  let txt='XÓA MỘT DÒNG SỔ ĐIỀU CHUYỂN\n\n'
+    +t.name+' ('+t.code+')\n'+t.qty+' '+(t.uom||'')+' · '+t.date+'\n'
+    +t.from+' → '+t.to+'\n'+(t.reason||'')+'\n\n';
+  txt+=laTrung
+    ? 'Dòng này TRÙNG với một dòng khác y hệt (phiếu bị ghi sổ hai lần).\nXóa bản dư là đúng — kho sẽ hết bị trừ gấp đôi.\n\n'
+    : '⚠ Dòng này KHÔNG trùng với dòng nào. Xóa nó đi thì phiếu vẫn ở trạng thái Đã duyệt\n'
+      +'nhưng sổ thiếu mất một dòng — hàng sẽ không được trừ kho.\n'
+      +'Nếu muốn hủy hẳn phiếu, hãy dùng "🗑 Xóa phiếu (admin)" ở màn Toàn bộ phiếu yêu cầu.\n\n';
+  txt+='KHÔNG THỂ HOÀN TÁC. Bấm OK để xóa dòng này.';
+  if(!confirm(txt))return false;
+  const del=await dbDel('transfers',{id:t.id});
+  if(!del.ok||del.count===0)return false;    // dbDel đã dựng hộp lỗi
+  transfers=transfers.filter(x=>x.id!==t.id);
+  log('Xóa dòng sổ điều chuyển (admin)',
+    t.code+' · '+t.qty+' '+(t.uom||'')+' · '+t.from+' → '+t.to+' · '+(t.reason||'')+(laTrung?' · dòng trùng':''));
+  toast('Đã xóa dòng sổ'+(laTrung?' trùng':''));
+  renderView();return true;
+}
+
 function dcDashList(v){
   const total=transfers.length;
   const byReason={};transfers.forEach(t=>{byReason[t.reason]=(byReason[t.reason]||0)+1;});
@@ -3729,14 +3767,37 @@ function dcDashList(v){
   const body=el('div');
   if(!total)body.appendChild(el('div','empty',`<div class="big">Chưa có phiếu điều chuyển</div><div>Khi giám sát nhập điều chuyển, phiếu sẽ hiện ở đây.</div>`));
   else{
+    const dem=dcDemTrung();
+    const soTrung=Object.values(dem).filter(x=>x>1).reduce((a,b)=>a+(b-1),0);
+    if(soTrung){
+      const c=el('div','note');const in2=el('div');in2.style.minWidth='0';
+      in2.innerHTML='<b style="color:var(--red)">⚠ Sổ có '+soTrung+' dòng bị ghi trùng.</b> '
+        +'Cùng một phiếu ghi vào sổ nhiều lần thì hàng bị <b>trừ kho gấp đôi</b>. '
+        +(session&&session.role==='admin'
+          ?'Các dòng trùng đã đánh dấu bên dưới — bấm 🗑 để xóa bản dư (giữ lại một bản).'
+          :'Báo admin xóa bản dư.');
+      c.appendChild(in2);body.appendChild(c);
+    }
+    const laAdmin=session&&session.role==='admin';
     const w=el('div','tbl-wrap');const tbl=el('table');
-    tbl.innerHTML=`<thead><tr><th>Ngày</th><th>Hàng hóa</th><th class="num">SL</th><th>Từ → Đến</th><th>Lý do</th><th>Người nhập</th></tr></thead>`;
+    tbl.innerHTML=`<thead><tr><th>Ngày</th><th>Hàng hóa</th><th class="num">SL</th><th>Từ → Đến</th><th>Lý do</th><th>Người nhập</th>${laAdmin?'<th></th>':''}</tr></thead>`;
     const tb=el('tbody');
-    transfers.slice(0,80).forEach(t=>tb.appendChild(el('tr',null,`<td class="tnum">${t.date}</td>
-      <td><div class="cell-strong">${t.name}</div><div class="cell-sub tnum">${t.code}</div></td>
+    transfers.slice(0,80).forEach(t=>{
+      const trung=dem[dcVan(t)]>1;
+      const tr=el('tr',null,`<td class="tnum">${t.date}</td>
+      <td><div class="cell-strong">${t.name}</div><div class="cell-sub tnum">${t.code}${trung?' · <b style="color:var(--red)">ghi trùng</b>':''}</div></td>
       <td class="num cell-strong tnum">${t.qty} ${t.uom}</td>
       <td style="font-size:12.5px">${t.from} <span style="color:var(--brand-ink);font-weight:700">→</span> ${t.to}</td>
-      <td><span class="badge badge-soft">${t.reason}</span></td><td>${t.user||''}</td>`)));
+      <td><span class="badge badge-soft">${t.reason}</span></td><td>${t.user||''}</td>`);
+      if(laAdmin){
+        const td=el('td');
+        const b=el('button','btn btn-ghost btn-sm','🗑');
+        b.title='Xóa dòng sổ này';b.style.color='var(--red)';
+        b.onclick=()=>deleteTransferRow(t,trung);
+        td.appendChild(b);tr.appendChild(td);
+      }
+      tb.appendChild(tr);
+    });
     tbl.appendChild(tb);w.appendChild(tbl);body.appendChild(w);
   }
   card.appendChild(body);v.appendChild(card);
@@ -5032,18 +5093,26 @@ function dcReqCard(r,canAct){
       // Trường hợp phổ biến nhất: giao đúng số đã xin -> MỘT chạm, không phải cuộn bảng
       const nOk=codes.length;
       const bFull=el('button','btn btn-primary','✓ Duyệt đủ '+nOk+' mã');
+      const bEdit=el('button','btn btn-ghost','✎ Sửa số rồi duyệt');
+      const bOk=el('button','btn btn-primary','✓ Duyệt với số đã sửa');bOk.hidden=true;
+      const bNo=el('button','btn btn-ghost','✕ Từ chối');bNo.style.color='var(--red)';
       bFull.onclick=()=>{
         const where=r.toPlant?whName(r.toPlant,r.toSloc):'hủy / hao hụt';
         if(!confirm('Duyệt phiếu '+r.id+'?\n\nGiao ĐỦ số đã xin cho '+nOk+' mã → '+where+'.\nHàng sẽ bị trừ khỏi '+whName(r.fromPlant,r.fromSloc)+' ngay khi duyệt.'))return;
         const qs={};codes.forEach(c=>qs[c]=Number(r.items[c].qtyReq)||0);
-        approveTransferReq(r,qs);
+        bFull.disabled=true;bEdit.disabled=true;bNo.disabled=true;
+        const cu=bFull.textContent;bFull.textContent='Đang ghi sổ…';
+        approveTransferReq(r,qs).finally(()=>{bFull.disabled=false;bEdit.disabled=false;
+          bNo.disabled=false;bFull.textContent=cu;});
       };
-      const bEdit=el('button','btn btn-ghost','✎ Sửa số rồi duyệt');
-      const bOk=el('button','btn btn-primary','✓ Duyệt với số đã sửa');bOk.hidden=true;
       bEdit.onclick=()=>{showTable();bEdit.hidden=true;bFull.hidden=true;bOk.hidden=false;
         hint.textContent='Hạ "SL thực giao" theo hàng có thật. Ghi 0 là mã đó không giao. Không cho ghi quá số đã xin.';};
-      bOk.onclick=()=>{const qs={};Object.keys(inputs).forEach(c=>qs[c]=Number(inputs[c].value||0));approveTransferReq(r,qs);};
-      const bNo=el('button','btn btn-ghost','✕ Từ chối');bNo.style.color='var(--red)';
+      bOk.onclick=()=>{
+        const qs={};Object.keys(inputs).forEach(c=>qs[c]=Number(inputs[c].value||0));
+        bOk.disabled=true;bNo.disabled=true;
+        const cu=bOk.textContent;bOk.textContent='Đang ghi sổ…';
+        approveTransferReq(r,qs).finally(()=>{bOk.disabled=false;bNo.disabled=false;bOk.textContent=cu;});
+      };
       bNo.onclick=()=>rejectTransferReq(r);
       bar.appendChild(bFull);bar.appendChild(bEdit);bar.appendChild(bOk);bar.appendChild(bNo);
       const hint=el('span');hint.style.cssText='font-size:12px;color:var(--muted);flex-basis:100%';
@@ -5075,7 +5144,31 @@ function dcReqCard(r,canAct){
   return wrap;
 }
 // DUYỆT: ghi các dòng vào sổ transfers với NGÀY DUYỆT, rồi khóa phiếu lại
+let _dangDuyet={};   // mã phiếu đang chạy -> chặn bấm lần hai
 async function approveTransferReq(r,qtys){
+  // CHẶN GHI SỔ HAI LẦN. Ghi sổ mất vài giây; trước đây nút vẫn bấm được trong
+  // lúc đó nên bấm hai lần (hoặc mạng chậm rồi bấm lại) là sổ có hai dòng giống
+  // hệt nhau và hàng bị trừ kho gấp đôi — đã xảy ra thật với DC-1040-2017-20260915.
+  if(_dangDuyet[r.id]){toast('Đang duyệt phiếu này, đợi một chút…');return;}
+  if(r.status==='Đã duyệt'){
+    errBox('Phiếu này đã được duyệt rồi',[
+      'Duyệt lần nữa sẽ ghi thêm một lần vào sổ và <b>trừ kho gấp đôi</b>.',
+      'Nếu cần sửa, admin dùng "↩ Mở lại phiếu" ở màn Toàn bộ phiếu yêu cầu.'
+    ],'Phiếu: '+r.id+'\nDuyệt bởi: '+(r.approvedBy||'?')+' '+(r.approvedAt||''));return;
+  }
+  const daGhi=transfers.filter(t=>t.reason&&String(t.reason).includes(r.id));
+  if(daGhi.length){
+    errBox('Sổ đã có dòng của phiếu này',[
+      daGhi.length+' dòng mang mã phiếu <b>'+r.id+'</b> đã nằm trong sổ điều chuyển.',
+      'Duyệt tiếp sẽ ghi chồng lên và <b>trừ kho gấp đôi</b>.',
+      'Admin kiểm lại ở màn Toàn bộ phiếu yêu cầu trước khi làm tiếp.'
+    ],'Phiếu: '+r.id+'\nDòng sổ đang có: '+daGhi.length);return;
+  }
+  _dangDuyet[r.id]=true;
+  try{ return await _approveTransferReq(r,qtys); }
+  finally{ delete _dangDuyet[r.id]; }
+}
+async function _approveTransferReq(r,qtys){
   const d=new Date();
   const dateStr=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   const per=periodOfDate(dateStr);
