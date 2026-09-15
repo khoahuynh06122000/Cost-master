@@ -5143,8 +5143,53 @@ function dcReqCard(r,canAct){
   }
   return wrap;
 }
+/* Dọn lại đúng những dòng MÁY NÀY vừa ghi.
+   TUYỆT ĐỐI không dọn theo reason+code+period: điều kiện đó khớp cả dòng của
+   máy khác vừa ghi cho cùng phiếu, xóa nhầm là phiếu "Đã duyệt" mà sổ trống,
+   hàng không bị trừ kho. Đã bắt được lỗi này khi thử hai máy cùng duyệt. */
+async function donDongVuaGhi(doneIds,reason,codes,per){
+  let don=0;
+  if(doneIds&&doneIds.length){
+    for(const id of doneIds){
+      const d=await dbDel('transfers',{id});
+      if(d.ok&&d.count)don+=d.count;
+    }
+    transfers=transfers.filter(t=>doneIds.indexOf(t.id)<0);
+    return {don,theoId:true};
+  }
+  // Không có id (máy chủ không trả về) — đành dọn theo khóa cũ, nhưng phải báo rõ
+  for(const c of (codes||[])){
+    const d=await dbDel('transfers',{reason,code:c,period:per});
+    if(d.ok&&d.count)don+=d.count;
+  }
+  transfers=transfers.filter(t=>!(t.reason===reason&&(codes||[]).indexOf(t.code)>=0));
+  return {don,theoId:false};
+}
 // DUYỆT: ghi các dòng vào sổ transfers với NGÀY DUYỆT, rồi khóa phiếu lại
 let _dangDuyet={};   // mã phiếu đang chạy -> chặn bấm lần hai
+/* Hỏi máy chủ xem phiếu đã được ai duyệt chưa, sổ đã có dòng chưa.
+   Lỗi mạng thì KHÔNG chặn — thà cho làm rồi lớp chốt có điều kiện bắt sau,
+   còn hơn chặn oan lúc mạng chập chờn. */
+async function dcKiemMayChu(r){
+  if(!sb)return {chan:false};
+  try{
+    const q=await sb.from('transfer_requests').select('status,approved_by,approved_at').eq('id',r.id).limit(1);
+    const row=q&&q.data&&q.data[0];
+    if(row&&row.status==='Đã duyệt'){
+      return {chan:true,
+        vi:'Máy chủ cho biết phiếu đã được <b>'+(row.approved_by||'người khác')+'</b> duyệt rồi.',
+        chiTiet:'Trạng thái trên máy chủ: '+row.status+'\nDuyệt bởi: '+(row.approved_by||'?')};
+    }
+    const t=await sb.from('transfers').select('id').ilike('reason','%'+r.id+'%').limit(5);
+    const n2=(t&&t.data&&t.data.length)||0;
+    if(n2){
+      return {chan:true,
+        vi:'Sổ điều chuyển trên máy chủ <b>đã có '+n2+' dòng</b> mang mã phiếu này — hàng đã được trừ kho.',
+        chiTiet:'Dòng sổ tìm thấy: '+n2};
+    }
+  }catch(e){console.warn('dcKiemMayChu',e);}
+  return {chan:false};
+}
 async function approveTransferReq(r,qtys){
   // CHẶN GHI SỔ HAI LẦN. Ghi sổ mất vài giây; trước đây nút vẫn bấm được trong
   // lúc đó nên bấm hai lần (hoặc mạng chậm rồi bấm lại) là sổ có hai dòng giống
@@ -5165,7 +5210,19 @@ async function approveTransferReq(r,qtys){
     ],'Phiếu: '+r.id+'\nDòng sổ đang có: '+daGhi.length);return;
   }
   _dangDuyet[r.id]=true;
-  try{ return await _approveTransferReq(r,qtys); }
+  try{
+    // Ba lớp trên chỉ biết những gì máy NÀY thấy. Mở app ở hai nơi, hoặc hai người
+    // cùng duyệt một phiếu, thì phải hỏi máy chủ mới biết.
+    const cho=await dcKiemMayChu(r);
+    if(cho.chan){
+      errBox('Phiếu này đã được xử lý ở nơi khác',[
+        cho.vi,
+        'Ghi sổ tiếp sẽ <b>trừ kho gấp đôi</b>. Tải lại trang để xem trạng thái mới nhất.'
+      ],'Phiếu: '+r.id+'\n'+cho.chiTiet);
+      return;
+    }
+    return await _approveTransferReq(r,qtys);
+  }
   finally{ delete _dangDuyet[r.id]; }
 }
 async function _approveTransferReq(r,qtys){
@@ -5196,7 +5253,7 @@ async function _approveTransferReq(r,qtys){
   const reason=(r.kind==='huy'?'Hủy/hao hụt':dcKindLabel(r.kind))+(r.reason?': '+r.reason:'')+' · '+r.id;
   // GHI SỔ TRƯỚC, đánh dấu Đã duyệt SAU. Làm ngược lại thì RLS chặn ghi sổ sẽ để phiếu
   // ở trạng thái Đã duyệt mà sổ trống — hai bên tưởng xong việc trong khi hàng chưa hề trừ.
-  const done=[];
+  const done=[],doneIds=[];   // doneIds: id THẬT của từng dòng máy này vừa ghi
   for(const c of codes){
     const it=items[c];
     const row={date:dateStr,code:c,name:it.name||c,uom:it.uom||'',qty:Number(qtys[c]||0),
@@ -5206,16 +5263,12 @@ async function _approveTransferReq(r,qtys){
       const {data,error}=await sb.from('transfers').insert(row).select();
       if(error){emsg=(error.message||'')+(error.code?' (mã '+error.code+')':'');}
       else if(Array.isArray(data)&&data.length===0){emsg='Máy chủ nhận yêu cầu nhưng không tạo dòng nào (quyền RLS).';}
-      else ok=true;
+      else{ok=true;if(data[0]&&data[0].id!=null)doneIds.push(data[0].id);}
     }else ok=true;
     if(ok){done.push(c);transfers.unshift({date:row.date,code:c,name:row.name,uom:row.uom,qty:row.qty,from:fromNm,to:toNm,fromKey,toKey,period:per,reason,user:session.name,time:now()});continue;}
-    // Ghi lỗi giữa đường: dọn các dòng vừa ghi (khóa dọn = cột reason có mang mã phiếu) rồi báo thật
-    let cleaned=0;
-    for(const cc of done){
-      const del=await dbDel('transfers',{reason,code:cc,period:per});
-      if(del.ok&&del.count)cleaned+=del.count;
-      transfers=transfers.filter(t=>!(t.reason===reason&&t.code===cc));
-    }
+    // Ghi lỗi giữa đường: dọn đúng những dòng máy này vừa ghi rồi báo thật
+    const donKq=await donDongVuaGhi(doneIds,reason,done,per);
+    const cleaned=donKq.don;
     errBox('Không ghi được điều chuyển vào sổ — phiếu VẪN CHỜ DUYỆT',[
       'Máy chủ từ chối ghi sổ nên phiếu <b>không</b> được đánh dấu đã duyệt. Hàng <b>chưa</b> bị trừ kho.',
       done.length?`${done.length} mã ghi trước đó đã được dọn lại (${cleaned} dòng xóa thành công) để sổ không lệch.`:'Chưa mã nào được ghi vào sổ.',
@@ -5224,14 +5277,39 @@ async function _approveTransferReq(r,qtys){
     ],'Bảng: transfers\nPhiếu: '+r.id+'\nMã lỗi ở: '+c+'\n'+emsg+'\nĐã ghi rồi: '+(done.join(', ')||'(không)')+'\nDọn được: '+cleaned+'/'+done.length);
     return;
   }
-  const upd=await dbUpd('transfer_requests',{id:r.id},{status:'Đã duyệt',items,period:per,approved_by:session.name,approved_at:new Date().toISOString()});
-  if(!upd.ok||upd.count===0){   // dbUpd đã dựng hộp lỗi — sổ đã ghi nhưng phiếu chưa chốt được
-    errBox('Sổ đã ghi nhưng KHÔNG chốt được phiếu',[
-      `${done.length} mã đã ghi vào sổ điều chuyển (hàng đã trừ kho), nhưng máy chủ không cho cập nhật trạng thái phiếu.`,
-      'Phiếu vẫn hiện là Chờ duyệt — <b>ĐỪNG bấm Duyệt lại</b>, sẽ ghi sổ lần hai.',
-      'Báo admin xử lý phiếu này bằng tay.'
-    ],'Bảng: transfer_requests\nPhiếu: '+r.id+'\nĐã ghi sổ: '+done.join(', '));
-    return;
+  // CHỐT PHIẾU CÓ ĐIỀU KIỆN: chỉ đổi được khi phiếu VẪN đang Chờ duyệt.
+  // Hai máy cùng ghi thì chỉ MỘT máy chốt được; máy thua đổi 0 dòng và phải dọn
+  // lại phần mình vừa ghi, nếu không sổ có hai lượt của cùng một phiếu.
+  // Gọi thẳng sb (không qua dbUpd) vì dbUpd thấy 0 dòng là dựng hộp lỗi "RLS chặn" —
+  // ở đây 0 dòng nghĩa khác hẳn: máy khác đã duyệt trước.
+  let updOk=false,updErr='',updCount=0;
+  if(sb){
+    const u=await sb.from('transfer_requests')
+      .update({status:'Đã duyệt',items,period:per,approved_by:session.name,approved_at:new Date().toISOString()})
+      .match({id:r.id,status:'Chờ duyệt'}).select();
+    if(u.error){updErr=(u.error.message||'')+(u.error.code?' (mã '+u.error.code+')':'');}
+    else{updCount=Array.isArray(u.data)?u.data.length:0;updOk=updCount>0;}
+  }else updOk=true;
+
+  if(!updOk){
+    // Dọn ĐÚNG phần máy này vừa ghi — nếu không, sổ mang hai lượt của cùng một phiếu
+    const donKq=await donDongVuaGhi(doneIds,reason,done,per);
+    const don=donKq.don;
+    const doMayKhac=!updErr&&updCount===0;
+    errBox(doMayKhac?'Phiếu vừa được duyệt ở nơi khác — đã hủy lượt ghi này'
+                    :'Sổ đã ghi nhưng KHÔNG chốt được phiếu',[
+      doMayKhac
+        ? 'Trong lúc máy này đang ghi, phiếu <b>'+r.id+'</b> đã được duyệt ở máy khác.'
+        : `${done.length} mã đã ghi vào sổ, nhưng máy chủ không cho cập nhật trạng thái phiếu.`,
+      done.length
+        ? (don===done.length
+            ? '✓ '+don+' dòng vừa ghi đã được <b>dọn lại</b> — sổ không bị ghi hai lượt, hàng không bị trừ gấp đôi.'
+            : '⚠ Chỉ dọn được '+don+'/'+done.length+' dòng — <b>báo admin kiểm sổ điều chuyển của phiếu này ngay</b>.')
+        : 'Chưa mã nào được ghi vào sổ.',
+      doMayKhac?'Tải lại trang để xem trạng thái mới nhất.':'Báo admin xử lý phiếu này bằng tay.'
+    ],'Bảng: transfer_requests\nPhiếu: '+r.id+'\nĐã ghi sổ: '+(done.join(', ')||'(không)')
+      +'\nDọn lại: '+don+'/'+done.length+(updErr?'\nLỗi: '+updErr:'\nUPDATE đổi 0 dòng (phiếu không còn ở trạng thái Chờ duyệt)'));
+    renderView();return;
   }
   r.status='Đã duyệt';r.items=items;r.period=per;r.approvedBy=session.name;r.approvedAt=now();
   // Báo cho KHO NHẬN (cả xin lẫn đẩy): với xin là "yêu cầu của bạn đã được cho", với đẩy là
