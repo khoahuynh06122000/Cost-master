@@ -124,6 +124,12 @@
   .nav-item.active{background:rgba(232,146,23,.14);color:#fff}
   .nav-item.active:before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:2px;background:var(--accent)}
   .nav-item svg{flex:none;opacity:.85}
+  .sb-ver{
+    padding:7px 16px 12px; font-size:11px; letter-spacing:.02em;
+    color:inherit; opacity:.68; cursor:pointer; user-select:none;
+    display:flex; align-items:center; gap:6px;
+  }
+  .sb-ver:hover{opacity:.9}
   .sb-user{border-top:1px solid var(--sidebar-line);padding:14px 16px;display:flex;align-items:center;gap:11px}
   .sb-user .av{width:36px;height:36px;border-radius:50%;background:var(--brand);display:grid;place-items:center;font-weight:800;color:#fff;flex:none}
   .sb-user .un{font-weight:700;color:#fff;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -817,6 +823,7 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       </button>
     </div>
+    <div class="sb-ver" id="sbVer" title="Bấm để tải lại bản mới nhất"></div>
   </aside>
   <div class="scrim" id="scrim" onclick="closeNav()"></div>
 
@@ -917,6 +924,15 @@ function vnAll(key,terms){
 function matHit(m,qn){return vnAll(matKey(m),qn);}
 
 /* ============ STATE ============ */
+/* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
+   1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
+   Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
+const APP_VER='1609-01';
+function veVersion(){
+  const e=document.getElementById('sbVer');if(!e)return;
+  e.textContent='Phiên bản '+APP_VER;
+  e.onclick=()=>{if(confirm('Tải lại app để lấy bản mới nhất?'))location.reload(true);};
+}
 const ROLES={
   admin:{label:'Quản trị viên',short:'Toàn quyền theo dõi & quản trị',tabs:['dieuhanh','phantich','kiemke','shift','dieuchuyen','opening','spotcheck','chenhlech','baocao','catalog','users','audit'],ico:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/></svg>'},
   ketoan_vien:{label:'Kế toán viên',short:'Duyệt, báo cáo, danh mục & theo dõi vận hành',tabs:['phantich','kiemke','shift','dieuchuyen','opening','spotcheck','chenhlech','baocao','catalog'],ico:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>'},
@@ -8059,6 +8075,9 @@ startLoginFX();
    - Đăng ký service worker để mở nhanh và còn mở được khi mạng chập chờn.
    - Gợi ý "Thêm vào màn hình chính" để bộ phận bấm 1 lần là có icon như app.
    - Xin quyền thông báo; khi đồng bộ thấy việc mới thì bắn thông báo về điện thoại. */
+try{veVersion();}catch(e){}
+document.addEventListener('DOMContentLoaded',()=>{try{veVersion();}catch(e){}});
+
 (function(){
   if('serviceWorker' in navigator){
     window.addEventListener('load',()=>{
