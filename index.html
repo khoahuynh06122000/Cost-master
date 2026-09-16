@@ -927,7 +927,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1609-01';
+const APP_VER='1609-02';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -3663,9 +3663,9 @@ function commitCountList(plant,sloc,period,items,cb){
   const msg='Kế toán đã mở kỳ kiểm kê tháng '+periodVN(period)+' cho kho '+whName(plant,sloc)+' — '+n+' mã cần đếm. Vào app → tab Kiểm kê → chọn kho → "Kiểm đếm trực tiếp" để đếm.';
   notifyWh(plant,sloc,msg,'countlist');
   const url=location.origin+location.pathname+'?kk='+encodeURIComponent(plant+'|'+sloc+'|'+period);
-  if(getCfg().teams)sendTeamsText('🗂 <b>MỞ KỲ KIỂM KÊ</b> — tháng '+periodVN(period)+'<br>Kho: '+whName(plant,sloc)+'<br>Số mã cần đếm: '+n+'<br>👉 <a href="'+url+'">Bấm vào đây để mở màn kiểm đếm</a>');
+  // Thông báo đi qua CHUÔNG trong app + báo về máy (notifyWh ở trên), không qua Teams nữa.
   log('Mở kỳ kiểm kê (kế toán)',whName(plant,sloc)+' · kỳ '+periodVN(period)+' · '+n+' mã');
-  toast(getCfg().teams?'✓ Đã mở kỳ, gửi Teams + thông báo giám sát':'✓ Đã mở kỳ & thông báo giám sát (Teams chưa cấu hình — Cài đặt AI)');
+  toast('✓ Đã mở kỳ — giám sát kho nhận được thông báo trên máy');
   cb&&cb();
 }
 // XÓA danh sách mở kỳ (kế toán mở nhầm kho / nhầm kỳ). Không đụng tới phiếu kiểm kê đã gửi.
@@ -4366,8 +4366,7 @@ function renderReconcileCard(v){
       const cl={id:uid('CT'),plant:plantSel.value,sloc:slocSel.value,period:perSel.value,items:r.items,recon:reconOf(cmp),explain:{},status:'Chờ duyệt',by:session.name,time:now(),approvedBy:null,approvedAt:null};
       closings.unshift(cl);
       dbIns('closing_stock',{id:cl.id,plant_code:cl.plant,sloc_code:cl.sloc,period:cl.period,items:cl.items,recon:cl.recon,explain:cl.explain,status:cl.status,created_by:session.name});
-      notifyReconcile(cl,true);
-      if(getCfg().teams)sendTeamsText(reconcileMsg(cl));
+      notifyReconcile(cl,true);   // chuông trong app + báo về máy cho kho đó
       log('Nạp bản chốt tồn tháng',`${whName(cl.plant,cl.sloc)} · kỳ ${periodVN(cl.period)} · lệch ${cl.recon.diffCnt}`);
       toast('Đã nạp bản chốt tồn tháng — kiểm tra chênh lệch & giải trình');
       refresh();
@@ -4375,9 +4374,8 @@ function renderReconcileCard(v){
   function buildWork(cl){
     const wrap=el('div');
     const approved=cl.status==='Đã duyệt';
-    if(getCfg().teams)/*noop*/;
     const auto=el('div');auto.style.cssText='margin:0 0 10px';
-    auto.innerHTML=getCfg().teams?'<span class="badge badge-done">✅ Đã tự động gửi Teams + thông báo giám sát khi nạp</span>':'<span class="badge" style="background:#FEF3E0;color:var(--accent-600)">🔔 Đã thông báo giám sát · ⚠ Chưa cấu hình Teams (Cài đặt AI)</span>';
+    auto.innerHTML='<span class="badge badge-done">🔔 Đã báo cho kho khi nạp — hiện ở chuông và trên máy của người phụ trách kho</span>';
     wrap.appendChild(auto);
     wrap.appendChild(closingDetailCard(cl));
     if(!approved){
@@ -4403,10 +4401,9 @@ function renderReconcileCard(v){
       const lock=el('div');lock.style.cssText='font-size:12px;color:var(--green);align-self:center';lock.innerHTML='🔒 Đã duyệt — chỉ admin mới xóa được.';bar.appendChild(lock);
       if(session.role==='admin'){const bDel=el('button','btn btn-ghost btn-sm','🗑 Xóa (admin)');bDel.onclick=()=>deleteClosing(cl,()=>refresh());bar.appendChild(bDel);}
     }
-    const bTeams=el('button','btn btn-ghost btn-sm','📨 Gửi lại Teams');bTeams.onclick=()=>sendTeamsText(reconcileMsg(cl));
-    const bNote=el('button','btn btn-ghost btn-sm','🔔 Gửi lại thông báo GS');bNote.onclick=()=>notifyReconcile(cl);
+    const bNote=el('button','btn btn-ghost btn-sm','🔔 Gửi lại thông báo cho kho');bNote.onclick=()=>notifyReconcile(cl);
     const bXls=el('button','btn btn-ghost btn-sm','📥 Tải Excel');bXls.onclick=()=>exportClosing(cl);
-    bar.appendChild(bTeams);bar.appendChild(bNote);bar.appendChild(bXls);wrap.appendChild(bar);
+    bar.appendChild(bNote);bar.appendChild(bXls);wrap.appendChild(bar);
     return wrap;
   }
   refresh();card.appendChild(b);v.appendChild(card);
