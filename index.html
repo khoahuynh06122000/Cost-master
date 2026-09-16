@@ -927,7 +927,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1609-04';
+const APP_VER='1609-05';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -6966,6 +6966,31 @@ function opXem(v){
 }
 
 /* ============ QUẢN TRỊ NGƯỜI DÙNG (Kế toán trưởng) ============ */
+/* Sinh mật khẩu tạm DỄ ĐỌC QUA ĐIỆN THOẠI: bỏ hết ký tự dễ nghe nhầm
+   (0/O, 1/l/I, 5/S). Admin đọc cho BP ghi lại, sai một ký tự là gọi lại từ đầu. */
+function matKhauTam(){
+  const chu='ABCDEFGHJKMNPQRTUVWXYZ', so='2346789';   // bỏ cả 5 (dễ viết nhầm thành S)
+  let r='BaNa';
+  for(let i=0;i<2;i++)r+=chu[Math.floor(Math.random()*chu.length)];
+  for(let i=0;i<4;i++)r+=so[Math.floor(Math.random()*so.length)];
+  return r;
+}
+/* Gọi máy chủ đổi mật khẩu. Khóa quyền cao nằm trên Vercel, client chỉ gửi
+   access_token của phiên đang đăng nhập để máy chủ tự kiểm mình có phải admin. */
+async function capLaiMatKhau(userId,matKhau){
+  if(!sb)return {ok:false,why:'Chưa kết nối máy chủ'};
+  let token='';
+  try{const {data}=await sb.auth.getSession();token=(data&&data.session&&data.session.access_token)||'';}catch(e){}
+  if(!token)return {ok:false,why:'Phiên đăng nhập đã hết hạn — đăng nhập lại rồi thử'};
+  try{
+    const r=await fetch('/api/set-password',{method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify({userId,password:matKhau})});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok)return {ok:false,why:(j&&j.error)||('Máy chủ trả lỗi '+r.status)};
+    return {ok:true,email:j.email||''};
+  }catch(e){return {ok:false,why:(e&&e.message)||'Không gọi được máy chủ'};}
+}
 const ROLE_OPTS=[['','— Chưa gán —'],['admin','Quản trị viên'],['ketoan_vien','Kế toán viên'],['giam_sat','Giám sát điểm bán'],['bep_truong','Bếp trưởng / GS nhà hàng'],['nhan_vien','Nhân viên']];
 /* ============ KIỂM KÊ ĐỘT XUẤT ============ */
 function spotBadge(st){
@@ -7352,7 +7377,34 @@ function openUserDrawer(view,p){
   box.appendChild(hd);box.appendChild(sr);box.appendChild(lst);kf.appendChild(box);dbb.appendChild(kf);up();
   const syncKho=()=>{kf.style.display=_ufield(rsel.value)?'block':'none';};rsel.onchange=syncKho;syncKho();
   const df=dr.querySelector('.udf');
-  const save=el('button','ubtn ubtn-save','💾 Lưu thay đổi'),del=el('button','ubtn ubtn-del','🗑 Xóa');df.appendChild(save);df.appendChild(del);
+  const save=el('button','ubtn ubtn-save','💾 Lưu thay đổi'),del=el('button','ubtn ubtn-del','🗑 Xóa');
+  const bPw=el('button','ubtn','🔑 Cấp lại mật khẩu');
+  bPw.onclick=async()=>{
+    const mk=matKhauTam();
+    if(!confirm('CẤP LẠI MẬT KHẨU\n\nTài khoản: '+(p.full_name||p.email)+'\n'+(p.email||'')
+      +'\n\nMật khẩu mới sẽ là:\n\n     '+mk+'\n\n'
+      +'Mật khẩu CŨ mất ngay lập tức. Đọc mật khẩu này cho người dùng,\n'
+      +'bảo họ đăng nhập rồi tự đổi lại.\n\nBấm OK để cấp.'))return;
+    bPw.disabled=true;const cu=bPw.textContent;bPw.textContent='Đang cấp…';
+    const r=await capLaiMatKhau(p.id,mk);
+    bPw.disabled=false;bPw.textContent=cu;
+    if(!r.ok){
+      errBox('Chưa cấp lại được mật khẩu',[
+        r.why||'Máy chủ từ chối.',
+        'Mật khẩu cũ <b>vẫn dùng được</b> — chưa có gì thay đổi.',
+        /SUPABASE_SERVICE_ROLE_KEY/i.test(r.why||'')
+          ? 'Admin cần đặt biến <b>SUPABASE_SERVICE_ROLE_KEY</b> trên Vercel rồi Redeploy.'
+          : 'Chụp màn hình này gửi admin.'
+      ],'Tài khoản: '+(p.email||p.id));return;
+    }
+    log('Cấp lại mật khẩu',(p.email||p.id));
+    errBox('✓ Đã cấp mật khẩu mới',[
+      'Tài khoản: <b>'+(p.full_name||p.email)+'</b>'+(p.email?' · '+p.email:''),
+      'Mật khẩu mới: <b style="font-size:20px;letter-spacing:1px">'+mk+'</b>',
+      'Đọc cho người dùng, bảo họ đăng nhập rồi <b>tự đổi lại</b>. Mật khẩu cũ đã mất hiệu lực.'
+    ],'Mật khẩu: '+mk);
+  };
+  df.appendChild(bPw);df.appendChild(save);df.appendChild(del);
   dr.querySelector('.udx').onclick=()=>{userEdit=null;renderView();};
   save.onclick=async()=>{
     const role=rsel.value||null,status=ssel.value;
