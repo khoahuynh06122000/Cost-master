@@ -927,7 +927,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1609-03';
+const APP_VER='1609-04';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -2430,7 +2430,12 @@ async function doForgot(){
   const redirectTo=location.origin+location.pathname;
   const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo});
   if(error){msg.textContent='Lỗi: '+error.message;return;}
-  msg.innerHTML='✓ Đã gửi link đặt lại về <b>'+email+'</b>. Kiểm tra hộp thư (cả mục Spam), bấm link để đặt mật khẩu mới.';
+  // Supabase LUÔN trả thành công kể cả khi không gửi được (để không lộ email nào có thật),
+  // nên không được hứa chắc "đã gửi" — BP ngồi chờ mãi rồi tưởng mình làm sai.
+  msg.innerHTML='Đã gửi yêu cầu đặt lại cho <b>'+email+'</b>.'
+    +'<br>Mở hộp thư trong <b>5 phút tới</b>, nhớ xem cả mục <b>Spam / Thư rác</b>.'
+    +'<br><span style="color:var(--muted)">Quá 5 phút chưa thấy: báo quản trị (khoahd@banahills.com.vn) để được cấp lại mật khẩu — '
+    +'không cần thử gửi lại nhiều lần, mỗi lần gửi lại làm link cũ hết hiệu lực.</span>';
 }
 // đặt mật khẩu mới (sau khi bấm link trong email)
 async function doResetPassword(){
