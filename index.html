@@ -927,7 +927,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1609-02';
+const APP_VER='1609-03';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -2350,6 +2350,7 @@ function dbSubscribe(){
       await dbLoadAll();
       if(syncSig()!==before)showFreshPill();   // có gì mới -> hiện nút; không đổi -> im lặng
       notifyTodoChange();                       // và bắn thông báo về máy nếu có thông báo / việc mới
+      try{autoNhacTre();}catch(e){console.warn('nhacTre',e);}   // tự nhắc kho trễ (30 phút soát 1 lần)
     }catch(e){console.warn('sync',e);}
   },45000);
   // (3) Quay lại tab -> tải ngầm; có mới thì hiện nút, KHÔNG tự vẽ lại
@@ -2544,6 +2545,7 @@ function enterApp(){
     // Đã cho phép thông báo từ trước -> đăng ký lại máy này với máy chủ đẩy tin.
     // Cần làm mỗi lần đăng nhập vì subscription có thể bị trình duyệt thu hồi.
     setTimeout(()=>{try{if(notifyReady())ensurePushSub();}catch(e){}},1500);
+    setTimeout(()=>{try{autoNhacTre();}catch(e){console.warn('nhacTre',e);}},4000);
     setTimeout(()=>{   // lần đầu vào app: nhắc thông báo chưa đọc + mời bật báo về máy
       try{
         const nUn=unreadNotifs().length;
@@ -6381,7 +6383,7 @@ function renderAudit(v){
   v.appendChild(stats);
   const dcard=el('div','card');
   const lateList=sup.filter(s=>s.late);
-  dcard.appendChild(el('div','card-h',`<span class="ct">Bảng theo dõi cập nhật</span><div style="display:flex;gap:8px;align-items:center"><span class="badge badge-soft">${sup.length}</span>${lateList.length?`<button class="btn btn-primary btn-sm" id="sendLateTeams">📨 Gửi cảnh báo trễ về Teams (${lateList.length})</button>`:''}</div>`));
+  dcard.appendChild(el('div','card-h',`<span class="ct">Bảng theo dõi cập nhật</span><div style="display:flex;gap:8px;align-items:center"><span class="badge badge-soft">${sup.length}</span>${lateList.length?`<span class="badge badge-none" title="App tự nhắc, không phải bấm">🔔 Đã tự nhắc ${lateList.length} điểm bán</span>`:''}</div>`));
   const dbody=el('div');
   if(!sup.length)dbody.appendChild(el('div','empty',`<div class="big">Chưa có điểm bán được giám sát</div><div>Gán vai Giám sát/Bếp trưởng kèm điểm bán ở tab Người dùng để theo dõi.</div>`));
   else{const w=el('div','tbl-wrap');const tbl=el('table');
@@ -6392,16 +6394,8 @@ function renderAudit(v){
       tb.appendChild(el('tr',null,`<td class="cell-strong">${s.pname}</td><td style="font-size:12.5px">${s.roles}</td><td class="num cell-strong tnum">${s.count}</td><td style="font-size:12.5px">${lastTxt}</td><td>${badge}</td>`));});
     tbl.appendChild(tb);w.appendChild(tbl);dbody.appendChild(w);}
   dcard.appendChild(dbody);v.appendChild(dcard);
-  const sendBtn=$('#sendLateTeams');
-  if(sendBtn)sendBtn.onclick=()=>{
-    const p=curPeriod();const ld=lastDayVN(p);
-    let msg=`⚠ CẢNH BÁO TRỄ CẬP NHẬT KIỂM KÊ\nKỳ: tháng ${periodVN(p)} · hạn chốt ${ld.str}\nNgày gửi: ${new Date().toLocaleString('vi-VN')}\n\nCác điểm bán TRỄ (quá ${LATE_DAYS} ngày chưa cập nhật):\n`;
-    lateList.forEach(s=>{msg+=`- ${s.pname} (${s.roles}): ${s.last?`gần nhất ${s.last.toLocaleDateString('vi-VN')}, ${s.days} ngày trước`:'CHƯA cập nhật lần nào'}\n`;});
-    msg+=`\nTổng: ${lateList.length} điểm bán cần đôn đốc.`;
-    sendTeamsText(msg);
-    log('Gửi cảnh báo trễ về Teams',`${lateList.length} điểm bán`);
-  };
-
+  /* Cảnh báo trễ giờ do autoNhacTre() tự lo: mỗi kho mỗi ngày tối đa 1 lần,
+     báo thẳng cho kho đang trễ qua chuông + về máy. Không còn nút bấm tay. */
   const card=el('div','card');card.style.marginTop='16px';
   const head=el('div','card-h');head.style.cursor='pointer';
   head.innerHTML=`<span class="ct">Audit log (nhật ký thao tác chi tiết)</span><span style="display:flex;align-items:center;gap:8px"><span class="badge badge-soft">${auditLog.length} bản ghi</span><span id="auditCaret" style="font-size:13px;color:var(--muted)">▸ Mở</span></span>`;
@@ -8167,7 +8161,8 @@ function myNotifs(){
 function unreadNotifs(){const st=notifReadSet();return myNotifs().filter(x=>!st.has(x.id));}
 const NOTIF_ICO={transfer:'🔄',reject:'⚠️',countlist:'🗂',reconcile:'🔁'};
 const NOTIF_TITLE={transfer:'Phiếu điều chuyển',reject:'Biên bản kiểm kê bị từ chối',
-  countlist:'Kế toán đã mở kỳ kiểm kê',reconcile:'Kết quả đối chiếu chốt tồn'};
+  countlist:'Kế toán đã mở kỳ kiểm kê',reconcile:'Kết quả đối chiếu chốt tồn',
+  late:'Kho chưa cập nhật kiểm kê'};
 function paintBell(){
   const b=$('#bellBtn');if(!b)return;
   const nUn=unreadNotifs().length;
@@ -8340,6 +8335,38 @@ function notifyWh(plant,sloc,msg,kind,title){
     created_by:nt.by,read_flag:false});
   pushToWh(plant,sloc,title||NOTIF_TITLE[nt.kind]||'Kiểm kê F&B',msg,nt.kind);
   return nt;
+}
+/* ============ TỰ ĐỘNG NHẮC KHO TRỄ CẬP NHẬT ============
+   Trước đây admin phải vào màn Nhật ký bấm nút gửi Teams. Giờ app tự làm.
+   Khoa chốt 16/09: mỗi kho mỗi ngày TỐI ĐA 1 lần, báo cho chính kho đang trễ. */
+let _lanSoatTre=0;
+function _ngayVN(d){
+  d=d||new Date();
+  return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();
+}
+function autoNhacTre(){
+  // CHỈ máy kế toán/admin tạo. Để máy nào cũng chạy thì 20 người mở app = 20 thông báo.
+  if(!session||!isPrivileged())return;
+  const gio=Date.now();
+  if(gio-_lanSoatTre<30*60*1000)return;   // soát tối đa 30 phút một lần cho nhẹ
+  _lanSoatTre=gio;
+  let tre;
+  try{tre=supervisorStats().filter(x=>x.late);}catch(e){return;}
+  if(!tre.length)return;
+  const hnay=_ngayVN();
+  tre.forEach(x=>{
+    // Đã nhắc kho này HÔM NAY chưa? Hai kế toán cùng mở app thì người sau thấy của người trước.
+    const daNhac=(notifications||[]).some(nt=>nt.kind==='late'&&nt.plant===x.plant
+      &&String(nt.time||'').indexOf(hnay)>=0);
+    if(daNhac)return;
+    // x.last là Date, nhưng phòng dữ liệu lạ trả về số hoặc chuỗi
+    const dLast=x.last instanceof Date?x.last:(x.last?new Date(x.last):null);
+    const txtLast=dLast&&!isNaN(dLast)?dLast.toLocaleDateString('vi-VN'):'không rõ';
+    const msg=x.last
+      ? `${x.pname} chưa cập nhật kiểm kê ${x.days} ngày nay (lần gần nhất ${txtLast}). Vào màn Kiểm kê để đếm và gửi phiếu.`
+      : `${x.pname} CHƯA cập nhật kiểm kê lần nào trong hệ thống. Vào màn Kiểm kê để đếm và gửi phiếu.`;
+    notifyWh(x.plant,'',msg,'late');
+  });
 }
 // Số việc đang chờ CHÍNH MÌNH xử lý — dùng để biết có gì mới đáng báo
 function myTodoCount(){
