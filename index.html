@@ -6742,8 +6742,8 @@ function importOpeningT6(plant,sloc,file,cb){
       }
       if(!rows||!rows.length)throw new Error('File rỗng');
       // tìm dòng tiêu đề (chứa cột mã hàng)
-      let hIdx=0;for(let i=0;i<Math.min(rows.length,10);i++){if(rows[i].map(norm).some(c=>c.includes('mã')||c.includes('mahang')||c.includes('code')||c.includes('material'))){hIdx=i;break;}}
-      const header=rows[hIdx].map(norm);
+      let hIdx=0;for(let i=0;i<Math.min(rows.length,10);i++){if(rows[i].map(vnNorm).some(c=>c.includes('mã')||c.includes('mahang')||c.includes('code')||c.includes('material'))){hIdx=i;break;}}
+      const header=rows[hIdx].map(vnNorm);
       let codeCol=header.findIndex(c=>c.includes('mãhàng')||c.includes('mahang')||c==='mã'||c==='ma'||c.includes('code')||c.includes('material'));
       if(codeCol<0)codeCol=0;
       let qtyCol=header.findIndex(c=>c.includes('sốlượng')||c.includes('soluong')||c==='sl'||c.includes('tồn')||c.includes('ton')||c.includes('đầukỳ')||c.includes('dauky')||c.includes('qty')||c.includes('quantity'));
@@ -6774,12 +6774,40 @@ function importOpeningT6(plant,sloc,file,cb){
         if(!isFinite(qty)){badQty++;continue;}
         items[code]=qty;preview.push({code,name,uom,qty,isNew});ok++;
       }
-      if(!ok)throw new Error('Không đọc được dòng hợp lệ nào (kiểm tra cột Mã hàng / Số lượng).');
+      if(!ok){
+        const e2=new Error('Không đọc được dòng hợp lệ nào (kiểm tra cột Mã hàng / Số lượng).');
+        e2.chanDoan={header:rows[hIdx]||[],hIdx,soDong:rows.length,codeCol,qtyCol,
+          skipNoCode,badQty,mau:rows.slice(hIdx+1,hIdx+4)};
+        throw e2;
+      }
       preview.sort((a,b)=>a.name.localeCompare(b.name,'vi'));
       // CHỈ trả kết quả để XEM TRƯỚC — chưa ghi gì lên máy chủ (chờ bấm Duyệt)
       cb&&cb({plant,sloc,items,preview,newMats,fixedMats,newCodesForPlant,badQty,ok});
-    }catch(err){if(msg)msg.innerHTML='<div class="imp-res imp-err"><b>Không đọc được file.</b> '+err.message+'</div>';toast('Lỗi đọc file');}
+    }catch(err){
+      const cd=err&&err.chanDoan;
+      let ct='File: '+file.name+' ('+Math.round(file.size/1024)+' KB)';
+      if(cd){
+        ct+='\nDòng tiêu đề (dòng '+(cd.hIdx+1)+'): '+(cd.header.join(' | ')||'(trống)');
+        ct+='\nCột app lấy làm Mã hàng: số '+(cd.codeCol+1)+' · Số lượng: số '+(cd.qtyCol+1);
+        ct+='\nTổng dòng đọc được: '+cd.soDong
+          +' · bỏ vì thiếu mã: '+cd.skipNoCode+' · bỏ vì số lượng không hợp lệ: '+cd.badQty;
+        (cd.mau||[]).forEach((r2,i)=>{ct+='\nDòng mẫu '+(i+1)+': '+(Array.isArray(r2)?r2.join(' | '):'');});
+      }
+      const goiY=cd
+        ? ['App đọc được file nhưng <b>không nhận ra cột Mã hàng / Số lượng</b>.',
+           'Dòng tiêu đề app tìm thấy: <b>'+((cd.header||[]).join(' · ')||'(trống)')+'</b>',
+           'Sửa tiêu đề cột trong file thành <b>Mã hàng</b> và <b>Số lượng</b> (hoặc Tồn, Đầu kỳ, Qty) rồi nạp lại.']
+        : ['Máy không mở được nội dung file: <b>'+((err&&err.message)||'')+'</b>',
+           'File phải là <b>.xlsx</b>, <b>.xls</b> hoặc <b>.csv</b>. Nếu file do hệ thống khác xuất ra, thử mở bằng Excel rồi <b>Lưu thành .xlsx</b> và nạp lại.'];
+      if(msg)msg.innerHTML='<div class="imp-res imp-err"><b>Không đọc được file.</b> '+((err&&err.message)||'')+'</div>';
+      errBox('Không đọc được file chốt tồn',goiY,ct);
+      toast('Lỗi đọc file — xem hộp thông báo');
+    }
   };
+  reader.onerror=()=>{errBox('Không mở được file',[
+    'Trình duyệt không đọc được file <b>'+file.name+'</b>.',
+    'Thử chép file ra Desktop rồi chọn lại, hoặc mở bằng Excel và Lưu thành .xlsx.'
+  ],'File: '+file.name);toast('Lỗi đọc file');};
   reader.readAsArrayBuffer(file);
 }
 // DUYỆT & LƯU tồn đầu kỳ (ghi máy chủ) — chỉ chạy khi người dùng xác nhận
@@ -7654,8 +7682,8 @@ function importPlantCatalog(file,plant,cb){
       const wb=isCsv?XLSX.read(e.target.result,{type:'string'}):XLSX.read(new Uint8Array(e.target.result),{type:'array'});
       const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
       if(!rows.length)throw new Error('File rỗng');
-      let hIdx=0;for(let i=0;i<Math.min(rows.length,10);i++){if(rows[i].map(norm).some(c=>c.includes('mã')||c.includes('mahang')||c.includes('code')||c.includes('material'))){hIdx=i;break;}}
-      const header=rows[hIdx].map(norm);
+      let hIdx=0;for(let i=0;i<Math.min(rows.length,10);i++){if(rows[i].map(vnNorm).some(c=>c.includes('mã')||c.includes('mahang')||c.includes('code')||c.includes('material'))){hIdx=i;break;}}
+      const header=rows[hIdx].map(vnNorm);
       let codeCol=header.findIndex(c=>c.includes('mãhàng')||c.includes('mahang')||c==='mã'||c==='ma'||c.includes('code')||c.includes('material'));
       if(codeCol<0)codeCol=0;
       if(!plantMaterials[plant])plantMaterials[plant]=[];
