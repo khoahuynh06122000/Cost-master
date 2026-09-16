@@ -5191,7 +5191,7 @@ function dcRequestForm(v,kind){
     // điện thoại 2-4 giây — mã kho không có sẽ dựng lười khi người dùng gõ tìm.
     const rows=coHang;
     listWrap.appendChild(el('div',null,`<div style="font-weight:800;font-size:13px;margin:16px 0 4px">Hàng đang có ở ${whName(p,s)} <span style="color:var(--muted);font-weight:500">· ${coHang.length} mã</span></div>
-      <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px">Tồn <b>ước tính</b> = tồn đầu kỳ + nhập mua + ĐC đến − ĐC đi. Chưa trừ phần đã bán ra, nên chỉ để tham khảo khi chọn hàng.<br>Gõ vào ô tìm để tra <b>cả ${nq(DATA.materials.length,0)} mã</b> trong danh mục — mã kho này không có vẫn tìm thấy, app sẽ báo rõ.</div>`));
+      <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px">Tồn <b>ước tính</b> = tồn đầu kỳ + nhập mua + ĐC đến − ĐC đi. Chưa trừ phần đã bán ra, nên chỉ để tham khảo khi chọn hàng.<br>Danh sách gồm <b>cả ${nq(DATA.materials.length,0)} mã</b> trong danh mục: hàng đang có xếp trước, mã kho này không có xếp sau và đánh dấu đỏ. Gõ ô tìm để lọc nhanh.</div>`));
     if(!coHang.length){listWrap.appendChild(el('div','note',`<div><b>${whName(p,s)} chưa có tồn mã nào</b> trong kỳ ${periodVN(per)}. Vẫn gõ tìm được mã bất kỳ bên dưới, nhưng xin hàng kho không có thì người duyệt sẽ từ chối.</div>`));}
     const sw=el('div','search-wrap');sw.style.margin='0 0 8px';
     const si=el('input');si.placeholder='Tìm trong '+nq(DATA.materials.length,0)+' mã…';sw.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>';
@@ -5203,11 +5203,11 @@ function dcRequestForm(v,kind){
     fbar.appendChild(bOnly);listWrap.appendChild(fbar);
     const nhac=el('div');nhac.style.cssText='display:none;margin-bottom:10px';listWrap.appendChild(nhac);
     function capNhatNhac(dangTim,soNoTon,conBo){
-      if(!dangTim||(!soNoTon&&!conBo)){nhac.style.display='none';return;}
+      if(!soNoTon&&!conBo){nhac.style.display='none';return;}
       nhac.style.display='';nhac.innerHTML='';
       nhac.appendChild(clNote(
-        (soNoTon?'Trong kết quả có <b>'+soNoTon+' mã '+whName(p,s)
-          +' hiện không có tồn</b> (đánh dấu đỏ). Vẫn xin được, nhưng người duyệt sẽ thấy rõ là kho không có hàng.':'')
+        (soNoTon?'Đang hiện <b>'+soNoTon+' mã '+whName(p,s)
+          +' không có tồn</b> (đánh dấu đỏ). Vẫn xin được, nhưng người duyệt sẽ thấy rõ là kho không có hàng.':'')
         +(conBo?(soNoTon?'<br>':'')+'Còn <b>'+conBo+' mã nữa</b> khớp từ khóa — gõ thêm cho rõ để thu hẹp kết quả.':''),
         'var(--red)'));
     }
@@ -5249,10 +5249,32 @@ function dcRequestForm(v,kind){
     }
     rows.forEach(r=>tb.appendChild(dungDong(r)));
     tbl.appendChild(tb);w.appendChild(tbl);listWrap.appendChild(w);
+    const bMore=el('button','btn btn-ghost');
+    bMore.type='button';bMore.style.cssText='width:100%;margin-top:8px';
+    listWrap.appendChild(bMore);
+    function capNhatMore(){
+      const con=khongCo.length-daNap;
+      if(con<=0||si.value.trim()){bMore.style.display='none';return;}
+      bMore.style.display='';
+      bMore.textContent='▾ Xem thêm '+Math.min(TRANG,con)+' mã (còn '+nq(con,0)+')';
+    }
+    bMore.onclick=()=>{napThem(TRANG);applyFilter();capNhatMore();};
 
     // Dựng lười các mã kho không có: chỉ khi gõ tìm, tối đa 60 kết quả một lần.
+    // Cả danh mục đều hiện, chỉ nạp dần cho khỏi chậm: dựng thẳng 1.501 dòng mất
+    // hơn 1 giây trên máy tính, điện thoại 2-4 giây.
     const daDung=new Set();
-    const MAX_LUOI=60;
+    const TRANG=60;
+    let daNap=0;
+    function napThem(sl){
+      let them=0;
+      while(daNap<khongCo.length&&them<sl){
+        const r=khongCo[daNap++];
+        if(!daDung.has(r.code)){daDung.add(r.code);tb.appendChild(dungDong(r));them++;}
+      }
+      return them;
+    }
+    // Gõ tìm thì kéo thẳng mã khớp lên, không bắt bấm "xem thêm" mấy chục lần
     function dungThemTheoTim(qq){
       if(!qq.length)return 0;
       let them=0,bo=0;
@@ -5260,7 +5282,7 @@ function dcRequestForm(v,kind){
         const r=khongCo[i];
         if(daDung.has(r.code))continue;
         if(!vnAll(vnNorm(r.code)+'|'+vnNorm(r.name),qq))continue;
-        if(them>=MAX_LUOI){bo++;continue;}
+        if(them>=TRANG*3){bo++;continue;}
         daDung.add(r.code);tb.appendChild(dungDong(r));them++;
       }
       return bo;
@@ -5274,10 +5296,7 @@ function dcRequestForm(v,kind){
       [...tb.children].forEach(tr=>{
         const hitQ=vnAll(tr.dataset.k||'',qq);
         const hitP=!onlyPicked||tr.classList.contains('on');
-        // Mã kho không có: chỉ hiện khi ĐANG GÕ TÌM hoặc đã chọn — nếu không thì
-        // 1.400 dòng "không có" sẽ chôn vùi danh sách hàng thật.
-        const hienNoTon=!tr.dataset.noton||dangTim||tr.classList.contains('on');
-        const ok=hitQ&&hitP&&hienNoTon;tr.style.display=ok?'':'none';
+        const ok=hitQ&&hitP;tr.style.display=ok?'':'none';
         if(ok){shown++;if(tr.dataset.noton)shownNoTon++;}});
       capNhatNhac(dangTim,shownNoTon,conBo);
       const nk=Object.keys(picked).length;
@@ -5287,8 +5306,9 @@ function dcRequestForm(v,kind){
       if(onlyPicked&&!shown){onlyPicked=false;applyFilter();}
     }
     bOnly.onclick=()=>{onlyPicked=!onlyPicked;applyFilter();};
-    si.oninput=()=>applyFilter();
-    applyFilter();
+    si.oninput=()=>{applyFilter();capNhatMore();};
+    napThem(TRANG);            // mở màn là đã thấy mã, không phải gõ mới ra
+    applyFilter();capNhatMore();
   }
   async function submitReq(){
     const codes=Object.keys(picked);
