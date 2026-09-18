@@ -939,7 +939,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1809-02';
+const APP_VER='1809-03';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1430,13 +1430,51 @@ function movementsOf(plant,sloc,period){
     if(t.fromKey===key)tout[t.code]=(tout[t.code]||0)+Number(t.qty||0);});
   return {buy,tin,tout};
 }
+/* ===== TỒN ĐẦU KỲ: LẤY TỪ ĐÂU (rule Khoa 18/09/2026) =====
+   Tồn đầu kỳ P chính là số chốt cuối kỳ P−1. Thứ tự ưu tiên:
+     1. BẢN CHỐT TỒN THÁNG của kế toán cho kỳ P−1  → số chính thức, thắng tất cả
+     2. PHIẾU KIỂM KÊ kỳ P−1 — KỂ CẢ CÒN CHỜ DUYỆT → số bộ phận đã đếm và gửi
+     3. openingStock hiện hành (nạp file, khởi tạo, hoặc đã nối từ kỳ xa hơn)
+   Vì sao phải có bước 2: openingStock chỉ được cập nhật khi kế toán DUYỆT phiếu
+   kiểm kê. Phiếu T8 treo chờ duyệt thì suốt thời gian đó tồn đầu T9 = 0, màn xin
+   hàng của kho đó ra RỖNG, và mọi kho khác nhìn tồn kho này cũng bằng 0 — trong
+   khi số đã có trong hệ thống rồi, chỉ chưa ai duyệt. */
+function kyTruoc(per){
+  const a=String(per||'').split('-');
+  if(a.length<2)return '';
+  let y=Number(a[0]),m=Number(a[1])-1;
+  if(m<1){m=12;y--;}
+  return y+'-'+String(m).padStart(2,'0');
+}
+function tonDauKy(plant,sloc,period){
+  const key=plant+'|'+sloc,per=period||curPeriod(),truoc=kyTruoc(per);
+  const coSo=o=>o&&o.items&&Object.keys(o.items).length;
+  if(truoc){
+    // 1. Bản chốt tồn tháng của kế toán, kỳ liền trước. Ưu tiên bản đã duyệt.
+    const cls=closings.filter(c=>c.plant===plant&&c.sloc===sloc&&c.period===truoc&&coSo(c));
+    const cl=cls.find(c=>c.status==='Đã duyệt')||cls[0];
+    if(cl)return {items:cl.items,nguon:'Chốt tồn tháng '+periodVN(truoc)+' (kế toán)',
+      chotBoiKeToan:true,chuaDuyet:cl.status!=='Đã duyệt'};
+    // 2. Phiếu kiểm kê kỳ liền trước — kể cả chưa duyệt. Ưu tiên phiếu đã duyệt.
+    const subs=submissions.filter(x=>x.plant===plant&&x.sloc===sloc&&x.period===truoc&&coSo(x));
+    const sub=subs.find(x=>x.status==='Đã duyệt')||subs[0];
+    if(sub)return {items:sub.items,nguon:'Phiếu kiểm kê '+sub.id,
+      chotBoiKeToan:false,chuaDuyet:sub.status!=='Đã duyệt'};
+  }
+  // 3. Bản tồn đầu kỳ hiện hành
+  const op=openingStock[key];
+  if(coSo(op))return {items:op.items,nguon:op.fromId||'tồn đầu kỳ đã nạp',
+    chotBoiKeToan:true,chuaDuyet:false};
+  return {items:{},nguon:'',chotBoiKeToan:false,chuaDuyet:false};
+}
+
 /* ===== TỒN ƯỚC TÍNH CỦA 1 KHO TẠI THỜI ĐIỂM HIỆN TẠI =====
    = Tồn đầu kỳ + Nhập mua + ĐC đến − ĐC đi (trong kỳ).
    Gọi là ƯỚC TÍNH vì app chưa có số xuất bán — phần đã bán ra chưa được trừ.
    Dùng để dựng danh sách mã cho phép điều chuyển (chỉ mã còn hàng ở kho nguồn). */
 function stockNow(plant,sloc,period){
-  const key=plant+'|'+sloc,per=period||curPeriod();
-  const dk=(openingStock[key]&&openingStock[key].items)||{};
+  const per=period||curPeriod();
+  const dk=tonDauKy(plant,sloc,per).items;
   const mv=movementsOf(plant,sloc,per);
   const out={};
   new Set([...Object.keys(dk),...Object.keys(mv.buy),...Object.keys(mv.tin),...Object.keys(mv.tout)]).forEach(c=>{
@@ -5208,6 +5246,7 @@ function dcRequestForm(v,kind){
       act.style.display='none';return;}
     act.style.display='';
     const per=curPeriod();
+    const dkNguon=tonDauKy(p,s,per);   // để nói rõ tồn đầu kỳ lấy từ đâu
     const stock=stockNow(p,s,per);
     // Hàng ĐANG CÓ ở kho nguồn — vẫn là danh sách chính, hiện sẵn.
     const coHang=Object.keys(stock).filter(c=>Number(stock[c])>0)
@@ -5225,8 +5264,18 @@ function dcRequestForm(v,kind){
     // điện thoại 2-4 giây — mã kho không có sẽ dựng lười khi người dùng gõ tìm.
     const rows=coHang;
     listWrap.appendChild(el('div',null,`<div style="font-weight:800;font-size:13px;margin:16px 0 4px">Hàng đang có ở ${whName(p,s)} <span style="color:var(--muted);font-weight:500">· ${coHang.length} mã</span></div>
-      <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px">Tồn <b>ước tính</b> = tồn đầu kỳ + nhập mua + ĐC đến − ĐC đi. Chưa trừ phần đã bán ra, nên chỉ để tham khảo khi chọn hàng.${kind==='xin'?`<br>Danh sách chỉ gồm <b>hàng kho này đang có</b>. Cần mã khác thì <b>gõ ô tìm</b> — app lục trong cả ${nq(DATA.materials.length,0)} mã của danh mục.`:''}</div>`));
-    if(!coHang.length){listWrap.appendChild(el('div','note',`<div><b>${whName(p,s)} chưa có tồn mã nào</b> trong kỳ ${periodVN(per)} — có thể kho chưa nạp tồn đầu kỳ, chứ không chắc là hết hàng thật. Gõ ô tìm bên dưới để lục mã trong danh mục nếu anh/chị biết kho đó có hàng.</div>`));}
+      <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px">Tồn <b>ước tính</b> = tồn đầu kỳ + nhập mua + ĐC đến − ĐC đi. Chưa trừ phần đã bán ra, nên chỉ để tham khảo khi chọn hàng.${dkNguon.nguon?`<br>Tồn đầu kỳ lấy từ <b>${dkNguon.nguon}</b>${dkNguon.chuaDuyet?' — <b style="color:var(--accent-600)">bản này kế toán chưa duyệt</b>, số có thể còn đổi':''}.`:''}${kind==='xin'?`<br>Danh sách chỉ gồm <b>hàng kho này đang có</b>. Cần mã khác thì <b>gõ ô tìm</b> — app lục trong cả ${nq(DATA.materials.length,0)} mã của danh mục.`:''}</div>`));
+    if(!coHang.length){
+      /* Nói ĐÚNG lý do. Trước đây đoán "có thể kho chưa nạp tồn đầu kỳ" trong khi
+         app biết chính xác: có bản chốt/phiếu kiểm kê kỳ trước hay không. */
+      listWrap.appendChild(clNote(
+        `<b>${whName(p,s)} chưa có tồn mã nào</b> trong kỳ ${periodVN(per)}.`
+        +(dkNguon.nguon
+          ? ` Tồn đầu kỳ lấy từ <b>${dkNguon.nguon}</b>, nhưng sau khi trừ điều chuyển thì mọi mã đã về 0.`
+          : ` Kho này <b>chưa có bản chốt tồn tháng ${periodVN(kyTruoc(per))} của kế toán</b>, cũng <b>chưa có phiếu kiểm kê ${periodVN(kyTruoc(per))}</b> nào — nên app chưa có mốc nào để tính tồn. Nhắc kế toán chốt tồn, hoặc kho đó gửi phiếu kiểm kê kỳ trước.`)
+        +` Gõ ô tìm bên dưới để lục mã trong danh mục nếu anh/chị biết kho đó có hàng thật.`,
+        'var(--accent-600)'));
+    }
     const sw=el('div','search-wrap');sw.style.margin='0 0 8px';
     const si=el('input');si.placeholder=coHang.length
       ?('Tìm trong '+nq(coHang.length,0)+' mã đang có — gõ để lục cả danh mục')
