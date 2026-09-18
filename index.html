@@ -939,7 +939,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1809-04';
+const APP_VER='1809-05';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1447,28 +1447,53 @@ function kyTruoc(per){
   return y+'-'+String(m).padStart(2,'0');
 }
 function tonDauKy(plant,sloc,period){
-  const key=plant+'|'+sloc,per=period||curPeriod(),truoc=kyTruoc(per);
+  const key=plant+'|'+sloc,per=period||curPeriod();
   const coSo=o=>o&&o.items&&Object.keys(o.items).length;
-  if(truoc){
-    // 1. Bản chốt tồn tháng của kế toán, kỳ liền trước. Ưu tiên bản đã duyệt.
-    const cls=closings.filter(c=>c.plant===plant&&c.sloc===sloc&&c.period===truoc&&coSo(c));
-    const cl=cls.find(c=>c.status==='Đã duyệt')||cls[0];
-    if(cl)return {items:cl.items,nguon:'Chốt tồn tháng '+periodVN(truoc)+' (kế toán)',
-      chotBoiKeToan:true,chuaDuyet:cl.status!=='Đã duyệt',tamTinh:cl.status!=='Đã duyệt'};
-    // 2. Phiếu kiểm kê kỳ liền trước — kể cả chưa duyệt. Ưu tiên phiếu đã duyệt.
-    const subs=submissions.filter(x=>x.plant===plant&&x.sloc===sloc&&x.period===truoc&&coSo(x));
-    const sub=subs.find(x=>x.status==='Đã duyệt')||subs[0];
-    /* tamTinh = alias của chuaDuyet. Có CẢ HAI tên vì mỗi nơi trong app đọc một
-       tên; lệch tên thì trường ra undefined và nhãn TẠM TÍNH im lặng không hiện —
-       đúng lỗi đã mắc 18/09, cú pháp sạch nên không bắt được. */
-    if(sub)return {items:sub.items,nguon:'Phiếu kiểm kê '+sub.id,
-      chotBoiKeToan:false,chuaDuyet:sub.status!=='Đã duyệt',tamTinh:sub.status!=='Đã duyệt'};
-  }
-  // 3. Bản tồn đầu kỳ hiện hành
+  /* Gom MỌI mốc đã chốt TRƯỚC kỳ này rồi lấy mốc GẦN NHẤT.
+     Trước đây chỉ tìm đúng kỳ liền trước (T9 thì chỉ tìm T8) — kho kiểm kê lần cuối
+     tháng 7 hoặc tháng 6, hay có phiếu T7 chưa duyệt, thì không khớp gì và tồn ra 0
+     dù kho có tồn thật. Kỳ dạng 'YYYY-MM' nên so sánh chuỗi là so đúng thứ tự. */
+  const moc=[];
+  closings.forEach(c=>{if(c.plant===plant&&c.sloc===sloc&&c.period&&c.period<per&&coSo(c))
+    moc.push({per:c.period,uu:2,items:c.items,
+      nguon:'Chốt tồn tháng '+periodVN(c.period)+' (kế toán)',tam:c.status!=='Đã duyệt'});});
+  submissions.forEach(x=>{if(x.plant===plant&&x.sloc===sloc&&x.period&&x.period<per&&coSo(x))
+    moc.push({per:x.period,uu:1,items:x.items,
+      nguon:'Phiếu kiểm kê '+x.id+' (kỳ '+periodVN(x.period)+')',tam:x.status!=='Đã duyệt'});});
+  /* Kỳ gần nhất thắng · cùng kỳ thì bản kế toán thắng phiếu kiểm kê · cùng loại thì
+     bản ĐÃ DUYỆT thắng bản chờ duyệt. */
+  moc.sort((a,b)=>String(b.per).localeCompare(String(a.per))||(b.uu-a.uu)||((a.tam?1:0)-(b.tam?1:0)));
+  if(moc.length){const m=moc[0];
+    /* tamTinh = alias của chuaDuyet. Có CẢ HAI tên vì mỗi nơi trong app đọc một tên;
+       lệch tên thì trường ra undefined và nhãn TẠM TÍNH im lặng không hiện — đúng lỗi
+       đã mắc 18/09, cú pháp sạch nên không bắt được. */
+    return {items:m.items,nguon:m.nguon,chotBoiKeToan:m.uu===2,chuaDuyet:m.tam,tamTinh:m.tam};}
+  // Không có mốc nào trước kỳ này -> bản tồn đầu kỳ hiện hành (nạp file / khởi tạo)
   const op=openingStock[key];
   if(coSo(op))return {items:op.items,nguon:op.fromId||'tồn đầu kỳ đã nạp',
     chotBoiKeToan:true,chuaDuyet:false,tamTinh:false};
   return {items:{},nguon:'',chotBoiKeToan:false,chuaDuyet:false,tamTinh:false};
+}
+/* CHẨN ĐOÁN: app THẤY GÌ cho kho này. Note chỉ nói "chưa có" thì không ai biết phải
+   làm gì — lỗi câm đã mắc nhiều lần. Liệt kê ra để kế toán soi được ngay.
+   LƯU Ý QUAN TRỌNG: ba con số này là những gì CLIENT ĐỌC ĐƯỢC, không phải những gì
+   máy chủ có. RLS chặn thì Supabase trả 0 dòng mà KHÔNG báo lỗi, nên "0 phiếu" có
+   thể nghĩa là "không có quyền đọc kho này" chứ không phải "kho này chưa kiểm kê".
+   Vì vậy note phải nêu cả hai khả năng, đừng kết luận một chiều. */
+function tonDauKyChanDoan(plant,sloc,period){
+  const per=period||curPeriod(),key=plant+'|'+sloc;
+  const cls=closings.filter(c=>c.plant===plant&&c.sloc===sloc);
+  const subs=submissions.filter(x=>x.plant===plant&&x.sloc===sloc);
+  const ky=a=>a.map(x=>periodVN(x.period)+(x.status&&x.status!=='Đã duyệt'?' ('+x.status+')':''))
+    .filter((v,i,arr)=>arr.indexOf(v)===i).slice(0,6).join(', ')||'không có';
+  const op=openingStock[key];
+  return {
+    soChot:cls.length, kyChot:ky(cls),
+    soPhieu:subs.length, kyPhieu:ky(subs),
+    coOpening:!!(op&&op.items&&Object.keys(op.items).length),
+    nguonOpening:op?(op.fromId||'nhập Excel'):'',
+    kyDangXem:periodVN(per)
+  };
 }
 
 /* ===== TỒN ƯỚC TÍNH CỦA 1 KHO TẠI THỜI ĐIỂM HIỆN TẠI =====
@@ -3449,8 +3474,8 @@ function clBang(host){
   if(su.theoNhom&&su.theoNhom.length)clBangNhom(host,su.theoNhom,'Tỉ lệ quy đổi theo nhóm hàng — mã nhóm nào đáng tin');
   {const _dkCL=dkCuaPhieu(sub);
    if(_dkCL.tamTinh)host.appendChild(clNote('<b>Tồn đầu kỳ ở đây là số TẠM TÍNH</b>, lấy từ <b>'
-     +_dkCL.nguon+'</b> vì kề toán chưa chốt tồn tháng. Xuất thực tế tính từ tồn đầu kỳ, '
-     +'nên <b>toàn bộ số lệch dưới đây cũng là tạm tính</b> — đừng chốt giải trình cuối cùng trước khi kề toán chốt tồn.',
+     +_dkCL.nguon+'</b> vì kế toán chưa chốt tồn tháng. Xuất thực tế tính từ tồn đầu kỳ, '
+     +'nên <b>toàn bộ số lệch dưới đây cũng là tạm tính</b> — đừng chốt giải trình cuối cùng trước khi kế toán chốt tồn.',
      'var(--accent-600)'));}
   host.appendChild(clNote('Doanh thu nạp lúc <b>'+(su.at||'?')+'</b>'
     +(su.by?' bởi '+su.by:'')+(su.src?' · nguồn: '+su.src:'')
@@ -3818,7 +3843,7 @@ function renderOpenCountCard(v){
   function poolOf(plant,sloc,period){
     const set=new Set();
     (plantMaterials[plant]||[]).forEach(c=>set.add(c));
-    /* Lấy theo tonDauKy chứ không đọc openingStock: kho chưa được kề toán chốt tồn
+    /* Lấy theo tonDauKy chứ không đọc openingStock: kho chưa được kế toán chốt tồn
        thì danh sách gợi ý sẽ thiếu đúng những mã của phiếu kỳ trước — mở kỳ bỏ sót mã thì
        BP không có dòng nào để đếm mã đó. */
     Object.keys(tonDauKy(plant,sloc,period).items||{}).forEach(c=>set.add(c));
@@ -5306,11 +5331,22 @@ function dcRequestForm(v,kind){
     if(!coHang.length){
       /* Nói ĐÚNG lý do. Trước đây đoán "có thể kho chưa nạp tồn đầu kỳ" trong khi
          app biết chính xác: có bản chốt/phiếu kiểm kê kỳ trước hay không. */
+      const cd=tonDauKyChanDoan(p,s,per);
       listWrap.appendChild(clNote(
         `<b>${whName(p,s)} chưa có tồn mã nào</b> trong kỳ ${periodVN(per)}.`
         +(dkNguon.nguon
           ? ` Tồn đầu kỳ lấy từ <b>${dkNguon.nguon}</b>, nhưng sau khi trừ điều chuyển thì mọi mã đã về 0.`
-          : ` Kho này <b>chưa có bản chốt tồn tháng ${periodVN(kyTruoc(per))} của kế toán</b>, cũng <b>chưa có phiếu kiểm kê ${periodVN(kyTruoc(per))}</b> nào — nên app chưa có mốc nào để tính tồn. Nhắc kế toán chốt tồn, hoặc kho đó gửi phiếu kiểm kê kỳ trước.`)
+          : ` App <b>không tìm thấy mốc nào</b> đã chốt trước kỳ này để tính tồn.`)
+        +`<div style="margin-top:8px;padding:8px 11px;background:var(--surface-2);border-radius:7px;font-size:12px;line-height:1.7">`
+        +`<b>App đang thấy gì ở kho này:</b><br>`
+        +`· Phiếu kiểm kê: <b>${cd.soPhieu}</b> phiếu${cd.soPhieu?' — kỳ '+cd.kyPhieu:''}<br>`
+        +`· Bản chốt tồn tháng: <b>${cd.soChot}</b>${cd.soChot?' — kỳ '+cd.kyChot:''}<br>`
+        +`· Tồn đầu kỳ đã nạp: <b>${cd.coOpening?'có':'không'}</b>${cd.coOpening?' ('+cd.nguonOpening+')':''}`
+        +`</div>`
+        +`<div style="margin-top:7px">Ba dòng trên <b>đều trống</b> thì có <b>hai khả năng</b>, app không phân biệt được:`
+        +`<br>· Kho đó <b>thật sự chưa có số nào</b> — nhắc kế toán chốt tồn, hoặc kho đó gửi phiếu kiểm kê.`
+        +`<br>· Tài khoản của anh/chị <b>không có quyền đọc dữ liệu kho khác</b> — máy chủ trả rỗng chứ không báo lỗi, nên app tưởng là không có số.`
+        +`<br><b>Chụp khối này gửi kế toán / quản trị</b> để họ đối chiếu. Nếu là chuyện quyền thì admin chạy <b>PHẦN 6</b> trong <code>SQL-tong-hop.sql</code> là xong.</div>`
         +` Gõ ô tìm bên dưới để lục mã trong danh mục nếu anh/chị biết kho đó có hàng thật.`,
         'var(--accent-600)'));
     }
