@@ -939,7 +939,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1809-01';
+const APP_VER='1809-02';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1068,7 +1068,7 @@ async function saveZones(plant,sloc,list){
   }catch(e){console.error(e);return false;}
 }
 let openingStock={};   // key plant|sloc -> {items:{code:qty}, fromId, at, by}
-let receipts=[];       // nhập kho mua mới: {id,plant,sloc,code,name,uom,qty,date,period,note,by,time}
+let receipts=[];       // nhận hàng từ kho tổng: {id,plant,sloc,code,name,uom,qty,date,period,note,by,time}
 let reports=[];        // báo cáo quản trị do Kế toán viên tạo (Claude) -> Kế toán trưởng đọc
 let shifts=[];         // phiếu bàn giao ca (tồn cuối ca -> đầu ca sau)
 let profiles=[];       // tài khoản người dùng (đồng bộ từ Supabase, cho admin phân quyền)
@@ -5204,7 +5204,7 @@ function dcRequestForm(v,kind){
     listWrap.innerHTML='';
     const p=src.plant(),s=src.sloc();
     if(!p||!s){   // chua chon kho nguon -> noi ro, khong dung bang hang cua kho khong lien quan
-      listWrap.appendChild(el('div','empty','<div class="big">Chọn kho nguồn trước</div><div>Bấm một kho ở hàng chip phía trên (hoặc "Chọn kho nguồn…") để xem hàng đang có.</div>'));
+      listWrap.appendChild(el('div','empty','<div class="big">Chọn kho nguồn trước</div><div>Bấm nút <b>Chọn kho nguồn…</b> phía trên, rồi chọn điểm bán và kho muốn xin. Xin vài lần thì những kho hay xin sẽ thành nút bấm nhanh ở hàng trên.</div>'));
       act.style.display='none';return;}
     act.style.display='';
     const per=curPeriod();
@@ -5762,11 +5762,11 @@ async function rejectTransferReq(r){
   log('Từ chối '+dcKindLabel(r.kind),`${r.id}${note?' · '+note:''}`);
   toast('Đã từ chối '+r.id);renderView();
 }
-// ---- Nhập kho (mua mới): gõ tay hoặc quét ảnh — dùng kho/kỳ đã ghim ----
+// ---- Nhận hàng từ kho tổng: gõ tay hoặc quét ảnh — dùng kho/kỳ đã ghim ----
 function dcNhapKho(v){
   const mine=allowedPlants();
   const card=el('div','card');const b=el('div','card-b');
-  b.innerHTML=`<div class="section-eyebrow">📦 Nhập kho (mua mới) — cộng vào tồn trong kỳ</div><div style="font-size:12px;color:var(--muted);margin:6px 0 10px">Ghi nhận hàng mua mới nhập kho trong kỳ. Số này tự cộng vào phần <b>Nhập</b> khi kiểm kê để tính <b>Xuất kho</b>.</div>`;
+  b.innerHTML=`<div class="section-eyebrow">📦 Nhận hàng từ kho tổng — cộng vào tồn trong kỳ</div><div style="font-size:12px;color:var(--muted);margin:6px 0 10px">Kho tổng xuất hàng về điểm bán: ghi số <b>thực nhận</b> vào đây. Số này tự cộng vào phần <b>Nhập</b> khi kiểm kê để tính <b>Xuất kho</b>. <b>Không dùng</b> cho hàng xin từ điểm bán khác.</div>`;
   if(!mine.length){b.appendChild(el('div','empty',`<div>Bạn chưa được gán điểm bán nào.</div>`));card.appendChild(b);v.appendChild(card);return;}
   const ctx=ensureNkCtx();
   ctxBar(b,ctx,{period:true,plants:mine},()=>{chosen=null;nkMo={};vePick();renderList();updRead();});
@@ -5774,7 +5774,7 @@ function dcNhapKho(v){
   // chọn cách nhập: gõ tay hoặc quét ảnh phiếu
   const seg=el('div');seg.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 14px';
   const bTay=el('button','btn btn-brand btn-sm','⌨ Gõ tay từng dòng');
-  const bAnh=el('button','btn btn-ghost btn-sm','📷 Quét ảnh phiếu nhập');
+  const bAnh=el('button','btn btn-ghost btn-sm','📷 Quét ảnh phiếu kho tổng');
   seg.appendChild(bTay);seg.appendChild(bAnh);b.appendChild(seg);
   const formWrap=el('div');b.appendChild(formWrap);
   function setMode(m){
@@ -5784,7 +5784,7 @@ function dcNhapKho(v){
     scanWrap.style.display=m==='anh'?'block':'none';
   }
   bTay.onclick=()=>setMode('tay');bAnh.onclick=()=>setMode('anh');
-  // HÀNG 1: ngày (mặc định hôm nay) + nhà cung cấp — gọn trên một dòng
+  // HÀNG 1: ngày (mặc định hôm nay) + số phiếu kho tổng — gọn trên một dòng
   const g=el('div','form-row');
   const fDate=el('label','field f-date','<span>Ngày nhập</span>');const iDate=el('input','input');iDate.type='date';iDate.valueAsDate=new Date();fDate.appendChild(iDate);
   const fNote=el('label','field f-grow','<span>Số phiếu xuất kho tổng / Ghi chú</span>');const iNote=el('input','input');iNote.placeholder='VD: PX-12345 — số phiếu kho tổng xuất';fNote.appendChild(iNote);
@@ -5893,7 +5893,7 @@ function dcNhapKho(v){
   function findMat(r){const c=(r.code||'').trim();if(c&&masterByCode[c])return masterByCode[c];const nm=(r.name||'').trim().toLowerCase();if(nm){let m=DATA.materials.find(x=>x.name.toLowerCase()===nm);if(m)return m;m=DATA.materials.find(x=>x.name.toLowerCase().includes(nm)||nm.includes(x.name.toLowerCase()));if(m)return m;}return null;}
   const scanWrap=el('div');scanWrap.style.cssText='margin-top:16px;padding:12px;border:1px dashed var(--brand);border-radius:12px;background:var(--surface-2)';
   scanWrap.style.display='none';
-  scanWrap.innerHTML='<div style="font-weight:800;font-size:13px;margin-bottom:4px">📷 Quét biên bản nhập (ảnh)</div><div style="font-size:12px;color:var(--muted);margin-bottom:10px">Chụp/chọn ảnh phiếu <b>in</b> (phiếu nhập / phiếu xuất điều chuyển từ kho tổng NCC) — hệ thống đọc số rồi cho xem trước để bạn <b>duyệt trước khi lưu</b>. Số sẽ cộng vào đúng <b>kho và kỳ đã ghim ở trên</b>. Ảnh chỉ dùng để quét, <b>không lưu lại</b>.</div>';
+  scanWrap.innerHTML='<div style="font-weight:800;font-size:13px;margin-bottom:4px">📷 Quét phiếu xuất của kho tổng (ảnh)</div><div style="font-size:12px;color:var(--muted);margin-bottom:10px">Chụp/chọn ảnh <b>phiếu in</b> kho tổng đưa kèm hàng — máy đọc ra danh sách mã rồi cho xem trước để bạn <b>sửa về số thực nhận và duyệt trước khi lưu</b>. Số cộng vào đúng <b>kho và kỳ đã ghim ở trên</b>. Ảnh chỉ dùng để đọc, <b>không lưu lại</b>.</div>';
   const fileIn=el('input');fileIn.type='file';fileIn.accept='image/*';fileIn.setAttribute('capture','environment');fileIn.multiple=true;fileIn.style.display='none';
   const pickBtn=el('button','btn btn-brand','📷 Chọn / chụp ảnh biên bản');
   const statusEl=el('div');statusEl.style.cssText='font-size:12.5px;margin-top:8px';
