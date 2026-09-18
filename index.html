@@ -939,7 +939,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1809-05';
+const APP_VER='1809-06';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1043,7 +1043,7 @@ function isMissingZoneCol(err){
 }
 function warnZoneCol(){
   if(warnZoneCol._done)return;warnZoneCol._done=true;
-  toast('⚠ Máy chủ chưa có cột lưu chi tiết tiểu kho — phiếu vẫn gửi bình thường, nhưng chưa lưu được số tách theo khu. Báo admin chạy SQL.');
+  toast('⚠ Chưa lưu được số tách theo từng tiểu kho — phiếu vẫn gửi bình thường, tổng vẫn đúng. Báo kế toán để xử lý.');
 }
 function zonesOf(plant,sloc){const a=countZones[plant+'|'+sloc];return Array.isArray(a)?a:[];}
 function canEditZones(plant){
@@ -1061,7 +1061,7 @@ async function saveZones(plant,sloc,list){
     if(error){console.error('count_zones',error);
       errBox('Không lưu được danh sách tiểu kho',[
         'Danh sách <b>chưa</b> lên máy chủ — máy khác sẽ không thấy tiểu kho vừa khai.',
-        'Nếu bảng <b>count_zones</b> chưa được tạo thì báo admin chạy SQL.',
+        'Báo kế toán để xử lý — số tổng vẫn gửi bình thường.',
         'Số đã đếm vẫn giữ nguyên, không mất.'],'Bảng: count_zones\n'+(error.message||'')+(error.code?'\nMã lỗi: '+error.code:''));
       return false;}
     return true;
@@ -1099,7 +1099,11 @@ function toast(msg){const t=$('#toast');t.innerHTML='<svg width="18" height="18"
 function now(){return new Date().toLocaleString('vi-VN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit',year:'numeric'});}
 /* ===== HỘP LỖI GHI DỮ LIỆU — KHÔNG TỰ TẮT =====
    Mọi lần dữ liệu KHÔNG lên được máy chủ đều phải hiện hộp này và ĐỨNG NGUYÊN đến khi
-   người dùng bấm Đóng, để bộ phận kịp chụp màn hình gửi admin. toast() 2,2 giây là không đủ. */
+   người dùng bấm Đóng, để bộ phận kịp chụp màn hình gửi kế toán. toast() 2,2 giây là không đủ.
+   ===== KHÔNG HIỆN CHẨN ĐOÁN KỸ THUẬT RA MÀN (rule Khoa 18/09/2026) =====
+   Tham số `detail` (tên bảng, mã lỗi máy chủ) CHỈ đi vào nút "Sao chép", không in ra
+   màn hình nữa. BP đọc tên bảng với mã lỗi thì không làm được gì, chỉ thêm lo; còn
+   người cần chẩn đoán thì bấm Sao chép là có đủ. */
 const TBL_VN={submissions:'phiếu kiểm kê',opening_stock:'tồn đầu kỳ',transfers:'điều chuyển',shifts:'bàn giao ca',spot_checks:'kiểm kê đột xuất',receipts:'nhập kho',closing_stock:'chốt tồn tháng',count_lists:'danh sách mở kỳ',materials:'danh mục vật tư',plant_materials:'danh mục kho',profiles:'người dùng'};
 function tblVN(t){return TBL_VN[t]||t;}
 function errBox(title,lines,detail){
@@ -1114,7 +1118,6 @@ function errBox(title,lines,detail){
     <div class="errbox-b">
       <ul>${body}</ul>
       <div class="errbox-ctx">${ctx.join('<br>')}</div>
-      ${detail?`<pre class="errbox-det">${String(detail).replace(/</g,'&lt;')}</pre>`:''}
     </div>
     <div class="errbox-f">
       <button class="btn btn-ghost btn-sm" id="errCopy">📋 Sao chép nội dung lỗi</button>
@@ -1124,7 +1127,7 @@ function errBox(title,lines,detail){
   const plain=[title||'',...(lines||[]),...ctx,detail||''].join('\n').replace(/<[^>]*>/g,'');
   box.querySelector('#errCopy').onclick=()=>{
     const b=box.querySelector('#errCopy');
-    const done=()=>{b.textContent='✓ Đã sao chép — dán vào Zalo/Teams gửi admin';};
+    const done=()=>{b.textContent='✓ Đã sao chép — dán vào Zalo/Teams gửi kế toán';};
     try{navigator.clipboard.writeText(plain).then(done,()=>{});}
     catch(e){const ta=document.createElement('textarea');ta.value=plain;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');done();}catch(e2){}ta.remove();}
   };
@@ -1177,7 +1180,7 @@ async function insSubmissionSafe(sub){
     if(!error){
       // RLS chặn kiểu "không thấy dòng vừa chèn" => coi như CHƯA lưu, không báo thành công giả
       if(Array.isArray(data)&&data.length===0){console.error('submissions: INSERT 0 dòng',row);
-        errBox('Máy chủ KHÔNG nhận phiếu kiểm kê',['Máy chủ nhận yêu cầu nhưng <b>không tạo dòng nào</b> — do quyền (RLS) chưa cho tài khoản này gửi phiếu.','Số đã đếm <b>vẫn còn ở nháp</b> trên máy này, tải lại trang vẫn thấy.','Chụp màn hình này gửi admin để cấp quyền, rồi gửi lại.'],'Bảng: submissions\nMã phiếu: '+sub.id+'\nKho: '+whName(sub.plant,sub.sloc)+' ('+sub.plant+'/'+sub.sloc+')\nKỳ: '+(sub.period||'')+'\nSố mã: '+sub.count+'\nSố dòng tạo: 0');
+        errBox('Máy chủ KHÔNG nhận phiếu kiểm kê',['Máy chủ nhận yêu cầu nhưng <b>không tạo dòng nào</b> — tài khoản này chưa được phép gửi phiếu.','Số đã đếm <b>vẫn còn ở nháp</b> trên máy này, tải lại trang vẫn thấy.','Chụp màn hình này gửi admin để cấp quyền, rồi gửi lại.'],'Bảng: submissions\nMã phiếu: '+sub.id+'\nKho: '+whName(sub.plant,sub.sloc)+' ('+sub.plant+'/'+sub.sloc+')\nKỳ: '+(sub.period||'')+'\nSố mã: '+sub.count+'\nSố dòng tạo: 0');
         return false;}
       return true;
     }
@@ -1473,27 +1476,6 @@ function tonDauKy(plant,sloc,period){
   if(coSo(op))return {items:op.items,nguon:op.fromId||'tồn đầu kỳ đã nạp',
     chotBoiKeToan:true,chuaDuyet:false,tamTinh:false};
   return {items:{},nguon:'',chotBoiKeToan:false,chuaDuyet:false,tamTinh:false};
-}
-/* CHẨN ĐOÁN: app THẤY GÌ cho kho này. Note chỉ nói "chưa có" thì không ai biết phải
-   làm gì — lỗi câm đã mắc nhiều lần. Liệt kê ra để kế toán soi được ngay.
-   LƯU Ý QUAN TRỌNG: ba con số này là những gì CLIENT ĐỌC ĐƯỢC, không phải những gì
-   máy chủ có. RLS chặn thì Supabase trả 0 dòng mà KHÔNG báo lỗi, nên "0 phiếu" có
-   thể nghĩa là "không có quyền đọc kho này" chứ không phải "kho này chưa kiểm kê".
-   Vì vậy note phải nêu cả hai khả năng, đừng kết luận một chiều. */
-function tonDauKyChanDoan(plant,sloc,period){
-  const per=period||curPeriod(),key=plant+'|'+sloc;
-  const cls=closings.filter(c=>c.plant===plant&&c.sloc===sloc);
-  const subs=submissions.filter(x=>x.plant===plant&&x.sloc===sloc);
-  const ky=a=>a.map(x=>periodVN(x.period)+(x.status&&x.status!=='Đã duyệt'?' ('+x.status+')':''))
-    .filter((v,i,arr)=>arr.indexOf(v)===i).slice(0,6).join(', ')||'không có';
-  const op=openingStock[key];
-  return {
-    soChot:cls.length, kyChot:ky(cls),
-    soPhieu:subs.length, kyPhieu:ky(subs),
-    coOpening:!!(op&&op.items&&Object.keys(op.items).length),
-    nguonOpening:op?(op.fromId||'nhập Excel'):'',
-    kyDangXem:periodVN(per)
-  };
 }
 
 /* ===== TỒN ƯỚC TÍNH CỦA 1 KHO TẠI THỜI ĐIỂM HIỆN TẠI =====
@@ -2233,7 +2215,7 @@ async function saveRecipes(kq,boIds){
   try{
     for(let i=0;i<rows.length;i+=400){
       const {error}=await sb.from('recipes').upsert(rows.slice(i,i+400),{onConflict:'id'});
-      if(error){if(clThieuBang(error)){clTblOK=false;return {ok:false,why:'Chưa chạy SQL tạo bảng recipes'};}
+      if(error){if(clThieuBang(error)){clTblOK=false;return {ok:false,why:'Máy chủ chưa sẵn sàng lưu định lượng — báo kế toán'};}
         return {ok:false,why:error.message||'Máy chủ từ chối'};}
     }
   }catch(e){return {ok:false,why:(e&&e.message)||'Lỗi không rõ'};}
@@ -2268,7 +2250,7 @@ async function saveSalesUsage(plant,sloc,period,kq,ky){
     created_by:session?session.name:'',created_at:new Date().toISOString()};
   try{
     const {error}=await sb.from('sales_usage').upsert([row],{onConflict:'plant_code,sloc_code,period'});
-    if(error){if(clThieuBang(error)){clTblOK=false;return {ok:false,why:'Chưa chạy SQL tạo bảng sales_usage'};}
+    if(error){if(clThieuBang(error)){clTblOK=false;return {ok:false,why:'Máy chủ chưa sẵn sàng lưu doanh thu — báo kế toán'};}
       return {ok:false,why:error.message||'Máy chủ từ chối'};}
   }catch(e){return {ok:false,why:(e&&e.message)||'Lỗi không rõ'};}
   salesUsage[clKey(plant,sloc,period)]={usage:kq.usage,missing:row.missing,theoNhom:row.by_group,
@@ -2281,7 +2263,7 @@ async function saveVarNote(plant,sloc,period,code,note,status){
     status:status||'Chờ duyệt',by_user:session?session.name:'',at_time:new Date().toISOString()};
   try{
     const {error}=await sb.from('variance_notes').upsert([row],{onConflict:'plant_code,sloc_code,period,code'});
-    if(error){if(clThieuBang(error)){clTblOK=false;return {ok:false,why:'Chưa chạy SQL tạo bảng variance_notes'};}
+    if(error){if(clThieuBang(error)){clTblOK=false;return {ok:false,why:'Máy chủ chưa sẵn sàng lưu giải trình — báo kế toán'};}
       return {ok:false,why:error.message||'Máy chủ từ chối'};}
   }catch(e){return {ok:false,why:(e&&e.message)||'Lỗi không rõ'};}
   varNotes[clNoteKey(plant,sloc,period,code)]={note:row.note,status:row.status,by:row.by_user,at:now()};
@@ -2485,12 +2467,12 @@ async function dbIns(table,row){if(!sb)return;const {error}=await sb.from(table)
 async function dbUpd(table,match,patch){if(!sb)return {ok:true,count:null};const {data,error}=await sb.from(table).update(patch).match(match).select();
   if(error){console.error(table,error);errBox('Không cập nhật được '+tblVN(table)+' trên máy chủ',['Thay đổi vừa làm <b>CHƯA</b> được ghi. Tải lại trang là mất.','Chụp màn hình này gửi admin.'],'Bảng: '+table+'\n'+JSON.stringify(match)+'\n'+(error.message||'')+(error.code?'\nMã lỗi: '+error.code:''));return {ok:false,count:0,error};}
   const n=Array.isArray(data)?data.length:null;
-  if(n===0){console.warn(table+': UPDATE 0 dòng',match);errBox('Máy chủ từ chối cập nhật '+tblVN(table),['Máy chủ nhận yêu cầu nhưng <b>không đổi dòng nào</b> — gần như luôn là do quyền (RLS) chưa cho tài khoản này sửa.','Thay đổi trên màn hình chỉ là tạm; tải lại trang sẽ về số cũ.','Chụp màn hình này gửi admin để cấp quyền.'],'Bảng: '+table+'\nĐiều kiện: '+JSON.stringify(match)+'\nSố dòng đổi: 0');}
+  if(n===0){console.warn(table+': UPDATE 0 dòng',match);errBox('Máy chủ từ chối cập nhật '+tblVN(table),['Máy chủ nhận yêu cầu nhưng <b>không đổi dòng nào</b> — tài khoản này chưa được phép sửa dữ liệu đó.','Thay đổi trên màn hình chỉ là tạm; tải lại trang sẽ về số cũ.','Chụp màn hình này gửi admin để cấp quyền.'],'Bảng: '+table+'\nĐiều kiện: '+JSON.stringify(match)+'\nSố dòng đổi: 0');}
   return {ok:true,count:n};}
 async function dbDel(table,match){if(!sb)return {ok:true,count:null};const {data,error}=await sb.from(table).delete().match(match).select();
   if(error){console.error(table,error);errBox('Không xóa được '+tblVN(table)+' trên máy chủ',['Dòng dữ liệu <b>vẫn còn</b> trên máy chủ. Tải lại trang sẽ thấy nó quay lại.','Chụp màn hình này gửi admin.'],'Bảng: '+table+'\n'+JSON.stringify(match)+'\n'+(error.message||'')+(error.code?'\nMã lỗi: '+error.code:''));return {ok:false,count:0,error};}
   const n=Array.isArray(data)?data.length:null;
-  if(n===0){console.warn(table+': DELETE 0 dòng',match);errBox('Máy chủ từ chối xóa '+tblVN(table),['Máy chủ nhận yêu cầu nhưng <b>không xóa dòng nào</b> — gần như luôn là do quyền (RLS) chưa cho tài khoản này xóa.','Trên màn hình có thể thấy đã mất, nhưng tải lại trang là nó quay lại.','Chụp màn hình này gửi admin.'],'Bảng: '+table+'\nĐiều kiện: '+JSON.stringify(match)+'\nSố dòng xóa: 0');}
+  if(n===0){console.warn(table+': DELETE 0 dòng',match);errBox('Máy chủ từ chối xóa '+tblVN(table),['Máy chủ nhận yêu cầu nhưng <b>không xóa dòng nào</b> — tài khoản này chưa được phép xóa dữ liệu đó.','Trên màn hình có thể thấy đã mất, nhưng tải lại trang là nó quay lại.','Chụp màn hình này gửi admin.'],'Bảng: '+table+'\nĐiều kiện: '+JSON.stringify(match)+'\nSố dòng xóa: 0');}
   return {ok:true,count:n};}
 async function dbUpsert(table,row){if(!sb)return;const {error}=await sb.from(table).upsert(row);if(error){console.error(table,error);
   errBox('Không lưu được '+tblVN(table)+' lên máy chủ',['Dữ liệu vừa nhập <b>CHƯA</b> lên máy chủ. Tải lại trang là mất.','Chụp màn hình này gửi admin, rồi thử lại.'],'Bảng: '+table+'\n'+(error.message||'')+(error.code?'\nMã lỗi: '+error.code:''));}}
@@ -5331,23 +5313,12 @@ function dcRequestForm(v,kind){
     if(!coHang.length){
       /* Nói ĐÚNG lý do. Trước đây đoán "có thể kho chưa nạp tồn đầu kỳ" trong khi
          app biết chính xác: có bản chốt/phiếu kiểm kê kỳ trước hay không. */
-      const cd=tonDauKyChanDoan(p,s,per);
       listWrap.appendChild(clNote(
         `<b>${whName(p,s)} chưa có tồn mã nào</b> trong kỳ ${periodVN(per)}.`
         +(dkNguon.nguon
           ? ` Tồn đầu kỳ lấy từ <b>${dkNguon.nguon}</b>, nhưng sau khi trừ điều chuyển thì mọi mã đã về 0.`
-          : ` App <b>không tìm thấy mốc nào</b> đã chốt trước kỳ này để tính tồn.`)
-        +`<div style="margin-top:8px;padding:8px 11px;background:var(--surface-2);border-radius:7px;font-size:12px;line-height:1.7">`
-        +`<b>App đang thấy gì ở kho này:</b><br>`
-        +`· Phiếu kiểm kê: <b>${cd.soPhieu}</b> phiếu${cd.soPhieu?' — kỳ '+cd.kyPhieu:''}<br>`
-        +`· Bản chốt tồn tháng: <b>${cd.soChot}</b>${cd.soChot?' — kỳ '+cd.kyChot:''}<br>`
-        +`· Tồn đầu kỳ đã nạp: <b>${cd.coOpening?'có':'không'}</b>${cd.coOpening?' ('+cd.nguonOpening+')':''}`
-        +`</div>`
-        +`<div style="margin-top:7px">Ba dòng trên <b>đều trống</b> thì có <b>hai khả năng</b>, app không phân biệt được:`
-        +`<br>· Kho đó <b>thật sự chưa có số nào</b> — nhắc kế toán chốt tồn, hoặc kho đó gửi phiếu kiểm kê.`
-        +`<br>· Tài khoản của anh/chị <b>không có quyền đọc dữ liệu kho khác</b> — máy chủ trả rỗng chứ không báo lỗi, nên app tưởng là không có số.`
-        +`<br><b>Chụp khối này gửi kế toán / quản trị</b> để họ đối chiếu. Nếu là chuyện quyền thì admin chạy <b>PHẦN 6</b> trong <code>SQL-tong-hop.sql</code> là xong.</div>`
-        +` Gõ ô tìm bên dưới để lục mã trong danh mục nếu anh/chị biết kho đó có hàng thật.`,
+          : ` Kho này chưa có số tồn nào trong app — <b>liên hệ kế toán</b> để biết kho đó đã chốt tồn chưa.`)
+        +` Vẫn gõ ô tìm bên dưới để lục mã trong danh mục nếu anh/chị biết kho đó có hàng thật.`,
         'var(--accent-600)'));
     }
     const sw=el('div','search-wrap');sw.style.margin='0 0 8px';
@@ -5510,7 +5481,7 @@ function dcRequestForm(v,kind){
       if(error){console.error('transfer_requests',error);
         errBox('Không gửi được phiếu lên máy chủ',['Phiếu <b>CHƯA</b> được lưu — kho kia sẽ không thấy gì.','Số vừa gõ vẫn còn trên màn hình, thử gửi lại.','Chụp màn hình này gửi admin.'],'Bảng: transfer_requests\nMã phiếu: '+id+'\n'+(error.message||'')+(error.code?'\nMã lỗi: '+error.code:''));return;}
       if(Array.isArray(data)&&data.length===0){
-        errBox('Máy chủ KHÔNG nhận phiếu',['Máy chủ nhận yêu cầu nhưng <b>không tạo dòng nào</b> — do quyền (RLS).','Chụp màn hình này gửi admin.'],'Bảng: transfer_requests\nMã phiếu: '+id+'\nSố dòng tạo: 0');return;}
+        errBox('Máy chủ KHÔNG nhận phiếu',['Máy chủ nhận yêu cầu nhưng <b>không tạo dòng nào</b> — tài khoản này chưa được phép.','Chụp màn hình này gửi kế toán.'],'Bảng: transfer_requests\nMã phiếu: '+id+'\nSố dòng tạo: 0');return;}
     }
     const rec={id,kind,fromPlant:fp,fromSloc:fs,toPlant:tp,toSloc:ts,items,reason:row.reason,status:'Chờ duyệt',period:null,by:session.name,time:now(),approvedBy:null,approvedAt:null,rejectNote:''};
     trReqs.unshift(rec);
@@ -5765,7 +5736,7 @@ async function _approveTransferReq(r,qtys){
     if(sb){
       const {data,error}=await sb.from('transfers').insert(row).select();
       if(error){emsg=(error.message||'')+(error.code?' (mã '+error.code+')':'');}
-      else if(Array.isArray(data)&&data.length===0){emsg='Máy chủ nhận yêu cầu nhưng không tạo dòng nào (quyền RLS).';}
+      else if(Array.isArray(data)&&data.length===0){emsg='Máy chủ nhận yêu cầu nhưng không ghi được dòng nào — tài khoản này chưa được phép ghi sổ kho đó.';}
       else{ok=true;if(data[0]&&data[0].id!=null)doneIds.push(data[0].id);}
     }else ok=true;
     if(ok){done.push(c);transfers.unshift({date:row.date,code:c,name:row.name,uom:row.uom,qty:row.qty,from:fromNm,to:toNm,fromKey,toKey,period:per,reason,user:session.name,time:now()});continue;}
@@ -5864,7 +5835,7 @@ async function deleteTransferReq(r){
     errBox('Chưa xóa hết dòng sổ — DỪNG, chưa xóa phiếu',[
       `Chỉ xóa được ${cleaned}/${rows.length} dòng sổ của phiếu này.`,
       'Phiếu <b>vẫn còn</b> để anh/chị không mất dấu các dòng sổ chưa dọn được.',
-      'Chụp màn hình này gửi admin kiểm quyền xóa bảng sổ điều chuyển.'
+      'Chụp màn hình này gửi kế toán.'
     ],'Phiếu: '+r.id+'\nDọn được: '+cleaned+'/'+rows.length);return;}
   const del=await dbDel('transfer_requests',{id:r.id});
   if(!del.ok||del.count===0)return;   // dbDel đã dựng hộp lỗi
@@ -6471,7 +6442,7 @@ async function deleteSubmission(s,cb){
   // Xóa trên máy chủ TRƯỚC rồi mới sửa RAM: RLS chặn thì không báo thành công giả nữa
   const r=await dbDel('submissions',{id:s.id});
   if(!r.ok){toast('Máy chủ báo lỗi — phiếu CHƯA bị xóa. Xem Console để biết chi tiết.');return;}
-  if(r.count===0){toast('Máy chủ TỪ CHỐI xóa phiếu (thiếu policy DELETE cho admin). Phiếu vẫn còn — dùng "↩ Hủy duyệt (mở lại kỳ)" để mở khóa ngay.');return;}
+  if(r.count===0){toast('Máy chủ từ chối xóa phiếu. Phiếu vẫn còn — dùng "↩ Hủy duyệt (mở lại kỳ)" để mở khóa ngay.');return;}
   submissions=submissions.filter(x=>x.id!==s.id);
   if(opFromThis&&hasPrev){openingStock[key]={items:{...s.prevOpening.items},fromId:s.prevOpening.fromId,at:s.prevOpening.at,by:s.prevOpening.by};await dbUpsertOpening(s.plant,s.sloc,openingStock[key]);log('Xóa phiếu kiểm kê + hoàn tồn đầu kỳ trước (admin)',`${s.id} · ${whName(s.plant,s.sloc)} → về ${s.prevOpening.fromId||'kỳ trước'}`);toast('Đã xóa '+s.id+' & trả tồn đầu kỳ về lần trước');}
   else if(opFromThis){delete openingStock[key];await dbDel('opening_stock',{plant_code:s.plant,sloc_code:s.sloc});log('Xóa phiếu kiểm kê + gỡ tồn đầu kỳ (admin)',`${s.id} · ${whName(s.plant,s.sloc)}`);toast('Đã xóa '+s.id+' & gỡ tồn đầu kỳ (trước đó chưa có)');}
@@ -6495,7 +6466,7 @@ async function unapproveSubmission(s,cb){
   if(!confirm(t))return;
   const r=await dbUpd('submissions',{id:s.id},{status:'Chờ duyệt',approved_by:null,approved_at:null});
   if(!r.ok){toast('Máy chủ báo lỗi — phiếu CHƯA đổi. Xem Console.');return;}
-  if(r.count===0){toast('Máy chủ từ chối cập nhật (RLS) — phiếu vẫn đang duyệt. Cần thêm policy UPDATE cho admin.');return;}
+  if(r.count===0){toast('Máy chủ từ chối cập nhật — phiếu vẫn đang duyệt. Báo kế toán xử lý.');return;}
   s.status='Chờ duyệt';s.approvedBy=null;s.approvedAt=null;
   if(opFromThis&&hasPrev){openingStock[key]={items:{...s.prevOpening.items},fromId:s.prevOpening.fromId,at:s.prevOpening.at,by:s.prevOpening.by};await dbUpsertOpening(s.plant,s.sloc,openingStock[key]);}
   else if(opFromThis){delete openingStock[key];await dbDel('opening_stock',{plant_code:s.plant,sloc_code:s.sloc});}
@@ -7381,7 +7352,7 @@ function spotList(v){
 // Xóa hẳn 1 phiếu đột xuất
 function deleteSpot(s,cb){
   spotChecks=spotChecks.filter(x=>x.id!==s.id);
-  if(sb)sb.from('spot_checks').delete().eq('id',s.id).then(({error})=>{if(error){console.error('xóa spot',error);toast('Lỗi xóa (có thể do RLS): '+error.message);}});
+  if(sb)sb.from('spot_checks').delete().eq('id',s.id).then(({error})=>{if(error){console.error('xóa spot',error);toast('Không xóa được phiếu — báo kế toán xử lý.');}});
   log('Xóa phiếu đột xuất',`${s.id} · ${whName(s.plant,s.sloc)}`);
   toast('Đã xóa phiếu '+s.id);cb&&cb();
 }
@@ -7599,7 +7570,7 @@ function openUserDrawer(view,p){
     if(!confirm('Xóa "'+(p.full_name||p.email)+'"?\nHồ sơ & phân quyền bị xóa, không thể hoàn tác.'))return;
     try{await sb.from('user_plants').delete().eq('user_id',p.id);}catch(e){}
     const {error}=await sb.from('profiles').delete().eq('id',p.id);
-    if(error){toast('Lỗi xóa: '+error.message+' (có thể do RLS)');return;}
+    if(error){toast('Không xóa được — báo kế toán xử lý.');return;}
     delete userPlants[p.id];profiles=profiles.filter(x=>x.id!==p.id);log('Xóa người dùng',p.email||p.id);userEdit=null;toast('Đã xóa');renderView();
   };
   ov.appendChild(dr);view.appendChild(ov);
