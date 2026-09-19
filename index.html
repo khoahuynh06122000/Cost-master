@@ -748,6 +748,48 @@
   html.dark .badge-none{background:rgba(196,61,61,.22);border-color:rgba(255,107,107,.35)}
   html.dark .badge-wait,html.dark .badge-blind,html.dark .warn-tag{background:rgba(214,158,46,.16);border-color:rgba(214,158,46,.34);color:#f0d9a0}
   html.dark .badge-open,html.dark .open-tag{background:rgba(28,95,134,.28);border-color:rgba(120,180,220,.32);color:#bcdcf0}
+
+  /* ===== CHẶN iPHONE TỰ PHÓNG TO KHI CHẠM Ô NHẬP =====
+     Safari trên iPhone/iPad phóng to cả trang mỗi khi focus vào ô có cỡ chữ
+     NHỎ HƠN 16px, và không tự thu lại — người dùng phải chụm tay thu về, nên
+     app trông như "bị zoom lên" mãi. Ô nhập của app vốn để 15px nên dính hết
+     (đo 18/09/2026: 12/12 loại ô đều 15px).
+     KHÔNG dùng maximum-scale=1 / user-scalable=no để chặn: iOS 10+ bỏ qua nó
+     trong Safari, và nó chặn luôn người mắt kém phóng to để đọc.
+     pointer:coarse = thiết bị cảm ứng; kèm max-width cho máy không báo pointer.
+     .qty-big (22px) đặc hiệu hơn selector element nên giữ nguyên cỡ to. */
+  /* iOS tự "thổi" cỡ chữ lên khi xoay ngang màn (text autosizing) — khoá lại,
+     chữ giữ đúng cỡ đã thiết kế ở mọi hướng. Không ảnh hưởng việc người dùng
+     tự chụm tay phóng to. */
+  html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+  /* Mọi ô và nút trong MỘT hàng nhập phải cùng chiều cao. Trước đây đứng cạnh
+     nhau có 44px (nút) · 45px (ô chữ) · 47px (ô ngày, Chrome thêm icon lịch) ·
+     52px (ô số) — nhìn so le. */
+  .form-row .input{height:46px}
+  .form-row .btn,.form-row .f-btn{height:46px}
+  .form-row .qty-big{height:46px;font-size:20px}
+  /* Thanh nhập số dính đáy ở màn nhận hàng kho tổng.
+     PHẢI có nền ĐẶC: .sticky-actions dùng gradient nửa trong suốt (hợp cho một
+     hàng nút), để nguyên thì chữ trong danh sách lòi qua và chồng lên chữ của
+     thanh — đo 19/09 thấy đúng cảnh đó. Ô số và nút ép về CÙNG MỘT HÀNG cho
+     thanh thấp, vì nó che mất phần danh sách phía dưới. */
+  /* z-index PHẢI cao hơn .nk-gh (tiêu đề nhóm, sticky z-index:2), nếu không
+     tiêu đề nhóm đè lên thanh và hai dòng chữ chồng nhau. */
+  .nk-bar{z-index:5;background:var(--surface);border-top:1.5px solid var(--line-strong);
+    box-shadow:0 -8px 20px -10px rgba(16,40,36,.22);
+    padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+    margin:0 -12px;border-radius:12px 12px 0 0}
+  html.dark .nk-bar{box-shadow:0 -8px 20px -10px rgba(0,0,0,.6)}
+  .nk-bar .form-row{margin-bottom:0;flex-wrap:nowrap;align-items:flex-end;gap:8px}
+  .nk-bar .f-qty{flex:0 1 150px;width:auto;min-width:0}
+  .nk-bar .f-btn{flex:1 1 auto}
+  .nk-bar .readout{margin:0 0 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  @media (pointer:coarse),(max-width:820px){
+    input,select,textarea{font-size:16px}
+    /* Hai ô tìm dùng `font:inherit` nên thừa hưởng cỡ chữ nhỏ của ô bọc, và
+       selector `.x input` đặc hiệu hơn nên đè mất rule trên — phải gọi tên. */
+    .usr-search input,.uksearch input{font-size:16px}
+  }
 </style>
 <script>try{if(localStorage.getItem('appDark')==='1')document.documentElement.classList.add('dark');}catch(e){}</script>
 </head>
@@ -939,7 +981,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1809-06';
+const APP_VER='1909-01';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -5896,7 +5938,7 @@ function dcNhapKho(v){
   let chosen=null,nkMo={};            // nkMo[tên nhóm] = số dòng đang mở
   const fMat=el('label','field f-grow','<span>Tìm mã hàng</span>');
   const iMat=el('input','input');
-  iMat.placeholder='Gõ mã hoặc tên để lọc — để trống vẫn thấy danh sách';
+  iMat.placeholder='Gõ mã hoặc tên hàng…';
   iMat.autocomplete='off';fMat.appendChild(iMat);
   const rowFind=el('div','form-row');rowFind.appendChild(fMat);formWrap.appendChild(rowFind);
   const pick=el('div','nk-pick');formWrap.appendChild(pick);
@@ -5955,6 +5997,7 @@ function dcNhapKho(v){
   const ro=el('div','readout');
   const q3=x=>String(Math.round((Number(x)||0)*1000)/1000);
   function updRead(){
+    if(typeof thanhSo!=='undefined'&&thanhSo)thanhSo.hidden=!chosen;
     const ut=fQty.querySelector('#nkUom');
     if(!chosen){if(ut)ut.textContent='';ro.innerHTML='<span style="color:var(--muted)">Bấm một mã trong danh sách trên để chọn</span>';return;}
     if(ut)ut.textContent='· '+(chosen.uom||'');
@@ -5967,8 +6010,15 @@ function dcNhapKho(v){
   }
   iQty.oninput=updRead;
   const addBtn=el('button','btn btn-primary f-btn','+ Thêm dòng');
+  /* THANH DÍNH ĐÁY MÀN. Trước đây ô số nằm DƯỚI danh sách mã: danh sách cao
+     1.421px nên chọn xong phải cuộn 1,6 màn mới gõ được số, gõ xong cuộn ngược
+     lên chọn mã tiếp — mỗi mã một vòng cuộn. Giờ bấm mã là thanh hiện ngay chân
+     màn, gõ số rồi bấm Thêm, danh sách vẫn nguyên chỗ cũ. */
+  const thanhSo=el('div','sticky-actions nk-bar');
   const row2=el('div','form-row');row2.appendChild(fQty);row2.appendChild(addBtn);
-  formWrap.appendChild(row2);formWrap.appendChild(ro);
+  thanhSo.appendChild(ro);thanhSo.appendChild(row2);
+  formWrap.appendChild(thanhSo);
+  thanhSo.hidden=true;   // chưa chọn mã thì không chiếm chỗ
   addBtn.onclick=()=>{if(!chosen){toast('Chưa chọn mã hàng — bấm một mã trong danh sách');return;}if(!iQty.value||Number(iQty.value)<=0){toast('Nhập số lượng hợp lệ');return;}
     if(!masterByCode[chosen.code]){errBox('Mã không có trong master data',['Mã <b>'+chosen.code+'</b> không còn trong danh mục tổng — không ghi được.','Tải lại trang rồi chọn lại mã.'],'Mã: '+chosen.code);return;}
     /* Mã lấy từ master data mà kho chưa có: thêm vào DANH MỤC KHO (plant_materials).
@@ -6020,7 +6070,7 @@ function dcNhapKho(v){
     pv.forEach(row=>{
       const tr=el('tr');
       tr.appendChild(el('td',null,'<div style="font-size:12.5px">'+row.ocrName+'</div>'));
-      const cCode=el('td');const ci=el('input','input');ci.value=row.code;ci.placeholder='Gõ mã đúng…';ci.style.cssText='min-width:120px;font-size:12px';
+      const cCode=el('td');const ci=el('input','input');ci.value=row.code;ci.placeholder='Gõ mã đúng…';ci.style.cssText='min-width:120px';
       const cn=el('div');cn.style.cssText='font-size:11px;margin-top:3px';
       function refresh(){const m=masterByCode[ci.value.trim()];if(m){row.code=m.code;cn.innerHTML='<span style="color:#16a34a">✓ '+m.name+' · '+(m.uom||'')+'</span>';}else{row.code=ci.value.trim();cn.innerHTML='<span style="color:var(--red)">⚠ Mã này không có trong master data — sửa lại cho đúng, hoặc nhờ kế toán khai mã trước</span>';}}
       ci.oninput=refresh;cCode.appendChild(ci);cCode.appendChild(cn);tr.appendChild(cCode);
