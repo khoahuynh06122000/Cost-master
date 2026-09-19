@@ -992,7 +992,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1909-02';
+const APP_VER='1909-03';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -4843,7 +4843,10 @@ function renderKiemke(v){
     // ngay trên phiếu cũ, mọi lần sửa đều ghi vết cho kế toán xem lúc duyệt.
     const pc=el('div','card');pc.style.cssText='margin-top:14px;border:1.5px solid var(--accent-600)';
     const pb=el('div','card-b');
-    pb.innerHTML=`<div class="section-eyebrow" style="color:var(--accent-600)">⏳ Kho này đã có phiếu đang chờ duyệt</div>
+    pb.innerHTML=`<div class="section-eyebrow" style="color:var(--accent-600)">${_pend._choGui
+        ?(mangOK?'📤 Phiếu của kho này đang được gửi lên':'📴 Phiếu của kho này chưa gửi được — đang chờ có mạng')
+        :'⏳ Kho này đã có phiếu đang chờ duyệt'}</div>
+      ${_pend._choGui?`<div class="note" style="margin:8px 0"><div>Số đã đếm <b>nằm an toàn trong máy</b>. ${mangOK?'App đang gửi lên máy chủ.':'Khi nào máy có mạng, app <b>tự gửi</b> — không phải đếm lại.'} Vẫn <b>đếm bổ sung</b> được bình thường.</div></div>`:''}
       <div style="font-size:12.5px;color:var(--muted);margin:6px 0 10px">Phiếu <b class="tnum">${_pend.id}</b> · ${_pend.count} mã · gửi bởi ${_pend.user} lúc ${_pend.time}${(_pend.edits&&_pend.edits.length)?(' · đã bổ sung '+_pend.edits.length+' lần'):''}.<br>
       Mỗi kho mỗi kỳ <b>chỉ có một phiếu</b>. Đếm thiếu hay đếm sai thì <b>bổ sung ngay trên phiếu này</b> — không lập phiếu mới. Mọi lần sửa đều được ghi lại để kế toán xem khi duyệt.</div>`;
     const pr=el('div');pr.style.cssText='display:flex;gap:10px;flex-wrap:wrap';
@@ -6411,9 +6414,21 @@ function renderTransList(){
 }
 
 /* ============ TỔNG HỢP ============ */
-function statusBadge(st){
+/* Nhận cả chuỗi trạng thái lẫn cả object phiếu. Truyền cả phiếu vào thì biết
+   thêm nó đã lên máy chủ chưa (_choGui = còn nằm trong hàng đợi trên máy). */
+function statusBadge(x){
+  const s=(x&&typeof x==='object')?x:null;
+  if(s&&s._choGui)return nhanChoGui();
+  const st=s?s.status:x;
   if(st==='Đã duyệt')return '<span class="badge badge-done">✓ Đã duyệt</span>';
   return '<span class="badge badge-wait">⏳ Chờ duyệt</span>';
+}
+/* Phiếu đã đếm xong nhưng chưa lên được máy chủ. Nói đúng việc đang xảy ra để
+   BP biết chưa xong, mà không phải là lỗi của họ. */
+function nhanChoGui(){
+  return mangOK
+    ? '<span class="badge" style="background:#E6EFEE;color:#1C6B44;border:1px solid #A9D8BF">📤 Đang gửi…</span>'
+    : '<span class="badge badge-wait">📴 Chưa gửi — chờ có mạng</span>';
 }
 function renderTonghop(v){
   const isKTV = session && session.role==='ketoan_vien';
@@ -6463,7 +6478,7 @@ function renderTonghop(v){
       const tr=el('tr',null,`${chkCell}<td class="cell-strong tnum">${s.id}</td>
       <td><div class="cell-strong">${whName(s.plant,s.sloc)}</div><div class="cell-sub">${plantName(s.plant)}</div></td>
       <td>${s.user}</td><td class="tnum" style="font-size:12.5px">${s.time}</td>
-      <td class="num cell-strong tnum">${s.count}</td><td>${statusBadge(s.status)}</td>
+      <td class="num cell-strong tnum">${s.count}</td><td>${statusBadge(s)}</td>
       <td><button class="btn btn-ghost btn-sm">Chi tiết</button></td>`);
       tr.querySelector('.btn').onclick=()=>showDetail(s);
       const chk=tr.querySelector('.rowchk');
