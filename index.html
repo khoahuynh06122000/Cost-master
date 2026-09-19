@@ -992,7 +992,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1909-03';
+const APP_VER='1909-04';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1088,14 +1088,30 @@ function outboxGan(){
   outbox.forEach(it=>{if(!submissions.some(x=>x.id===it.id))
     submissions.unshift(Object.assign({},it.sub,{_choGui:true}));});
 }
+/* Phiếu này đã nằm trên máy chủ chưa?
+   Tình huống thật: app gửi xong, máy chủ đã nhận, NHƯNG điện thoại tắt/khoá trước
+   khi app kịp xoá phiếu khỏi hàng đợi. Lần sau gửi lại thì mã trùng, và
+   insSubmissionSafe sẽ tự tăng hậu tố -2 rồi tạo PHIẾU THỨ HAI y hệt — kế toán
+   nhận hai phiếu cùng nội dung. Nên phải hỏi trước, đừng gửi mù. */
+async function daLenMayChu(id){
+  if(!sb)return false;
+  const {data,error}=await sb.from('submissions').select('id').eq('id',id).limit(1);
+  if(error)throw error;                       // lỗi mạng -> để nơi gọi xử lý
+  return Array.isArray(data)&&data.length>0;
+}
 async function outboxFlush(){
   if(_dangFlush||!outbox.length||!sb)return;
   if(typeof navigator!=='undefined'&&navigator.onLine===false)return;
   _dangFlush=true;
-  const xong=[];
+  const xong=[],daCoSan=[];
   try{
     for(const it of outbox.slice()){
       try{
+        if(await daLenMayChu(it.sub.id)){      // gửi được từ lần trước, chỉ chưa kịp dọn
+          xong.push(it.id);daCoSan.push(it.id);
+          const s1=submissions.find(x=>x.id===it.id);if(s1)delete s1._choGui;
+          continue;
+        }
         const ok=await insSubmissionSafe(it.sub,true);   // true = im lặng, không dựng hộp lỗi
         if(ok){
           xong.push(it.id);
@@ -1104,6 +1120,14 @@ async function outboxFlush(){
         }else{
           // Máy chủ nhận được nhưng từ chối -> gửi lại cũng trượt, để người dùng biết
           it.lanThu++;it.loi='Máy chủ từ chối';
+          /* Thử 3 lần vẫn trượt là kẹt thật. Im lặng thì phiếu nằm đó mãi mà không
+             ai hay — báo một lần, kèm đường xử lý. */
+          if(it.lanThu===3){
+            const t='⚠ Phiếu kiểm kê chưa gửi được';
+            const b=it.sub.id+' · '+it.sub.count+' mã — máy chủ từ chối. Số vẫn giữ trong máy, báo kế toán.';
+            if(typeof document!=='undefined'&&document.visibilityState==='visible')toast(t+' — '+it.sub.id);
+            else{try{pushLocal(t,b,'kk-outbox-loi');}catch(e){}}
+          }
         }
       }catch(e){
         it.lanThu++;
@@ -1115,7 +1139,18 @@ async function outboxFlush(){
   if(xong.length){
     outbox=outbox.filter(x=>xong.indexOf(x.id)<0);outboxSave();
     datMang(true);
-    toast(xong.length===1?('✓ Đã gửi phiếu '+xong[0]):('✓ Đã gửi '+xong.length+' phiếu vừa đếm lúc mất mạng'));
+    const mot=xong.length===1;
+    const tieuDe=mot?'✓ Đã gửi phiếu kiểm kê':('✓ Đã gửi '+xong.length+' phiếu kiểm kê');
+    const noiDung=mot
+      ? (xong[0]+' đã lên máy chủ — kế toán thấy được rồi.')
+      : (xong.join(', ')+' đã lên máy chủ.');
+    /* Người dùng bấm Gửi lúc mất sóng rồi cất máy đi. Lúc app gửi được thì họ
+       KHÔNG nhìn màn hình — toast trôi qua vô ích. Màn đang ẩn thì báo thẳng về
+       điện thoại (rung + hiện trên màn khoá); đang nhìn thì toast là đủ. */
+    const dangNhin=(typeof document!=='undefined'&&document.visibilityState==='visible');
+    if(dangNhin)toast(tieuDe+(mot?' '+xong[0]:''));
+    else{try{pushLocal(tieuDe,noiDung,'kk-outbox');}catch(e){toast(tieuDe);}}
+    if(daCoSan.length)console.info('outbox: '+daCoSan.length+' phiếu đã có sẵn trên máy chủ, chỉ dọn hàng đợi');
     try{veChipMang();renderView();}catch(e){}
   }else{outboxSave();try{veChipMang();}catch(e){}}
 }
