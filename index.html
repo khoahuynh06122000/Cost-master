@@ -749,6 +749,16 @@
   html.dark .badge-wait,html.dark .badge-blind,html.dark .warn-tag{background:rgba(214,158,46,.16);border-color:rgba(214,158,46,.34);color:#f0d9a0}
   html.dark .badge-open,html.dark .open-tag{background:rgba(28,95,134,.28);border-color:rgba(120,180,220,.32);color:#bcdcf0}
 
+  /* Chip trạng thái mạng: chỉ hiện khi MẤT MẠNG hoặc còn phiếu chờ gửi.
+     Bình thường ẩn hẳn để không chiếm chỗ trên thanh đầu vốn đã chật. */
+  .netchip{display:inline-flex;align-items:center;gap:6px;border-radius:20px;
+    padding:6px 11px;font-size:12px;font-weight:800;white-space:nowrap;
+    border:1px solid var(--cam-line,#E7CE9B);background:#FCF3E2;color:#8A5A00;flex:none}
+  html.dark .netchip{background:#2E2412;border-color:#54421D;color:#F0C069}
+  .netchip.cho{background:#E6EFEE;border-color:#A9D8BF;color:#1C6B44}
+  html.dark .netchip.cho{background:#122A1F;border-color:#23503A;color:#7FDCA9}
+  @media(max-width:420px){.netchip{padding:6px 8px;font-size:11px}}
+
   /* ===== CHẶN iPHONE TỰ PHÓNG TO KHI CHẠM Ô NHẬP =====
      Safari trên iPhone/iPad phóng to cả trang mỗi khi focus vào ô có cỡ chữ
      NHỎ HƠN 16px, và không tự thu lại — người dùng phải chụm tay thu về, nên
@@ -888,6 +898,7 @@
       </button>
       <div class="pt" id="pageTitle">—</div>
       <div class="loc-chip" id="locChip"><span class="g"></span><span id="locText">—</span></div>
+      <button class="netchip" id="netChip" onclick="xemHangDoi()" hidden></button>
       <button class="bellbtn" id="bellBtn" onclick="toggleNotifPop()" title="Thông báo" aria-label="Thông báo">
         <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
       </button>
@@ -981,7 +992,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1909-01';
+const APP_VER='1909-02';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1015,6 +1026,186 @@ const TABS={
 let session=null,activeTab=null;
 let submissions=[],drafts={},transfers=[],auditLog=[];
 let trReqs=[];  // phiếu yêu cầu điều chuyển / hủy hao hụt (bảng transfer_requests) — có duyệt 2 bên
+
+/* ============================================================
+   MẤT MẠNG GIỮA CHỪNG — KIỂM KÊ KHÔNG ĐƯỢC GIÁN ĐOẠN (19/09/2026)
+
+   Kho ở Bà Nà có chỗ không có sóng. BP đang đếm dở mà rớt mạng thì:
+     · số đã gõ vẫn còn (nháp tự lưu xuống máy mỗi 0,4 giây — phần dưới)
+     · bấm Gửi KHÔNG báo lỗi đỏ nữa, mà xếp vào hàng đợi ngay trên máy
+     · có sóng lại thì app tự gửi, không cần BP nhớ bấm lại
+
+   Vì sao không tin mỗi navigator.onLine: nó chỉ biết máy có nối wifi/4G hay
+   không, KHÔNG biết có ra được internet hay không. Đứng trong kho bắt được
+   wifi yếu thì onLine vẫn true mà mọi request đều trượt. Nên kết hợp: onLine
+   báo false là chắc chắn mất; onLine true nhưng request trượt vì lỗi mạng thì
+   cũng coi là mất, cho tới khi có một request đi lọt.
+   ============================================================ */
+let mangOK = (typeof navigator!=='undefined' && navigator.onLine===false) ? false : true;
+const OUTBOX_LS='kk_outbox_v1';
+let outbox=[];          // [{id, sub, at, lanThu, loi}]
+let _dangFlush=false;
+
+/* Lỗi MẠNG (gửi không tới nơi) khác hẳn lỗi MÁY CHỦ TỪ CHỐI (tới nơi nhưng bị
+   chặn quyền / trùng mã). Lỗi mạng thì xếp hàng gửi lại; máy chủ từ chối thì
+   gửi lại bao nhiêu lần cũng trượt, phải báo người dùng. */
+function laLoiMang(e){
+  if(!e)return false;
+  if(typeof navigator!=='undefined'&&navigator.onLine===false)return true;
+  const m=String(e.message||e.error_description||e||'');
+  return /failed to fetch|networkerror|network request failed|load failed|timeout|ERR_INTERNET|ERR_NETWORK|ERR_NAME_NOT_RESOLVED/i.test(m);
+}
+function datMang(ok){
+  const truoc=mangOK;
+  mangOK=!!ok;
+  if(truoc!==mangOK){
+    try{veChipMang();}catch(e){}
+    try{if(typeof renderView==='function'&&document.getElementById('view'))renderView();}catch(e){}
+  }
+  if(mangOK)outboxFlush();
+}
+if(typeof window!=='undefined'){
+  window.addEventListener('online',()=>datMang(true));
+  window.addEventListener('offline',()=>datMang(false));
+}
+
+function outboxLoad(){
+  try{const raw=localStorage.getItem(OUTBOX_LS);if(!raw)return;
+    const o=JSON.parse(raw);if(Array.isArray(o))outbox=o;}catch(e){}
+}
+function outboxSave(){try{localStorage.setItem(OUTBOX_LS,JSON.stringify(outbox));}catch(e){}}
+function outboxCount(){return outbox.length;}
+/* Phiếu chờ gửi vẫn phải NẰM TRONG submissions với cờ _choGui, để:
+   · màn hình hiện ra cho BP thấy phiếu đã lập
+   · rule "mỗi kho mỗi kỳ một phiếu" (pendingSub) vẫn chặn đếm mới
+   dbLoadAll ghi đè submissions từ máy chủ nên phải nối lại — xem outboxGan(). */
+function outboxAdd(sub){
+  outbox.push({id:sub.id,sub:sub,at:Date.now(),lanThu:0,loi:''});
+  outboxSave();try{veChipMang();}catch(e){}
+  if(!submissions.some(x=>x.id===sub.id))submissions.unshift(Object.assign({},sub,{_choGui:true}));
+}
+function outboxGan(){
+  outbox.forEach(it=>{if(!submissions.some(x=>x.id===it.id))
+    submissions.unshift(Object.assign({},it.sub,{_choGui:true}));});
+}
+async function outboxFlush(){
+  if(_dangFlush||!outbox.length||!sb)return;
+  if(typeof navigator!=='undefined'&&navigator.onLine===false)return;
+  _dangFlush=true;
+  const xong=[];
+  try{
+    for(const it of outbox.slice()){
+      try{
+        const ok=await insSubmissionSafe(it.sub,true);   // true = im lặng, không dựng hộp lỗi
+        if(ok){
+          xong.push(it.id);
+          const s0=submissions.find(x=>x.id===it.id);if(s0)delete s0._choGui;
+          log('Gửi phiếu kiểm kê (sau khi có mạng)',it.sub.id+' · '+whName(it.sub.plant,it.sub.sloc));
+        }else{
+          // Máy chủ nhận được nhưng từ chối -> gửi lại cũng trượt, để người dùng biết
+          it.lanThu++;it.loi='Máy chủ từ chối';
+        }
+      }catch(e){
+        it.lanThu++;
+        if(laLoiMang(e)){datMang(false);break;}      // vẫn chưa có mạng, dừng vòng
+        it.loi=(e&&e.message)||'Lỗi không rõ';
+      }
+    }
+  }finally{_dangFlush=false;}
+  if(xong.length){
+    outbox=outbox.filter(x=>xong.indexOf(x.id)<0);outboxSave();
+    datMang(true);
+    toast(xong.length===1?('✓ Đã gửi phiếu '+xong[0]):('✓ Đã gửi '+xong.length+' phiếu vừa đếm lúc mất mạng'));
+    try{veChipMang();renderView();}catch(e){}
+  }else{outboxSave();try{veChipMang();}catch(e){}}
+}
+
+/* ===== ẢNH CHỤP ĐỂ MỞ LẠI APP KHI MẤT SÓNG =====
+   CHỈ lưu phần của kho người đó và kỳ hiện tại + kỳ trước — đủ để đếm, mà gọn,
+   tránh đụng trần 5MB của localStorage. Lưu cả danh mục thì 7.436 mã ~520KB,
+   không cần: màn đếm chỉ dùng mã trong danh sách mở kỳ + tồn đầu kỳ. */
+const SNAP_LS='kk_snap_v1';
+let dangNgoaiTuyen=false;     // true = đang chạy bằng ảnh chụp, chưa nối được máy chủ
+function snapSave(){
+  if(!session)return;
+  try{
+    const wh=(session.wh||[]).filter(w=>w&&w.plant&&w.sloc);
+    if(!wh.length)return;                       // kế toán/admin không cần chế độ này
+    const khoa=wh.map(w=>w.plant+'|'+w.sloc);
+    const per=curPeriod(),truoc=(typeof kyTruoc==='function')?kyTruoc(per):'';
+    const cuaMinh=k=>khoa.some(x=>k===x||k.indexOf(x+'|')===0);
+    const loc=o=>{const r={};Object.keys(o||{}).forEach(k=>{if(cuaMinh(k))r[k]=o[k];});return r;};
+    const cl=loc(countLists),op=loc(openingStock);
+    // Gom đúng những mã màn đếm cần đọc tên
+    const can=new Set();
+    Object.values(cl).forEach(x=>Object.keys(x.items||{}).forEach(c=>can.add(c)));
+    Object.values(op).forEach(x=>Object.keys(x.items||{}).forEach(c=>can.add(c)));
+    khoa.forEach(k=>{const p=k.split('|')[0];(plantMaterials[p]||[]).forEach(c=>can.add(c));});
+    const snap={v:1,at:Date.now(),session:session,
+      countLists:cl, openingStock:op,
+      plantMaterials:(()=>{const r={};khoa.forEach(k=>{const p=k.split('|')[0];
+        if(plantMaterials[p])r[p]=plantMaterials[p];});return r;})(),
+      submissions:(submissions||[]).filter(x=>khoa.indexOf(x.plant+'|'+x.sloc)>=0
+        &&(x.period===per||x.period===truoc)),
+      closings:(closings||[]).filter(x=>khoa.indexOf(x.plant+'|'+x.sloc)>=0
+        &&(x.period===per||x.period===truoc)),
+      countZones:loc(typeof countZones!=='undefined'?countZones:{}),
+      mats:DATA.materials.filter(m=>can.has(m.code))};
+    localStorage.setItem(SNAP_LS,JSON.stringify(snap));
+  }catch(e){console.warn('snapSave',e);}   // đầy bộ nhớ thì bỏ qua, không chặn app
+}
+function snapDoc(){
+  try{const raw=localStorage.getItem(SNAP_LS);if(!raw)return null;
+    const o=JSON.parse(raw);
+    if(!o||!o.session)return null;
+    if(Date.now()-(o.at||0)>1000*60*60*24*7)return null;   // quá 7 ngày thì không tin nữa
+    return o;}catch(e){return null;}
+}
+function snapXoa(){try{localStorage.removeItem(SNAP_LS);}catch(e){}}
+/* Dựng lại đủ dữ liệu để đếm, từ ảnh chụp. */
+function snapDung(o){
+  session=o.session;
+  countLists=o.countLists||{};openingStock=o.openingStock||{};
+  plantMaterials=o.plantMaterials||{};
+  submissions=o.submissions||[];closings=o.closings||[];
+  if(typeof countZones!=='undefined')countZones=o.countZones||{};
+  transfers=[];receipts=[];trReqs=[];shifts=[];spotChecks=[];notifications=[];profiles=[];auditLog=[];
+  (o.mats||[]).forEach(m=>{if(!masterByCode[m.code]){masterByCode[m.code]=m;DATA.materials.push(m);}});
+  dangNgoaiTuyen=true;mangOK=false;
+}
+
+function veChipMang(){
+  const e=document.getElementById('netChip');if(!e)return;
+  const cho=outboxCount();
+  if(mangOK&&!cho){e.hidden=true;return;}
+  e.hidden=false;
+  e.className='netchip'+(mangOK?' cho':'');
+  /* Máy hẹp (320px): chỉ để biểu tượng + số. Để nguyên cả câu thì đẩy nút nền tối
+     tràn ra ngoài 2px — đo được 19/09. */
+  const hep=(window.innerWidth||999)<400;
+  e.textContent=mangOK
+    ? (hep?('⏳ '+cho):('⏳ '+cho+' phiếu đang gửi'))
+    : (hep?('📴'+(cho?' '+cho:'')):('📴 Mất mạng'+(cho?' · '+cho+' phiếu chờ':'')));
+  e.title=mangOK?'Đang gửi phiếu đã đếm lúc mất mạng':'Không có mạng — số vẫn lưu trong máy';
+}
+function xemHangDoi(){
+  const cho=outboxCount();
+  if(!mangOK&&!cho){
+    errBox('Máy đang không có mạng',[
+      'Cứ <b>đếm bình thường</b> — số gõ vào được lưu ngay trong máy, tắt app cũng không mất.',
+      'Đếm xong bấm <b>Hoàn thành &amp; Gửi</b> như mọi khi: phiếu nằm chờ trong máy.',
+      '<b>Khi nào có sóng, app tự gửi lên</b> — không phải đếm lại.'
+    ]);return;
+  }
+  const ds=outbox.map(x=>'<b>'+x.sub.id+'</b> · '+x.sub.count+' mã · '+whName(x.sub.plant,x.sub.sloc)
+    +(x.loi?' <span style="color:var(--red)">('+x.loi+')</span>':'')).join('<br>');
+  errBox(mangOK?('Đang gửi '+cho+' phiếu'):('Có '+cho+' phiếu chờ gửi'),[
+    ds||'(không có)',
+    mangOK?'App đang gửi lên máy chủ, chờ một lát rồi tải lại trang để xem.'
+          :'Máy <b>chưa có mạng</b>. Số đã đếm nằm an toàn trong máy — có sóng là app tự gửi.'
+  ]);
+  if(mangOK)outboxFlush();
+}
 
 /* ===== NHÁP BỀN: số đang nhập được lưu vào máy, reload/mất mạng vẫn còn ===== */
 const DRAFT_LS='kk_drafts_v1';
@@ -1156,7 +1347,10 @@ function errBox(title,lines,detail){
   const ctx=['Thời điểm: <b>'+now()+'</b>'];
   try{if(session)ctx.push('Người dùng: <b>'+session.name+'</b> ('+((ROLES[session.role]||{}).label||session.role)+')');}catch(e){}
   const body=(lines||[]).map(x=>'<li>'+x+'</li>').join('');
-  box.innerHTML=`<div class="errbox-h">⚠ ${title||'Không lưu được lên máy chủ'}</div>
+  /* Tiêu đề mở đầu bằng ✓ là tin TỐT (ví dụ đã lưu phiếu vào máy chờ gửi) — đừng
+     dán thêm tam giác cảnh báo vào, đọc "⚠ ✓" vừa mâu thuẫn vừa làm người dùng lo. */
+  const _dau=/^\s*✓/.test(title||'')?'':'⚠ ';
+  box.innerHTML=`<div class="errbox-h">${_dau}${title||'Không lưu được lên máy chủ'}</div>
     <div class="errbox-b">
       <ul>${body}</ul>
       <div class="errbox-ctx">${ctx.join('<br>')}</div>
@@ -1210,7 +1404,7 @@ async function nextKKId(plant,sloc,d){
 // Chèn phiếu; nếu trùng mã (submissions_pkey) thì nhảy số kế tiếp và thử lại. Cập nhật sub.id tại chỗ.
 // Trả về TRUE chỉ khi máy chủ thực sự nhận phiếu. Nơi gọi BẮT BUỘC kiểm tra kết quả:
 // trước đây hàm này thất bại vẫn để nơi gọi báo "Đã gửi phiếu" + xóa nháp => mất trắng số đã đếm.
-async function insSubmissionSafe(sub){
+async function insSubmissionSafe(sub,imLang){
   if(!sb)return true;
   const pfx='KK-'+sub.plant+'-'+sub.sloc+'-';
   const tried=[];
@@ -1218,10 +1412,13 @@ async function insSubmissionSafe(sub){
     const row={id:sub.id,plant_code:sub.plant,sloc_code:sub.sloc,user_name:sub.user,role:sub.role,status:sub.status,count:sub.count,items:sub.items,period:sub.period};
     if(zoneColOK&&sub.zones&&sub.zones.length)row.zones=sub.zones;   // chi tiet theo tieu kho
     tried.push(sub.id);
-    const {data,error}=await sb.from('submissions').insert(row).select();
+    let data,error;
+    try{const r=await sb.from('submissions').insert(row).select();data=r.data;error=r.error;}
+    catch(e){if(laLoiMang(e)){datMang(false);throw e;}error=e;}
     if(!error){
       // RLS chặn kiểu "không thấy dòng vừa chèn" => coi như CHƯA lưu, không báo thành công giả
       if(Array.isArray(data)&&data.length===0){console.error('submissions: INSERT 0 dòng',row);
+        if(imLang)return false;
         errBox('Máy chủ KHÔNG nhận phiếu kiểm kê',['Máy chủ nhận yêu cầu nhưng <b>không tạo dòng nào</b> — tài khoản này chưa được phép gửi phiếu.','Số đã đếm <b>vẫn còn ở nháp</b> trên máy này, tải lại trang vẫn thấy.','Chụp màn hình này gửi admin để cấp quyền, rồi gửi lại.'],'Bảng: submissions\nMã phiếu: '+sub.id+'\nKho: '+whName(sub.plant,sub.sloc)+' ('+sub.plant+'/'+sub.sloc+')\nKỳ: '+(sub.period||'')+'\nSố mã: '+sub.count+'\nSố dòng tạo: 0');
         return false;}
       return true;
@@ -1242,10 +1439,13 @@ async function insSubmissionSafe(sub){
       continue;
     }
     console.error('submissions',error);
+    if(laLoiMang(error)){datMang(false);throw error;}   // mất mạng -> để nơi gọi xếp hàng đợi
+    if(imLang)return false;
     errBox('Không gửi được phiếu kiểm kê lên máy chủ',['Phiếu <b>CHƯA</b> được lưu. Số đã đếm <b>vẫn còn ở nháp</b> trên máy này.','Kiểm tra mạng rồi bấm gửi lại. Vẫn lỗi thì chụp màn hình này gửi admin.'],'Bảng: submissions\nMã phiếu: '+sub.id+'\nKho: '+whName(sub.plant,sub.sloc)+' ('+sub.plant+'/'+sub.sloc+')\nKỳ: '+(sub.period||'')+'\nSố mã: '+sub.count+'\n'+msg);
     return false;
   }
   console.error('submissions: trùng mã sau 20 lần thử',tried);
+  if(imLang)return false;
   errBox('Không cấp được mã phiếu',['Đã thử <b>'+tried.length+'</b> mã đều bị trùng — phiếu <b>CHƯA</b> lưu.','Số đã đếm <b>vẫn còn ở nháp</b>, không mất. Tải lại trang rồi gửi lại.','Chụp màn hình này gửi admin.'],'Bảng: submissions\nKho: '+whName(sub.plant,sub.sloc)+' ('+sub.plant+'/'+sub.sloc+')\nCác mã đã thử:\n'+tried.join('\n'));
   return false;
 }
@@ -2461,6 +2661,13 @@ function dbSubscribe(){
   //     Nếu có thay đổi thật -> chỉ hiện nút "Có dữ liệu mới" để người dùng chủ động bấm.
   window._pollT=setInterval(async()=>{
     if(!session)return;
+    /* MẤT MẠNG: đừng nã Supabase mỗi 45 giây cho tốn pin và đầy console. Thay vào
+       đó thử MỘT lần gửi hàng đợi — nếu lọt thì coi như có mạng lại. */
+    if(!mangOK||(typeof navigator!=='undefined'&&navigator.onLine===false)){
+      if(typeof navigator!=='undefined'&&navigator.onLine!==false&&outboxCount())await outboxFlush();
+      else if(typeof navigator!=='undefined'&&navigator.onLine!==false)datMang(true);
+      return;
+    }
     // App chạy nền (đổi tab / khóa màn): KHÔNG tải lại toàn bộ, chỉ kiểm thông báo.
     // Trước đây thoát luôn nên thông báo chỉ đến khi đang nhìn màn hình — gần như vô dụng.
     if(document.visibilityState!=='visible'){
@@ -2473,7 +2680,8 @@ function dbSubscribe(){
       if(syncSig()!==before)showFreshPill();   // có gì mới -> hiện nút; không đổi -> im lặng
       notifyTodoChange();                       // và bắn thông báo về máy nếu có thông báo / việc mới
       try{autoNhacTre();}catch(e){console.warn('nhacTre',e);}   // tự nhắc kho trễ (30 phút soát 1 lần)
-    }catch(e){console.warn('sync',e);}
+      if(outboxCount())await outboxFlush();     // còn phiếu chờ thì tranh thủ gửi
+    }catch(e){console.warn('sync',e);if(laLoiMang(e))datMang(false);}
   },45000);
   // (3) Quay lại tab -> tải ngầm; có mới thì hiện nút, KHÔNG tự vẽ lại
   if(!window._visBound){window._visBound=true;
@@ -2623,8 +2831,20 @@ async function doSignUp(){
   showAuth('login');$('#liEmail').value=email;
 }
 async function afterAuth(){
-  const {data:{user}}=await sb.auth.getUser();
-  if(!user){showAuth('login');return;}
+  /* Mất mạng thì getUser()/profiles đều trượt. Có ảnh chụp thì vào thẳng chế độ
+     ngoại tuyến để BP đếm tiếp, thay vì đá về màn đăng nhập (mất buổi đếm). */
+  let user=null;
+  try{const r=await sb.auth.getUser();user=r&&r.data?r.data.user:null;}
+  catch(e){
+    const snap=laLoiMang(e)?snapDoc():null;
+    if(snap){snapDung(snap);vaoAppNgoaiTuyen();return;}
+    showAuth('login');return;
+  }
+  if(!user){
+    const snap=(typeof navigator!=='undefined'&&navigator.onLine===false)?snapDoc():null;
+    if(snap){snapDung(snap);vaoAppNgoaiTuyen();return;}
+    showAuth('login');return;
+  }
   let prof=null;
   try{const {data}=await sb.from('profiles').select('*').eq('id',user.id).maybeSingle();prof=data;}catch(e){console.error(e);}
   const um=user.user_metadata||{};
@@ -2658,16 +2878,40 @@ function applyDeepLinkKK(kk){
   try{history.replaceState(null,'',location.origin+location.pathname);}catch(e){}
   setTimeout(()=>{const c=document.getElementById('countCard');if(c)c.scrollIntoView({behavior:'smooth',block:'start'});},250);
 }
+/* Vào app bằng ảnh chụp — chỉ mở tab Kiểm kê. Các tab khác cần số liệu tươi
+   (điều chuyển, duyệt phiếu) nên không cho vào để tránh thao tác trên số cũ. */
+function vaoAppNgoaiTuyen(){
+  stopLoginFX();
+  $('#login').classList.add('hidden');$('#app').classList.remove('hidden');
+  $('#userName').textContent=session.name;$('#userRole').textContent=(ROLES[session.role]||{}).label||session.role;
+  $('#userAv').textContent=initials(session.name);
+  loadDrafts();outboxLoad();outboxGan();
+  activeTab='kiemke';renderNav();renderView();
+  try{veChipMang();}catch(e){}
+  dbSubscribe();   // vòng 45s: offline thì nó chỉ thử gửi hàng đợi
+  errBox('✓ Mở app ở chế độ ngoại tuyến',[
+    'Máy <b>đang không có mạng</b>, app dùng số liệu của lần vào gần nhất ('+fmt(new Date(snapDoc()?snapDoc().at:Date.now()))+').',
+    '<b>Đếm bình thường</b> — số lưu ngay trong máy, gửi xong phiếu nằm chờ.',
+    'Có sóng lại thì app <b>tự gửi và tự tải số mới</b>.',
+    'Lúc này chỉ mở được <b>tab Kiểm kê</b>; các phần khác cần số liệu mới nên tạm khoá.'
+  ]);
+}
 function enterApp(){
   log('Đăng nhập',ROLES[session.role].label+(session.sloc?` · ${whName(session.plant,session.sloc)}`:''));
   stopLoginFX();
   $('#login').classList.add('hidden');$('#app').classList.remove('hidden');
   $('#userName').textContent=session.name;$('#userRole').textContent=ROLES[session.role].label;$('#userAv').textContent=initials(session.name);
   loadDrafts(); // khôi phục số đang nhập dở (nếu trang bị tải lại)
+  outboxLoad();try{veChipMang();}catch(e){}
   if(_draftsRestored)setTimeout(()=>toast('↩ Đã khôi phục '+_draftsRestored+' mã đang nhập dở (nháp lưu trên máy)'),900);
   activeTab=ROLES[session.role].tabs[0];renderNav();
   $('#view').innerHTML='<div class="empty"><div class="big">Đang tải dữ liệu…</div></div>';
-  dbLoadAll().then(()=>{if(pendingKK){try{applyDeepLinkKK(pendingKK);}catch(e){console.error(e);}pendingKK=null;}renderView();dbSubscribe();
+  dbLoadAll().then(()=>{
+    /* dbLoadAll vừa ghi đè submissions bằng dữ liệu máy chủ — nối lại các phiếu
+       còn nằm trong hàng đợi, nếu không chúng biến mất khỏi màn hình và rule
+       "mỗi kho mỗi kỳ một phiếu" hết tác dụng. */
+    outboxGan();outboxFlush();try{snapSave();}catch(e){}
+    if(pendingKK){try{applyDeepLinkKK(pendingKK);}catch(e){console.error(e);}pendingKK=null;}renderView();dbSubscribe();
     try{_notifSeen=new Set(myNotifs().map(x=>x.id));paintBell();}catch(e){}
     // Đã cho phép thông báo từ trước -> đăng ký lại máy này với máy chủ đẩy tin.
     // Cần làm mỗi lần đăng nhập vì subscription có thể bị trình duyệt thu hồi.
@@ -2690,7 +2934,18 @@ function enterApp(){
     }
   });
 }
-async function doLogout(){_navOK=true;try{await sb.auth.signOut();}catch(e){}location.reload();}
+async function doLogout(){
+  _navOK=true;
+  /* Còn phiếu chưa gửi mà đăng xuất là mất buổi đếm — hỏi cho chắc. */
+  if(outboxCount()&&!confirm('Còn '+outboxCount()+' phiếu ĐÃ ĐẾM nhưng CHƯA GỬI được lên máy chủ.\n\n'
+    +'Đăng xuất bây giờ sẽ xoá số đó khỏi máy — phải đếm lại từ đầu.\n\n'
+    +'Nên: ra chỗ có sóng, mở app một lát cho nó tự gửi, rồi hãy đăng xuất.\n\nVẫn đăng xuất?'))return;
+  /* Xoá dữ liệu kho khỏi máy: ảnh chụp và hàng đợi là số liệu của điểm bán,
+     máy dùng chung thì người sau không được thấy. */
+  try{snapXoa();localStorage.removeItem(OUTBOX_LS);}catch(e){}
+  try{await sb.auth.signOut();}catch(e){}
+  location.reload();
+}
 function logout(){doLogout();}
 
 /* nav drawer */
@@ -2708,7 +2963,12 @@ const NAV_GROUPS=[
 ];
 function renderNav(){
   const n=$('#sbNav');n.innerHTML='';
-  const mine=ROLES[session.role].tabs;const used=new Set();
+  /* Ngoại tuyến: chỉ mở tab Kiểm kê. Các tab khác (điều chuyển, duyệt phiếu) làm
+     việc trên số liệu phải tươi — cho vào bằng ảnh chụp cũ là mời thao tác sai. */
+  const mine=dangNgoaiTuyen
+    ? ROLES[session.role].tabs.filter(t=>t==='kiemke')
+    : ROLES[session.role].tabs;
+  const used=new Set();
   const addItem=k=>{
     // Tab Người dùng: hiện số tài khoản đang chờ CHÍNH MÌNH duyệt để giám sát không bỏ sót
     let extra='';
@@ -5055,7 +5315,28 @@ function renderCountSheet(v){
       }
       const _zs=zonesForSave(drafts[key],zonesOf(counting.plant,counting.sloc));
       const sub={zones:_zs,id:await nextKKId(counting.plant,counting.sloc),plant:counting.plant,sloc:counting.sloc,user:session.name,role:ROLES[session.role].label,time:now(),period:counting.period||curPeriod(),status:'Chờ duyệt',items:{...items},count:n,edits:[]};
-      const okIns=await insSubmissionSafe(sub);
+      /* MẤT MẠNG: xếp hàng đợi ngay, KHÔNG dựng hộp lỗi đỏ. BP đang đếm dở giữa
+         kho không sóng mà thấy báo đỏ thì hoang mang, dễ bỏ dở. Phiếu nằm trong
+         máy, có sóng là app tự gửi. */
+      let okIns=false,loiMang=false;
+      if(!mangOK||(typeof navigator!=='undefined'&&navigator.onLine===false)){loiMang=true;}
+      else{
+        try{okIns=await insSubmissionSafe(sub);}
+        catch(e){if(laLoiMang(e)){loiMang=true;datMang(false);}else{saveDrafts();return;}}
+      }
+      if(loiMang){
+        outboxAdd(sub);
+        learnMaterials(MATS);
+        delete drafts[key];saveDrafts();counting=null;
+        log('Lập phiếu kiểm kê khi mất mạng',sub.id+' · '+whName(sub.plant,sub.sloc)+' · '+n+' mã — chờ gửi');
+        errBox('✓ Đã lưu phiếu vào máy — chưa gửi được vì mất mạng',[
+          'Phiếu <b>'+sub.id+'</b> · '+n+' mã · '+whName(sub.plant,sub.sloc),
+          'Số đã đếm <b>nằm an toàn trong máy</b>, tắt app cũng không mất.',
+          '<b>Khi nào máy có mạng lại, app tự gửi</b> — không phải đếm lại, không phải bấm lại.',
+          'Muốn chắc thì ra chỗ có sóng rồi mở app một lát.'
+        ],'Phiếu chờ gửi: '+sub.id);
+        renderView();return;
+      }
       // KHÔNG xóa nháp, KHÔNG ghi nhật ký "đã gửi": số đã đếm phải còn nguyên để gửi lại.
       if(!okIns){saveDrafts();return;}
       submissions.unshift(sub);log('Gửi phiếu kiểm kê',sub.id+' · '+whName(sub.plant,sub.sloc)+' · kỳ '+periodVN(sub.period)+' · '+n+' mã');
