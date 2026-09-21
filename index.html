@@ -1011,25 +1011,26 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2109-02';
+const APP_VER='2109-03';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
   e.onclick=()=>{if(confirm('Tải lại app để lấy bản mới nhất?'))location.reload(true);};
 }
 const ROLES={
-  admin:{label:'Quản trị viên',short:'Toàn quyền theo dõi & quản trị',tabs:['dieuhanh','phantich','kiemke','shift','dieuchuyen','opening','spotcheck','chenhlech','baocao','catalog','users','audit'],ico:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/></svg>'},
-  ketoan_vien:{label:'Kế toán viên',short:'Duyệt, báo cáo, danh mục & theo dõi vận hành',tabs:['phantich','kiemke','shift','dieuchuyen','opening','spotcheck','chenhlech','baocao','catalog'],ico:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>'},
-  ketoan_dl:{label:'Kế toán định lượng',short:'Như kế toán nhưng chỉ trong kho bếp được gán',tabs:['phantich','kiemke','shift','dieuchuyen','opening','spotcheck','chenhlech','baocao','catalog'],ico:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M7 7h10"/><path d="M4 11l3-4 3 4a3 3 0 0 1-6 0z"/><path d="M14 11l3-4 3 4a3 3 0 0 1-6 0z"/><path d="M8 21h8"/></svg>'},
-  giam_sat:{label:'Giám sát điểm bán',short:'Duyệt & gửi, điều chuyển',tabs:['kiemke','shift','phantich','sodo','dieuchuyen','opening','spotcheck','chenhlech','users'],ico:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'},
-  bep_truong:{label:'Bếp trưởng / GS nhà hàng',short:'Nhập số đếm, bàn giao ca',tabs:['kiemke','shift','opening','spotcheck'],ico:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6z"/><line x1="6" y1="17" x2="18" y2="17"/></svg>'},
-  nhan_vien:{label:'Nhân viên',short:'Kiểm kê, nhập kho & điều chuyển, bàn giao ca',tabs:['kiemke','dieuchuyen','shift','spotcheck','opening'],ico:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 12 0v1"/></svg>'},
+  admin:{label:'Quản trị viên',short:'Toàn quyền theo dõi & quản trị',tabs:['dieuhanh','phantich','kiemke','shift','kiemketuan','dieuchuyen','opening','spotcheck','chenhlech','baocao','catalog','users','audit'],ico:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/></svg>'},
+  ketoan_vien:{label:'Kế toán viên',short:'Duyệt, báo cáo, danh mục & theo dõi vận hành',tabs:['phantich','kiemke','shift','kiemketuan','dieuchuyen','opening','spotcheck','chenhlech','baocao','catalog'],ico:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>'},
+  ketoan_dl:{label:'Kế toán định lượng',short:'Như kế toán nhưng chỉ trong kho bếp được gán',tabs:['phantich','kiemke','shift','kiemketuan','dieuchuyen','opening','spotcheck','chenhlech','baocao','catalog'],ico:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M7 7h10"/><path d="M4 11l3-4 3 4a3 3 0 0 1-6 0z"/><path d="M14 11l3-4 3 4a3 3 0 0 1-6 0z"/><path d="M8 21h8"/></svg>'},
+  giam_sat:{label:'Giám sát điểm bán',short:'Duyệt & gửi, điều chuyển',tabs:['kiemke','shift','kiemketuan','phantich','sodo','dieuchuyen','opening','spotcheck','chenhlech','users'],ico:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'},
+  bep_truong:{label:'Bếp trưởng / GS nhà hàng',short:'Nhập số đếm, bàn giao ca',tabs:['kiemke','shift','kiemketuan','opening','spotcheck'],ico:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6z"/><line x1="6" y1="17" x2="18" y2="17"/></svg>'},
+  nhan_vien:{label:'Nhân viên',short:'Kiểm kê, nhập kho & điều chuyển, bàn giao ca',tabs:['kiemke','dieuchuyen','shift','kiemketuan','spotcheck','opening'],ico:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 12 0v1"/></svg>'},
 };
 const TABS={
   kiemke:{label:'Kiểm kê',title:'Kiểm kê',ico:IC.count},
   dieuchuyen:{label:'Nhập kho & ĐC',title:'Nhập kho & Điều chuyển',ico:IC.transfer},
   opening:{label:'Tồn đầu kỳ',title:'Tồn đầu kỳ (đã duyệt)',ico:IC.opening},
   shift:{label:'Bàn giao ca',title:'Bàn giao ca',ico:IC.shift},
+  kiemketuan:{label:'Kiểm kê tuần',title:'Kiểm kê tuần (nội bộ bếp)',ico:IC.count},
   progress:{label:'Tiến độ',title:'Tiến độ kiểm kê',ico:IC.dash},
   baocao:{label:'Báo cáo QT',title:'Báo cáo quản trị',ico:IC.report},
   catalog:{label:'Danh mục VT',title:'Danh mục vật tư theo Plant',ico:IC.count},
@@ -1377,6 +1378,8 @@ let usersView='list',userSearch='',userRoleF='',userStatusF='',userEdit=null;  /
 let spotChecks=[];     // kiểm kê đột xuất (kế toán tạo → giám sát duyệt)
 let notifications=[];  // thông báo cho giám sát (VD: BBKK bị từ chối)
 let closings=[]; // bản chốt tồn tháng (kế toán) + đối chiếu + giải trình, đồng bộ Supabase
+let wkTblOK=true;     // máy chủ đã có bảng weekly_counts chưa
+let weeklyCounts=[];  // kiểm kê tuần của bếp: {id,plant,sloc,week,items,count,by,time}
 let countLists={}; // key plant|sloc|period -> {items:{code:{name,uom}}, by, at} : danh sách kế toán mở kỳ cho GS đếm
 function fmtVnd(n){return (Number(n)||0).toLocaleString('vi-VN')+' đ';}
 let claudeKey='';      // Anthropic API key (nhập theo tài khoản cá nhân, chỉ lưu trong phiên)
@@ -1715,6 +1718,7 @@ function locTheoKho(){
   const khoaPS=k=>{const a=String(k).split('|');return hop(a[0],a[1]||'');};
 
   submissions=(submissions||[]).filter(x=>hop(x.plant,x.sloc));
+  weeklyCounts=(weeklyCounts||[]).filter(x=>hop(x.plant,x.sloc));
   shifts=(shifts||[]).filter(x=>hop(x.plant,x.sloc));
   spotChecks=(spotChecks||[]).filter(x=>hop(x.plant,x.sloc));
   receipts=(receipts||[]).filter(x=>hop(x.plant,x.sloc));
@@ -1736,6 +1740,69 @@ function isViewer(){return session&&(session.role==='admin'||session.role==='ket
    Tách riêng cờ này để quyền thao tác và phạm vi kho là hai chuyện khác nhau —
    isPrivileged() vẫn đúng (được duyệt, được mở kỳ), còn danh sách kho thì không nở ra. */
 function isScoped(){return !!(session&&session.role==='ketoan_dl');}
+/* ---- KHO BẾP ----
+   Khoa chốt 21/09: nhận theo TÊN KHO. Trong 79 kho có 23 kho mang chữ "Bếp", đủ kiểu
+   viết: 'Bếp Taiga' · 'NH ROSA ALC-Bếp' · 'HC Châu Âu- Bếp' · 'NH Bulgogi_Bếp' ·
+   'NH Sunbuns-bếp'. vnNorm bỏ dấu + hạ chữ thường nên bắt được hết.
+   Đặt tên kho mới mà quên chữ Bếp thì app không nhận ra — đây là chỗ đánh đổi đã biết. */
+function laKhoBep(plant,sloc){
+  const w=DATA.warehouses.find(x=>x.plant===plant&&x.sloc===sloc);
+  return !!w&&vnNorm(w.sloc_name||'').indexOf('bep')>=0;
+}
+function khoBepCuaToi(){
+  const r=[],da=new Set();
+  const them=(p,sl)=>{const k=p+'|'+sl;if(!da.has(k)){da.add(k);r.push({plant:p,sloc:sl});}};
+  if(isPrivileged()&&!isScoped()){        // kế toán/admin: mọi kho bếp
+    DATA.warehouses.forEach(w=>{if(laKhoBep(w.plant,w.sloc))them(w.plant,w.sloc);});
+    return r;
+  }
+  (session&&session.wh?session.wh:[]).forEach(w=>{
+    if(w.sloc){if(laKhoBep(w.plant,w.sloc))them(w.plant,w.sloc);}
+    else slocsOf(w.plant).forEach(x=>{if(laKhoBep(w.plant,x.sloc))them(w.plant,x.sloc);});
+  });
+  return r;
+}
+function coKhoBep(){return khoBepCuaToi().length>0;}
+/* Toàn bộ kho được gán đều là bếp -> giấu tab Bàn giao ca (bếp không bàn giao ca).
+   Ai kiêm cả kho nhà hàng thì vẫn giữ, không cắt mất đường làm việc của họ. */
+function toanKhoBep(){
+  if(isPrivileged()&&!isScoped())return false;
+  const wh=(session&&session.wh?session.wh:[]);
+  if(!wh.length)return false;
+  return wh.every(w=>w.sloc?laKhoBep(w.plant,w.sloc):slocsOf(w.plant).every(x=>laKhoBep(w.plant,x.sloc)));
+}
+/* ---- TUẦN (chuẩn ISO, thứ Hai đầu tuần) ----
+   Dùng chuẩn để hai người ở hai máy gọi cùng một tuần ra cùng một mã. */
+function tuanCua(d){
+  const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
+  t.setUTCDate(t.getUTCDate()-((t.getUTCDay()+6)%7)+3);      // về thứ Năm của tuần đó
+  const nam=t.getUTCFullYear();
+  const t1=new Date(Date.UTC(nam,0,4));                       // 4/1 luôn thuộc tuần 1
+  t1.setUTCDate(t1.getUTCDate()-((t1.getUTCDay()+6)%7)+3);
+  return nam+'-W'+String(1+Math.round((t-t1)/604800000)).padStart(2,'0');
+}
+function tuanNay(){return tuanCua(new Date());}
+function ngayDauTuan(w){
+  const m=/^(\d{4})-W(\d{1,2})$/.exec(w||'');if(!m)return null;
+  const t=new Date(Date.UTC(+m[1],0,4));
+  t.setUTCDate(t.getUTCDate()-((t.getUTCDay()+6)%7)+(+m[2]-1)*7);
+  return t;
+}
+function tuanLabel(w){
+  const d1=ngayDauTuan(w);if(!d1)return w||'';
+  const d2=new Date(d1.getTime()+6*86400000);
+  const dd=x=>String(x.getUTCDate()).padStart(2,'0')+'/'+String(x.getUTCMonth()+1).padStart(2,'0');
+  return 'Tuần '+String(+w.slice(6))+' · '+dd(d1)+'–'+dd(d2)+'/'+d2.getUTCFullYear();
+}
+function tuanOptions(n){const a=[];let d=new Date();
+  for(let i=0;i<(n||12);i++){a.push(tuanCua(d));d=new Date(d.getTime()-604800000);}
+  return [...new Set(a)];}
+/* Tuần thuộc tháng nào: lấy theo thứ Năm, để tuần vắt qua hai tháng không bị đếm hai lần */
+function thangCuaTuan(w){
+  const d=ngayDauTuan(w);if(!d)return curPeriod();
+  const d4=new Date(d.getTime()+3*86400000);
+  return d4.getUTCFullYear()+'-'+String(d4.getUTCMonth()+1).padStart(2,'0');}
+function ktTuanId(plant,sloc,w){return 'KT-'+plant+'-'+sloc+'-'+w;}
 function allowedPlants(){ // danh sách plant người dùng được phép thao tác
   if(isPrivileged()&&!isScoped())return plantsList();
   const set=new Set(session&&session.plants?session.plants:[]);
@@ -2731,6 +2798,13 @@ async function dbLoadAll(){
     try{const cz=await sb.from('count_zones').select('*');countZones={};
       (cz.data||[]).forEach(r=>{countZones[r.plant_code+'|'+r.sloc_code]=Array.isArray(r.zones)?r.zones:[];});
     }catch(e){countZones={};console.warn('Chưa có bảng count_zones — bỏ qua',e&&e.message);}
+    /* Bảng mới, chưa chạy SQL thì bỏ qua — cả app vẫn chạy như cũ, chỉ tab
+       Kiểm kê tuần báo là chưa dùng được. */
+    try{const wk=await sb.from('weekly_counts').select('*').order('created_at',{ascending:false}).limit(600);
+      weeklyCounts=(wk.data||[]).map(r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,week:r.week,
+        items:r.items||{},count:r.count||0,by:r.created_by,note:r.note||'',time:fmt(r.created_at)}));
+      wkTblOK=true;
+    }catch(e){weeklyCounts=[];wkTblOK=false;console.warn('Chưa có bảng weekly_counts — bỏ qua',e&&e.message);}
     try{const cl2=await sb.from('count_lists').select('*');countLists={};(cl2.data||[]).forEach(r=>{countLists[r.plant_code+'|'+r.sloc_code+'|'+r.period]={items:r.items||{},by:r.created_by,at:r.created_at?fmt(r.created_at):''};});}catch(e){countLists={};console.warn('Chưa có bảng count_lists — bỏ qua',e&&e.message);}
     if(session&&(session.role==='admin'||session.role==='giam_sat')){try{const pr=await sb.from('profiles').select('*').order('created_at',{ascending:false});profiles=pr.data||[];}catch(e){}
       try{const up=await sb.from('user_plants').select('*');userPlants={};userWh={};(up.data||[]).forEach(r=>{
@@ -3107,9 +3181,16 @@ function renderNav(){
   const n=$('#sbNav');n.innerHTML='';
   /* Ngoại tuyến: chỉ mở tab Kiểm kê. Các tab khác (điều chuyển, duyệt phiếu) làm
      việc trên số liệu phải tươi — cho vào bằng ảnh chụp cũ là mời thao tác sai. */
-  const mine=dangNgoaiTuyen
+  let mine=dangNgoaiTuyen
     ? ROLES[session.role].tabs.filter(t=>t==='kiemke')
     : ROLES[session.role].tabs;
+  /* Không phụ trách kho bếp nào thì giấu tab Kiểm kê tuần (nhà hàng không kiểm tuần).
+     Ngược lại, phụ trách TOÀN kho bếp thì giấu Bàn giao ca — bếp không bàn giao ca,
+     đúng yêu cầu "thay phân hệ bàn giao ca thành kiểm kê tuần". */
+  try{
+    if(!coKhoBep())mine=mine.filter(t=>t!=='kiemketuan');
+    else if(toanKhoBep())mine=mine.filter(t=>t!=='shift');
+  }catch(e){}
   const used=new Set();
   const addItem=k=>{
     // Tab Người dùng: hiện số tài khoản đang chờ CHÍNH MÌNH duyệt để giám sát không bỏ sót
@@ -3319,6 +3400,7 @@ function renderView(){
   else if(activeTab==='dieuchuyen'){isViewer()?renderDieuchuyenDash(v):renderDieuchuyen(v);}
   else if(activeTab==='opening'){isViewer()?renderOpeningDash(v):renderOpening(v);}
   else if(activeTab==='shift'){isViewer()?renderShiftDash(v):renderShift(v);}
+  else if(activeTab==='kiemketuan'){renderKiemkeTuan(v);}
   else if(activeTab==='progress')renderProgress(v);
   else if(activeTab==='baocao')renderBaocao(v);
   else if(activeTab==='catalog')renderCatalog(v);
@@ -4088,7 +4170,11 @@ function templateRowsFor(plant,sloc,period){
 function renderKKUpload(v,fixed){
   const card=el('div','card');const b=el('div','card-b');
   if(!kkPeriod)kkPeriod=curPeriod();
-  b.innerHTML=`<div class="section-eyebrow"><span class="step">📥</span>Nhập số kiểm kê từ Excel (tạo phiếu chờ duyệt)</div>
+  const _tuan=(fixed&&fixed.tuan)||'';
+  b.innerHTML=_tuan
+    ? `<div class="section-eyebrow"><span class="step">📥</span>Nhập số kiểm tuần từ Excel</div>
+    <div style="font-size:12px;color:var(--muted);margin:6px 0 10px">Nạp file Excel (cột: <b>Mã hàng, Tên hàng, ĐVT, Số lượng</b>). Xem trước rồi lưu — số tuần là <b>số nội bộ của bếp</b>, không tạo phiếu và không gửi kế toán duyệt.</div>`
+    : `<div class="section-eyebrow"><span class="step">📥</span>Nhập số kiểm kê từ Excel (tạo phiếu chờ duyệt)</div>
     <div style="font-size:12px;color:var(--muted);margin:6px 0 10px">Chọn kho + kỳ, rồi nạp file Excel (cột: <b>Mã hàng, Tên hàng, ĐVT, Số lượng</b> — giống mẫu tồn đầu kỳ). Xem trước rồi bấm tạo phiếu; phiếu sẽ ở trạng thái <b>Chờ duyệt</b> để rà lại và duyệt ở tab Tổng hợp.</div>`;
   const row=el('div','grid2');
   const pl=el('label','field','<span>Điểm bán (Plant)</span>');const plantSel=el('select','input');
@@ -4101,7 +4187,8 @@ function renderKKUpload(v,fixed){
   perF.appendChild(perSel);
   function fillSloc(){slocSel.innerHTML='';allowedSlocsOf(plantSel.value).forEach(w=>{const o=el('option',null,`${w.sloc_name} (${w.sloc})`);o.value=w.sloc;slocSel.appendChild(o);});}
   plantSel.onchange=fillSloc;fillSloc();
-  if(fixed){plantSel.value=fixed.plant;fillSloc();slocSel.value=fixed.sloc;perSel.value=fixed.period;b.appendChild(el('div',null,`<div style="margin:2px 0 6px"><span class="badge badge-open">Kho ${whName(fixed.plant,fixed.sloc)} · kỳ tháng ${periodVN(fixed.period)}</span></div>`));}
+  if(fixed){plantSel.value=fixed.plant;fillSloc();slocSel.value=fixed.sloc;perSel.value=fixed.period;
+    b.appendChild(el('div',null,`<div style="margin:2px 0 6px"><span class="badge badge-open">Kho ${whName(fixed.plant,fixed.sloc)} · ${_tuan?tuanLabel(_tuan):('kỳ tháng '+periodVN(fixed.period))}</span></div>`));}
   else{b.appendChild(row);b.appendChild(perF);}
   const tplRow=el('div');tplRow.style.cssText='margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap';
   const bTpl=el('button','btn btn-ghost btn-sm','⬇ Tải file mẫu (điền số lượng)');
@@ -4124,20 +4211,23 @@ function renderKKUpload(v,fixed){
     if(r.newMats.length)warn+=`<div style="font-size:12px;color:var(--green);margin:4px 0">➕ ${r.newMats.length} mã mới sẽ thêm vào danh mục tổng.</div>`;
     if(r.newCodesForPlant.length)warn+=`<div style="font-size:12px;color:var(--muted);margin:4px 0">📋 ${r.newCodesForPlant.length} mã bổ sung vào danh mục kho.</div>`;
     if(r.badQty)warn+=`<div style="font-size:12px;color:var(--muted);margin:4px 0">${r.badQty} dòng số lượng lỗi bị bỏ.</div>`;
-    prev.appendChild(el('div',null,`<div style="font-weight:800;font-size:13px;margin:10px 0 4px">👀 Xem trước ${r.ok} mã · kho ${whName(plantSel.value,slocSel.value)} · kỳ tháng ${periodVN(period)} <span style="color:var(--muted);font-weight:500">(chưa tạo phiếu)</span></div>${warn}`));
+    prev.appendChild(el('div',null,`<div style="font-weight:800;font-size:13px;margin:10px 0 4px">👀 Xem trước ${r.ok} mã · kho ${whName(plantSel.value,slocSel.value)} · ${_tuan?tuanLabel(_tuan):('kỳ tháng '+periodVN(period))} <span style="color:var(--muted);font-weight:500">(${_tuan?'chưa lưu':'chưa tạo phiếu'})</span></div>${warn}`));
     const w=el('div','tbl-wrap');w.style.cssText='max-height:320px;overflow:auto';const tbl=el('table');
     tbl.innerHTML=`<thead><tr><th>Mã hàng</th><th>Tên hàng</th><th>ĐVT</th><th class="num">Số lượng</th></tr></thead>`;
     const tb=el('tbody');
     r.preview.forEach(x=>tb.appendChild(el('tr',null,`<td class="tnum">${x.code}${x.isNew?' <span class="badge badge-soft" style="font-size:9px;padding:1px 5px">mới</span>':''}</td><td>${x.name}</td><td><span class="badge badge-uom">${x.uom}</span></td><td class="num cell-strong tnum">${x.qty}</td>`)));
     tbl.appendChild(tb);w.appendChild(tbl);prev.appendChild(w);
     const brow=el('div');brow.style.cssText='display:flex;gap:10px;margin-top:12px';
-    const bOk=el('button','btn btn-primary','✓ Tạo phiếu kiểm kê (Chờ duyệt)');
+    const bOk=el('button','btn btn-primary',_tuan?'💾 Lưu số kiểm tuần':'✓ Tạo phiếu kiểm kê (Chờ duyệt)');
     const bNo=el('button','btn btn-ghost','Hủy');
-    bOk.onclick=()=>commitKKUpload(r,period,()=>renderView());
+    bOk.onclick=()=>commitKKUpload(r,period,()=>renderView(),_tuan);
     bNo.onclick=()=>{prev.innerHTML='';fin.value='';};
     brow.appendChild(bOk);brow.appendChild(bNo);prev.appendChild(brow);
   }
-  fin.onchange=e=>{const f=e.target.files[0];if(f){if(periodLocked(plantSel.value,slocSel.value,perSel.value)){toast(lockMsg(plantSel.value,slocSel.value,perSel.value));fin.value='';return;}
+  fin.onchange=e=>{const f=e.target.files[0];if(f){
+    /* Kiểm kê tuần là số nội bộ: không đụng kỳ khóa, không đụng rule mỗi kho một phiếu. */
+    if(_tuan){importOpeningT6(plantSel.value,slocSel.value,f,renderPrev);return;}
+    if(periodLocked(plantSel.value,slocSel.value,perSel.value)){toast(lockMsg(plantSel.value,slocSel.value,perSel.value));fin.value='';return;}
     const _dup=pendingSub(plantSel.value,slocSel.value,perSel.value);
     if(_dup){fin.value='';errBox('Kho này đã có phiếu chờ duyệt',[
       'Phiếu <b>'+_dup.id+'</b> ('+_dup.count+' mã, gửi bởi '+_dup.user+') đang chờ duyệt.',
@@ -4147,7 +4237,7 @@ function renderKKUpload(v,fixed){
   card.appendChild(b);v.appendChild(card);
 }
 // tạo phiếu kiểm kê 'Chờ duyệt' từ dữ liệu đã xem trước
-function commitKKUpload(r,period,cb){
+function commitKKUpload(r,period,cb,tuan){
   // áp mã mới / sửa tên / bổ sung danh mục kho + lưu Supabase (tái dùng logic tồn đầu kỳ)
   r.newMats.forEach(m=>{if(!masterByCode[m.code]){masterByCode[m.code]=m;DATA.materials.push(m);}});
   r.fixedMats.forEach(f=>{const c=masterByCode[f.code];if(c){c.name=f.name;if(f.uom&&!c.uom)c.uom=f.uom;}});
@@ -4160,6 +4250,9 @@ function commitKKUpload(r,period,cb){
   const matArr=Object.values(matMap);
   const afterMat=()=>{if(sb&&r.newCodesForPlant.length)sb.from('plant_materials').upsert(r.newCodesForPlant.map(c=>({plant_code:r.plant,code:c}))).then(({error})=>{if(error)console.error('plant_materials',error);});};
   if(sb&&matArr.length)sb.from('materials').upsert(matArr).then(({error})=>{if(error)console.error('materials',error);afterMat();}); else afterMat();
+  /* Kiểm kê tuần: vẫn học mã mới vào danh mục như trên (để lần đếm sau có tên hàng),
+     nhưng KHÔNG tạo phiếu — chỉ ghi một bản số tuần. */
+  if(tuan){luuKiemTuan(r.plant,r.sloc,tuan,{...r.items},null).then(()=>{cb&&cb();});return;}
   (async()=>{
     const sub={id:await nextKKId(r.plant,r.sloc),plant:r.plant,sloc:r.sloc,user:session.name+' (nhập từ Excel)',role:ROLES[session.role].label,time:now(),period:period,status:'Chờ duyệt',items:{...r.items},count:r.ok};
     const okIns=await insSubmissionSafe(sub);
@@ -5003,7 +5096,7 @@ function renderKiemke(v){
   }
   /* Vai field chi co MOT cach dem (Up Excel da bo tu 04/09) -> khoi "chon hinh thuc"
      chi lam ton 263px chan giua man. Tu bat che do dem luon, khong hoi. */
-  const _oneWay=!isPrivileged();
+  const _oneWay=!(isPrivileged()||laKhoBep(kkSel.plant,kkSel.sloc));
   if(_oneWay&&kkMethod!=='direct'){kkMethod='direct';counting={plant:kkSel.plant,sloc:kkSel.sloc,period:kkPeriod};}
   function methodCard(ico,title,desc,active){
     const c=el('button','hub-tile'+(active?' warm':''));c.type='button';
@@ -5011,8 +5104,10 @@ function renderKiemke(v){
     c.innerHTML=`<div class="hub-ic">${ico}</div><div class="hub-t">${title}${active?' <span class="badge badge-done" style="font-size:9px;vertical-align:middle">đang chọn</span>':''}</div><div class="hub-s">${desc}</div>`;
     return c;
   }
-  // Up Excel: CHỈ kế toán/admin. Các vai còn lại chỉ kiểm đếm tay trên danh sách có sẵn.
-  if(isPrivileged()){
+  /* Up Excel: kế toán/admin, VÀ kho bếp (rule Khoa 21/09). Bếp có 200–400 mã, gõ tay
+     hết là một buổi; các điểm bán khác vẫn chỉ đếm tay để không tự nạp file che chênh lệch. */
+  const _choExcel=isPrivileged()||laKhoBep(kkSel.plant,kkSel.sloc);
+  if(_choExcel){
     const cE=methodCard(HIC.sheet,'Up Excel','Nạp file Excel có sẵn (Mã hàng, ĐVT, Số lượng) để tạo phiếu nhanh.',kkMethod==='excel');
     cE.onclick=()=>{kkMethod='excel';counting=null;renderView();};
     mgrid.appendChild(cE);
@@ -5030,7 +5125,9 @@ function renderKiemke(v){
     }else renderCountSheet(v);
   }
 }
-function draftKey(){return counting.plant+'|'+counting.sloc;}
+/* Nháp của kiểm kê tuần phải tách khỏi nháp kiểm kê tháng, nếu không đếm tuần
+   sẽ ghi đè số đang đếm dở của kỳ tháng. */
+function draftKey(){return counting.plant+'|'+counting.sloc+(counting.tuan?'|'+counting.tuan:'');}
 // Quy trình bắt buộc do BLĐ ban hành — hiện ở cả màn kiểm kê lẫn màn điều chuyển
 // Banner quy trình: mặc định THU 1 DÒNG cho khỏi chiếm nửa màn điện thoại (việc 6).
 // Tự bung khi kho của người dùng ĐANG MỞ KỲ kiểm kê — lúc đó app chặn điều chuyển,
@@ -5045,6 +5142,144 @@ function procNote(open){
       <li>Xử lý chênh lệch: <b>thừa → làm phiếu nhập kho</b> · <b>thiếu → đền tiền</b>.</li>
     </ul>`;
   return d;
+}
+const NL=String.fromCharCode(10);   // xuống dòng trong hộp thoại confirm
+/* Lưu một lần kiểm tuần. Mỗi kho mỗi tuần MỘT bản: đếm lại tuần đó thì ghi đè,
+   đó là hành vi đúng — bếp đếm sót rồi đếm lại không nên đẻ ra hai bản. */
+async function luuKiemTuan(plant,sloc,week,sach,btn){
+  const soMa=Object.keys(sach).length;
+  const cu=weeklyCounts.find(x=>x.plant===plant&&x.sloc===sloc&&x.week===week);
+  const hoi='LƯU SỐ KIỂM TUẦN'+NL+whName(plant,sloc)+NL+tuanLabel(week)+NL+NL
+    +soMa+' mã đã đếm.'+NL
+    +(cu?('Tuần này đã có bản '+cu.count+' mã (lưu lúc '+cu.time+') — bản cũ sẽ được THAY.'+NL):'')
+    +NL+'Số tuần là số nội bộ của bếp: KHÔNG gửi kế toán duyệt, không ảnh hưởng phiếu kiểm kê tháng.';
+  if(!confirm(hoi))return;
+  const id=ktTuanId(plant,sloc,week);
+  const ban={id:id,plant:plant,sloc:sloc,week:week,items:sach,count:soMa,by:session.name,time:now()};
+  if(btn){btn.disabled=true;var _c=btn.textContent;btn.textContent='Đang lưu…';}
+  let ok=true,vi='';
+  if(sb){
+    try{
+      const r=await sb.from('weekly_counts').upsert({id:id,plant_code:plant,sloc_code:sloc,week:week,
+        items:sach,count:soMa,created_by:session.name},{onConflict:'id'});
+      if(r&&r.error){ok=false;vi=r.error.message||'';}
+    }catch(e){ok=false;vi=(e&&e.message)||'';}
+  }
+  if(btn){btn.disabled=false;btn.textContent=_c;}
+  if(!ok){
+    const thieuBang=/weekly_counts|schema cache|does not exist|relation/i.test(vi);
+    errBox('Chưa lưu được số kiểm tuần',[
+      thieuBang?'Phần kiểm kê tuần <b>chưa được mở trên máy chủ</b> — báo kế toán để bật.'
+               :'Máy chủ chưa nhận số. <b>Số vẫn còn ở nháp</b> trong máy, không mất.',
+      'Đừng đếm lại — mở lại màn này số vẫn còn nguyên.'
+    ],'Bảng: weekly_counts'+NL+vi);
+    return;
+  }
+  weeklyCounts=[ban].concat(weeklyCounts.filter(x=>x.id!==id));
+  delete drafts[plant+'|'+sloc+'|'+week];saveDrafts();
+  counting=null;
+  log('Kiểm kê tuần',whName(plant,sloc)+' · '+tuanLabel(week)+' · '+soMa+' mã');
+  toast('✓ Đã lưu '+soMa+' mã cho '+tuanLabel(week).split(' · ')[0].toLowerCase());
+  renderView();
+}
+async function xoaKiemTuan(b){
+  if(!confirm('XÓA BẢN KIỂM TUẦN'+NL+whName(b.plant,b.sloc)+NL+tuanLabel(b.week)+NL+NL
+    +b.count+' mã, lưu bởi '+b.by+' lúc '+b.time+'.'+NL+NL+'Xóa rồi thì phải đếm lại tuần này.'))return;
+  const r=await dbDel('weekly_counts',{id:b.id});
+  if(!r.ok||r.count===0)return;   // dbDel đã dựng hộp lỗi
+  weeklyCounts=weeklyCounts.filter(x=>x.id!==b.id);
+  log('Xóa kiểm kê tuần',b.id);toast('Đã xóa bản '+tuanLabel(b.week).split(' · ')[0].toLowerCase());renderView();
+}
+let wkSel=null,wkWeek='',wkMethod='';
+function renderKiemkeTuan(v){
+  const bep=khoBepCuaToi();
+  v.appendChild(el('div','page-head','<div><h1>Kiểm kê tuần</h1><div class="ph-sub">Bếp tự đếm hằng tuần để nắm hàng trong kho. Số này <b>không gửi kế toán duyệt</b> và không thay cho phiếu kiểm kê tháng.</div></div>'));
+  if(!bep.length){
+    v.appendChild(el('div','card','<div class="card-b"><div class="empty"><div class="big">Bạn không phụ trách kho bếp nào</div><div>Kiểm kê tuần chỉ dành cho kho bếp. Nếu bạn có phụ trách bếp mà không thấy kho ở đây, báo kế toán gán kho.</div></div></div>'));
+    return;
+  }
+  if(!wkWeek)wkWeek=tuanNay();
+  if(!wkSel||!bep.some(k=>k.plant===wkSel.plant&&k.sloc===wkSel.sloc))wkSel={plant:bep[0].plant,sloc:bep[0].sloc};
+
+  // ---- chọn kho + tuần, ghim thành chip như các màn khác ----
+  const bar=el('div','ctx-bar');
+  const info=el('div');info.style.cssText='display:flex;flex-wrap:wrap;align-items:center;gap:8px;flex:1;min-width:0';
+  const pick=el('div','ctx-pick');
+  function ve(){info.innerHTML='<span class="ctx-lb">Đang đếm ở</span><span class="ctx-chip">'+whName(wkSel.plant,wkSel.sloc)+'</span><span class="ctx-chip">'+tuanLabel(wkWeek)+'</span>';}
+  const kf=el('label','field','<span>Kho bếp</span>');const kSel=el('select','input');
+  bep.forEach(k=>{const o=el('option',null,whName(k.plant,k.sloc)+' — '+plantName(k.plant));o.value=k.plant+'|'+k.sloc;kSel.appendChild(o);});
+  kSel.value=wkSel.plant+'|'+wkSel.sloc;kf.appendChild(kSel);
+  const tf=el('label','field','<span>Tuần</span>');const tSel=el('select','input');
+  tuanOptions(12).forEach(w=>{const o=el('option',null,tuanLabel(w)+(w===tuanNay()?' (tuần này)':''));o.value=w;tSel.appendChild(o);});
+  tSel.value=wkWeek;tf.appendChild(tSel);
+  pick.appendChild(kf);pick.appendChild(tf);
+  const doi=()=>{const a=kSel.value.split('|');wkSel={plant:a[0],sloc:a[1]};wkWeek=tSel.value;wkMethod='';counting=null;renderView();};
+  kSel.onchange=doi;tSel.onchange=doi;
+  const bt=el('button','btn btn-ghost btn-sm','Đổi kho / tuần');
+  bt.onclick=()=>{pick.style.display=pick.style.display==='grid'?'none':'grid';};
+  ve();bar.appendChild(info);bar.appendChild(bt);bar.appendChild(pick);v.appendChild(bar);
+
+  if(!wkTblOK){
+    v.appendChild(el('div','card','<div class="card-b"><div class="empty"><div class="big">Phần kiểm kê tuần chưa được mở</div><div>Máy chủ chưa bật phần này. Báo kế toán để mở, số đếm sẽ lưu được ngay sau đó.</div></div></div>'));
+    return;
+  }
+
+  // ---- bản đã lưu của tuần đang chọn ----
+  const daCo=weeklyCounts.find(x=>x.plant===wkSel.plant&&x.sloc===wkSel.sloc&&x.week===wkWeek);
+  if(daCo){
+    const c=el('div','card');c.style.marginTop='14px';
+    const b=el('div','card-b');
+    b.innerHTML='<div class="section-eyebrow" style="color:var(--green)">✓ Tuần này đã kiểm</div>'
+      +'<div style="font-size:12.5px;color:var(--muted);margin:6px 0 10px"><b class="tnum">'+daCo.count+' mã</b> · lưu bởi '+daCo.by+' lúc '+daCo.time+'. Đếm lại thì bản này được thay.</div>';
+    const r=el('div');r.style.cssText='display:flex;gap:10px;flex-wrap:wrap';
+    const bX=el('button','btn btn-ghost btn-sm','📥 Tải Excel');bX.onclick=()=>xuatKiemTuan(daCo);
+    const bD=el('button','btn btn-ghost btn-sm','🗑 Xóa bản này');bD.style.color='var(--red)';bD.onclick=()=>xoaKiemTuan(daCo);
+    r.appendChild(bX);r.appendChild(bD);b.appendChild(r);c.appendChild(b);v.appendChild(c);
+  }
+
+  // ---- hai cách nhập ----
+  const mc=el('div','card');mc.style.marginTop='14px';const mb=el('div','card-b');
+  mb.innerHTML='<div class="section-eyebrow"><span class="step">1</span>Chọn cách nhập số</div>'
+    +'<div style="font-size:12.5px;color:var(--muted);margin:2px 0 12px">Kho <b>'+whName(wkSel.plant,wkSel.sloc)+'</b> · '+tuanLabel(wkWeek)+'</div>';
+  const g=el('div','hub-grid');
+  function the(ico,t,d,on){const c=el('div','hub-tile');if(on)c.style.borderColor='var(--brand)';
+    c.innerHTML='<div class="hub-ic">'+ico+'</div><div class="hub-t">'+t+(on?' <span class="badge badge-done" style="font-size:9px;vertical-align:middle">đang chọn</span>':'')+'</div><div class="hub-s">'+d+'</div>';return c;}
+  const cE=the(HIC.sheet,'Up Excel','Nạp file có sẵn (Mã hàng, ĐVT, Số lượng) — nhanh nhất khi danh sách 200–400 dòng.',wkMethod==='excel');
+  cE.onclick=()=>{wkMethod='excel';counting=null;renderView();};
+  const cD=the(HIC.box,'Đếm trực tiếp','Gõ số từng mã trên máy, chia khu đếm và lọc mã chưa nhập như kiểm kê tháng.',wkMethod==='direct');
+  cD.onclick=()=>{wkMethod='direct';counting={plant:wkSel.plant,sloc:wkSel.sloc,period:thangCuaTuan(wkWeek),tuan:wkWeek};renderView();
+    setTimeout(()=>{const x=$('#countCard');if(x)x.scrollIntoView({behavior:'smooth',block:'start'});},60);};
+  g.appendChild(cE);g.appendChild(cD);mb.appendChild(g);mc.appendChild(mb);v.appendChild(mc);
+
+  if(wkMethod==='excel')renderKKUpload(v,{plant:wkSel.plant,sloc:wkSel.sloc,period:thangCuaTuan(wkWeek),tuan:wkWeek});
+  if(counting&&counting.tuan)renderCountSheet(v);
+
+  // ---- các tuần đã kiểm của kho này ----
+  const ds=weeklyCounts.filter(x=>x.plant===wkSel.plant&&x.sloc===wkSel.sloc)
+    .sort((a,b)=>String(b.week).localeCompare(String(a.week)));
+  const lc=el('div','card');lc.style.marginTop='16px';
+  lc.appendChild(el('div','card-h','<div><span class="ct">Các tuần đã kiểm</span><div class="cs">'+whName(wkSel.plant,wkSel.sloc)+'</div></div><span class="badge badge-soft">'+ds.length+'</span>'));
+  if(!ds.length)lc.appendChild(el('div','card-b','<div class="empty"><div class="big">Chưa có tuần nào</div><div>Đếm xong tuần đầu tiên, các tuần sau sẽ xếp ở đây để đối chiếu.</div></div>'));
+  else{
+    const w=el('div','tbl-wrap');const t=el('table');
+    t.innerHTML='<thead><tr><th>Tuần</th><th class="num">Số mã</th><th>Người đếm</th><th>Lúc</th><th></th></tr></thead>';
+    const tb=el('tbody');
+    ds.slice(0,20).forEach(x=>{
+      const tr=el('tr',null,'<td><b>'+tuanLabel(x.week)+'</b></td><td class="num cell-strong tnum">'+x.count+'</td><td>'+(x.by||'—')+'</td><td>'+(x.time||'')+'</td>');
+      const td=el('td');const bx=el('button','btn btn-ghost btn-sm','📥 Excel');bx.onclick=()=>xuatKiemTuan(x);
+      td.appendChild(bx);tr.appendChild(td);tb.appendChild(tr);});
+    t.appendChild(tb);w.appendChild(t);lc.appendChild(w);
+  }
+  v.appendChild(lc);
+}
+function xuatKiemTuan(b){
+  const rows=[['Mã hàng','Tên hàng','ĐVT','Số lượng']];
+  Object.keys(b.items||{}).sort((x,y)=>{
+    const a1=(masterByCode[x]||{}).name||x,b1=(masterByCode[y]||{}).name||y;return a1.localeCompare(b1,'vi');})
+    .forEach(c=>{const m=masterByCode[c]||{name:c,uom:''};rows.push([c,m.name||c,m.uom||'',b.items[c]]);});
+  const ws=XLSX.utils.aoa_to_sheet(rows),wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Kiem ke tuan');
+  XLSX.writeFile(wb,'Kiem_ke_tuan_'+b.plant+'_'+b.sloc+'_'+b.week+'.xlsx');
 }
 function renderCountSheet(v){
   const key=draftKey();if(!drafts[key])drafts[key]={items:{}};const items=drafts[key].items;
@@ -5383,10 +5618,13 @@ function renderCountSheet(v){
   const act=el('div','sticky-actions');const rowb=el('div','btn-row');
   const bDraft=el('button','btn btn-ghost','<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Lưu nháp');
   const bXls=el('button','btn btn-ghost btn-sm','📥 Xuất biên bản Excel (in ký)');
-  const _edSub=countEditId?submissions.find(x=>x.id===countEditId):null;
-  const bDone=el('button','btn btn-primary',_edSub
-    ?('💾 Lưu bổ sung vào phiếu '+_edSub.id)
-    :'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Hoàn thành & Gửi');
+  const _tuan=counting.tuan||'';
+  const _edSub=(!_tuan&&countEditId)?submissions.find(x=>x.id===countEditId):null;
+  const bDone=el('button','btn btn-primary',_tuan
+    ?('💾 Lưu số '+tuanLabel(_tuan).split(' · ')[0].toLowerCase())
+    :(_edSub
+      ?('💾 Lưu bổ sung vào phiếu '+_edSub.id)
+      :'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Hoàn thành & Gửi'));
   bDraft.onclick=()=>{saveDrafts();log('Lưu nháp kiểm kê',`${whName(counting.plant,counting.sloc)} · ${filled()} mã`);autosaved();toast('Đã lưu nháp '+filled()+' mã (giữ được cả khi tải lại trang)');};
   bXls.onclick=()=>{
     const n=filled();if(n===0){toast('Chưa nhập mã nào để xuất');return;}
@@ -5395,6 +5633,13 @@ function renderCountSheet(v){
   };
   bDone.onclick=()=>{
     const n=filled();if(n===0){toast('Chưa nhập mã nào');return;}
+    /* Kiểm kê tuần: số nội bộ của bếp, KHÔNG tạo phiếu, KHÔNG gửi kế toán duyệt,
+       nên bỏ qua toàn bộ luật của phiếu tháng (mỗi kho một phiếu, khóa kỳ, đếm bổ sung). */
+    if(_tuan){
+      const sach={};Object.entries(items).forEach(([c,v])=>{if(v!==''&&v!=null)sach[c]=Number(v);});
+      luuKiemTuan(counting.plant,counting.sloc,_tuan,sach,bDone);
+      return;
+    }
     const zeros=Object.entries(items).filter(([c,v])=>Number(v)===0).length;
     const devs=MATS.filter(m=>devHigh(m)).length;
     const editing=countEditId?submissions.find(x=>x.id===countEditId):null;
