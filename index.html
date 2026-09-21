@@ -1011,7 +1011,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2109-04';
+const APP_VER='2109-05';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -5314,19 +5314,36 @@ function renderCountSheet(v){
   const key=draftKey();if(!drafts[key])drafts[key]={items:{}};const items=drafts[key].items;
   /* Tồn đầu kỳ để đối chiếu khi đếm: ưu tiên bản chốt của kế toán, chưa có thì lấy
      phiếu kiểm kê kỳ trước (kể cả chưa duyệt) — rule Khoa 18/09/2026. */
-  const _dkKD=tonDauKy(counting.plant,counting.sloc,counting.period||curPeriod());
-  const opening=Object.keys(_dkKD.items||{}).length?_dkKD.items:null;
+  const _laTuan=!!counting.tuan;
+  /* Kiểm kê tuần KHÔNG dùng tồn đầu kỳ tháng để đối chiếu. Thứ bếp cần là "tuần
+     trước đếm bao nhiêu"; tồn đầu kỳ là số của phân hệ tháng, kéo theo cả chuyện
+     kế toán đã chốt tồn hay chưa — không liên quan gì tới việc đếm tuần. */
+  const _tuanTruoc=_laTuan
+    ? (weeklyCounts||[]).filter(x=>x.plant===counting.plant&&x.sloc===counting.sloc
+        &&x.week<counting.tuan&&Object.keys(x.items||{}).length)
+        .sort((a,b)=>String(b.week).localeCompare(String(a.week)))[0]
+    : null;
+  const _dkKD=_laTuan?{items:{},nguon:'',tamTinh:false}
+    :tonDauKy(counting.plant,counting.sloc,counting.period||curPeriod());
+  const opening=_laTuan
+    ? (_tuanTruoc?_tuanTruoc.items:null)
+    : (Object.keys(_dkKD.items||{}).length?_dkKD.items:null);
+  const _nhanSo=_laTuan?'Tuần trước':'Đầu kỳ';
   const card=el('div','card');card.id='countCard';card.style.marginTop='16px';
 
   const head=el('div','count-head');
-  const modeBadge = opening
-    ? `<span class="badge badge-open">📦 CÓ TỒN ĐẦU KỲ</span>`
-    : `<span class="badge badge-blind">🔒 ĐẾM MÙ (chưa có tồn đầu)</span>`;
+  const modeBadge = _laTuan
+    ? (_tuanTruoc
+        ? `<span class="badge badge-open">📊 CÓ SỐ ${tuanLabel(_tuanTruoc.week).split(' · ')[0].toUpperCase()} ĐỂ SO</span>`
+        : `<span class="badge badge-blind">📊 TUẦN ĐẦU TIÊN — chưa có gì để so</span>`)
+    : (opening
+      ? `<span class="badge badge-open">📦 CÓ TỒN ĐẦU KỲ</span>`
+      : `<span class="badge badge-blind">🔒 ĐẾM MÙ (chưa có tồn đầu)</span>`);
   head.innerHTML=`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <span class="section-eyebrow" style="margin:0"><span class="step">2</span>Nhập số đếm</span>
+      <span class="section-eyebrow" style="margin:0"><span class="step">2</span>${_laTuan?('Đếm '+tuanLabel(counting.tuan).split(' · ')[0].toLowerCase()):'Nhập số đếm'}</span>
       ${modeBadge}</div>
     <div class="kho" style="margin-top:8px">${whName(counting.plant,counting.sloc)}</div>
-    <div class="meta">${plantName(counting.plant)} · Sloc ${counting.sloc}${opening?` · tồn đầu từ ${_dkKD.nguon}${_dkKD.tamTinh?' (TẠM TÍNH)':''}`:''}</div>
+    <div class="meta">${plantName(counting.plant)} · Sloc ${counting.sloc}${(!_laTuan&&opening)?` · tồn đầu từ ${_dkKD.nguon}${_dkKD.tamTinh?' (TẠM TÍNH)':''}`:''}${_laTuan?' · số nội bộ của bếp':''}</div>
     <div class="progress">
       <div class="ptop"><span>Tiến độ nhập</span><span><b id="cntNum">0</b> mã đã nhập</span></div>
       <div class="track"><div class="fill" id="cntFill"></div></div>
@@ -5336,8 +5353,14 @@ function renderCountSheet(v){
   const nt=el('div');nt.style.padding='14px 16px 0';
   if(countEditId){const es=submissions.find(x=>x.id===countEditId);
     nt.appendChild(el('div','note',`<span>➕ <b>Đang đếm bổ sung phiếu ${countEditId}</b>${es?' ('+es.count+' mã đã gửi lúc '+es.time+')':''} — số cũ đã điền sẵn. Sửa hoặc thêm mã rồi bấm <b>Lưu bổ sung</b>; phiếu giữ nguyên mã, mọi thay đổi được ghi lại cho kế toán xem khi duyệt.</span>`));}
-  nt.appendChild(procNote());
-  const noteTxt = opening
+  /* Banner quy trình nói về điều chuyển / mở kỳ / chênh lệch — toàn chuyện của phân hệ
+     tháng. Đếm tuần không dính gì tới mấy thứ đó nên không bày ra cho rối. */
+  if(!_laTuan)nt.appendChild(procNote());
+  const noteTxt = _laTuan
+    ? (_tuanTruoc
+        ? ('Cột "<b>Tuần trước</b>" là số của <b>'+tuanLabel(_tuanTruoc.week)+'</b>, chỉ để bếp so cho dễ. Số tuần <b>không gửi kế toán</b> và <b>không ảnh hưởng</b> phiếu kiểm kê tháng.')
+        : 'Đây là tuần đầu tiên nên chưa có số nào để so. Số tuần <b>không gửi kế toán</b> và <b>không ảnh hưởng</b> phiếu kiểm kê tháng.')
+    : opening
     ? (_dkKD.tamTinh
         ? 'Cột "Đầu kỳ" là số <b>TẠM TÍNH</b>, lấy từ <b>'+_dkKD.nguon+'</b> vì kế toán <b>chưa chốt tồn tháng</b>. Dùng để đối chiếu khi đếm được, nhưng số chính thức có thể còn đổi — <b>cứ đếm theo hàng thật</b>, đừng điền cho khớp cột này.'
         : 'Cột "Đầu kỳ" lấy từ <b>'+_dkKD.nguon+'</b> — dùng để đối chiếu khi đếm. <b>Đếm theo hàng thật</b>, đừng điền cho khớp.')
@@ -5427,10 +5450,15 @@ function renderCountSheet(v){
     MATS.push({code:c,name:picked.name,uom:picked.uom||''});
     MATS.sort((a,b)=>(a.name||'').localeCompare(b.name||'','vi'));
     total=MATS.length;
+    /* Đếm tuần chỉ thêm dòng cho LẦN ĐẾM NÀY — không đụng danh mục kho, kể cả bản
+       trong bộ nhớ: chỉ cần đẩy vào mảng là màn mở kỳ tháng của chính phiên này đã
+       thấy khác, dù máy chủ chưa ghi gì. */
+    if(!counting.tuan){
     if(!plantMaterials[counting.plant])plantMaterials[counting.plant]=[];
     if(!plantMaterials[counting.plant].includes(c)){plantMaterials[counting.plant].push(c);
       if(sb)sb.from('plant_materials').upsert({plant_code:counting.plant,code:c}).then(({error})=>{if(error)console.error('plant_materials',error);});}
-    log('Thêm mã chưa có trên kho khi kiểm kê',c+' · '+picked.name+' · '+whName(counting.plant,counting.sloc));
+    }
+    log(counting.tuan?'Thêm mã khi kiểm kê tuần (không vào danh mục)':'Thêm mã chưa có trên kho khi kiểm kê',c+' · '+picked.name+' · '+whName(counting.plant,counting.sloc));
     arMsg.innerHTML='<span style="color:var(--green)">✓ Đã thêm <b>'+picked.name+'</b> vào danh sách — dùng ô tìm bên dưới để nhập số</span>';
     iFind.value='';picked=null;bAdd.disabled=true;bAdd.style.opacity='.5';
     addBox.open=true;   // giu mo de them tiep ma khac
@@ -5458,7 +5486,9 @@ function renderCountSheet(v){
     if(canEd){
       const b=el('button','btn btn-ghost btn-sm',zs.length?'⚙':'⚙ Chia tiểu kho để đếm');
       b.title='Sửa danh sách tiểu kho';
-      b.onclick=()=>zoneEditor();zBar.appendChild(b);
+      /* Danh sách khu là cấu hình DÙNG CHUNG với kiểm kê tháng — sửa từ màn tuần là
+         đổi luôn cách chia khu của phiếu tháng. Màn tuần chỉ được chọn khu để đếm. */
+      if(!counting.tuan){b.onclick=()=>zoneEditor();zBar.appendChild(b);}
     }
   }
   // Hộp khai tiểu kho
@@ -5571,7 +5601,7 @@ function renderCountSheet(v){
       const r=el('div','item'+(has?' on':''));
       const dev=devHigh(m);
       const openTag = (opening&&opening[m.code]!=null&&opening[m.code]!=='')
-        ? `<span class="open-tag">Đầu kỳ: ${opening[m.code]}</span>` : '';
+        ? `<span class="open-tag">${_nhanSo}: ${opening[m.code]}</span>` : '';
       const devTag = dev ? `<span class="warn-tag">⚠ lệch lớn</span>` : '';
       const _inPlant=(plantMaterials[counting.plant]||[]).includes(m.code);
       const movedTag = (_moved.has(m.code)&&!_inPlant&&!(opening&&opening[m.code]!=null))
@@ -5765,7 +5795,10 @@ function renderCountSheet(v){
   rowb.appendChild(bDraft);rowb.appendChild(bDone);act.appendChild(rowb);v.appendChild(act);
   // Xuất biên bản để in ký là việc làm SAU khi gửi -> để dưới danh sách, không chiếm
   // thanh dính đáy (trước đây 3 nút xuống 2 hàng, cao 116px, che mất dòng đang gõ).
-  {const xr=el('div');xr.style.cssText='padding:2px 16px 20px';xr.appendChild(bXls);v.appendChild(xr);}
+  /* Biên bản kiểm kê là chứng từ chính thức của kỳ tháng (có phần ký). Đếm tuần
+     không được đẻ ra chứng từ đó; muốn lấy số tuần thì màn Kiểm kê tuần có nút
+     "📥 Tải Excel" riêng. */
+  if(!_tuan){const xr=el('div');xr.style.cssText='padding:2px 16px 20px';xr.appendChild(bXls);v.appendChild(xr);}
 }
 
 /* ============ ĐIỀU CHUYỂN ============ */
