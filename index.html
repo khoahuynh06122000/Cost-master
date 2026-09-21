@@ -92,6 +92,17 @@
   .input2::placeholder{color:rgba(255,255,255,.35)}
   .input2:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(232,146,23,.2);background:rgba(255,255,255,.09)}
   select.input2 option{color:#111}
+  .regkho{max-height:170px;overflow:auto;border:1px solid rgba(255,255,255,.16);border-radius:10px;background:rgba(255,255,255,.06)}
+  .regkho .rkg{font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:rgba(255,255,255,.45);padding:9px 12px 3px}
+  .regkho label{display:flex;align-items:center;gap:9px;padding:8px 12px;font-size:14.5px;color:#fff;cursor:pointer;margin:0}
+  .regkho label:hover{background:rgba(255,255,255,.08)}
+  .regkho input{width:17px;height:17px;accent-color:var(--accent);flex:none;margin:0}
+  .regkho-da{margin-top:9px;display:flex;flex-wrap:wrap;gap:6px}
+  .rkc{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:#fff;
+    background:rgba(232,146,23,.18);border:1px solid rgba(232,146,23,.5);border-radius:20px;padding:3px 4px 3px 11px}
+  .rkc .x{cursor:pointer;width:19px;height:19px;border-radius:50%;display:inline-flex;align-items:center;
+    justify-content:center;background:rgba(255,255,255,.14);font-size:12px;line-height:1}
+  .rkc .x:hover{background:rgba(255,255,255,.3)}
   .grid2b{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .role-list2{display:flex;flex-direction:column;gap:8px}
   .role-opt{display:flex;gap:12px;align-items:center;text-align:left;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:11px 12px;background:rgba(255,255,255,.03);transition:.15s}
@@ -799,6 +810,11 @@
     /* Hai ô tìm dùng `font:inherit` nên thừa hưởng cỡ chữ nhỏ của ô bọc, và
        selector `.x input` đặc hiệu hơn nên đè mất rule trên — phải gọi tên. */
     .usr-search input,.uksearch input{font-size:16px}
+    /* Màn đăng nhập / đăng ký cũng vậy: `.input2` là class nên đặc hiệu hơn `input`,
+       giữ nguyên 15px thì iPhone phóng to cả trang ngay lần chạm đầu tiên — mà đây
+       lại là màn ai cũng gặp trước nhất. Đợt sửa zoom 19/09 bỏ sót vì lúc đo màn
+       đăng nhập đang ẩn nên mọi phép đo trên nó đều ra 0. */
+    .input2{font-size:16px}
   }
 </style>
 <script>try{if(localStorage.getItem('appDark')==='1')document.documentElement.classList.add('dark');}catch(e){}</script>
@@ -858,7 +874,10 @@
         <label class="field2"><span>Email</span><input id="regEmail" class="input2" type="email" placeholder="ban@sunworld.vn"></label>
         <label class="field2"><span>Mật khẩu</span><input id="regPass" class="input2" type="password" placeholder="ít nhất 6 ký tự"></label>
         <label class="field2"><span>Điểm bán bạn làm việc <span style="opacity:.6;font-weight:400">— để quản trị gắn đúng kho</span></span><select id="regPlant" class="input2"></select></label>
-        <label class="field2" id="regSlocWrap" style="display:none"><span>Kho (Sloc) bạn phụ trách</span><select id="regSloc" class="input2"></select></label>
+        <div class="field2" id="regSlocWrap" style="display:none"><span>Kho (Sloc) bạn phụ trách <span style="opacity:.6;font-weight:400">— tick nhiều kho nếu bạn kiêm nhiệm</span></span>
+          <div id="regSloc" class="regkho"></div>
+          <div id="regKhoDa" class="regkho-da"></div>
+        </div>
         <button class="btn btn-primary btn-block" style="margin-top:16px" onclick="doSignUp()">Đăng ký</button>
         <div id="authMsg2" class="auth-msg"></div>
         <div class="auth-switch">Đã có tài khoản? <a onclick="showAuth('login')">Đăng nhập</a></div>
@@ -992,7 +1011,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2109-01';
+const APP_VER='2109-02';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -2810,18 +2829,55 @@ function fillRegPlants(){const s=$('#regPlant');if(!s||s._filled)return;s._fille
   const oo=el('option',null,'Văn phòng / không thuộc điểm bán');oo.value='OFFICE';s.appendChild(oo);
   s.onchange=fillRegSlocs;}
 function reqPlantLabel(c){return c==='OFFICE'?'Văn phòng (không thuộc điểm bán)':plantName(c);}
-function fillRegSlocs(){const pv=$('#regPlant').value,wrap=$('#regSlocWrap'),s=$('#regSloc');if(!s||!wrap)return;s.innerHTML='';
-  const list=pv?slocsOf(pv):[];
-  if(!list.length){wrap.style.display='none';return;}
-  list.forEach(w=>{const o=el('option',null,w.sloc_name+' ('+w.sloc+')');o.value=w.sloc;s.appendChild(o);});
-  wrap.style.display='';}
+/* Kho người này xin vào lúc đăng ký, dạng ['plant|sloc'].
+   Hồ sơ cũ (trước 21/09) chỉ có requested_plant + requested_sloc -> quy về cùng dạng. */
+function dkKhoCuaHoSo(p){
+  const a=[];const raw=p&&p.requested_slocs;
+  if(Array.isArray(raw))raw.forEach(k=>{if(k)a.push(String(k));});
+  else if(typeof raw==='string'&&raw.trim()){try{const j=JSON.parse(raw);if(Array.isArray(j))j.forEach(k=>{if(k)a.push(String(k));});}catch(e){}}
+  if(!a.length&&p&&p.requested_plant&&p.requested_sloc)a.push(p.requested_plant+'|'+p.requested_sloc);
+  return [...new Set(a)];}
+/* Kho đã tick, dạng 'plant|sloc'. Để NGOÀI fillRegSlocs để đổi điểm bán không
+   xoá mất lựa chọn cũ — đó chính là đường chọn bếp ở nhiều điểm bán. */
+let regKho=new Set();
+function veRegKhoDa(){
+  const box=$('#regKhoDa');if(!box)return;box.innerHTML='';
+  if(!regKho.size)return;
+  const lb=el('div',null,'Đã chọn '+regKho.size+' kho:');
+  lb.style.cssText='flex:1 0 100%;font-size:12px;color:rgba(255,255,255,.55);margin-bottom:2px';
+  box.appendChild(lb);
+  [...regKho].forEach(k=>{
+    const a=k.split('|');
+    const c=el('span','rkc');c.appendChild(el('b',null,whName(a[0],a[1])));
+    const x=el('span','x','×');x.title='Bỏ kho này';
+    x.onclick=()=>{regKho.delete(k);fillRegSlocs();};
+    c.appendChild(x);box.appendChild(c);});
+}
+function fillRegSlocs(){
+  const pv=$('#regPlant').value,wrap=$('#regSlocWrap'),s=$('#regSloc');if(!s||!wrap)return;
+  s.innerHTML='';
+  const list=pv&&pv!=='OFFICE'?slocsOf(pv):[];
+  // điểm bán này không có kho -> vẫn hiện khối nếu đã tick kho ở điểm bán khác
+  if(!list.length&&!regKho.size){wrap.style.display='none';return;}
+  if(list.length){
+    const gh=el('div','rkg',plantName(pv));s.appendChild(gh);
+    list.forEach(w=>{
+      const key=pv+'|'+w.sloc;
+      const lb=el('label');const cb=el('input');cb.type='checkbox';cb.value=key;cb.checked=regKho.has(key);
+      cb.onchange=()=>{cb.checked?regKho.add(key):regKho.delete(key);veRegKhoDa();};
+      lb.appendChild(cb);lb.appendChild(el('span',null,w.sloc_name+' ('+w.sloc+')'));s.appendChild(lb);});
+  }else{
+    const e=el('div','rkg','Điểm bán này chưa khai kho — các kho đã chọn vẫn giữ bên dưới');
+    s.appendChild(e);
+  }
+  wrap.style.display='';veRegKhoDa();}
 function showAuth(w){
   $('#authLogin').classList.toggle('hidden',w!=='login');
   $('#authReg').classList.toggle('hidden',w!=='reg');
   $('#authPending').classList.toggle('hidden',w!=='pending');
   $('#authForgot').classList.toggle('hidden',w!=='forgot');
   $('#authReset').classList.toggle('hidden',w!=='reset');
-  if(w==='reg')fillRegPlants();
+  if(w==='reg'){fillRegPlants();regKho=new Set();fillRegSlocs();}
 }
 // gửi link đặt lại mật khẩu về email
 async function doForgot(){
@@ -2882,14 +2938,16 @@ async function doSignIn(){
 async function doSignUp(){
   const name=$('#regName').value.trim(),email=$('#regEmail').value.trim(),pass=$('#regPass').value;
   const reqPlant=($('#regPlant')&&$('#regPlant').value)||'';
-  const reqSloc=(reqPlant&&$('#regSloc')&&$('#regSlocWrap')&&$('#regSlocWrap').style.display!=='none'&&$('#regSloc').value)||'';
+  const dsKho=[...regKho];                       // 'plant|sloc' — có thể nhiều điểm bán
+  const reqSloc=(dsKho[0]&&dsKho[0].split('|')[0]===reqPlant)?dsKho[0].split('|')[1]:'';
   const msg=$('#authMsg2');msg.textContent='';
   if(!name||!email||!pass){msg.textContent='Điền đủ họ tên, email, mật khẩu.';return;}
   if(!reqPlant){msg.textContent='Vui lòng chọn điểm bán bạn làm việc (kế toán/văn phòng chọn "Văn phòng").';return;}
+  if(reqPlant!=='OFFICE'&&!dsKho.length){msg.textContent='Tick ít nhất một kho bạn phụ trách. Kiêm nhiều kho thì tick nhiều, đổi điểm bán vẫn giữ phần đã tick.';return;}
   if(pass.length<6){msg.textContent='Mật khẩu tối thiểu 6 ký tự.';return;}
   msg.textContent='Đang tạo tài khoản…';
   let data,error;
-  try{ ({data,error}=await sb.auth.signUp({email,password:pass,options:{data:{full_name:name,requested_plant:reqPlant||null,requested_sloc:reqSloc||null}}})); }
+  try{ ({data,error}=await sb.auth.signUp({email,password:pass,options:{data:{full_name:name,requested_plant:reqPlant||null,requested_sloc:reqSloc||null,requested_slocs:dsKho}}})); }
   catch(e){ msg.textContent='Không kết nối được máy chủ đăng ký (mạng yếu hoặc Supabase đang tạm dừng). Kiểm tra mạng rồi thử lại.'; return; }
   if(error){
     const net=/failed to fetch|networkerror|fetch|network/i.test(error.message||'');
@@ -2897,7 +2955,19 @@ async function doSignUp(){
     return;
   }
   // đảm bảo có dòng profiles (phòng khi trigger chưa tạo)
-  try{if(data.user)await sb.from('profiles').upsert({id:data.user.id,email,full_name:name,status:'pending',requested_plant:reqPlant||null,requested_sloc:reqSloc||null},{onConflict:'id'});}catch(e){}
+  /* Cột requested_slocs là cột mới. Chưa chạy SQL thì Supabase báo thiếu cột và
+     dòng hồ sơ KHÔNG được ghi -> mất luôn cả đăng ký. Nên thử có cột trước, thiếu
+     thì bỏ cột đó rồi ghi lại, người dùng vẫn đăng ký được bình thường. */
+  if(data.user){
+    const ho={id:data.user.id,email,full_name:name,status:'pending',requested_plant:reqPlant||null,requested_sloc:reqSloc||null};
+    try{
+      const r=await sb.from('profiles').upsert(Object.assign({requested_slocs:dsKho},ho),{onConflict:'id'});
+      if(r&&r.error&&/requested_slocs|schema cache|column/i.test(r.error.message||'')){
+        console.warn('Chưa có cột requested_slocs — ghi hồ sơ không kèm danh sách kho');
+        await sb.from('profiles').upsert(ho,{onConflict:'id'});
+      }
+    }catch(e){try{await sb.from('profiles').upsert(ho,{onConflict:'id'});}catch(e2){}}
+  }
   msg.textContent='';
   $('#authMsg').textContent='✓ Đăng ký thành công! Chờ quản trị gán quyền, rồi đăng nhập.';
   showAuth('login');$('#liEmail').value=email;
@@ -7805,8 +7875,9 @@ function renderUserApprove(view){
   list.forEach(p=>{
     const w=el('div','card-b');w.style.borderTop='1px solid var(--line)';
     w.appendChild(el('div',null,'<div style="font-weight:800;font-size:14px">'+(p.full_name||'(chưa có tên)')+'</div>'+
-      '<div style="font-size:12.5px;color:var(--muted);margin:2px 0 10px">'+(p.email||'')+' · đăng ký vào <b>'+plantName(p.requested_plant)+
-      (p.requested_sloc?(' / '+whName(p.requested_plant,p.requested_sloc)):'')+'</b></div>'));
+      '<div style="font-size:12.5px;color:var(--muted);margin:2px 0 10px">'+(p.email||'')+' · đăng ký vào <b>'+
+      (dkKhoCuaHoSo(p).map(k=>{const a=k.split('|');return whName(a[0],a[1]);}).join(' · ')||plantName(p.requested_plant))+'</b></div>'));
+    const _dk=new Set(dkKhoCuaHoSo(p));
     const row=el('div');row.style.cssText='display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end';
     const fR=el('label','field');fR.style.cssText='margin:0;min-width:min(190px,100%)';fR.innerHTML='<span>Vai trò</span>';
     const rSel=el('select','input');
@@ -7833,7 +7904,7 @@ function renderUserApprove(view){
       ss.forEach(x=>{
         const it=el('label','ukitem');const cb=el('input');cb.type='checkbox';cb.value=pl.plant+'|'+x.sloc;
         // tick sẵn đúng kho người ta đăng ký vào, các kho kiêm nhiệm thì tick thêm
-        if(p.requested_plant===pl.plant&&p.requested_sloc===x.sloc){cb.checked=true;it.classList.add('sel');}
+        if(_dk.has(pl.plant+'|'+x.sloc)){cb.checked=true;it.classList.add('sel');}
         cb.onchange=()=>{it.classList.toggle('sel',cb.checked);dem();};
         it.appendChild(cb);it.appendChild(el('span',null,x.sloc_name+' ('+x.sloc+')'));lst.appendChild(it);});});
     qa.onclick=()=>{lst.querySelectorAll('.ukitem').forEach(it=>{const c=it.querySelector('input');c.checked=true;it.classList.add('sel');});dem();};
@@ -7946,8 +8017,8 @@ function openUserDrawer(view,p){
     const slocTxt=(p.requested_sloc&&!isOffice)?' · Kho <b>'+_esc(whName(p.requested_plant,p.requested_sloc))+'</b> <span style="color:var(--muted)">('+_esc(p.requested_sloc)+')</span>':'';
     b.innerHTML='<span>📍 <b>'+_esc(reqPlantLabel(p.requested_plant))+'</b>'+(isOffice?'':' <span style="color:var(--muted)">('+_esc(p.requested_plant)+')</span>')+slocTxt+'</span>';
     if(!isOffice){const pick=el('button','btn btn-ghost btn-sm','✓ Tích kho này');pick.style.marginLeft='auto';
-      pick.onclick=()=>{const target=p.requested_sloc?(p.requested_plant+'|'+p.requested_sloc):null;let ticked=0,first=null;
-        box.querySelectorAll('.ukitem input').forEach(cb=>{const m=target?cb.value===target:cb.value.split('|')[0]===p.requested_plant;if(m){if(!cb.checked){cb.checked=true;cb.dispatchEvent(new Event('change'));ticked++;}if(!first)first=cb;}});
+      pick.onclick=()=>{const dk=new Set(dkKhoCuaHoSo(p));let ticked=0,first=null;
+        box.querySelectorAll('.ukitem input').forEach(cb=>{const m=dk.size?dk.has(cb.value):cb.value.split('|')[0]===p.requested_plant;if(m){if(!cb.checked){cb.checked=true;cb.dispatchEvent(new Event('change'));ticked++;}if(!first)first=cb;}});
         ski.value='';ski.dispatchEvent(new Event('input'));if(first)first.closest('.ukitem').scrollIntoView({block:'center'});
         toast(ticked?('Đã tích '+ticked+' kho'):'Kho đã được tích rồi (hoặc không có trong danh sách)');};
       b.appendChild(pick);}
