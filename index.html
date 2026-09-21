@@ -157,6 +157,14 @@
   .topbar .loc-chip{margin-left:auto;display:flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--line);border-radius:20px;padding:6px 13px;font-size:12.5px;font-weight:600;color:var(--ink-soft)}
   .topbar .loc-chip .g{width:7px;height:7px;border-radius:50%;background:var(--green)}
   .content{padding:26px;overflow:auto;flex:1}
+  /* Biểu đồ khai theo khổ 480–640px rồi kéo 100%: trong thẻ rộng 1300px chúng bị
+     phóng hơn 2 lần, chữ trong viewBox to gấp đôi so với chữ của app. Chặn lại và
+     căn giữa; dưới 1200px vẫn chiếm trọn bề ngang như cũ. */
+  .chart{display:block;margin:0 auto;height:auto}
+  /* Màn rộng: giữ nội dung trong một cột đọc được thay vì kéo hết 1600px */
+  #view{max-width:1060px;margin:0 auto}
+  #view.wide{max-width:1320px}
+  @media (max-width:1240px){#view,#view.wide{max-width:100%}}
   /* .content KHONG duoc la vung cuon, neu khong .sticky-actions se khong dinh duoc day man:
      sticky bam theo vung cuon gan nhat, ma .content cao bang noi dung nen khong bao gio cuon.
      Cuon thuc su o <body>. 'clip visible' = van chan tran ngang, nhung nha truc doc cho body.
@@ -1011,7 +1019,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2109-05';
+const APP_VER='2109-06';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -3212,7 +3220,7 @@ function _parseVNTime(t){const m=String(t||'').match(/(\d{2})\/(\d{2})\/(\d{4})/
 // Cột (brand/brand2) + đường % (accent). labels[], bars[], barMax, line[](0-100)
 function svgComposed(labels,bars,barMax,line){
   const W=480,H=210,x0=44,x1=456,y0=24,yB=180,ph=yB-y0,n=Math.max(1,labels.length),slot=(x1-x0)/n,bw=Math.min(28,slot*0.5),cx=i=>x0+slot*i+slot/2;
-  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img"><line x1="${x0}" y1="${y0}" x2="${x0}" y2="${yB}" stroke="#E4E8E6"/><line x1="${x0}" y1="${yB}" x2="${x1}" y2="${yB}" stroke="#D2D8D5"/><line x1="${x0}" y1="${(y0+yB)/2}" x2="${x1}" y2="${(y0+yB)/2}" stroke="#EEF1F0"/>`;
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" class="chart" style="max-width:560px" role="img"><line x1="${x0}" y1="${y0}" x2="${x0}" y2="${yB}" stroke="#E4E8E6"/><line x1="${x0}" y1="${yB}" x2="${x1}" y2="${yB}" stroke="#D2D8D5"/><line x1="${x0}" y1="${(y0+yB)/2}" x2="${x1}" y2="${(y0+yB)/2}" stroke="#EEF1F0"/>`;
   bars.forEach((val,i)=>{const h=barMax?val/barMax*ph:0,y=yB-h;s+=`<rect x="${(cx(i)-bw/2).toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0,h).toFixed(1)}" rx="5" fill="${i>=n-2?'#14887d':'#0E5C55'}"/>`;});
   const pts=line.map((val,i)=>`${cx(i).toFixed(1)},${(yB-val/100*ph).toFixed(1)}`).join(' ');
   s+=`<polyline points="${pts}" fill="none" stroke="#E89217" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
@@ -3224,7 +3232,7 @@ function svgComposed(labels,bars,barMax,line){
 function svgHBars(items){
   if(!items.length)return `<div class="list-hint">Chưa có dữ liệu.</div>`;
   const W=480,rowH=30,x0=150,barMax=Math.max(1,...items.map(i=>i.val)),H=items.length*rowH+8;
-  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img">`;
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" class="chart" style="max-width:560px" role="img">`;
   items.forEach((it,i)=>{const y=i*rowH+7,w=Math.max(2,it.val/barMax*280),col=i<2?'#0E5C55':i<4?'#3a9e8f':'#6cbdae';
     s+=`<text x="8" y="${y+13}" font-size="11.5" fill="#394946">${_esc(it.name).slice(0,22)}</text><rect x="${x0}" y="${y}" width="${w.toFixed(1)}" height="16" rx="4" fill="${col}"/><text x="${(x0+w+8).toFixed(1)}" y="${y+13}" font-size="11.5" font-weight="700" fill="#0E5C55">${it.val}</text>`;});
   return s+`</svg>`;
@@ -3240,7 +3248,7 @@ function svgDonut(segs,cLabel,cSub){
 function svgDiverge(items){
   if(!items.length)return `<div class="list-hint">Chưa có dữ liệu.</div>`;
   const W=480,H=160,zeroY=80,x0=10,x1=470,n=items.length,slot=(x1-x0)/n,bw=Math.min(34,slot*0.5),cx=i=>x0+slot*i+slot/2,mx=Math.max(1,...items.map(i=>Math.abs(i.days)));
-  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img"><line x1="${x0}" y1="${zeroY}" x2="${x1}" y2="${zeroY}" stroke="#D2D8D5"/>`;
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" class="chart" style="max-width:560px" role="img"><line x1="${x0}" y1="${zeroY}" x2="${x1}" y2="${zeroY}" stroke="#D2D8D5"/>`;
   items.forEach((it,i)=>{const h=Math.max(2,Math.abs(it.days)/mx*58),pos=it.days>=0,y=pos?zeroY-h:zeroY,col=pos?'#1F8A54':'#C43D3D';
     s+=`<rect x="${(cx(i)-bw/2).toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="4" fill="${col}"/><text x="${cx(i).toFixed(1)}" y="${pos?(y-4).toFixed(1):(y+h+13).toFixed(1)}" text-anchor="middle" font-size="10.5" font-weight="700" fill="${col}">${it.days>0?'+':''}${it.days}</text><text x="${cx(i).toFixed(1)}" y="${H-6}" text-anchor="middle" font-size="9.5" fill="#6A7773">${_esc(it.name).slice(0,9)}</text>`;});
   return s+`</svg>`;
@@ -3258,7 +3266,7 @@ function svgWaterfall(steps){
   let run=0,maxV=0;const seg=[];
   steps.forEach(s=>{let lo,hi;if(s.kind==='base'||s.kind==='end'){lo=0;hi=s.val;run=s.val;}else if(s.kind==='add'){lo=run;hi=run+s.val;run+=s.val;}else{lo=run-s.val;hi=run;run-=s.val;}seg.push({label:s.label,val:s.val,kind:s.kind,big:s.big,lo,hi});maxV=Math.max(maxV,hi,run);});
   maxV=maxV||1;const n=Math.max(1,steps.length),slot=(x1-x0)/n,bw=Math.min(70,slot*0.6),Y=v=>yB-v/maxV*ph;
-  let out=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img"><line x1="${x0}" y1="${yB}" x2="${x1}" y2="${yB}" stroke="#D2D8D5"/>`;
+  let out=`<svg viewBox="0 0 ${W} ${H}" width="100%" class="chart" style="max-width:760px" role="img"><line x1="${x0}" y1="${yB}" x2="${x1}" y2="${yB}" stroke="#D2D8D5"/>`;
   seg.forEach((s,i)=>{const cx=x0+slot*i+slot/2,x=cx-bw/2,yhi=Y(Math.max(s.lo,s.hi)),ylo=Y(Math.min(s.lo,s.hi)),h=Math.max(2,ylo-yhi),col=s.kind==='add'?'#1F8A54':s.kind==='sub'?(s.big?'#C43D3D':'#E89217'):'#0E5C55';
     out+=`<rect x="${x.toFixed(1)}" y="${yhi.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="3" fill="${col}"/><text x="${cx.toFixed(1)}" y="${(yhi-6).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="700" fill="${col}">${(s.kind==='add'?'+':s.kind==='sub'?'−':'')+Math.round(s.val).toLocaleString('vi-VN')}</text><text x="${cx.toFixed(1)}" y="${yB+18}" text-anchor="middle" font-size="10.5" fill="#6A7773">${s.label}</text>`;
     if(i<seg.length-1){const yc=Y(s.kind==='sub'?s.lo:s.hi);out+=`<line x1="${(cx+bw/2).toFixed(1)}" y1="${yc.toFixed(1)}" x2="${(x0+slot*(i+1)+slot/2-bw/2).toFixed(1)}" y2="${yc.toFixed(1)}" stroke="#C9CFCD" stroke-dasharray="3 3"/>`;}
