@@ -992,7 +992,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1909-04';
+const APP_VER='2109-01';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1001,6 +1001,7 @@ function veVersion(){
 const ROLES={
   admin:{label:'Quản trị viên',short:'Toàn quyền theo dõi & quản trị',tabs:['dieuhanh','phantich','kiemke','shift','dieuchuyen','opening','spotcheck','chenhlech','baocao','catalog','users','audit'],ico:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/></svg>'},
   ketoan_vien:{label:'Kế toán viên',short:'Duyệt, báo cáo, danh mục & theo dõi vận hành',tabs:['phantich','kiemke','shift','dieuchuyen','opening','spotcheck','chenhlech','baocao','catalog'],ico:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>'},
+  ketoan_dl:{label:'Kế toán định lượng',short:'Như kế toán nhưng chỉ trong kho bếp được gán',tabs:['phantich','kiemke','shift','dieuchuyen','opening','spotcheck','chenhlech','baocao','catalog'],ico:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M7 7h10"/><path d="M4 11l3-4 3 4a3 3 0 0 1-6 0z"/><path d="M14 11l3-4 3 4a3 3 0 0 1-6 0z"/><path d="M8 21h8"/></svg>'},
   giam_sat:{label:'Giám sát điểm bán',short:'Duyệt & gửi, điều chuyển',tabs:['kiemke','shift','phantich','sodo','dieuchuyen','opening','spotcheck','chenhlech','users'],ico:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'},
   bep_truong:{label:'Bếp trưởng / GS nhà hàng',short:'Nhập số đếm, bàn giao ca',tabs:['kiemke','shift','opening','spotcheck'],ico:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6z"/><line x1="6" y1="17" x2="18" y2="17"/></svg>'},
   nhan_vien:{label:'Nhân viên',short:'Kiểm kê, nhập kho & điều chuyển, bàn giao ca',tabs:['kiemke','dieuchuyen','shift','spotcheck','opening'],ico:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 12 0v1"/></svg>'},
@@ -1317,7 +1318,8 @@ function zonesOf(plant,sloc){const a=countZones[plant+'|'+sloc];return Array.isA
 function canEditZones(plant){
   if(!session)return false;
   if(session.role==='admin')return true;
-  if(session.role!=='giam_sat')return false;
+  // kế toán định lượng khai khu đếm cho bếp mình phụ trách, như giám sát khai cho điểm bán
+  if(session.role!=='giam_sat'&&session.role!=='ketoan_dl')return false;
   return (session.plants||[]).indexOf('*')>=0||(session.plants||[]).indexOf(plant)>=0;
 }
 async function saveZones(plant,sloc,list){
@@ -1679,10 +1681,44 @@ async function syncAllMaterials(){
   log('Đồng bộ danh mục lên Supabase',`${ok} mã${err?', lỗi '+err:''}`);
   toast(err?`Đồng bộ xong ${ok} mã, lỗi ${err} (xem F12)`:`✓ Đã đồng bộ ${ok} mã lên Supabase`);
 }
-function isPrivileged(){return session&&(session.role==='admin'||session.role==='ketoan_vien');}
-function isViewer(){return session&&(session.role==='admin'||session.role==='ketoan_vien');}
+/* Kế toán định lượng chỉ phụ trách bếp. Cắt dữ liệu về đúng kho được gán NGAY SAU
+   khi tải, thay vì đi sửa từng màn: dashboard, danh sách phiếu, thông báo, chênh lệch
+   kho đều đọc chung mấy mảng này nên chỉ cần một chỗ. Máy chủ vẫn trả đủ — đây là rào
+   ở màn hình, không thay quyền trên Supabase. */
+function locTheoKho(){
+  if(!isScoped())return;
+  const kho=new Set((session.wh||[]).map(w=>w.plant+'|'+(w.sloc||'')));
+  const pl=new Set((session.plants||[]).filter(x=>x&&x!=='*'));
+  // khớp khi đúng kho, hoặc khi người này được gán CẢ plant (dòng cũ sloc rỗng)
+  const hop=(p,sl)=>!!p&&(kho.has(p+'|'+(sl||''))||kho.has(p+'|'));
+  const hopKey=k=>{if(!k)return false;const a=String(k).split('|');return hop(a[0],a[1]||'');};
+  const locObj=(o,f)=>{const r={};Object.keys(o||{}).forEach(k=>{if(f(k))r[k]=o[k];});return r;};
+  const khoaPS=k=>{const a=String(k).split('|');return hop(a[0],a[1]||'');};
+
+  submissions=(submissions||[]).filter(x=>hop(x.plant,x.sloc));
+  shifts=(shifts||[]).filter(x=>hop(x.plant,x.sloc));
+  spotChecks=(spotChecks||[]).filter(x=>hop(x.plant,x.sloc));
+  receipts=(receipts||[]).filter(x=>hop(x.plant,x.sloc));
+  closings=(closings||[]).filter(x=>hop(x.plant,x.sloc));
+  // sổ điều chuyển: giữ dòng nào có một đầu là kho của mình
+  transfers=(transfers||[]).filter(x=>hopKey(x.fromKey)||hopKey(x.toKey));
+  trReqs=(trReqs||[]).filter(x=>hop(x.fromPlant,x.fromSloc)||hop(x.toPlant,x.toSloc));
+  // thông báo cũ có thể không ghi sloc -> chấp nhận khớp theo plant
+  notifications=(notifications||[]).filter(x=>hop(x.plant,x.sloc)||(!x.sloc&&pl.has(x.plant)));
+  openingStock=locObj(openingStock,khoaPS);
+  countZones=locObj(countZones,khoaPS);
+  countLists=locObj(countLists,khoaPS);
+  salesUsage=locObj(salesUsage,khoaPS);
+  varNotes=locObj(varNotes,khoaPS);
+}
+function isPrivileged(){return session&&(session.role==='admin'||session.role==='ketoan_vien'||session.role==='ketoan_dl');}
+function isViewer(){return session&&(session.role==='admin'||session.role==='ketoan_vien'||session.role==='ketoan_dl');}
+/* Kế toán định lượng: làm đúng việc của kế toán, nhưng CHỈ trong kho được gán (bếp).
+   Tách riêng cờ này để quyền thao tác và phạm vi kho là hai chuyện khác nhau —
+   isPrivileged() vẫn đúng (được duyệt, được mở kỳ), còn danh sách kho thì không nở ra. */
+function isScoped(){return !!(session&&session.role==='ketoan_dl');}
 function allowedPlants(){ // danh sách plant người dùng được phép thao tác
-  if(isPrivileged())return plantsList();
+  if(isPrivileged()&&!isScoped())return plantsList();
   const set=new Set(session&&session.plants?session.plants:[]);
   return plantsList().filter(p=>set.has(p.plant));
 }
@@ -1690,7 +1726,7 @@ function allowedPlants(){ // danh sách plant người dùng được phép thao
 // admin/kế toán -> tất cả. Field user -> chỉ sloc được gán; nếu gán 'cả plant' (sloc rỗng, dữ liệu cũ) -> tất cả.
 function allowedSlocsOf(plant){
   const all=slocsOf(plant);
-  if(isPrivileged())return all;
+  if(isPrivileged()&&!isScoped())return all;
   const forP=(session&&session.wh?session.wh:[]).filter(w=>w.plant===plant);
   if(!forP.length)return [];
   if(forP.some(w=>!w.sloc))return all;
@@ -2681,6 +2717,7 @@ async function dbLoadAll(){
       try{const up=await sb.from('user_plants').select('*');userPlants={};userWh={};(up.data||[]).forEach(r=>{
         const arr=(userPlants[r.user_id]=userPlants[r.user_id]||[]);if(!arr.includes(r.plant_code))arr.push(r.plant_code);
         (userWh[r.user_id]=userWh[r.user_id]||[]).push({plant:r.plant_code,sloc:r.sloc_code||null});});}catch(e){}}
+    locTheoKho();
   }catch(e){console.error('dbLoadAll lỗi',e);toast('Lỗi tải dữ liệu từ máy chủ');}
 }
 function fmt(ts){try{return new Date(ts).toLocaleString('vi-VN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit',year:'numeric'});}catch(e){return ts||'';}}
@@ -3078,7 +3115,7 @@ function svgWaterfall(steps){
   return out+`</svg>`;
 }
 function renderPhantich(v){
-  const priv=isPrivileged();
+  const priv=isPrivileged()&&!isScoped();   // kế toán định lượng: chỉ điểm bán được gán
   const scope=priv?null:new Set(allowedPlants().map(p=>p.plant));
   if(!phPeriod){const _pw=[...new Set(submissions.filter(s=>!scope||scope.has(s.plant)).map(s=>s.period||curPeriod()))].sort();phPeriod=_pw.length?_pw[_pw.length-1]:curPeriod();}
   const plantsIn=plantsList().filter(p=>!scope||scope.has(p.plant));
@@ -3930,7 +3967,7 @@ function dashFilterCard(curPlant,curSloc,onPickPlant,onPickSloc,opts){
   const row=el('div','grid2');
   const pf=el('label','field','<span>Điểm bán (Plant)</span>');const psel=el('select','input');
   const oAll=el('option',null,'Tất cả điểm bán');oAll.value='';psel.appendChild(oAll);
-  plantsList().forEach(p=>{const o=el('option',null,p.name);o.value=p.plant;if(curPlant===p.plant)o.selected=true;psel.appendChild(o);});
+  allowedPlants().forEach(p=>{const o=el('option',null,p.name);o.value=p.plant;if(curPlant===p.plant)o.selected=true;psel.appendChild(o);});
   psel.onchange=()=>onPickPlant(psel.value);pf.appendChild(psel);
   const sf=el('label','field','<span>Kho (Sloc)</span>');const ssel=el('select','input');
   const sAll=el('option',null,'Tất cả kho');sAll.value='';ssel.appendChild(sAll);
@@ -6540,8 +6577,8 @@ function showDetail(s){
   const card=el('div','card');
   card.appendChild(el('div','card-h',`<div><span class="ct">${s.id} · ${whName(s.plant,s.sloc)}</span><div class="cs">${plantName(s.plant)} · Sloc ${s.sloc} · gửi bởi ${s.user} lúc ${s.time}</div></div>${statusBadge(s.status)}`));
 
-  // hàng nút hành động (phê duyệt / AI) — chỉ kế toán viên
-  const isKTV = session.role==='ketoan_vien';
+  // hàng nút hành động (phê duyệt / AI) — kế toán viên và kế toán định lượng
+  const isKTV = session.role==='ketoan_vien'||session.role==='ketoan_dl';
   const bar=el('div');bar.style.cssText='padding:14px 20px;border-bottom:1px solid var(--line);display:flex;gap:10px;flex-wrap:wrap;align-items:center';
   if(isKTV && s.status==='Chờ duyệt'){
     const bApprove=el('button','btn btn-primary btn-sm','<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Phê duyệt biên bản');
@@ -7184,7 +7221,7 @@ function renderDieuhanh(v){
 }
 function renderProgress(v){
   v.appendChild(el('div','page-head',`<div><h1>Tiến độ kiểm kê</h1><div class="ph-sub">Phân tích tiến độ & lọc kho đã kiểm / chưa kiểm để đôn đốc.</div></div>`));
-  const allowSet=isPrivileged()?null:new Set(allowedPlants().map(p=>p.plant));
+  const allowSet=(isPrivileged()&&!isScoped())?null:new Set(allowedPlants().map(p=>p.plant));
   const whs=allowSet?DATA.warehouses.filter(w=>allowSet.has(w.plant)):DATA.warehouses;
   const done=whs.filter(w=>statusOf(w.plant,w.sloc).k==='done').length;
   const wait=whs.filter(w=>statusOf(w.plant,w.sloc).k==='wait').length;
@@ -7519,7 +7556,7 @@ async function capLaiMatKhau(userId,matKhau){
     return {ok:true,email:j.email||''};
   }catch(e){return {ok:false,why:(e&&e.message)||'Không gọi được máy chủ'};}
 }
-const ROLE_OPTS=[['','— Chưa gán —'],['admin','Quản trị viên'],['ketoan_vien','Kế toán viên'],['giam_sat','Giám sát điểm bán'],['bep_truong','Bếp trưởng / GS nhà hàng'],['nhan_vien','Nhân viên']];
+const ROLE_OPTS=[['','— Chưa gán —'],['admin','Quản trị viên'],['ketoan_vien','Kế toán viên'],['ketoan_dl','Kế toán định lượng (bếp)'],['giam_sat','Giám sát điểm bán'],['bep_truong','Bếp trưởng / GS nhà hàng'],['nhan_vien','Nhân viên']];
 /* ============ KIỂM KÊ ĐỘT XUẤT ============ */
 function spotBadge(st){
   if(st==='Đã duyệt')return '<span class="badge badge-done">✓ Giám sát đã duyệt</span>';
@@ -7738,11 +7775,13 @@ function deleteSpot(s,cb){
   toast('Đã xóa phiếu '+s.id);cb&&cb();
 }
 
-const USR_ROLEB={admin:['Quản trị viên','#E6EFEE','#0E5C55'],ketoan_vien:['Kế toán','#EAF2F7','#2E7BB5'],giam_sat:['Giám sát','#FDF1DC','#C9790A'],bep_truong:['Bếp trưởng','#E6F4EC','#1F8A54'],nhan_vien:['Nhân viên','#EFEAF7','#7A6FB0'],'':['Chưa gán','var(--surface-2)','var(--muted)']};
+const USR_ROLEB={admin:['Quản trị viên','#E6EFEE','#0E5C55'],ketoan_vien:['Kế toán','#EAF2F7','#2E7BB5'],ketoan_dl:['KT định lượng','#E2F1F0','#1C6B72'],giam_sat:['Giám sát','#FDF1DC','#C9790A'],bep_truong:['Bếp trưởng','#E6F4EC','#1F8A54'],nhan_vien:['Nhân viên','#EFEAF7','#7A6FB0'],'':['Chưa gán','var(--surface-2)','var(--muted)']};
 const USR_AVC=['#0E5C55','#C9790A','#2E7BB5','#1F8A54','#7A6FB0','#C43D3D','#14887d'];
 function _uini(n){n=(n||'?').trim();const p=n.split(/\s+/);return ((p[p.length-1]||'?')[0]+(p.length>1?p[0][0]:'')).toUpperCase();}
 function _uav(p){const k=(p.id||p.email||'x');const c=USR_AVC[Math.abs([...k].reduce((a,ch)=>a+ch.charCodeAt(0),0))%USR_AVC.length];return `<div class="uav" style="background:${c}">${_uini(p.full_name||p.email)}</div>`;}
-function _ufield(r){return r==='giam_sat'||r==='bep_truong'||r==='nhan_vien';}
+// vai phải gán kho cụ thể. Kế toán định lượng nằm đây: họ là kế toán, nhưng phạm vi
+// là mấy kho bếp được tick — không gán kho thì vào app không thấy gì.
+function _ufield(r){return r==='giam_sat'||r==='bep_truong'||r==='nhan_vien'||r==='ketoan_dl';}
 /* ===== DUYỆT NHÂN VIÊN ĐĂNG KÝ (giám sát điểm bán) =====
    Giám sát chỉ thấy và chỉ duyệt được người đăng ký vào ĐÚNG điểm bán mình phụ trách.
    Giám sát điểm khác không thấy, không duyệt được. Admin vẫn thấy toàn bộ ở màn quản trị. */
@@ -7768,36 +7807,66 @@ function renderUserApprove(view){
     w.appendChild(el('div',null,'<div style="font-weight:800;font-size:14px">'+(p.full_name||'(chưa có tên)')+'</div>'+
       '<div style="font-size:12.5px;color:var(--muted);margin:2px 0 10px">'+(p.email||'')+' · đăng ký vào <b>'+plantName(p.requested_plant)+
       (p.requested_sloc?(' / '+whName(p.requested_plant,p.requested_sloc)):'')+'</b></div>'));
-    const row=el('div');row.style.cssText='display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end';
-    const fR=el('label','field');fR.style.cssText='margin:0;min-width:190px';fR.innerHTML='<span>Vai trò</span>';
+    const row=el('div');row.style.cssText='display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end';
+    const fR=el('label','field');fR.style.cssText='margin:0;min-width:min(190px,100%)';fR.innerHTML='<span>Vai trò</span>';
     const rSel=el('select','input');
     [['nhan_vien','Nhân viên'],['bep_truong','Bếp trưởng / GS nhà hàng']].forEach(([v,l])=>{const o=el('option',null,l);o.value=v;rSel.appendChild(o);});
     fR.appendChild(rSel);row.appendChild(fR);
-    const fW=el('label','field');fW.style.cssText='margin:0;min-width:230px';fW.innerHTML='<span>Kho được vào</span>';
-    const wSel=el('select','input');
-    allowedSlocsOf(p.requested_plant).forEach(x=>{const o=el('option',null,x.sloc_name+' ('+x.sloc+')');o.value=x.sloc;if(p.requested_sloc===x.sloc)o.selected=true;wSel.appendChild(o);});
-    fW.appendChild(wSel);row.appendChild(fW);
+    /* Kho được vào — TICK NHIỀU KHO. Giám sát bếp thường kiêm mấy kho một lúc; cho
+       đúng một kho thì lần nào cũng phải nhờ admin gán thêm. Danh sách chỉ gồm kho
+       chính người duyệt đang phụ trách, nên không gán bừa sang điểm bán khác được. */
+    const fW=el('div','ufld');fW.style.cssText='margin:0;flex:1 0 100%';
+    fW.innerHTML='<span>Kho được vào — tick nhiều kho nếu người này kiêm nhiệm</span>';
+    const box=el('div','ukbox');
+    let tong=0;mine.forEach(pl=>{tong+=allowedSlocsOf(pl.plant).length;});
+    const cnt=el('span','ukcnt');
+    const dem=()=>{cnt.textContent=box.querySelectorAll('.ukitem input:checked').length+' / '+tong+' kho';};
+    const hd=el('div','ukhead');const q=el('span','ukq');
+    const qa=el('span','q','Chọn tất cả'),qb=el('span','q','Bỏ chọn');
+    q.appendChild(qa);q.appendChild(qb);hd.appendChild(cnt);hd.appendChild(q);
+    const lst=el('div','uklist');
+    mine.forEach(pl=>{
+      const ss=allowedSlocsOf(pl.plant);if(!ss.length)return;
+      const gh=el('div','ukgroup',pl.name);
+      gh.style.cssText='font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);padding:9px 6px 3px';
+      lst.appendChild(gh);
+      ss.forEach(x=>{
+        const it=el('label','ukitem');const cb=el('input');cb.type='checkbox';cb.value=pl.plant+'|'+x.sloc;
+        // tick sẵn đúng kho người ta đăng ký vào, các kho kiêm nhiệm thì tick thêm
+        if(p.requested_plant===pl.plant&&p.requested_sloc===x.sloc){cb.checked=true;it.classList.add('sel');}
+        cb.onchange=()=>{it.classList.toggle('sel',cb.checked);dem();};
+        it.appendChild(cb);it.appendChild(el('span',null,x.sloc_name+' ('+x.sloc+')'));lst.appendChild(it);});});
+    qa.onclick=()=>{lst.querySelectorAll('.ukitem').forEach(it=>{const c=it.querySelector('input');c.checked=true;it.classList.add('sel');});dem();};
+    qb.onclick=()=>{lst.querySelectorAll('.ukitem').forEach(it=>{it.querySelector('input').checked=false;it.classList.remove('sel');});dem();};
+    box.appendChild(hd);box.appendChild(lst);fW.appendChild(box);row.appendChild(fW);dem();
     const bOk=el('button','btn btn-primary btn-sm','✓ Duyệt');bOk.style.height='38px';
     const bNo=el('button','btn btn-ghost btn-sm','✕ Từ chối');bNo.style.cssText='height:38px;color:var(--red)';
-    bOk.onclick=()=>approveUser(p,rSel.value,p.requested_plant,wSel.value);
+    bOk.onclick=()=>approveUser(p,rSel.value,[...box.querySelectorAll('.ukitem input:checked')].map(c=>c.value));
     bNo.onclick=()=>rejectUser(p);
     row.appendChild(bOk);row.appendChild(bNo);w.appendChild(row);
     body.appendChild(w);
   });
 }
-async function approveUser(p,role,plant,sloc){
-  if(!confirm('DUYỆT TÀI KHOẢN\n'+(p.full_name||p.email)+'\n\nVai trò: '+((ROLES[role]||{}).label||role)+'\nĐược vào kho: '+whName(plant,sloc)+' ('+plantName(plant)+')\n\nSau khi duyệt, người này đăng nhập được ngay và chỉ thấy kho trên.'))return;
+/* keys = mảng 'plant|sloc'. Một người có thể kiêm nhiều kho, nên quyền thật nằm
+   ở user_plants (nhiều dòng); profiles.plant_code/sloc_code chỉ giữ kho ĐẦU làm
+   kho chính để hiển thị, như trước. */
+async function approveUser(p,role,keys){
+  const ds=(keys||[]).filter(Boolean).map(k=>{const a=String(k).split('|');return {plant:a[0],sloc:a[1]||null};});
+  if(!ds.length){toast('Chọn ít nhất một kho cho người này');return;}
+  const plant=ds[0].plant,sloc=ds[0].sloc;
+  const ten=ds.map(d=>'· '+whName(d.plant,d.sloc)+' ('+plantName(d.plant)+')').join('\n');
+  if(!confirm('DUYỆT TÀI KHOẢN\n'+(p.full_name||p.email)+'\n\nVai trò: '+((ROLES[role]||{}).label||role)+'\nĐược vào '+ds.length+' kho:\n'+ten+'\n\nSau khi duyệt, người này đăng nhập được ngay và chỉ thấy những kho trên.'))return;
   const upd=await dbUpd('profiles',{id:p.id},{role,status:'active',plant_code:plant,sloc_code:sloc});
   if(!upd.ok||upd.count===0)return;   // dbUpd đã dựng hộp lỗi
   if(sb){try{await sb.from('user_plants').delete().eq('user_id',p.id);
-    const {error}=await sb.from('user_plants').insert([{user_id:p.id,plant_code:plant,sloc_code:sloc}]);
+    const {error}=await sb.from('user_plants').insert(ds.map(d=>({user_id:p.id,plant_code:d.plant,sloc_code:d.sloc})));
     if(error)errBox('Duyệt xong nhưng chưa gán được kho',['Tài khoản đã kích hoạt nhưng <b>chưa gán kho</b> nên người này vào app sẽ không thấy kho nào.','Báo admin gán kho thủ công.'],'Bảng: user_plants\n'+(error.message||''));
   }catch(e){console.error(e);}}
   p.role=role;p.status='active';p.plant_code=plant;p.sloc_code=sloc;
-  (userWh[p.id]=userWh[p.id]||[]).length=0;userWh[p.id].push({plant,sloc});
-  userPlants[p.id]=[plant];
-  log('Duyệt tài khoản',(p.full_name||p.email)+' · '+((ROLES[role]||{}).label||role)+' · '+whName(plant,sloc));
-  toast('Đã duyệt '+(p.full_name||p.email));renderNav();renderView();
+  userWh[p.id]=ds.map(d=>({plant:d.plant,sloc:d.sloc}));
+  userPlants[p.id]=[...new Set(ds.map(d=>d.plant))];
+  log('Duyệt tài khoản',(p.full_name||p.email)+' · '+((ROLES[role]||{}).label||role)+' · '+ds.length+' kho: '+ds.map(d=>whName(d.plant,d.sloc)).join(', '));
+  toast('Đã duyệt '+(p.full_name||p.email)+' · '+ds.length+' kho');renderNav();renderView();
 }
 async function rejectUser(p){
   const why=prompt('Lý do từ chối (không bắt buộc):')||'';
@@ -7832,7 +7901,7 @@ function renderUsers(view){
   // ---- toolbar ----
   const tb=el('div','usr-toolbar');
   tb.innerHTML=`<div class="usr-search"><span>🔍</span><input id="uSearch" placeholder="Tìm theo tên hoặc email…"></div>
-    <div class="chips" id="uRole">${[['','Tất cả vai trò'],['admin','Quản trị'],['ketoan_vien','Kế toán'],['giam_sat','Giám sát'],['bep_truong','Bếp trưởng'],['nhan_vien','Nhân viên']].map(([v,l])=>`<span class="chip${userRoleF===v?' on':''}" data-v="${v}">${l}</span>`).join('')}</div>
+    <div class="chips" id="uRole">${[['','Tất cả vai trò'],['admin','Quản trị'],['ketoan_vien','Kế toán'],['ketoan_dl','KT định lượng'],['giam_sat','Giám sát'],['bep_truong','Bếp trưởng'],['nhan_vien','Nhân viên']].map(([v,l])=>`<span class="chip${userRoleF===v?' on':''}" data-v="${v}">${l}</span>`).join('')}</div>
     <div class="chips" id="uStatus">${[['','Mọi trạng thái'],['active','Kích hoạt'],['pending','Chờ duyệt'],['disabled','Khóa']].map(([v,l])=>`<span class="chip${userStatusF===v?' on':''}" data-v="${v}">${l}</span>`).join('')}</div>`;
   view.appendChild(tb);
   tb.querySelectorAll('#uRole .chip').forEach(c=>c.onclick=()=>{userRoleF=c.dataset.v;renderView();});
