@@ -319,6 +319,14 @@
   .qty:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(232,146,23,.16)}
   .qty.filled{border-color:var(--green);background:var(--green-bg)}
   .auth-msg{margin-top:10px;font-size:13px;color:var(--accent-600);min-height:18px;line-height:1.4}
+  /* Nút chọn ngôn ngữ — dùng chung cho thanh bên và thẻ đăng nhập */
+  .lang-bar{display:flex;gap:6px;justify-content:center;margin-top:12px}
+  .lang-b{min-width:44px;height:30px;padding:0 10px;border-radius:8px;cursor:pointer;
+    font-size:12.5px;font-weight:800;letter-spacing:.02em;
+    background:transparent;color:inherit;border:1px solid currentColor;opacity:.55}
+  .lang-b:hover{opacity:.85}
+  .lang-b.on{opacity:1;background:var(--accent);border-color:var(--accent);color:#fff}
+  .sidebar .lang-bar{justify-content:flex-start;padding:0 16px;margin:0 0 8px}
   .auth-switch{margin-top:14px;font-size:13px;color:rgba(255,255,255,.75);text-align:center}
   .auth-switch a{color:var(--accent);font-weight:700;cursor:pointer;text-decoration:underline}
   .login-card2 h3{color:#fff}
@@ -858,6 +866,7 @@
         <div id="authMsg" class="auth-msg"></div>
         <div class="auth-switch"><a onclick="showAuth('forgot')">Quên mật khẩu?</a></div>
         <div class="auth-switch">Chưa có tài khoản? <a onclick="showAuth('reg')">Đăng ký</a></div>
+        <div class="lang-bar" id="langBar2"></div>
       </div>
       <div id="authForgot" class="hidden">
         <h3>Quên mật khẩu</h3>
@@ -914,6 +923,7 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       </button>
     </div>
+    <div class="lang-bar" id="langBar"></div>
     <div class="sb-ver" id="sbVer" title="Bấm để tải lại bản mới nhất"></div>
   </aside>
   <div class="scrim" id="scrim" onclick="closeNav()"></div>
@@ -1019,11 +1029,100 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2109-07';
+const APP_VER='2109-08';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
   e.onclick=()=>{if(confirm('Tải lại app để lấy bản mới nhất?'))location.reload(true);};
+}
+/* ================= NGÔN NGỮ (21/09/2026) =================
+   Khoa: bếp trưởng là người nước ngoài -> thêm tiếng Anh và tiếng Ấn (Hindi).
+   Dịch ở TẦNG HIỂN THỊ: từ điển khoá bằng chính chuỗi tiếng Việt, chuỗi nào chưa
+   dịch thì tự rơi về tiếng Việt — không bao giờ ra ô trống hay khoá lạ.
+   LƯU Ý: tên nguyên liệu / tên kho / tên điểm bán là dữ liệu SAP nên vẫn tiếng Việt. */
+const LANGS={vi:{ten:'Tiếng Việt',ma:'VI'},en:{ten:'English',ma:'EN'},hi:{ten:'हिन्दी',ma:'हि'}};
+let LANG=(function(){try{const v=localStorage.getItem('kk_lang_v1');return LANGS[v]?v:'vi';}catch(e){return 'vi';}})();
+const TXT={en:{"Kiểm kê F&B": "F&B Stocktake","Tổng quan": "Overview","Nghiệp vụ hàng ngày": "Daily work","Tồn kho & danh mục": "Stock & catalogue","Báo cáo": "Reports","Hệ thống": "System","Kiểm kê": "Stocktake","Kiểm kê tuần": "Weekly count","Kiểm kê tuần (nội bộ bếp)": "Weekly count (kitchen only)","Kiểm kê đột xuất": "Spot check","Kiểm kê đột xuất & đề xuất bù": "Spot check & compensation requests","Tồn đầu kỳ": "Opening stock","Tồn đầu kỳ (đã duyệt)": "Opening stock (approved)","Bàn giao ca": "Shift handover","Nhập kho & ĐC": "Receiving & transfers","Nhập kho & Điều chuyển": "Receiving & transfers","Phân tích": "Analysis","Chênh lệch kho": "Stock variance","Danh mục VT": "Item catalogue","Người dùng": "Users","Nhật ký": "Activity log","Điều hành": "Dashboard","Tiến độ": "Progress","Sơ đồ": "Org chart","Tổng hợp": "Summary","Báo cáo QT": "Management report","Đăng xuất": "Sign out","Thông báo": "Notifications","Chuyển nền tối / sáng": "Switch dark / light","Bấm để tải lại bản mới nhất": "Tap to reload the latest version","Văn phòng kế toán": "Accounting office","Bếp trưởng / GS nhà hàng": "Head chef / Restaurant supervisor","Giám sát điểm bán": "Outlet supervisor","Nhân viên": "Staff","Quản trị viên": "Administrator","Kế toán viên": "Accountant","Kế toán định lượng": "Recipe accountant","Nhập số đếm thực tế theo từng kho. Kho đã có tồn đầu kỳ sẽ hiển thị để đối chiếu; kho kỳ đầu đếm mù.": "Enter the actual counted quantity for each store. Stores with opening stock show it for comparison; a first-period store counts blind.","Đang làm ở": "Working at","Đang đếm ở": "Counting at","Đổi kho": "Change store","Đổi kho / kỳ": "Change store / period","Đổi kho / tuần": "Change store / week","Điểm bán": "Outlet","Kho (Sloc)": "Store (Sloc)","Kho bếp": "Kitchen store","Kho": "Store","Kỳ (tháng)": "Period (month)","Tuần": "Week","Chọn hình thức kiểm đếm": "Choose how to enter the count","Chọn cách nhập số": "Choose how to enter the count","Up Excel": "Upload Excel","Kiểm đếm trực tiếp": "Count on the phone","Đếm trực tiếp": "Count on the phone","Gõ số đếm thực tế từng mã ngay trên máy, có đối chiếu tồn đầu kỳ.": "Type the counted quantity for each item on the device, with opening stock shown for comparison.","Gõ số từng mã trên máy, chia khu đếm và lọc mã chưa nhập như kiểm kê tháng.": "Type each item on the device, split the store into zones and filter unfilled items, same as the monthly count.","Nạp file Excel có sẵn (Mã hàng, ĐVT, Số lượng) để tạo phiếu nhanh.": "Upload a ready Excel file (Item code, Unit, Quantity) to create the sheet quickly.","Nạp file có sẵn (Mã hàng, ĐVT, Số lượng) — nhanh nhất khi danh sách 200–400 dòng.": "Upload a ready file (Item code, Unit, Quantity) — fastest when the list runs 200–400 rows.","Nhập số đếm": "Enter the count","Tiến độ nhập": "Entry progress","mã đã nhập": "items entered","Tất cả": "All","Đã nhập": "Filled","Chưa nhập": "Not filled","Tìm trong danh mục tổng": "Search the master catalogue","Gõ tên hàng hoặc mã…": "Type item name or code…","Thêm vào danh sách đếm": "Add to the count list","Thực tế có hàng mà danh sách kho chưa liệt kê thì thêm ở đây.": "If the goods are physically there but missing from the store list, add them here.","Chỉ chọn được mã đã có trong danh mục tổng": "Only items already in the master catalogue can be picked","Chỉ thêm được, không xóa dòng.": "You can only add; rows cannot be deleted.","Mở khóa để sửa số": "Unlock to edit the number","Lưu nháp": "Save draft","Hoàn thành & Gửi": "Finish & Send","Chọn tệp": "Choose file","Tải mẫu": "Download template","Làm 3 bước:": "Three steps:","Số lượng": "Quantity","Mã hàng, Tên hàng, ĐVT, Số lượng": "Item code, Item name, Unit, Quantity","Nhập số kiểm tuần từ Excel": "Enter the weekly count from Excel","Bếp tự đếm hằng tuần để nắm hàng trong kho. Số này": "The kitchen counts weekly to keep track of what is in the store. These numbers are","không gửi kế toán duyệt": "not sent to accounting for approval","không gửi kế toán": "not sent to accounting","và không thay cho phiếu kiểm kê tháng.": "and do not replace the monthly stocktake sheet.","không ảnh hưởng": "do not affect","số nội bộ của bếp": "kitchen internal figure","Các tuần đã kiểm": "Weeks already counted","Chưa có tuần nào": "No week yet","Đếm xong tuần đầu tiên, các tuần sau sẽ xếp ở đây để đối chiếu.": "Once the first week is counted, later weeks line up here for comparison.","Đây là tuần đầu tiên nên chưa có số nào để so. Số tuần": "This is the first week, so there is nothing to compare against yet. Weekly figures are","Tuần trước": "Last week","Tuần này đã kiểm": "This week is counted","Xóa bản này": "Delete this record","Bạn không phụ trách kho bếp nào": "You are not assigned to any kitchen store","Chọn việc cần làm. Tồn đầu kỳ được chốt từ biên bản kiểm kê kỳ trước đã được kế toán phê duyệt.": "Pick what to do. Opening stock is locked from the previous period's stocktake once accounting approves it.","Chưa có tồn đầu kỳ": "No opening stock yet","Kho này chưa có biên bản kiểm kê nào được duyệt. Tồn đầu kỳ sẽ xuất hiện sau khi kế toán phê duyệt biên bản kỳ trước.": "This store has no approved stocktake yet. Opening stock appears once accounting approves the previous period's sheet.","Danh sách kiểm kê đột xuất": "Spot check list","Chưa có phiếu đột xuất": "No spot check yet","Chưa có đề xuất nào cho điểm bán bạn phụ trách.": "No request for the outlets you look after.","Xác nhận các đề xuất kiểm kê đột xuất do kế toán ghi nhận tại điểm bán bạn phụ trách.": "Confirm the spot check requests accounting raised for the outlets you look after.","Chốt ca & bàn giao": "Close shift & hand over","Đếm tồn cuối ca rồi giao cho ca sau": "Count the closing stock, then hand it to the next shift","Cuối ca chốt tồn thực tế → thành tồn đầu ca sau. Ca sau ký nhận bàn giao.": "The closing count becomes the next shift's opening stock. The next shift signs for it.","Phiếu bàn giao ca": "Shift handover sheets","Xem lại, ký nhận bàn giao từ ca trước": "Review and sign for the previous shift's handover","📌 QUY TRÌNH BẮT BUỘC": "📌 REQUIRED PROCESS","— bấm để xem": "— tap to view","Điều chuyển phải xong TRƯỚC khi kế toán mở kỳ kiểm kê.": "Transfers must be finished BEFORE accounting opens the stocktake period.","Kho đã mở kỳ là app chặn mọi điều chuyển của kho đó trong kỳ.": "Once a store's period is open, the app blocks every transfer for that store in the period.","Kiểm kê xong có chênh lệch thì": "If the count shows a variance,","KHÔNG được bổ sung phiếu điều chuyển": "do NOT add a transfer sheet","để bù trừ.": "to offset it.","Xử lý chênh lệch:": "Handling a variance:","thừa → làm phiếu nhập kho": "surplus → raise a receiving sheet","thiếu → đền tiền": "shortage → pay for it","và": "and","Chờ duyệt": "Pending approval","Đã duyệt": "Approved","Từ chối": "Rejected","Chưa gửi — chờ có mạng": "Not sent — waiting for a connection","Đang gửi…": "Sending…","Mất mạng": "No connection","Hủy": "Cancel","Đóng": "Close","Lưu": "Save","Xem": "View","Xem chi tiết": "View details","Quay lại": "Back","← Chọn việc khác": "← Pick another task","Chưa có dữ liệu": "No data yet","(ngày cuối tháng). Hãy cập nhật số liệu trước hạn để kế toán duyệt. Sau khi kế toán duyệt, tháng này sẽ bị khóa.": "(last day of the month). Update the figures before the deadline so accounting can approve. Once approved, this month is locked.","· Hạn chốt kho:": "· Store deadline:","· kỳ tháng 09/2026. Bấm vào thẻ bên dưới để bắt đầu nhập số:": "· period month 09/2026. Tap a card below to start entering numbers:","Chưa có tồn đầu kỳ cho kho này (kỳ đầu tiên) — đếm mù, chỉ hiển thị tên hàng & đơn vị tính. Hàng theo Kg/Lít nhập được số lẻ.": "No opening stock for this store yet (first period) — counting blind, only item name and unit are shown. Items in kg/litre accept decimals.","phiếu kiểm kê tháng. Hàng theo Kg/Lít nhập được số lẻ.": "the monthly stocktake sheet. Items in kg/litre accept decimals.","đang chọn": "selected","chưa có": "none yet","➕ Đếm thêm mã chưa có trên kho": "➕ Count an item missing from the store list","— gõ tên hoặc mã rồi bấm vào gợi ý. Mã lạ chưa có trong danh mục thì nhờ kế toán thêm vào danh mục trước.": "— type a name or code, then tap a suggestion. For an item not in the catalogue, ask accounting to add it first.","🔒 ĐẾM MÙ (chưa có tồn đầu)": "🔒 BLIND COUNT (no opening stock)","📊 TUẦN ĐẦU TIÊN — chưa có gì để so": "📊 FIRST WEEK — nothing to compare yet","📥 Xuất biên bản Excel (in ký)": "📥 Export the Excel sheet (to print & sign)","📥 Khởi tạo tồn đầu kỳ T6/2026 từ Excel →": "📥 Set up opening stock 06/2026 from Excel →","⬇ Tải danh mục kho (điền số lượng)": "⬇ Download the store catalogue (fill in quantities)","⬇ Tải file mẫu (điền số lượng)": "⬇ Download the template (fill in quantities)","⬇ Tải danh sách lần kiểm gần nhất (điền số lượng)": "⬇ Download the latest count list (fill in quantities)","⬇ Tải danh sách kế toán đã mở kỳ (điền số lượng)": "⬇ Download the list accounting opened (fill in quantities)","Nạp file Excel (cột:": "Upload an Excel file (columns:","). Xem trước rồi lưu — số tuần là": "). Preview, then save — weekly figures are",", không tạo phiếu và không gửi kế toán duyệt.": ", no sheet is created and nothing goes to accounting for approval.","① bấm": "① tap","bên dưới → ② mở file, điền cột": "below → ② open the file and fill the column","(để trống mã nào là mã đó không tính) → ③ bấm": "(any item left blank is not counted) → ③ tap","nạp lại lên.": "to upload it back.","của kho này. Điền cột": "of this store. Fill the column","→ nạp lên": "→ upload","Đăng nhập": "Sign in","Dùng email & mật khẩu để vào hệ thống.": "Use your email and password to sign in.","Mật khẩu": "Password","Mật khẩu mới": "New password","Nhập lại mật khẩu": "Re-enter the password","Quên mật khẩu?": "Forgot your password?","Quên mật khẩu": "Forgot password","Chưa có tài khoản?": "No account yet?","Đã có tài khoản?": "Already have an account?","Đăng ký": "Sign up","Đăng ký tài khoản": "Create an account","Sau khi đăng ký, quản trị sẽ duyệt & gán quyền cho bạn.": "After you sign up, an administrator approves your account and assigns your access.","Họ tên": "Full name","VD: Nguyễn Văn A": "e.g. Nguyen Van A","ít nhất 6 ký tự": "at least 6 characters","Điểm bán bạn làm việc": "The outlet you work at","— để quản trị gắn đúng kho": "— so the administrator assigns the right store","Kho (Sloc) bạn phụ trách": "The store (Sloc) you look after","— tick nhiều kho nếu bạn kiêm nhiệm": "— tick several stores if you cover more than one","— Chọn điểm bán —": "— Choose an outlet —","Văn phòng / không thuộc điểm bán": "Office / not tied to an outlet","Gửi link đặt lại": "Send the reset link","Nhập email tài khoản. Hệ thống gửi một đường link về email để bạn đặt lại mật khẩu mới.": "Enter your account email. We will send a link to that email so you can set a new password.","email của bạn": "your email","← Quay lại đăng nhập": "← Back to sign in","Đặt mật khẩu mới": "Set a new password","Đổi mật khẩu": "Change password","Nhập mật khẩu mới cho tài khoản của bạn (tối thiểu 6 ký tự).": "Enter a new password for your account (at least 6 characters).","Tài khoản chờ duyệt": "Account awaiting approval","Tài khoản của bạn đang chờ quản trị gán quyền. Vui lòng liên hệ Kế toán trưởng.": "Your account is waiting for an administrator to assign access. Please contact the Chief Accountant.","Tài khoản đã bị khóa. Liên hệ Kế toán trưởng.": "This account is locked. Contact the Chief Accountant.","Kiểm kê & đối chiếu": "Stocktake & reconciliation","số liệu F&B": "of F&B figures","Sun World Ba Na Hills · Kiểm kê F&B": "Sun World Ba Na Hills · F&B Stocktake","Sun World Ba Na Hills · Kế toán Chi phí F&B": "Sun World Ba Na Hills · F&B Cost Accounting"},hi:{"Kiểm kê F&B": "F&B स्टॉक गणना","Tổng quan": "सारांश","Nghiệp vụ hàng ngày": "रोज़ का काम","Tồn kho & danh mục": "स्टॉक और सूची","Báo cáo": "रिपोर्ट","Hệ thống": "सिस्टम","Kiểm kê": "स्टॉक गणना","Kiểm kê tuần": "साप्ताहिक गणना","Kiểm kê tuần (nội bộ bếp)": "साप्ताहिक गणना (केवल रसोई)","Kiểm kê đột xuất": "आकस्मिक जाँच","Kiểm kê đột xuất & đề xuất bù": "आकस्मिक जाँच और क्षतिपूर्ति अनुरोध","Tồn đầu kỳ": "प्रारंभिक स्टॉक","Tồn đầu kỳ (đã duyệt)": "प्रारंभिक स्टॉक (स्वीकृत)","Bàn giao ca": "शिफ़्ट हैंडओवर","Nhập kho & ĐC": "प्राप्ति और स्थानांतरण","Nhập kho & Điều chuyển": "प्राप्ति और स्थानांतरण","Phân tích": "विश्लेषण","Chênh lệch kho": "स्टॉक अंतर","Danh mục VT": "वस्तु सूची","Người dùng": "उपयोगकर्ता","Nhật ký": "गतिविधि लॉग","Điều hành": "डैशबोर्ड","Tiến độ": "प्रगति","Sơ đồ": "संगठन चार्ट","Tổng hợp": "सारांश","Báo cáo QT": "प्रबंधन रिपोर्ट","Đăng xuất": "साइन आउट","Thông báo": "सूचनाएँ","Chuyển nền tối / sáng": "डार्क / लाइट बदलें","Bấm để tải lại bản mới nhất": "नवीनतम संस्करण लोड करने के लिए दबाएँ","Văn phòng kế toán": "लेखा कार्यालय","Bếp trưởng / GS nhà hàng": "हेड शेफ़ / रेस्तराँ सुपरवाइज़र","Giám sát điểm bán": "आउटलेट सुपरवाइज़र","Nhân viên": "कर्मचारी","Quản trị viên": "प्रशासक","Kế toán viên": "लेखाकार","Kế toán định lượng": "रेसिपी लेखाकार","Nhập số đếm thực tế theo từng kho. Kho đã có tồn đầu kỳ sẽ hiển thị để đối chiếu; kho kỳ đầu đếm mù.": "हर स्टोर के लिए वास्तविक गिनती दर्ज करें। जिन स्टोर का प्रारंभिक स्टॉक है वह तुलना हेतु दिखेगा; पहली अवधि वाला स्टोर बिना संदर्भ गिनता है।","Đang làm ở": "कार्यस्थल","Đang đếm ở": "गिनती स्थल","Đổi kho": "स्टोर बदलें","Đổi kho / kỳ": "स्टोर / अवधि बदलें","Đổi kho / tuần": "स्टोर / सप्ताह बदलें","Điểm bán": "आउटलेट","Kho (Sloc)": "स्टोर (Sloc)","Kho bếp": "रसोई स्टोर","Kho": "स्टोर","Kỳ (tháng)": "अवधि (माह)","Tuần": "सप्ताह","Chọn hình thức kiểm đếm": "गिनती दर्ज करने का तरीक़ा चुनें","Chọn cách nhập số": "गिनती दर्ज करने का तरीक़ा चुनें","Up Excel": "एक्सेल अपलोड करें","Kiểm đếm trực tiếp": "फ़ोन पर गिनें","Đếm trực tiếp": "फ़ोन पर गिनें","Gõ số đếm thực tế từng mã ngay trên máy, có đối chiếu tồn đầu kỳ.": "हर वस्तु की गिनती डिवाइस पर लिखें, तुलना हेतु प्रारंभिक स्टॉक दिखेगा।","Gõ số từng mã trên máy, chia khu đếm và lọc mã chưa nhập như kiểm kê tháng.": "हर वस्तु डिवाइस पर लिखें, स्टोर को क्षेत्रों में बाँटें और बिना भरी वस्तुएँ छाँटें — मासिक गणना जैसा।","Nạp file Excel có sẵn (Mã hàng, ĐVT, Số lượng) để tạo phiếu nhanh.": "तैयार एक्सेल फ़ाइल (वस्तु कोड, इकाई, मात्रा) अपलोड करके शीट जल्दी बनाएँ।","Nạp file có sẵn (Mã hàng, ĐVT, Số lượng) — nhanh nhất khi danh sách 200–400 dòng.": "तैयार फ़ाइल (वस्तु कोड, इकाई, मात्रा) अपलोड करें — 200–400 पंक्तियों की सूची के लिए सबसे तेज़।","Nhập số đếm": "गिनती दर्ज करें","Tiến độ nhập": "दर्ज प्रगति","mã đã nhập": "वस्तुएँ दर्ज","Tất cả": "सभी","Đã nhập": "भरी हुई","Chưa nhập": "बाकी","Tìm trong danh mục tổng": "मास्टर सूची में खोजें","Gõ tên hàng hoặc mã…": "वस्तु का नाम या कोड लिखें…","Thêm vào danh sách đếm": "गिनती सूची में जोड़ें","Thực tế có hàng mà danh sách kho chưa liệt kê thì thêm ở đây.": "यदि सामान असल में है पर स्टोर सूची में नहीं, तो यहाँ जोड़ें।","Chỉ chọn được mã đã có trong danh mục tổng": "केवल मास्टर सूची में मौजूद वस्तुएँ चुनी जा सकती हैं","Chỉ thêm được, không xóa dòng.": "केवल जोड़ सकते हैं; पंक्तियाँ हटाई नहीं जा सकतीं।","Mở khóa để sửa số": "संख्या बदलने हेतु अनलॉक करें","Lưu nháp": "ड्राफ़्ट सहेजें","Hoàn thành & Gửi": "पूरा करें और भेजें","Chọn tệp": "फ़ाइल चुनें","Tải mẫu": "टेम्पलेट डाउनलोड करें","Làm 3 bước:": "तीन चरण:","Số lượng": "मात्रा","Mã hàng, Tên hàng, ĐVT, Số lượng": "वस्तु कोड, वस्तु नाम, इकाई, मात्रा","Nhập số kiểm tuần từ Excel": "एक्सेल से साप्ताहिक गणना दर्ज करें","Bếp tự đếm hằng tuần để nắm hàng trong kho. Số này": "रसोई हर सप्ताह गिनती करती है ताकि स्टोर का पता रहे। ये संख्याएँ","không gửi kế toán duyệt": "स्वीकृति हेतु लेखा को नहीं भेजी जातीं","không gửi kế toán": "लेखा को नहीं भेजी जातीं","và không thay cho phiếu kiểm kê tháng.": "और मासिक गणना पर्ची की जगह नहीं लेतीं।","không ảnh hưởng": "प्रभावित नहीं करतीं","số nội bộ của bếp": "रसोई का आंतरिक आँकड़ा","Các tuần đã kiểm": "जिन सप्ताहों की गणना हो चुकी","Chưa có tuần nào": "अभी कोई सप्ताह नहीं","Đếm xong tuần đầu tiên, các tuần sau sẽ xếp ở đây để đối chiếu.": "पहला सप्ताह गिनने के बाद आगे के सप्ताह यहाँ तुलना हेतु दिखेंगे।","Đây là tuần đầu tiên nên chưa có số nào để so. Số tuần": "यह पहला सप्ताह है, तुलना के लिए अभी कुछ नहीं। साप्ताहिक आँकड़े","Tuần trước": "पिछला सप्ताह","Tuần này đã kiểm": "इस सप्ताह की गणना हो चुकी","Xóa bản này": "यह रिकॉर्ड हटाएँ","Bạn không phụ trách kho bếp nào": "आपको कोई रसोई स्टोर नहीं सौंपा गया","Chọn việc cần làm. Tồn đầu kỳ được chốt từ biên bản kiểm kê kỳ trước đã được kế toán phê duyệt.": "काम चुनें। प्रारंभिक स्टॉक पिछली अवधि की गणना से तय होता है, जब लेखा उसे स्वीकृत कर दे।","Chưa có tồn đầu kỳ": "अभी प्रारंभिक स्टॉक नहीं","Kho này chưa có biên bản kiểm kê nào được duyệt. Tồn đầu kỳ sẽ xuất hiện sau khi kế toán phê duyệt biên bản kỳ trước.": "इस स्टोर की कोई स्वीकृत गणना नहीं है। लेखा द्वारा पिछली पर्ची स्वीकृत होते ही प्रारंभिक स्टॉक दिखेगा।","Danh sách kiểm kê đột xuất": "आकस्मिक जाँच सूची","Chưa có phiếu đột xuất": "अभी कोई आकस्मिक जाँच नहीं","Chưa có đề xuất nào cho điểm bán bạn phụ trách.": "आपके आउटलेट के लिए कोई अनुरोध नहीं।","Xác nhận các đề xuất kiểm kê đột xuất do kế toán ghi nhận tại điểm bán bạn phụ trách.": "आपके आउटलेट के लिए लेखा द्वारा दर्ज आकस्मिक जाँच अनुरोध की पुष्टि करें।","Chốt ca & bàn giao": "शिफ़्ट बंद करें और सौंपें","Đếm tồn cuối ca rồi giao cho ca sau": "शिफ़्ट के अंत का स्टॉक गिनें, फिर अगली शिफ़्ट को सौंपें","Cuối ca chốt tồn thực tế → thành tồn đầu ca sau. Ca sau ký nhận bàn giao.": "शिफ़्ट के अंत की गिनती अगली शिफ़्ट का प्रारंभिक स्टॉक बनती है। अगली शिफ़्ट उस पर हस्ताक्षर करती है।","Phiếu bàn giao ca": "शिफ़्ट हैंडओवर पर्चियाँ","Xem lại, ký nhận bàn giao từ ca trước": "पिछली शिफ़्ट का हैंडओवर देखें और हस्ताक्षर करें","📌 QUY TRÌNH BẮT BUỘC": "📌 अनिवार्य प्रक्रिया","— bấm để xem": "— देखने के लिए दबाएँ","Điều chuyển phải xong TRƯỚC khi kế toán mở kỳ kiểm kê.": "लेखा द्वारा गणना अवधि खोलने से पहले स्थानांतरण पूरे होने चाहिए।","Kho đã mở kỳ là app chặn mọi điều chuyển của kho đó trong kỳ.": "अवधि खुलते ही ऐप उस स्टोर के सभी स्थानांतरण रोक देता है।","Kiểm kê xong có chênh lệch thì": "यदि गिनती में अंतर आए,","KHÔNG được bổ sung phiếu điều chuyển": "स्थानांतरण पर्ची न जोड़ें","để bù trừ.": "उसे बराबर करने के लिए।","Xử lý chênh lệch:": "अंतर का निपटान:","thừa → làm phiếu nhập kho": "अधिक → प्राप्ति पर्ची बनाएँ","thiếu → đền tiền": "कमी → भुगतान करें","và": "और","Chờ duyệt": "स्वीकृति हेतु लंबित","Đã duyệt": "स्वीकृत","Từ chối": "अस्वीकृत","Chưa gửi — chờ có mạng": "भेजा नहीं — नेटवर्क की प्रतीक्षा","Đang gửi…": "भेजा जा रहा है…","Mất mạng": "नेटवर्क नहीं","Hủy": "रद्द करें","Đóng": "बंद करें","Lưu": "सहेजें","Xem": "देखें","Xem chi tiết": "विवरण देखें","Quay lại": "वापस","← Chọn việc khác": "← दूसरा काम चुनें","Chưa có dữ liệu": "अभी कोई डेटा नहीं","(ngày cuối tháng). Hãy cập nhật số liệu trước hạn để kế toán duyệt. Sau khi kế toán duyệt, tháng này sẽ bị khóa.": "(माह का अंतिम दिन)। समय-सीमा से पहले आँकड़े अपडेट करें ताकि लेखा स्वीकृत कर सके। स्वीकृति के बाद यह माह बंद हो जाता है।","· Hạn chốt kho:": "· स्टोर की समय-सीमा:","· kỳ tháng 09/2026. Bấm vào thẻ bên dưới để bắt đầu nhập số:": "· अवधि माह 09/2026. संख्या दर्ज करना शुरू करने हेतु नीचे कार्ड दबाएँ:","Chưa có tồn đầu kỳ cho kho này (kỳ đầu tiên) — đếm mù, chỉ hiển thị tên hàng & đơn vị tính. Hàng theo Kg/Lít nhập được số lẻ.": "इस स्टोर का प्रारंभिक स्टॉक नहीं है (पहली अवधि) — बिना संदर्भ गिनती, केवल नाम और इकाई दिखेंगे। किलो/लीटर वाली वस्तुओं में दशमलव चलता है।","phiếu kiểm kê tháng. Hàng theo Kg/Lít nhập được số lẻ.": "मासिक गणना पर्ची। किलो/लीटर वाली वस्तुओं में दशमलव चलता है।","đang chọn": "चयनित","chưa có": "अभी नहीं","➕ Đếm thêm mã chưa có trên kho": "➕ स्टोर सूची में न होने वाली वस्तु गिनें","— gõ tên hoặc mã rồi bấm vào gợi ý. Mã lạ chưa có trong danh mục thì nhờ kế toán thêm vào danh mục trước.": "— नाम या कोड लिखें, फिर सुझाव दबाएँ। सूची में न होने वाली वस्तु हेतु पहले लेखा से जुड़वाएँ।","🔒 ĐẾM MÙ (chưa có tồn đầu)": "🔒 बिना संदर्भ गणना (प्रारंभिक स्टॉक नहीं)","📊 TUẦN ĐẦU TIÊN — chưa có gì để so": "📊 पहला सप्ताह — तुलना हेतु अभी कुछ नहीं","📥 Xuất biên bản Excel (in ký)": "📥 एक्सेल पर्ची निर्यात करें (छापकर हस्ताक्षर हेतु)","📥 Khởi tạo tồn đầu kỳ T6/2026 từ Excel →": "📥 एक्सेल से 06/2026 का प्रारंभिक स्टॉक बनाएँ →","⬇ Tải danh mục kho (điền số lượng)": "⬇ स्टोर सूची डाउनलोड करें (मात्रा भरें)","⬇ Tải file mẫu (điền số lượng)": "⬇ टेम्पलेट डाउनलोड करें (मात्रा भरें)","⬇ Tải danh sách lần kiểm gần nhất (điền số lượng)": "⬇ पिछली गणना सूची डाउनलोड करें (मात्रा भरें)","⬇ Tải danh sách kế toán đã mở kỳ (điền số lượng)": "⬇ लेखा द्वारा खोली सूची डाउनलोड करें (मात्रा भरें)","Nạp file Excel (cột:": "एक्सेल फ़ाइल अपलोड करें (कॉलम:","). Xem trước rồi lưu — số tuần là": ")। पूर्वावलोकन कर सहेजें — साप्ताहिक आँकड़े",", không tạo phiếu và không gửi kế toán duyệt.": ", कोई पर्ची नहीं बनती और लेखा को स्वीकृति हेतु कुछ नहीं जाता।","① bấm": "① दबाएँ","bên dưới → ② mở file, điền cột": "नीचे → ② फ़ाइल खोलें और कॉलम भरें","(để trống mã nào là mã đó không tính) → ③ bấm": "(खाली छोड़ी वस्तु नहीं गिनी जाती) → ③ दबाएँ","nạp lại lên.": "वापस अपलोड करने हेतु।","của kho này. Điền cột": "इस स्टोर की। कॉलम भरें","→ nạp lên": "→ अपलोड करें","Đăng nhập": "साइन इन","Dùng email & mật khẩu để vào hệ thống.": "साइन इन करने हेतु अपना ईमेल और पासवर्ड डालें।","Mật khẩu": "पासवर्ड","Mật khẩu mới": "नया पासवर्ड","Nhập lại mật khẩu": "पासवर्ड दोबारा डालें","Quên mật khẩu?": "पासवर्ड भूल गए?","Quên mật khẩu": "पासवर्ड भूल गए","Chưa có tài khoản?": "खाता नहीं है?","Đã có tài khoản?": "खाता पहले से है?","Đăng ký": "साइन अप","Đăng ký tài khoản": "खाता बनाएँ","Sau khi đăng ký, quản trị sẽ duyệt & gán quyền cho bạn.": "साइन अप के बाद प्रशासक आपका खाता स्वीकृत कर पहुँच तय करेगा।","Họ tên": "पूरा नाम","VD: Nguyễn Văn A": "उदा. Nguyen Van A","ít nhất 6 ký tự": "कम से कम 6 अक्षर","Điểm bán bạn làm việc": "आप जिस आउटलेट में काम करते हैं","— để quản trị gắn đúng kho": "— ताकि प्रशासक सही स्टोर सौंपे","Kho (Sloc) bạn phụ trách": "आप जिस स्टोर (Sloc) के प्रभारी हैं","— tick nhiều kho nếu bạn kiêm nhiệm": "— एक से अधिक स्टोर हों तो कई चुनें","— Chọn điểm bán —": "— आउटलेट चुनें —","Văn phòng / không thuộc điểm bán": "कार्यालय / किसी आउटलेट से नहीं","Gửi link đặt lại": "रीसेट लिंक भेजें","Nhập email tài khoản. Hệ thống gửi một đường link về email để bạn đặt lại mật khẩu mới.": "अपने खाते का ईमेल डालें। नया पासवर्ड बनाने हेतु उस ईमेल पर लिंक भेजा जाएगा।","email của bạn": "आपका ईमेल","← Quay lại đăng nhập": "← साइन इन पर वापस","Đặt mật khẩu mới": "नया पासवर्ड बनाएँ","Đổi mật khẩu": "पासवर्ड बदलें","Nhập mật khẩu mới cho tài khoản của bạn (tối thiểu 6 ký tự).": "अपने खाते हेतु नया पासवर्ड डालें (कम से कम 6 अक्षर)।","Tài khoản chờ duyệt": "खाता स्वीकृति की प्रतीक्षा में","Tài khoản của bạn đang chờ quản trị gán quyền. Vui lòng liên hệ Kế toán trưởng.": "आपका खाता पहुँच मिलने की प्रतीक्षा में है। कृपया मुख्य लेखाकार से संपर्क करें।","Tài khoản đã bị khóa. Liên hệ Kế toán trưởng.": "यह खाता बंद है। मुख्य लेखाकार से संपर्क करें।","Kiểm kê & đối chiếu": "स्टॉक गणना और मिलान","số liệu F&B": "F&B आँकड़ों का","Sun World Ba Na Hills · Kiểm kê F&B": "Sun World Ba Na Hills · F&B स्टॉक गणना","Sun World Ba Na Hills · Kế toán Chi phí F&B": "Sun World Ba Na Hills · F&B लागत लेखा"}};
+const TXT_RE=[
+  {re:new RegExp("^Tháng (\\d{2}/\\d{4}) \\(hiện tại\\)$"),en:"Month $1 (current)",hi:"माह $1 (वर्तमान)"},
+  {re:new RegExp("^Tháng (\\d{2}/\\d{4})$"),en:"Month $1",hi:"माह $1"},
+  {re:new RegExp("^Kỳ (\\d{2}/\\d{4})$"),en:"Period $1",hi:"अवधि $1"},
+  {re:new RegExp("^Kỳ kiểm kê: tháng (\\d{2}/\\d{4})$"),en:"Stocktake period: month $1",hi:"गणना अवधि: माह $1"},
+  {re:new RegExp("^Tuần (\\d+) · (.+) \\(tuần này\\)$"),en:"Week $1 · $2 (this week)",hi:"सप्ताह $1 · $2 (यह सप्ताह)"},
+  {re:new RegExp("^Tuần (\\d+) · (.+)$"),en:"Week $1 · $2",hi:"सप्ताह $1 · $2"},
+  {re:new RegExp("^· Tuần (\\d+) · (.+)$"),en:"· Week $1 · $2",hi:"· सप्ताह $1 · $2"},
+  {re:new RegExp("^Kho (.+) · Tuần (\\d+) · (.+)$"),en:"Store $1 · Week $2 · $3",hi:"स्टोर $1 · सप्ताह $2 · $3"},
+  {re:new RegExp("^(\\d+) mã · lưu bởi (.+) lúc (.+)\\.$"),en:"$1 items · saved by $2 at $3.",hi:"$1 वस्तुएँ · $2 द्वारा $3 पर सहेजा।"},
+  {re:new RegExp("^Đếm tuần (\\d+)$"),en:"Count week $1",hi:"सप्ताह $1 गिनें"},
+  {re:new RegExp("^💾 Lưu số tuần (\\d+)$"),en:"💾 Save week $1",hi:"💾 सप्ताह $1 सहेजें"},
+  {re:new RegExp("^(\\d+) mã$"),en:"$1 items",hi:"$1 वस्तुएँ"},
+  {re:new RegExp("^(\\d+) mã đã nhập$"),en:"$1 items entered",hi:"$1 वस्तुएँ दर्ज"},
+  {re:new RegExp("^Phiên bản (.+)$"),en:"Version $1",hi:"संस्करण $1"},
+  {re:new RegExp("^Tìm theo mã hoặc tên hàng… \\((\\d+) mã của điểm bán\\)$"),en:"Search by code or item name… ($1 items at this outlet)",hi:"कोड या नाम से खोजें… (इस आउटलेट की $1 वस्तुएँ)"}
+];
+function L(s){
+  if(LANG==='vi')return s;
+  const k=String(s==null?'':s).trim();
+  if(!k)return s;
+  const d=TXT[LANG];
+  if(d&&d[k]!=null)return d[k];
+  for(let i=0;i<TXT_RE.length;i++){const p=TXT_RE[i];
+    if(p[LANG]&&p.re.test(k))return k.replace(p.re,p[LANG]);}
+  return s;
+}
+/* Duyệt text node sau khi vẽ xong. Chuỗi không có trong từ điển thì giữ nguyên,
+   nên dữ liệu người dùng (tên hàng, số) không bao giờ bị đụng tới.
+
+   PHẢI NHỚ BẢN GỐC TIẾNG VIỆT: dịch thẳng lên DOM là phá mất chữ gốc — màn đăng nhập
+   là HTML tĩnh, không bao giờ vẽ lại, nên đổi Việt→Anh rồi bấm sang Ấn thì nó dịch từ
+   tiếng Anh, không có trong từ điển, và kẹt luôn ở tiếng Anh. Giữ bản gốc trong
+   WeakMap (text node) và data-* (thuộc tính), luôn dịch TỪ BẢN GỐC. */
+const _gocText=new WeakMap();
+function dichMan(goc){
+  const root=goc||document.body;if(!root)return;
+  const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null);
+  const sua=[];
+  while(w.nextNode()){
+    const nd=w.currentNode;
+    let o=_gocText.get(nd);
+    if(o==null){o=nd.textContent;_gocText.set(nd,o);}
+    const t=(o||'').trim();
+    if(!t)continue;
+    const moi=o.replace(t,(LANG==='vi')?t:L(t));
+    if(nd.textContent!==moi)sua.push([nd,moi]);
+  }
+  sua.forEach(x=>{x[0].textContent=x[1];});
+  root.querySelectorAll('[placeholder],[title]').forEach(e=>{
+    [['placeholder','vgPh'],['title','vgTi']].forEach(p=>{
+      const a=p[0],k=p[1];
+      if(!e.hasAttribute(a)&&e.dataset[k]==null)return;
+      let o=e.dataset[k];
+      if(o==null){o=e.getAttribute(a)||'';e.dataset[k]=o;}
+      const t=o.trim();if(!t)return;
+      e.setAttribute(a,(LANG==='vi')?o:o.replace(t,L(t)));
+    });});
+}
+function datNgonNgu(v){
+  if(!LANGS[v]||v===LANG)return;
+  LANG=v;try{localStorage.setItem('kk_lang_v1',v);}catch(e){}
+  try{document.documentElement.lang=v;}catch(e){}
+  try{veNutNgonNgu();}catch(e){}
+  try{if(session){renderNav();renderView();}}catch(e){}
+  try{veVersion();}catch(e){}
+  try{dichMan(document.body);}catch(e){}
+}
+/* Hàng chọn ngôn ngữ: đặt ở thanh bên (trong app) và dưới thẻ đăng nhập. */
+function veNutNgonNgu(){
+  ['langBar','langBar2'].forEach(id=>{
+    const h=document.getElementById(id);if(!h)return;
+    h.innerHTML='';
+    Object.keys(LANGS).forEach(k=>{
+      const b=document.createElement('button');
+      b.className='lang-b'+(k===LANG?' on':'');
+      b.type='button';b.textContent=LANGS[k].ma;b.title=LANGS[k].ten;
+      b.onclick=()=>datNgonNgu(k);
+      h.appendChild(b);});
+  });
 }
 const ROLES={
   /* Admin mở HẾT mọi màn để Khoa thao tác và thử toàn hệ thống (rule 21/09) —
@@ -1397,7 +1496,7 @@ let claudeKey='';      // Anthropic API key (nhập theo tài khoản cá nhân,
 /* ============ HELPERS ============ */
 const $=s=>document.querySelector(s);
 const el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;};
-function toast(msg){const t=$('#toast');t.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>'+msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200);}
+function toast(msg){msg=L(msg);const t=$('#toast');t.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>'+msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200);}
 function now(){return new Date().toLocaleString('vi-VN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit',year:'numeric'});}
 /* ===== HỘP LỖI GHI DỮ LIỆU — KHÔNG TỰ TẮT =====
    Mọi lần dữ liệu KHÔNG lên được máy chủ đều phải hiện hộp này và ĐỨNG NGUYÊN đến khi
@@ -2956,6 +3055,7 @@ function fillRegSlocs(){
   }
   wrap.style.display='';veRegKhoDa();}
 function showAuth(w){
+  try{veNutNgonNgu();setTimeout(()=>{try{dichMan(document.body);}catch(e){}},0);}catch(e){}
   $('#authLogin').classList.toggle('hidden',w!=='login');
   $('#authReg').classList.toggle('hidden',w!=='reg');
   $('#authPending').classList.toggle('hidden',w!=='pending');
@@ -3190,6 +3290,7 @@ const NAV_GROUPS=[
   {label:'Hệ thống',            keys:['users','audit']},
 ];
 function renderNav(){
+  try{veNutNgonNgu();}catch(e){}
   const n=$('#sbNav');n.innerHTML='';
   /* Ngoại tuyến: chỉ mở tab Kiểm kê. Các tab khác (điều chuyển, duyệt phiếu) làm
      việc trên số liệu phải tươi — cho vào bằng ảnh chụp cũ là mời thao tác sai. */
@@ -3425,6 +3526,9 @@ function renderView(){
   else if(activeTab==='chenhlech')renderChenhLech(v);
   else if(activeTab==='audit')renderAudit(v);
   try{cardifyTables(v);}catch(e){console.warn('cardify',e);}
+  /* Dịch sau cùng, khi mọi thứ đã vẽ xong. Chuỗi không có trong từ điển giữ nguyên
+     nên tên hàng / tên kho (dữ liệu SAP) không bao giờ bị đụng. */
+  try{dichMan(document.body);}catch(e){console.warn('dich',e);}
 }
 
 /* ============ HUB dùng chung: chọn việc → mở đúng thao tác ============ */
