@@ -1011,7 +1011,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2109-03';
+const APP_VER='2109-04';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -4160,8 +4160,17 @@ function exportOpeningXlsx(plant,sloc){
   }catch(e){console.error(e);toast('Lỗi tải tồn đầu kỳ: '+((e&&e.message)||e));}
 }
 // Lấy danh mục [ [mã,tên,đvt], ... ] của 1 kho: ưu tiên danh sách kế toán mở kỳ, rồi danh mục điểm bán, rồi tồn đầu kỳ
-function templateRowsFor(plant,sloc,period){
+function templateRowsFor(plant,sloc,period,tuan){
   const cl=countLists[plant+'|'+sloc+'|'+period];let rows=[];
+  /* Kiểm kê tuần: không ai "mở kỳ" cho tuần cả, nên danh sách đúng nhất là BẢN KIỂM
+     TUẦN GẦN NHẤT của chính kho đó — bếp chỉ việc điền số mới lên danh sách tuần rồi.
+     Chưa có tuần nào thì rơi xuống các nguồn bên dưới như bình thường. */
+  if(tuan){
+    const cu=(weeklyCounts||[]).filter(x=>x.plant===plant&&x.sloc===sloc&&Object.keys(x.items||{}).length)
+      .sort((a,b)=>String(b.week).localeCompare(String(a.week)))[0];
+    if(cu)return Object.keys(cu.items).map(c=>{const m=masterByCode[c]||{};return [c,m.name||c,m.uom||''];})
+      .sort((a,b)=>(a[1]||'').localeCompare(b[1]||'','vi'));
+  }
   if(cl&&cl.items)rows=Object.keys(cl.items).map(c=>[c,cl.items[c].name||'',cl.items[c].uom||'']);
   else if((plantMaterials[plant]||[]).length)rows=(plantMaterials[plant]||[]).map(c=>{const m=masterByCode[c]||{};return [c,m.name||'',m.uom||''];});
   else{const op=(openingStock[plant+'|'+sloc]||{}).items||{};rows=Object.keys(op).map(c=>{const m=masterByCode[c]||{};return [c,m.name||'',m.uom||''];});}
@@ -4190,15 +4199,35 @@ function renderKKUpload(v,fixed){
   if(fixed){plantSel.value=fixed.plant;fillSloc();slocSel.value=fixed.sloc;perSel.value=fixed.period;
     b.appendChild(el('div',null,`<div style="margin:2px 0 6px"><span class="badge badge-open">Kho ${whName(fixed.plant,fixed.sloc)} · ${_tuan?tuanLabel(_tuan):('kỳ tháng '+periodVN(fixed.period))}</span></div>`));}
   else{b.appendChild(row);b.appendChild(perF);}
+  b.appendChild(el('div','note',`<div><b>Làm 3 bước:</b> ① bấm <b>Tải mẫu</b> bên dưới → ② mở file, điền cột <b>Số lượng</b> (để trống mã nào là mã đó không tính) → ③ bấm <b>Chọn tệp</b> nạp lại lên.</div>`));
   const tplRow=el('div');tplRow.style.cssText='margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap';
   const bTpl=el('button','btn btn-ghost btn-sm','⬇ Tải file mẫu (điền số lượng)');
   const tplHint=el('span');tplHint.style.cssText='font-size:11.5px;color:var(--muted)';
   function updTplHint(){
+    const sm=templateRowsFor(plantSel.value,slocSel.value,perSel.value,_tuan).length;
+    if(_tuan){
+      const cu=(weeklyCounts||[]).filter(x=>x.plant===plantSel.value&&x.sloc===slocSel.value&&Object.keys(x.items||{}).length)
+        .sort((a,b)=>String(b.week).localeCompare(String(a.week)))[0];
+      if(cu){bTpl.textContent='⬇ Tải danh sách lần kiểm gần nhất (điền số lượng)';
+        tplHint.innerHTML=`<b style="color:var(--brand-ink)">${sm} mã</b> — đúng danh sách ${_esc(tuanLabel(cu.week).split(' · ')[0].toLowerCase())}. Điền cột <b>Số lượng</b> → nạp lên`;}
+      else{bTpl.textContent='⬇ Tải danh mục kho (điền số lượng)';
+        tplHint.innerHTML=sm?`<b style="color:var(--brand-ink)">${sm} mã</b> của kho này. Điền cột <b>Số lượng</b> → nạp lên`:'Tải mẫu → điền cột <b>Số lượng</b> → nạp lên';}
+      return;
+    }
     const cl=countLists[plantSel.value+'|'+slocSel.value+'|'+perSel.value];
     if(cl&&cl.items){bTpl.textContent='⬇ Tải danh sách kế toán đã mở kỳ (điền số lượng)';tplHint.innerHTML=`<b style="color:var(--brand-ink)">${Object.keys(cl.items).length} mã</b> — đúng danh sách kế toán đã mở kỳ. Điền cột <b>Số lượng</b> → nạp lên`;}
+    else if(sm){bTpl.textContent='⬇ Tải danh mục kho (điền số lượng)';tplHint.innerHTML=`<b style="color:var(--brand-ink)">${sm} mã</b> của kho này — kế toán chưa mở kỳ nên lấy theo danh mục. Điền cột <b>Số lượng</b> → nạp lên`;}
     else{bTpl.textContent='⬇ Tải file mẫu (điền số lượng)';tplHint.innerHTML='Tải mẫu → điền cột <b>Số lượng</b> → nạp lên';}
   }
-  bTpl.onclick=()=>{const rows=templateRowsFor(plantSel.value,slocSel.value,perSel.value).map(r=>[r[0],r[1],r[2],'']);if(!rows.length)rows.push(['VD-001','Ví dụ: Nước suối 500ml','CHAI','']);downloadTemplateXlsx(`Mau_kiem_ke_${plantSel.value}_${slocSel.value}_${perSel.value}.xlsx`,['Mã hàng','Tên hàng','ĐVT','Số lượng'],rows);};
+  bTpl.onclick=()=>{
+    const rows=templateRowsFor(plantSel.value,slocSel.value,perSel.value,_tuan).map(r=>[r[0],r[1],r[2],'']);
+    if(!rows.length)rows.push(['VD-001','Ví dụ: Nước suối 500ml','CHAI','']);
+    const ten=_tuan
+      ? `Mau_kiem_ke_tuan_${plantSel.value}_${slocSel.value}_${_tuan}.xlsx`
+      : `Mau_kiem_ke_${plantSel.value}_${slocSel.value}_${perSel.value}.xlsx`;
+    downloadTemplateXlsx(ten,['Mã hàng','Tên hàng','ĐVT','Số lượng'],rows);
+    toast('Đã tải mẫu '+rows.length+' mã — điền cột Số lượng rồi nạp lại lên');
+  };
   tplRow.appendChild(bTpl);tplRow.appendChild(tplHint);b.appendChild(tplRow);
   const _origPO=plantSel.onchange;plantSel.onchange=()=>{if(_origPO)_origPO();updTplHint();};slocSel.onchange=updTplHint;perSel.onchange=updTplHint;
   updTplHint();
