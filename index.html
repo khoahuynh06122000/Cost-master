@@ -1013,7 +1013,23 @@ function vnNorm(s){return String(s==null?'':s).normalize('NFD').toLowerCase()
   .replace(/[\u0300-\u036f]/g,'').replace(/\u0111/g,'d').replace(/\s+/g,'');}
 const _vnCache=new Map();   // code -> "manorm|tennorm" (1501 ma, khoi tinh lai moi lan go)
 function matKey(m){const c=(m&&m.code)||'';let k=_vnCache.get(c);
-  if(k===undefined){k=vnNorm(c)+'|'+vnNorm((m&&m.name)||'');_vnCache.set(c,k);}return k;}
+  // khoá tìm gồm cả tên tiếng Anh -> gõ "pork" cũng ra được mã thịt heo
+  if(k===undefined){k=vnNorm(c)+'|'+vnNorm((m&&m.name)||'')+'|'+vnNorm((m&&m.nameEn)||'');_vnCache.set(c,k);}return k;}
+/* Tên hàng hiển thị theo ngôn ngữ đang chọn.
+   Chọn tiếng Anh/Ấn mà mã đã có tên tiếng Anh -> hiện tên Anh ở dòng chính, còn tên
+   Việt đẩy xuống dòng phụ: người đếm vẫn phải đối chiếu được với nhãn dán trên kệ và
+   với tên trên SAP, nên KHÔNG được giấu hẳn tên Việt. */
+function tenHang(m){
+  if(!m)return '';
+  const en=String(m.nameEn==null?'':m.nameEn).trim();
+  if(LANG!=='vi'&&en)return en;
+  return m.name||m.code||'';
+}
+function tenHangPhu(m){
+  if(!m||LANG==='vi')return '';
+  const en=String(m.nameEn==null?'':m.nameEn).trim();
+  return en?(m.name||''):'';
+}
 /* Tach o tim thanh cac TU da bo dau. Go "banh nem" phai ra "Banh da nem Ha Noi",
    "ba viet nam" phai ra "Ba chi quy cach tuoi, Viet Nam" — go vai tu nho duoc la ra. */
 function vnTerms(s){return String(s==null?'':s).split(/\s+/).map(vnNorm).filter(Boolean);}
@@ -1029,7 +1045,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2109-08';
+const APP_VER='2209-01';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -2847,6 +2863,12 @@ async function fetchAllRows(table,cols){
   const out=[];let from=0;const step=1000;
   for(;;){
     const {data,error}=await sb.from(table).select(cols).range(from,from+step-1);
+    /* Cột mới (name_en) có thể chưa chạy SQL. Bỏ cột đó ra rồi tải lại, thay vì
+       trả về rỗng làm mất sạch danh mục vật tư. */
+    if(error&&/name_en|column|schema cache/i.test(error.message||'')&&/,name_en/.test(cols)){
+      console.warn('Chưa có cột name_en — tải danh mục không kèm tên tiếng Anh');
+      return fetchAllRows(table,cols.replace(',name_en',''));
+    }
     if(error){console.error('fetchAll '+table,error);break;}
     out.push(...(data||[]));
     if(!data||data.length<step)break;
@@ -2865,12 +2887,12 @@ async function dbLoadAll(){
       sb.from('plant_materials').select('*'),
       sb.from('audit_log').select('*').order('at',{ascending:false}).limit(500),
       sb.from('spot_checks').select('*').order('created_at',{ascending:false}),
-      fetchAllRows('materials','code,name,uom'),
+      fetchAllRows('materials','code,name,uom,name_en'),
       sb.from('notifications').select('*').order('created_at',{ascending:false}).limit(200),
       sb.from('closing_stock').select('*').order('created_at',{ascending:false}).limit(300),
     ]);
     // merge mã vật tư mới (do import tồn đầu kỳ thêm) vào danh mục tổng để bền qua các phiên
-    (mt.data||[]).forEach(r=>{if(!r||r.code==null)return;const code=String(r.code).trim();if(!code)return;const nm=r.name!=null?String(r.name).trim():'';const um=r.uom!=null?String(r.uom).trim():'';const ex=masterByCode[code];if(!ex){const m={code,name:nm||code,uom:um};masterByCode[code]=m;DATA.materials.push(m);}else if(nm&&(!ex.name||ex.name==='?'||ex.name===code)){ex.name=nm;if(um&&!ex.uom)ex.uom=um;}});
+    (mt.data||[]).forEach(r=>{if(!r||r.code==null)return;const code=String(r.code).trim();if(!code)return;const nm=r.name!=null?String(r.name).trim():'';const um=r.uom!=null?String(r.uom).trim():'';const en=r.name_en!=null?String(r.name_en).trim():'';const ex=masterByCode[code];if(!ex){const m={code,name:nm||code,uom:um};if(en)m.nameEn=en;masterByCode[code]=m;DATA.materials.push(m);}else{if(nm&&(!ex.name||ex.name==='?'||ex.name===code)){ex.name=nm;if(um&&!ex.uom)ex.uom=um;}if(en)ex.nameEn=en;}});
     if(su.data&&su.data.length)zoneColOK=Object.prototype.hasOwnProperty.call(su.data[0],'zones');
     submissions=(su.data||[]).map(r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,user:r.user_name,role:r.role,status:r.status,count:r.count,items:r.items||{},zones:Array.isArray(r.zones)?r.zones:null,period:r.period||(r.created_at?(new Date(r.created_at).getFullYear()+'-'+String(new Date(r.created_at).getMonth()+1).padStart(2,'0')):''),approvedBy:r.approved_by,approvedAt:r.approved_at?fmt(r.approved_at):null,prevOpening:r.prev_opening||null,edits:r.edits||[],time:fmt(r.created_at)}));
     // id của dòng sổ: bắt buộc phải có thì admin mới xóa được ĐÚNG một dòng dư
@@ -5735,8 +5757,9 @@ function renderCountSheet(v){
       const _inPlant=(plantMaterials[counting.plant]||[]).includes(m.code);
       const movedTag = (_moved.has(m.code)&&!_inPlant&&!(opening&&opening[m.code]!=null))
         ? `<span class="open-tag" style="background:#FDF1DC;color:var(--accent-600)">✚ phát sinh trong kỳ</span>` : '';
-      r.innerHTML=`<div class="item-main"><div class="item-name">${m.name}</div>
-        <div class="item-meta"><span class="tnum">${m.code}</span><span class="badge badge-uom">${m.uom}</span>${openTag}${devTag}${movedTag}</div></div>`;
+      const _phu=tenHangPhu(m);
+      r.innerHTML=`<div class="item-main"><div class="item-name">${tenHang(m)}</div>
+        <div class="item-meta">${_phu?`<span style="opacity:.75">${_phu}</span>`:''}<span class="tnum">${m.code}</span><span class="badge badge-uom">${m.uom}</span>${openTag}${devTag}${movedTag}</div></div>`;
       // cụm nhập: [-] [ô số] [+] — nhập xong là KHÓA, muốn sửa phải bấm mở khóa
       const box=el('div','qtybox');
       const bMinus=el('button','stepbtn','−');
@@ -8618,7 +8641,148 @@ function renderCatalog(v){
     {k:'tong',ico:HIC.list,title:'Danh mục tổng',sub:'Tìm mã, thêm mã lẻ, nạp danh mục từ Excel',n:DATA.materials.length+' mã',render:catTong},
     {k:'thieu',ico:HIC.warn,title:'Mã chưa khai báo tên',sub:'Điền tên & ĐVT cho các mã đang hiện dấu "?"',n:bad.length?bad.length+' mã cần khai báo':'',warm:!!bad.length,render:catThieu},
     {k:'plant',ico:HIC.box,title:'Gán mã theo điểm bán',sub:'Chọn Plant rồi thêm/bớt mã dùng khi kiểm kê',render:catPlant},
+    {k:'ten_en',ico:HIC.sheet,title:'Tên tiếng Anh cho bếp',sub:'Người nước ngoài đếm kho đọc được tên hàng',n:(function(){try{const b=maKhoBep();const co=b.filter(c=>{const m=masterByCode[c];return m&&String(m.nameEn||'').trim();}).length;return b.length?(co+'/'+b.length+' mã kho bếp đã có'):'';}catch(e){return '';}})(),render:catTenEn},
   ]);
+}
+/* Tập mã của mọi kho bếp — dùng để lọc sẵn, khỏi bắt kế toán dò trong 7.436 mã. */
+function maKhoBep(){
+  const set=new Set();
+  DATA.warehouses.forEach(w=>{if(laKhoBep(w.plant,w.sloc))(plantMaterials[w.plant]||[]).forEach(c=>set.add(c));});
+  return [...set];
+}
+function catTenEn(v){
+  const sua=session.role==='ketoan_vien'||session.role==='admin'||session.role==='ketoan_dl';
+  const card=el('div','card');const b=el('div','card-b');
+  b.innerHTML='<div class="section-eyebrow">🌐 Tên tiếng Anh của mã vật tư</div>'
+    +'<div style="font-size:12.5px;color:var(--muted);margin:6px 0 12px">Bếp trưởng người nước ngoài đổi app sang tiếng Anh thì mọi thứ đều dịch, <b>trừ tên hàng</b> — đó là tên trên SAP. Điền tên tiếng Anh ở đây thì dòng hàng sẽ hiện tên Anh, tên Việt lùi xuống dòng dưới để vẫn đối chiếu được với nhãn trên kệ.<br>Không cần điền hết danh mục: <b>chỉ mã của kho bếp</b> là đủ dùng.</div>';
+  card.appendChild(b);v.appendChild(card);
+
+  const bar=el('div');bar.style.cssText='display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px';
+  const chipBep=el('button','chip active','Chỉ mã kho bếp');
+  const chipAll=el('button','chip','Tất cả mã');
+  const chipThieu=el('button','chip','Chưa có tên Anh');
+  bar.appendChild(chipBep);bar.appendChild(chipAll);bar.appendChild(chipThieu);
+  b.appendChild(bar);
+  const sw=el('div','search-wrap');
+  sw.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>';
+  const oTim=el('input');oTim.placeholder='Gõ mã hoặc tên hàng…';sw.appendChild(oTim);b.appendChild(sw);
+
+  const xr=el('div');xr.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 0';
+  const bTai=el('button','btn btn-ghost btn-sm','⬇ Tải Excel để điền hàng loạt');
+  const bNap=el('input');bNap.type='file';bNap.accept='.xlsx,.xls,.csv';bNap.style.cssText='font-size:12.5px';
+  xr.appendChild(bTai);if(sua)xr.appendChild(bNap);b.appendChild(xr);
+
+  const dem=el('div');dem.style.cssText='font-size:12.5px;color:var(--muted);margin-top:10px';b.appendChild(dem);
+  const wrap=el('div');b.appendChild(wrap);
+
+  let loc='bep';
+  function nguon(){
+    if(loc==='bep'){const set=new Set(maKhoBep());return DATA.materials.filter(m=>set.has(m.code));}
+    if(loc==='thieu')return DATA.materials.filter(m=>!String(m.nameEn||'').trim());
+    return DATA.materials.slice();
+  }
+  function ve(){
+    const q=vnTerms(oTim.value||'');
+    let arr=nguon().filter(m=>vnAll(matKey(m),q))
+      .sort((a,b2)=>(a.name||'').localeCompare(b2.name||'','vi'));
+    const co=arr.filter(m=>String(m.nameEn||'').trim()).length;
+    dem.innerHTML='<b style="color:var(--brand-ink)">'+co+'/'+arr.length+'</b> mã đã có tên tiếng Anh'
+      +(arr.length>400?' · hiển thị 400 mã đầu, gõ tìm để lọc':'');
+    const shown=arr.slice(0,400);
+    wrap.innerHTML='';
+    const w=el('div','tbl-wrap no-cards');w.style.cssText='max-height:56vh;overflow:auto';
+    const t=el('table');
+    t.innerHTML='<thead><tr><th>Mã hàng</th><th>Tên tiếng Việt</th><th>ĐVT</th><th>Tên tiếng Anh</th></tr></thead>';
+    const tb=el('tbody');
+    shown.forEach(m=>{
+      const tr=el('tr',null,'<td class="tnum">'+m.code+'</td><td>'+(m.name||'')+'</td><td><span class="badge badge-uom">'+(m.uom||'')+'</span></td>');
+      const td=el('td');
+      if(sua){
+        const i=el('input','input');i.value=String(m.nameEn||'');i.placeholder='VD: Pork belly';
+        i.style.cssText='height:38px;min-width:min(200px,100%)';
+        i.onblur=()=>{const moi=i.value.trim();const cu=String(m.nameEn||'').trim();
+          if(moi===cu)return;luuTenEn(m,moi,i);};
+        td.appendChild(i);
+      }else td.textContent=String(m.nameEn||'')||'—';
+      tr.appendChild(td);tb.appendChild(tr);});
+    t.appendChild(tb);w.appendChild(t);wrap.appendChild(w);
+  }
+  const doiLoc=(k,nut)=>{loc=k;[chipBep,chipAll,chipThieu].forEach(x=>x.classList.remove('active'));nut.classList.add('active');ve();};
+  chipBep.onclick=()=>doiLoc('bep',chipBep);
+  chipAll.onclick=()=>doiLoc('all',chipAll);
+  chipThieu.onclick=()=>doiLoc('thieu',chipThieu);
+  oTim.oninput=ve;
+  bTai.onclick=()=>{
+    const arr=nguon().sort((a,b2)=>(a.name||'').localeCompare(b2.name||'','vi'));
+    const rows=arr.map(m=>[m.code,m.name||'',m.uom||'',String(m.nameEn||'')]);
+    if(!rows.length)rows.push(['VD-001','Ví dụ: Thịt heo ba chỉ','KG','Pork belly']);
+    downloadTemplateXlsx('Ten_tieng_Anh_vat_tu.xlsx',['Mã hàng','Tên tiếng Việt','ĐVT','Tên tiếng Anh'],rows);
+    toast('Đã tải '+rows.length+' mã — điền cột Tên tiếng Anh rồi nạp lại lên');
+  };
+  bNap.onchange=e=>{const f=e.target.files[0];if(!f)return;
+    readSheetRows(f,rows=>{napTenEn(rows,ve);bNap.value='';},err=>{toast('Không đọc được file');bNap.value='';});};
+  ve();
+}
+async function luuTenEn(m,ten,o){
+  const cu=String(m.nameEn||'');
+  m.nameEn=ten;try{_vnCache.delete(m.code);}catch(e){}
+  if(!sb){toast('Đã lưu trên máy');return;}
+  try{
+    const r=await sb.from('materials').upsert({code:m.code,name:m.name,uom:m.uom,name_en:ten||null});
+    if(r&&r.error){
+      m.nameEn=cu;if(o)o.value=cu;
+      const thieuCot=/name_en|column|schema cache/i.test(r.error.message||'');
+      errBox('Chưa lưu được tên tiếng Anh',[
+        thieuCot?'Phần tên tiếng Anh <b>chưa được mở trên máy chủ</b> — báo kế toán để bật.'
+                :'Máy chủ chưa nhận. Thử lại sau ít phút.',
+        'Tên vừa gõ <b>chưa được lưu</b>.'
+      ],'Bảng: materials'+NL+(r.error.message||''));
+      return;
+    }
+  }catch(e){m.nameEn=cu;if(o)o.value=cu;toast('Chưa lưu được — kiểm tra mạng');return;}
+  if(o){o.style.borderColor='var(--green)';setTimeout(()=>{o.style.borderColor='';},900);}
+}
+/* Nạp hàng loạt từ Excel: khớp theo MÃ HÀNG, không khớp theo tên.
+   Mã không có trong danh mục thì bỏ qua và báo số lượng — không tự đẻ mã mới. */
+async function napTenEn(rows,xong){
+  if(!rows||!rows.length){toast('File trống');return;}
+  const norm=x=>String(x==null?'':x).normalize('NFD').toLowerCase().replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'');
+  let head=-1,cMa=-1,cEn=-1;
+  for(let i=0;i<Math.min(rows.length,10);i++){
+    const r=(rows[i]||[]).map(norm);
+    const a=r.findIndex(x=>/^ma(hang|vattu|so)?$/.test(x));
+    const b=r.findIndex(x=>x.indexOf('tentienganh')>=0||x==='nameen'||x==='englishname');
+    if(a>=0&&b>=0){head=i;cMa=a;cEn=b;break;}
+  }
+  if(head<0){errBox('File chưa đúng mẫu',[
+    'Không tìm thấy cột <b>Mã hàng</b> và <b>Tên tiếng Anh</b>.',
+    'Bấm <b>⬇ Tải Excel để điền hàng loạt</b> để lấy đúng mẫu rồi điền vào đó.'],'');return;}
+  const ds=[];let boQua=0;
+  for(let i=head+1;i<rows.length;i++){
+    const r=rows[i]||[];const ma=String(r[cMa]==null?'':r[cMa]).trim();const en=String(r[cEn]==null?'':r[cEn]).trim();
+    if(!ma||!en)continue;
+    const m=masterByCode[ma];
+    if(!m){boQua++;continue;}
+    if(String(m.nameEn||'').trim()===en)continue;
+    ds.push({m:m,en:en});
+  }
+  if(!ds.length){toast('Không có dòng nào cần cập nhật'+(boQua?(' · '+boQua+' mã không có trong danh mục'):''));return;}
+  if(!confirm('NẠP TÊN TIẾNG ANH'+NL+ds.length+' mã sẽ được cập nhật.'
+    +(boQua?(NL+boQua+' mã trong file không có trong danh mục — sẽ bỏ qua.'):'')
+    +NL+NL+'Tiếp tục?'))return;
+  let ok=0,loi=0;
+  for(const x of ds){
+    try{
+      const r=await sb.from('materials').upsert({code:x.m.code,name:x.m.name,uom:x.m.uom,name_en:x.en});
+      if(r&&r.error){loi++;continue;}
+      x.m.nameEn=x.en;try{_vnCache.delete(x.m.code);}catch(e){}
+      ok++;
+    }catch(e){loi++;}
+  }
+  log('Nạp tên tiếng Anh',ok+' mã');
+  if(loi)errBox('Nạp xong nhưng có mã chưa lưu được',['Đã lưu <b>'+ok+'</b> mã.','<b>'+loi+'</b> mã máy chủ chưa nhận — nạp lại file để thử tiếp.'],'');
+  else toast('✓ Đã lưu tên tiếng Anh cho '+ok+' mã');
+  if(xong)xong();
 }
 function catTong(v){
   const editable=session.role==='ketoan_vien'||session.role==='admin';
