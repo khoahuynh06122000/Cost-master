@@ -1045,7 +1045,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2209-04';
+const APP_VER='2209-05';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -8729,7 +8729,9 @@ function renderCatalog(v){
     {k:'tong',ico:HIC.list,title:'Danh mục tổng',sub:'Tìm mã, thêm mã lẻ, nạp danh mục từ Excel',n:DATA.materials.length+' mã',render:catTong},
     {k:'thieu',ico:HIC.warn,title:'Mã chưa khai báo tên',sub:'Điền tên & ĐVT cho các mã đang hiện dấu "?"',n:bad.length?bad.length+' mã cần khai báo':'',warm:!!bad.length,render:catThieu},
     {k:'plant',ico:HIC.box,title:'Gán mã theo điểm bán',sub:'Chọn Plant rồi thêm/bớt mã dùng khi kiểm kê',render:catPlant},
-    {k:'ten_en',ico:HIC.sheet,title:'Tên tiếng Anh cho bếp',sub:'Người nước ngoài đếm kho đọc được tên hàng',n:(function(){try{const b=maKhoBep();const co=b.filter(c=>{const m=masterByCode[c];return m&&String(m.nameEn||'').trim();}).length;return b.length?(co+'/'+b.length+' mã kho bếp đã có'):'';}catch(e){return '';}})(),render:catTenEn},
+    /* ẨN 22/09/2026 — Khoa chốt giữ nguyên tên SAP, không dịch tên vật tư.
+       Cột name_en + catTenEn + phần hiển thị tên Anh vẫn còn; xoá dấu // ở dòng dưới là bật lại. */
+    //{k:'ten_en',ico:HIC.sheet,title:'Tên tiếng Anh cho bếp',sub:'Người nước ngoài đếm kho đọc được tên hàng',n:(function(){try{const b=maKhoBep();const co=b.filter(c=>{const m=masterByCode[c];return m&&String(m.nameEn||'').trim();}).length;return b.length?(co+'/'+b.length+' mã kho bếp đã có'):'';}catch(e){return '';}})(),render:catTenEn},
   ]);
 }
 /* Tập mã của mọi kho bếp — dùng để lọc sẵn, khỏi bắt kế toán dò trong 7.436 mã. */
