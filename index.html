@@ -1045,7 +1045,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2209-03';
+const APP_VER='2209-04';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1068,21 +1068,21 @@ const TXT_RE=[
   {re:new RegExp("^Tuần (\\d+) · (.+)$"),en:"Week $1 · $2",hi:"सप्ताह $1 · $2"},
   {re:new RegExp("^· Tuần (\\d+) · (.+)$"),en:"· Week $1 · $2",hi:"· सप्ताह $1 · $2"},
   {re:new RegExp("^Kho (.+) · Tuần (\\d+) · (.+)$"),en:"Store $1 · Week $2 · $3",hi:"स्टोर $1 · सप्ताह $2 · $3"},
-  {re:new RegExp("^(\\d+) mã · lưu bởi (.+) lúc (.+)\\.$"),en:"$1 items · saved by $2 at $3.",hi:"$1 वस्तुएँ · $2 द्वारा $3 पर सहेजा।"},
+  {re:new RegExp("^(\\d+) mã · lưu bởi (.+) lúc (.+)\\.$"),en:"$1 items · saved by $2 at $3.",hi:"$1 वस्तुएँ · $2 द्वारा $3 पर सहेजा।",n:1,en1:"$1 item · saved by $2 at $3.",hi1:"$1 वस्तु · $2 द्वारा $3 पर सहेजा।"},
   {re:new RegExp("^Đếm tuần (\\d+)$"),en:"Count week $1",hi:"सप्ताह $1 गिनें"},
   {re:new RegExp("^💾 Lưu số tuần (\\d+)$"),en:"💾 Save week $1",hi:"💾 सप्ताह $1 सहेजें"},
-  {re:new RegExp("^(\\d+) mã$"),en:"$1 items",hi:"$1 वस्तुएँ"},
-  {re:new RegExp("^(\\d+) mã đã nhập$"),en:"$1 items entered",hi:"$1 वस्तुएँ दर्ज"},
+  {re:new RegExp("^(\\d+) mã$"),en:"$1 items",hi:"$1 वस्तुएँ",n:1,en1:"$1 item",hi1:"$1 वस्तु"},
+  {re:new RegExp("^(\\d+) mã đã nhập$"),en:"$1 items entered",hi:"$1 वस्तुएँ दर्ज",n:1,en1:"$1 item entered",hi1:"$1 वस्तु दर्ज"},
   {re:new RegExp("^Phiên bản (.+)$"),en:"Version $1",hi:"संस्करण $1"},
   {re:new RegExp("^🔒 Không duyệt được — (.+) — đã mở kỳ kiểm kê tháng (\\d{2}/\\d{4}) · (.+) — đã chốt kiểm kê tháng (\\d{2}/\\d{4})\\. Điều chuyển phải xong TRƯỚC khi mở kỳ kiểm kê\\. Xử lý phiếu kiểm kê xong \\(hoặc nhờ kế toán xóa kỳ đã mở\\) rồi quay lại\\.$"),en:"🔒 Cannot approve — $1 — stocktake period $2 is already open · $3 — stocktake $4 is already closed. Transfers must be finished BEFORE the stocktake period opens. Deal with the stocktake sheet (or ask accounting to delete the opened period), then come back.",hi:"🔒 स्वीकृत नहीं — $1 — गणना अवधि $2 पहले से खुली · $3 — गणना $4 पहले से बंद। स्थानांतरण गणना अवधि खुलने से पहले पूरे होने चाहिए। गणना पर्ची निपटाएँ (या लेखा से खुली अवधि हटवाएँ), फिर लौटें।"},
   {re:new RegExp("^🔒 Không duyệt được — (.+) — đã chốt kiểm kê tháng (\\d{2}/\\d{4}) · (.+) — đã mở kỳ kiểm kê tháng (\\d{2}/\\d{4})\\. Điều chuyển phải xong TRƯỚC khi mở kỳ kiểm kê\\. Xử lý phiếu kiểm kê xong \\(hoặc nhờ kế toán xóa kỳ đã mở\\) rồi quay lại\\.$"),en:"🔒 Cannot approve — $1 — stocktake $2 is already closed · $3 — stocktake period $4 is already open. Transfers must be finished BEFORE the stocktake period opens. Deal with the stocktake sheet (or ask accounting to delete the opened period), then come back.",hi:"🔒 स्वीकृत नहीं — $1 — गणना $2 पहले से बंद · $3 — गणना अवधि $4 पहले से खुली। स्थानांतरण गणना अवधि खुलने से पहले पूरे होने चाहिए। गणना पर्ची निपटाएँ (या लेखा से खुली अवधि हटवाएँ), फिर लौटें।"},
   {re:new RegExp("^🔒 Không duyệt được — (.+) — đã mở kỳ kiểm kê tháng (\\d{2}/\\d{4})\\. Điều chuyển phải xong TRƯỚC khi mở kỳ kiểm kê\\. Xử lý phiếu kiểm kê xong \\(hoặc nhờ kế toán xóa kỳ đã mở\\) rồi quay lại\\.$"),en:"🔒 Cannot approve — $1 — stocktake period $2 is already open. Transfers must be finished BEFORE the stocktake period opens. Deal with the stocktake sheet (or ask accounting to delete the opened period), then come back.",hi:"🔒 स्वीकृत नहीं — $1 — गणना अवधि $2 पहले से खुली। स्थानांतरण गणना अवधि खुलने से पहले पूरे होने चाहिए। गणना पर्ची निपटाएँ (या लेखा से खुली अवधि हटवाएँ), फिर लौटें।"},
   {re:new RegExp("^🔒 Không duyệt được — (.+) — đã chốt kiểm kê tháng (\\d{2}/\\d{4})\\. Điều chuyển phải xong TRƯỚC khi mở kỳ kiểm kê\\. Xử lý phiếu kiểm kê xong \\(hoặc nhờ kế toán xóa kỳ đã mở\\) rồi quay lại\\.$"),en:"🔒 Cannot approve — $1 — stocktake $2 is already closed. Transfers must be finished BEFORE the stocktake period opens. Deal with the stocktake sheet (or ask accounting to delete the opened period), then come back.",hi:"🔒 स्वीकृत नहीं — $1 — गणना $2 पहले से बंद। स्थानांतरण गणना अवधि खुलने से पहले पूरे होने चाहिए। गणना पर्ची निपटाएँ (या लेखा से खुली अवधि हटवाएँ), फिर लौटें।"},
   {re:new RegExp("^Dừng ở bước 2 — Giám sát (.+) \\(kho cho hàng\\) đã từ chối$"),en:"Stopped at step 2 — the supervisor of $1 (the giving store) rejected it",hi:"चरण 2 पर रुका — $1 (देने वाला स्टोर) के सुपरवाइज़र ने अस्वीकृत किया"},
-  {re:new RegExp("^(.+) → hủy/hao hụt · ([\\d.,]+) mã · (.+) · (.+)$"),en:"$1 → write-off/loss · $2 items · $3 · $4",hi:"$1 → बट्टे-खाते/हानि · $2 वस्तुएँ · $3 · $4"},
-  {re:new RegExp("^(.+) → (.+) · ([\\d.,]+) mã · (.+) · (.+)$"),en:"$1 → $2 · $3 items · $4 · $5",hi:"$1 → $2 · $3 वस्तुएँ · $4 · $5"},
-  {re:new RegExp("^(.+) — ([\\d.,]+) mã$"),en:"$1 — $2 items",hi:"$1 — $2 वस्तुएँ"},
-  {re:new RegExp("^(.+) · ([\\d.,]+) người$"),en:"$1 · $2 people",hi:"$1 · $2 लोग"},
+  {re:new RegExp("^(.+) → hủy/hao hụt · ([\\d.,]+) mã · (.+) · (.+)$"),en:"$1 → write-off/loss · $2 items · $3 · $4",hi:"$1 → बट्टे-खाते/हानि · $2 वस्तुएँ · $3 · $4",n:2,en1:"$1 → write-off/loss · $2 item · $3 · $4",hi1:"$1 → बट्टे-खाते/हानि · $2 वस्तु · $3 · $4"},
+  {re:new RegExp("^(.+) → (.+) · ([\\d.,]+) mã · (.+) · (.+)$"),en:"$1 → $2 · $3 items · $4 · $5",hi:"$1 → $2 · $3 वस्तुएँ · $4 · $5",n:3,en1:"$1 → $2 · $3 item · $4 · $5",hi1:"$1 → $2 · $3 वस्तु · $4 · $5"},
+  {re:new RegExp("^(.+) — ([\\d.,]+) mã$"),en:"$1 — $2 items",hi:"$1 — $2 वस्तुएँ",n:2,en1:"$1 — $2 item",hi1:"$1 — $2 वस्तु"},
+  {re:new RegExp("^(.+) · ([\\d.,]+) người$"),en:"$1 · $2 people",hi:"$1 · $2 लोग",n:2,en1:"$1 · $2 person",hi1:"$1 · $2 लोग"},
   {re:new RegExp("^Điểm bán: (.+)$"),en:"Outlet: $1",hi:"आउटलेट: $1"},
   {re:new RegExp("^Đã gán cho (.+)$"),en:"Assigned to $1",hi:"$1 को सौंपा"},
   {re:new RegExp("^＋ Thêm mã cho (.+)$"),en:"＋ Add items for $1",hi:"＋ $1 हेतु वस्तुएँ जोड़ें"},
@@ -1091,48 +1091,48 @@ const TXT_RE=[
   {re:new RegExp("^📋 Nhập kho (.+) · tháng (\\d{2}/\\d{4})$"),en:"📋 Receiving at $1 · month $2",hi:"📋 $1 पर प्राप्ति · माह $2"},
   {re:new RegExp("^(.+) · Sloc (\\S+) · số nội bộ của bếp$"),en:"$1 · Sloc $2 · kitchen internal figure",hi:"$1 · Sloc $2 · रसोई का आंतरिक आँकड़ा"},
   {re:new RegExp("^(.+) · ghi nhận bởi (.+) · (.+)$"),en:"$1 · recorded by $2 · $3",hi:"$1 · $2 द्वारा दर्ज · $3"},
-  {re:new RegExp("^/([\\d.,]+) dòng$"),en:"/$1 rows",hi:"/$1 पंक्तियाँ"},
+  {re:new RegExp("^/([\\d.,]+) dòng$"),en:"/$1 rows",hi:"/$1 पंक्तियाँ",n:1,en1:"/$1 row",hi1:"/$1 पंक्ति"},
   {re:new RegExp("^· (.+) · Tổng$"),en:"· $1 · Total",hi:"· $1 · कुल"},
   {re:new RegExp("^(.+) \\(([\\d.,]+) ngày trước\\)$"),en:"$1 ($2 days ago)",hi:"$1 ($2 दिन पहले)"},
   {re:new RegExp("^Kỳ tháng (\\d{2}/\\d{4}) · lập (.+)$"),en:"Period month $1 · created by $2",hi:"अवधि माह $1 · बनाया $2"},
-  {re:new RegExp("^· duyệt bởi (.+) lúc (.+) · ([\\d.,]+) mặt hàng$"),en:"· approved by $1 at $2 · $3 items",hi:"· $1 द्वारा $2 पर स्वीकृत · $3 वस्तुएँ"},
+  {re:new RegExp("^· duyệt bởi (.+) lúc (.+) · ([\\d.,]+) mặt hàng$"),en:"· approved by $1 at $2 · $3 items",hi:"· $1 द्वारा $2 पर स्वीकृत · $3 वस्तुएँ",n:3,en1:"· approved by $1 at $2 · $3 item",hi1:"· $1 द्वारा $2 पर स्वीकृत · $3 वस्तु"},
   {re:new RegExp("^(.+) · kỳ tháng (\\d{2}/\\d{4}) · sổ có$"),en:"$1 · period month $2 · the ledger has",hi:"$1 · अवधि माह $2 · बही में है"},
   {re:new RegExp("^≈ ([\\d.,]+)% lượng luân chuyển · Nhập < Tiêu hao → đang$"),en:"≈ $1% of throughput · Received < Usage → currently",hi:"≈ $1% प्रवाह का · प्राप्त < खपत → अभी"},
   {re:new RegExp("^≈ ([\\d.,]+)% lượng luân chuyển · Nhập ≥ Tiêu hao → tồn kho$"),en:"≈ $1% of throughput · Received ≥ Usage → stock is",hi:"≈ $1% प्रवाह का · प्राप्त ≥ खपत → स्टॉक"},
   {re:new RegExp("^· lưu bởi (.+) lúc (.+)\\. Đếm lại thì bản này được thay\\.$"),en:"· saved by $1 at $2. Counting again replaces this record.",hi:"· $1 द्वारा $2 पर सहेजा। दोबारा गिनने पर यह रिकॉर्ड बदल जाएगा।"},
   {re:new RegExp("^· ([\\d.,]+) mã · gửi bởi (.+) lúc (.+) · đã bổ sung ([\\d.,]+) lần\\.$"),en:"· $1 items · sent by $2 at $3 · added to $4 times.",hi:"· $1 वस्तुएँ · $2 द्वारा $3 पर भेजा · $4 बार जोड़ा गया।"},
-  {re:new RegExp("^· ([\\d.,]+) mã · gửi bởi (.+) lúc (.+)\\.$"),en:"· $1 items · sent by $2 at $3.",hi:"· $1 वस्तुएँ · $2 द्वारा $3 पर भेजा।"},
-  {re:new RegExp("^· ([\\d.,]+) mã\\)\\. Muốn nạp file mới thì phải xóa tồn đầu kỳ hiện tại trước\\.$"),en:"· $1 items). To upload a new file you must delete the current opening stock first.",hi:"· $1 वस्तुएँ)। नई फ़ाइल अपलोड करने हेतु पहले वर्तमान प्रारंभिक स्टॉक हटाना होगा।"},
+  {re:new RegExp("^· ([\\d.,]+) mã · gửi bởi (.+) lúc (.+)\\.$"),en:"· $1 items · sent by $2 at $3.",hi:"· $1 वस्तुएँ · $2 द्वारा $3 पर भेजा।",n:1,en1:"· $1 item · sent by $2 at $3.",hi1:"· $1 वस्तु · $2 द्वारा $3 पर भेजा।"},
+  {re:new RegExp("^· ([\\d.,]+) mã\\)\\. Muốn nạp file mới thì phải xóa tồn đầu kỳ hiện tại trước\\.$"),en:"· $1 items). To upload a new file you must delete the current opening stock first.",hi:"· $1 वस्तुएँ)। नई फ़ाइल अपलोड करने हेतु पहले वर्तमान प्रारंभिक स्टॉक हटाना होगा।",n:1,en1:"· $1 item). To upload a new file you must delete the current opening stock first.",hi1:"· $1 वस्तु)। नई फ़ाइल अपलोड करने हेतु पहले वर्तमान प्रारंभिक स्टॉक हटाना होगा।"},
   {re:new RegExp("^sớm (\\d+)$"),en:"$1 early",hi:"$1 दिन पहले"},
   {re:new RegExp("^trễ (\\d+)$"),en:"$1 late",hi:"$1 दिन देर"},
-  {re:new RegExp("^· ([\\d.,]+) mã$"),en:"· $1 items",hi:"· $1 वस्तुएँ"},
-  {re:new RegExp("^\\(([\\d.,]+) dòng\\)$"),en:"($1 rows)",hi:"($1 पंक्तियाँ)"},
-  {re:new RegExp("^([\\d.,]+) dòng sổ$"),en:"$1 ledger rows",hi:"$1 बही पंक्तियाँ"},
-  {re:new RegExp("^([\\d.,]+) dòng sổ kỳ này$"),en:"$1 ledger rows this period",hi:"इस अवधि में $1 बही पंक्तियाँ"},
-  {re:new RegExp("^([\\d.,]+) bản ghi$"),en:"$1 records",hi:"$1 रिकॉर्ड"},
-  {re:new RegExp("^([\\d.,]+) bản chốt$"),en:"$1 closings",hi:"$1 समापन"},
+  {re:new RegExp("^· ([\\d.,]+) mã$"),en:"· $1 items",hi:"· $1 वस्तुएँ",n:1,en1:"· $1 item",hi1:"· $1 वस्तु"},
+  {re:new RegExp("^\\(([\\d.,]+) dòng\\)$"),en:"($1 rows)",hi:"($1 पंक्तियाँ)",n:1,en1:"($1 row)",hi1:"($1 पंक्ति)"},
+  {re:new RegExp("^([\\d.,]+) dòng sổ$"),en:"$1 ledger rows",hi:"$1 बही पंक्तियाँ",n:1,en1:"$1 ledger row",hi1:"$1 बही पंक्ति"},
+  {re:new RegExp("^([\\d.,]+) dòng sổ kỳ này$"),en:"$1 ledger rows this period",hi:"इस अवधि में $1 बही पंक्तियाँ",n:1,en1:"$1 ledger row this period",hi1:"इस अवधि में $1 बही पंक्ति"},
+  {re:new RegExp("^([\\d.,]+) bản ghi$"),en:"$1 records",hi:"$1 रिकॉर्ड",n:1,en1:"$1 record",hi1:"$1 रिकॉर्ड"},
+  {re:new RegExp("^([\\d.,]+) bản chốt$"),en:"$1 closings",hi:"$1 समापन",n:1,en1:"$1 closing",hi1:"$1 समापन"},
   {re:new RegExp("^([\\d.,]+) bản chờ duyệt$"),en:"$1 pending approval",hi:"$1 स्वीकृति हेतु लंबित"},
-  {re:new RegExp("^([\\d.,]+) phiếu chờ$"),en:"$1 sheets pending",hi:"$1 पर्चियाँ लंबित"},
-  {re:new RegExp("^([\\d.,]+) phiếu chờ duyệt$"),en:"$1 sheets pending approval",hi:"$1 पर्चियाँ स्वीकृति हेतु लंबित"},
-  {re:new RegExp("^([\\d.,]+) phiếu chờ nhận$"),en:"$1 sheets awaiting receipt",hi:"$1 पर्चियाँ प्राप्ति की प्रतीक्षा में"},
-  {re:new RegExp("^([\\d.,]+) phiếu chưa duyệt$"),en:"$1 sheets not approved",hi:"$1 पर्चियाँ अस्वीकृत"},
-  {re:new RegExp("^([\\d.,]+) tài khoản chờ duyệt/khóa$"),en:"$1 accounts pending approval / locked",hi:"$1 खाते लंबित / बंद"},
-  {re:new RegExp("^([\\d.,]+) dòng đã nhập kỳ này$"),en:"$1 rows received this period",hi:"इस अवधि में $1 पंक्तियाँ प्राप्त"},
-  {re:new RegExp("^([\\d.,]+) dòng — chỉ ghi khi phiếu được duyệt$"),en:"$1 rows — posted only once the sheet is approved",hi:"$1 पंक्तियाँ — पर्ची स्वीकृत होने पर ही दर्ज"},
-  {re:new RegExp("^Lọc trong ([\\d.,]+) mã…$"),en:"Filter within $1 items…",hi:"$1 वस्तुओं में छाँटें…"},
-  {re:new RegExp("^Tìm trong ([\\d.,]+) mã đang có — gõ để lục cả danh mục$"),en:"Search the $1 items present — type to search the whole catalogue too",hi:"मौजूद $1 वस्तुओं में खोजें — पूरी सूची खोजने हेतु भी लिखें"},
+  {re:new RegExp("^([\\d.,]+) phiếu chờ$"),en:"$1 sheets pending",hi:"$1 पर्चियाँ लंबित",n:1,en1:"$1 sheet pending",hi1:"$1 पर्ची लंबित"},
+  {re:new RegExp("^([\\d.,]+) phiếu chờ duyệt$"),en:"$1 sheets pending approval",hi:"$1 पर्चियाँ स्वीकृति हेतु लंबित",n:1,en1:"$1 sheet pending approval",hi1:"$1 पर्ची स्वीकृति हेतु लंबित"},
+  {re:new RegExp("^([\\d.,]+) phiếu chờ nhận$"),en:"$1 sheets awaiting receipt",hi:"$1 पर्चियाँ प्राप्ति की प्रतीक्षा में",n:1,en1:"$1 sheet awaiting receipt",hi1:"$1 पर्ची प्राप्ति की प्रतीक्षा में"},
+  {re:new RegExp("^([\\d.,]+) phiếu chưa duyệt$"),en:"$1 sheets not approved",hi:"$1 पर्चियाँ अस्वीकृत",n:1,en1:"$1 sheet not approved",hi1:"$1 पर्ची अस्वीकृत"},
+  {re:new RegExp("^([\\d.,]+) tài khoản chờ duyệt/khóa$"),en:"$1 accounts pending approval / locked",hi:"$1 खाते लंबित / बंद",n:1,en1:"$1 account pending approval / locked",hi1:"$1 खाते लंबित / बंद"},
+  {re:new RegExp("^([\\d.,]+) dòng đã nhập kỳ này$"),en:"$1 rows received this period",hi:"इस अवधि में $1 पंक्तियाँ प्राप्त",n:1,en1:"$1 row received this period",hi1:"इस अवधि में $1 पंक्ति प्राप्त"},
+  {re:new RegExp("^([\\d.,]+) dòng — chỉ ghi khi phiếu được duyệt$"),en:"$1 rows — posted only once the sheet is approved",hi:"$1 पंक्तियाँ — पर्ची स्वीकृत होने पर ही दर्ज",n:1,en1:"$1 row — posted only once the sheet is approved",hi1:"$1 पंक्ति — पर्ची स्वीकृत होने पर ही दर्ज"},
+  {re:new RegExp("^Lọc trong ([\\d.,]+) mã…$"),en:"Filter within $1 items…",hi:"$1 वस्तुओं में छाँटें…",n:1,en1:"Filter within $1 item…",hi1:"$1 वस्तुओं में छाँटें…"},
+  {re:new RegExp("^Tìm trong ([\\d.,]+) mã đang có — gõ để lục cả danh mục$"),en:"Search the $1 items present — type to search the whole catalogue too",hi:"मौजूद $1 वस्तुओं में खोजें — पूरी सूची खोजने हेतु भी लिखें",n:1,en1:"Search the $1 item present — type to search the whole catalogue too",hi1:"मौजूद $1 वस्तुओं में खोजें — पूरी सूची खोजने हेतु भी लिखें"},
   {re:new RegExp("^✕ Từ chối \\(([\\d.,]+)\\)$"),en:"✕ Rejected ($1)",hi:"✕ अस्वीकृत ($1)"},
   {re:new RegExp("^✓ Đã duyệt \\(([\\d.,]+)\\)$"),en:"✓ Approved ($1)",hi:"✓ स्वीकृत ($1)"},
   {re:new RegExp("^⏳ Chờ duyệt \\(([\\d.,]+)\\)$"),en:"⏳ Pending approval ($1)",hi:"⏳ स्वीकृति हेतु लंबित ($1)"},
-  {re:new RegExp("^✓ Duyệt đủ ([\\d.,]+) mã$"),en:"✓ Approve all $1 items",hi:"✓ सभी $1 वस्तुएँ स्वीकृत करें"},
-  {re:new RegExp("^▾ Xem chi tiết ([\\d.,]+) mã$"),en:"▾ See details of $1 items",hi:"▾ $1 वस्तुओं का विवरण देखें"},
-  {re:new RegExp("^Chỉ xem ([\\d.,]+) mã đã chọn$"),en:"Show only the $1 selected items",hi:"केवल $1 चयनित वस्तुएँ दिखाएँ"},
-  {re:new RegExp("^([\\d.,]+) mã đã chọn$"),en:"$1 items selected",hi:"$1 वस्तुएँ चयनित"},
+  {re:new RegExp("^✓ Duyệt đủ ([\\d.,]+) mã$"),en:"✓ Approve all $1 items",hi:"✓ सभी $1 वस्तुएँ स्वीकृत करें",n:1,en1:"✓ Approve this item",hi1:"✓ यह वस्तु स्वीकृत करें"},
+  {re:new RegExp("^▾ Xem chi tiết ([\\d.,]+) mã$"),en:"▾ See details of $1 items",hi:"▾ $1 वस्तुओं का विवरण देखें",n:1,en1:"▾ See details of this item",hi1:"▾ इस वस्तु का विवरण देखें"},
+  {re:new RegExp("^Chỉ xem ([\\d.,]+) mã đã chọn$"),en:"Show only the $1 selected items",hi:"केवल $1 चयनित वस्तुएँ दिखाएँ",n:1,en1:"Show only the selected item",hi1:"केवल चयनित वस्तु दिखाएँ"},
+  {re:new RegExp("^([\\d.,]+) mã đã chọn$"),en:"$1 items selected",hi:"$1 वस्तुएँ चयनित",n:1,en1:"$1 item selected",hi1:"$1 वस्तु चयनित"},
   {re:new RegExp("^([\\d.,]+) mã · kỳ (\\d{2}/\\d{4})$"),en:"$1 items · period $2",hi:"$1 वस्तुएँ · अवधि $2"},
   {re:new RegExp("^Danh sách phiếu kiểm kê \\(([\\d.,]+)\\)$"),en:"Stocktake sheet list ($1)",hi:"गणना पर्ची सूची ($1)"},
   {re:new RegExp("^Hao hụt (\\d{2}/\\d{4})$"),en:"Loss $1",hi:"हानि $1"},
   {re:new RegExp("^Kho đã kiểm kỳ này · ([\\d.,]+)%$"),en:"Stores counted this period · $1%",hi:"इस अवधि में गिने स्टोर · $1%"},
-  {re:new RegExp("^Kho lệch tồn cuối · ([\\d.,]+) mã$"),en:"Stores with closing variance · $1 items",hi:"अंतिम अंतर वाले स्टोर · $1 वस्तुएँ"},
+  {re:new RegExp("^Kho lệch tồn cuối · ([\\d.,]+) mã$"),en:"Stores with closing variance · $1 items",hi:"अंतिम अंतर वाले स्टोर · $1 वस्तुएँ",n:1,en1:"Stores with closing variance · $1 item",hi1:"अंतिम अंतर वाले स्टोर · $1 वस्तु"},
   {re:new RegExp("^([\\d.,]+) đ$"),en:"$1 VND",hi:"$1 VND"},
   {re:new RegExp("^· (.+) · tồn ~([\\d.,]+)$"),en:"· $1 · stock ~$2",hi:"· $1 · स्टॉक ~$2"},
   {re:new RegExp("^· Lý do: (.+)$"),en:"· Reason: $1",hi:"· कारण: $1"},
@@ -1141,20 +1141,20 @@ const TXT_RE=[
   {re:new RegExp("^Bước 2/3 — đang chờ (.+) duyệt$"),en:"Step 2/3 — awaiting approval from $1",hi:"चरण 2/3 — $1 की स्वीकृति की प्रतीक्षा"},
   {re:new RegExp("^Dừng ở bước 2/3 — (.+)$"),en:"Stopped at step 2/3 — $1",hi:"चरण 2/3 पर रुका — $1"},
   {re:new RegExp("^([\\d.,]+)/([\\d.,]+) dòng$"),en:"$1/$2 rows",hi:"$1/$2 पंक्तियाँ"},
-  {re:new RegExp("^([\\d.,]+) mặt hàng$"),en:"$1 items",hi:"$1 वस्तुएँ"},
+  {re:new RegExp("^([\\d.,]+) mặt hàng$"),en:"$1 items",hi:"$1 वस्तुएँ",n:1,en1:"$1 item",hi1:"$1 वस्तु"},
   {re:new RegExp("^✓ từ (.+)$"),en:"✓ from $1",hi:"✓ $1 से"},
-  {re:new RegExp("^([\\d.,]+) mã này chiếm$"),en:"these $1 items account for",hi:"ये $1 वस्तुएँ बनाती हैं"},
-  {re:new RegExp("^📌 ([\\d.,]+) mã này chiếm$"),en:"📌 these $1 items account for",hi:"📌 ये $1 वस्तुएँ बनाती हैं"},
-  {re:new RegExp("^Master data — kho này chưa có mã · ([\\d.,]+) mã$"),en:"Master data — items this store does not have · $1 items",hi:"मास्टर डेटा — इस स्टोर में न होने वाली वस्तुएँ · $1 वस्तुएँ"},
+  {re:new RegExp("^([\\d.,]+) mã này chiếm$"),en:"these $1 items account for",hi:"ये $1 वस्तुएँ बनाती हैं",n:1,en1:"these $1 item account for",hi1:"ये $1 वस्तु बनाती हैं"},
+  {re:new RegExp("^📌 ([\\d.,]+) mã này chiếm$"),en:"📌 these $1 items account for",hi:"📌 ये $1 वस्तुएँ बनाती हैं",n:1,en1:"📌 these $1 item account for",hi1:"📌 ये $1 वस्तु बनाती हैं"},
+  {re:new RegExp("^Master data — kho này chưa có mã · ([\\d.,]+) mã$"),en:"Master data — items this store does not have · $1 items",hi:"मास्टर डेटा — इस स्टोर में न होने वाली वस्तुएँ · $1 वस्तुएँ",n:1,en1:"Master data — item this store does not have · $1 item",hi1:"मास्टर डेटा — इस स्टोर में न होने वाली वस्तु · $1 वस्तु"},
   {re:new RegExp("^▾ Xem thêm ([\\d.,]+) mã \\(còn ([\\d.,]+)\\)$"),en:"▾ Show $1 more items ($2 left)",hi:"▾ $1 और वस्तुएँ दिखाएँ ($2 बाकी)"},
-  {re:new RegExp("^Hay nhập ở kho này · ([\\d.,]+) mã$"),en:"Often received at this store · $1 items",hi:"इस स्टोर में अक्सर आने वाली · $1 वस्तुएँ"},
-  {re:new RegExp("^Danh mục (.+) · ([\\d.,]+) mã$"),en:"Catalogue of $1 · $2 items",hi:"$1 की सूची · $2 वस्तुएँ"},
+  {re:new RegExp("^Hay nhập ở kho này · ([\\d.,]+) mã$"),en:"Often received at this store · $1 items",hi:"इस स्टोर में अक्सर आने वाली · $1 वस्तुएँ",n:1,en1:"Often received at this store · $1 item",hi1:"इस स्टोर में अक्सर आने वाली · $1 वस्तु"},
+  {re:new RegExp("^Danh mục (.+) · ([\\d.,]+) mã$"),en:"Catalogue of $1 · $2 items",hi:"$1 की सूची · $2 वस्तुएँ",n:2,en1:"Catalogue of $1 · $2 item",hi1:"$1 की सूची · $2 वस्तु"},
   {re:new RegExp("^▾ Xem thêm (\\d+) \\(còn (\\d+)\\)$"),en:"▾ Show $1 more ($2 left)",hi:"▾ $1 और दिखाएँ ($2 बाकी)"},
-  {re:new RegExp("^▾ Xem thêm (\\d+) mã$"),en:"▾ Show $1 more items",hi:"▾ $1 और वस्तुएँ दिखाएँ"},
+  {re:new RegExp("^▾ Xem thêm (\\d+) mã$"),en:"▾ Show $1 more items",hi:"▾ $1 और वस्तुएँ दिखाएँ",n:1,en1:"▾ Show $1 more item",hi1:"▾ $1 और वस्तु दिखाएँ"},
   {re:new RegExp("^Hiển thị (\\d+)/(\\d+) mã$"),en:"Showing $1/$2 items",hi:"$1/$2 वस्तुएँ दिख रही हैं"},
   {re:new RegExp("^(\\d+)/(\\d+) mã kho bếp đã có$"),en:"$1/$2 kitchen items done",hi:"$1/$2 रसोई वस्तुएँ पूर्ण"},
   {re:new RegExp("^(\\d+)/(\\d+) mã đã có tên tiếng Anh$"),en:"$1/$2 items have an English name",hi:"$1/$2 वस्तुओं का अंग्रेज़ी नाम है"},
-  {re:new RegExp("^Tìm theo mã hoặc tên hàng… \\((\\d+) mã của điểm bán\\)$"),en:"Search by code or item name… ($1 items at this outlet)",hi:"कोड या नाम से खोजें… (इस आउटलेट की $1 वस्तुएँ)"}
+  {re:new RegExp("^Tìm theo mã hoặc tên hàng… \\((\\d+) mã của điểm bán\\)$"),en:"Search by code or item name… ($1 items at this outlet)",hi:"कोड या नाम से खोजें… (इस आउटलेट की $1 वस्तुएँ)",n:1,en1:"Search by code or item name… ($1 item at this outlet)",hi1:"कोड या नाम से खोजें… (इस आउटलेट की $1 वस्तु)"}
 ];
 function L(s){
   if(LANG==='vi')return s;
@@ -1163,7 +1163,15 @@ function L(s){
   const d=TXT[LANG];
   if(d&&d[k]!=null)return d[k];
   for(let i=0;i<TXT_RE.length;i++){const p=TXT_RE[i];
-    if(p[LANG]&&p.re.test(k))return k.replace(p.re,p[LANG]);}
+    if(!p[LANG])continue;
+    const m=p.re.exec(k);
+    if(!m)continue;
+    /* Tiếng Việt không đổi dạng theo số, tiếng Anh và tiếng Ấn thì có — "1 items" và
+       "1 वस्तुएँ" đều sai. Mẫu nào khai `n` (vị trí nhóm chứa số đếm) thì khi số đó
+       bằng 1 sẽ dùng bản số ít ở `en1` / `hi1`. */
+    let mau=p[LANG];
+    if(p.n&&String(m[p.n]).replace(/[.,\s]/g,'')==='1'&&p[LANG+'1'])mau=p[LANG+'1'];
+    return k.replace(p.re,mau);}
   return s;
 }
 /* Duyệt text node sau khi vẽ xong. Chuỗi không có trong từ điển thì giữ nguyên,
