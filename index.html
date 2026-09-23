@@ -1085,7 +1085,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2309-04';
+const APP_VER='2309-05';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1112,7 +1112,10 @@ Object.assign(TXT.hi,{"Phiếu đã ghi sổ gần đây":"हाल में �
 /* Bo sung 23/09/2026 (dot 3) — the phieu cho duyet hien tung ma hang. */
 Object.assign(TXT.en,{"Hàng xin điều chuyển":"Items requested"});
 Object.assign(TXT.hi,{"Hàng xin điều chuyển":"माँगी गई वस्तुएँ"});
-const TXT_RE_BS=[{re:new RegExp("^([\\d.,]+) loại lý do$"),en:"$1 kinds of reason",hi:"$1 प्रकार के कारण",n:1,en1:"$1 kind of reason",hi1:"$1 प्रकार का कारण"},{re:new RegExp("^([\\d.,]+) phiếu$"),en:"$1 requests",hi:"$1 पर्चियाँ",n:1,en1:"$1 request",hi1:"$1 पर्ची"},{re:new RegExp("^([\\d.,]+) dòng$"),en:"$1 lines",hi:"$1 पंक्तियाँ",n:1,en1:"$1 line",hi1:"$1 पंक्ति"}];
+/* Bo sung 23/09/2026 (dot 4) — bao nguoc ve kho cho hang khi duyet. */
+Object.assign(TXT.en,{"Kho bạn vừa duyệt cho hàng":"Your store just approved goods going out"});
+Object.assign(TXT.hi,{"Kho bạn vừa duyệt cho hàng":"आपके स्टोर ने अभी माल देना स्वीकृत किया"});
+const TXT_RE_BS=[{re:new RegExp("^(.+) đã duyệt phiếu (.+) · chuyển cho (.+) · ([\\d.,]+) mã · lúc (.+)$"),en:"$1 approved request $2 · sent to $3 · $4 items · at $5",hi:"$1 ने पर्ची $2 स्वीकृत की · $3 को भेजा · $4 वस्तुएँ · $5 बजे",n:4,en1:"$1 approved request $2 · sent to $3 · $4 item · at $5",hi1:"$1 ने पर्ची $2 स्वीकृत की · $3 को भेजा · $4 वस्तु · $5 बजे"},{re:new RegExp("^([\\d.,]+) loại lý do$"),en:"$1 kinds of reason",hi:"$1 प्रकार के कारण",n:1,en1:"$1 kind of reason",hi1:"$1 प्रकार का कारण"},{re:new RegExp("^([\\d.,]+) phiếu$"),en:"$1 requests",hi:"$1 पर्चियाँ",n:1,en1:"$1 request",hi1:"$1 पर्ची"},{re:new RegExp("^([\\d.,]+) dòng$"),en:"$1 lines",hi:"$1 पंक्तियाँ",n:1,en1:"$1 line",hi1:"$1 पंक्ति"}];
 const TXT_RE=[
   {re:new RegExp("^Tháng (\\d{2}/\\d{4}) \\(hiện tại\\)$"),en:"Month $1 (current)",hi:"माह $1 (वर्तमान)"},
   {re:new RegExp("^Tháng (\\d{2}/\\d{4})$"),en:"Month $1",hi:"माह $1"},
@@ -7082,6 +7085,23 @@ async function _approveTransferReq(r,qtys){
       : `Phiếu ${r.id} (xin hàng) đã được ${session.name} DUYỆT · ${codes.length} mã đã ghi sổ kỳ tháng ${periodVN(per)}.`;
     notifyWh(back.p,back.s,msg,'transfer','Phiếu điều chuyển đã được duyệt');
   }
+  /* BÁO NGƯỢC VỀ KHO CHO HÀNG (Khoa 23/09/2026).
+     Nhân viên trực cũng duyệt được (rule 15/09), nên giám sát phải biết AI đã cho
+     hàng rời kho mình, phiếu nào, sang điểm nào, lúc nào — không thì hàng đi mà
+     người chịu trách nhiệm kho không hay. Bỏ qua máy của chính người vừa duyệt:
+     họ đã thấy toast, đẩy thêm một thông báo hệ thống nữa chỉ làm phiền. */
+  /* Ten diem ban la du de biet hang di dau. Chi ghi them ten kho khi diem do co
+     NHIEU KHO, luc ay moi can phan biet; con lai thi "Nha hang Bulgogi_NH · NH
+     Bulgogi_NH" chi lam cau dai ra ma khong them thong tin nao. */
+  let nhanNoi='hủy / hao hụt';
+  if(r.toPlant){
+    nhanNoi=plantName(r.toPlant);
+    const _kho=whName(r.toPlant,r.toSloc);
+    if(slocsOf(r.toPlant).length>1&&_kho&&_kho!==r.toSloc)nhanNoi+=' · '+_kho;
+  }
+  notifyWh(r.fromPlant,r.fromSloc,
+    `${session.name} đã duyệt phiếu ${r.id} · chuyển cho ${nhanNoi} · ${codes.length} mã · lúc ${r.approvedAt}`,
+    'transfer','Kho bạn vừa duyệt cho hàng',session.name);
   log('Duyệt '+dcKindLabel(r.kind),`${r.id} · ${fromNm} → ${toNm} · ${codes.length} mã · kỳ ${periodVN(per)}`);
   toast('✓ Đã duyệt '+r.id+' — ghi sổ '+codes.length+' mã vào kỳ tháng '+periodVN(per));
   renderView();
@@ -9994,13 +10014,24 @@ async function ensurePushSub(){
 }
 /* Gửi báo về máy của những người phụ trách MỘT KHO.
    Không chặn luồng nghiệp vụ: lỗi gì cũng chỉ ghi Console, việc chính đã xong rồi. */
-async function pushToWh(plant,sloc,title,body,tag){
+async function pushToWh(plant,sloc,title,body,tag,truUser){
   try{
     if(!sb||!plant)return;
-    let q=sb.from('push_subs').select('endpoint,p256dh,auth').eq('plant_code',plant);
-    if(sloc)q=q.eq('sloc_code',sloc);
-    const {data,error}=await q.limit(200);
+    /* Lay ca user_name de bo qua may cua CHINH nguoi vua thao tac — ho da thay
+       toast roi, ban them mot thong bao he thong nua chi lam phien.
+       Cot user_name co the chua co tren CSDL cu -> truot thi hoi lai khong kem
+       cot do, neu khong thi MOI thong bao push deu chet im lang. */
+    async function _lay(coTen){
+      let q=sb.from('push_subs').select(coTen?'endpoint,p256dh,auth,user_name':'endpoint,p256dh,auth')
+        .eq('plant_code',plant);
+      if(sloc)q=q.eq('sloc_code',sloc);
+      return await q.limit(200);
+    }
+    let {data,error}=await _lay(true);
+    if(error){({data,error}=await _lay(false));}
     if(error||!data||!data.length)return;
+    if(truUser)data=data.filter(x=>!x.user_name||x.user_name!==truUser);
+    if(!data.length)return;
     // Một người có thể mở app trên nhiều máy -> bỏ endpoint trùng
     const seen=new Set();const subs=[];
     data.forEach(x=>{if(x.endpoint&&!seen.has(x.endpoint)){seen.add(x.endpoint);subs.push(x);}});
@@ -10015,12 +10046,12 @@ async function pushToWh(plant,sloc,title,body,tag){
 }
 /* Tạo thông báo cho một kho: ghi vào bảng notifications (để hiện ở chuông)
    VÀ bắn về máy người phụ trách kho đó. Dùng chung cho mọi loại thông báo. */
-function notifyWh(plant,sloc,msg,kind,title){
+function notifyWh(plant,sloc,msg,kind,title,truUser){
   const nt={id:uid('NT'),plant,sloc,message:msg,kind:kind||'transfer',by:session?session.name:'',time:now(),read:false};
   notifications.unshift(nt);
   dbIns('notifications',{id:nt.id,plant_code:plant,sloc_code:sloc,message:msg,kind:nt.kind,
     created_by:nt.by,read_flag:false});
-  pushToWh(plant,sloc,title||NOTIF_TITLE[nt.kind]||'Kiểm kê F&B',msg,nt.kind);
+  pushToWh(plant,sloc,title||NOTIF_TITLE[nt.kind]||'Kiểm kê F&B',msg,nt.kind,truUser);
   return nt;
 }
 /* ============ TỰ ĐỘNG NHẮC KHO TRỄ CẬP NHẬT ============
