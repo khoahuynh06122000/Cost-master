@@ -408,6 +408,10 @@
   .dcp-i .nm b{display:block;font-weight:700;color:var(--ink)}
   .dcp-i .nm span{font-size:12px;color:var(--muted)}
   .dcp-i .q{flex:none;font-weight:800;font-size:13.5px;color:var(--ink);white-space:nowrap}
+  /* Danh sach ma hang xem nhanh tren the phieu cho duyet. */
+  .dcq{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:2px 0 10px}
+  .dcq-h{background:var(--surface-2);border-bottom:1px solid var(--line);padding:7px 12px;
+    font-size:11.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
   .errbox.dlg{border-color:var(--brand)}
   .errbox.dlg .errbox-h{background:var(--brand)}
   .errbox.dlg .errbox-b .field:last-of-type{margin-bottom:6px}
@@ -1081,7 +1085,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2309-03';
+const APP_VER='2309-04';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1105,6 +1109,9 @@ Object.assign(TXT.hi,{"Điểm nhận hàng (phiếu đã duyệt)":"माल �
 Object.assign(TXT.en,{"Phiếu đã ghi sổ gần đây":"Recently recorded requests","Không có mã phiếu":"No request number","⚠ có dòng ghi trùng":"⚠ has a duplicated line","ghi trùng":"duplicated","Hiện 40 phiếu mới nhất.":"Showing the 40 most recent requests.","Xóa dòng sổ này":"Delete this ledger line"});
 Object.assign(TXT.hi,{"Phiếu đã ghi sổ gần đây":"हाल में दर्ज पर्चियाँ","Không có mã phiếu":"पर्ची संख्या नहीं","⚠ có dòng ghi trùng":"⚠ दोहरी पंक्ति है","ghi trùng":"दोहरा दर्ज","Hiện 40 phiếu mới nhất.":"सबसे हाल की 40 पर्चियाँ दिखाई गई हैं।","Xóa dòng sổ này":"यह बही पंक्ति हटाएँ"});
 /* Mau dong: chen len DAU mang de an truoc cac mau tong quat hon. */
+/* Bo sung 23/09/2026 (dot 3) — the phieu cho duyet hien tung ma hang. */
+Object.assign(TXT.en,{"Hàng xin điều chuyển":"Items requested"});
+Object.assign(TXT.hi,{"Hàng xin điều chuyển":"माँगी गई वस्तुएँ"});
 const TXT_RE_BS=[{re:new RegExp("^([\\d.,]+) loại lý do$"),en:"$1 kinds of reason",hi:"$1 प्रकार के कारण",n:1,en1:"$1 kind of reason",hi1:"$1 प्रकार का कारण"},{re:new RegExp("^([\\d.,]+) phiếu$"),en:"$1 requests",hi:"$1 पर्चियाँ",n:1,en1:"$1 request",hi1:"$1 पर्ची"},{re:new RegExp("^([\\d.,]+) dòng$"),en:"$1 lines",hi:"$1 पंक्तियाँ",n:1,en1:"$1 line",hi1:"$1 पंक्ति"}];
 const TXT_RE=[
   {re:new RegExp("^Tháng (\\d{2}/\\d{4}) \\(hiện tại\\)$"),en:"Month $1 (current)",hi:"माह $1 (वर्तमान)"},
@@ -6794,6 +6801,40 @@ function dcReqCard(r,canAct){
     tbl.appendChild(tb);w.appendChild(tbl);tblHost.appendChild(w);
   }
   function showTable(){buildTable();tblHost.hidden=false;}
+  /* NGUOI DUYET PHAI THAY HANG GI truoc khi bam Duyet (Khoa 23/09/2026).
+     Truoc day the chi ghi "1 mã" — muon biet ma nao phai bam "Sửa số rồi duyệt"
+     moi bung bang ra, nen thuc te ai cung duyet mu. Gio dung mot danh sach
+     CHI-XEM gon (ten · ma · DVT · SL xin) hien san.
+     Van giu cai loi cua dot 2 (10/09): phieu nhieu ma thi thu lai sau mot nut,
+     neu khong 3 phieu 45 ma lai keo man dai 5740px nhu truoc. */
+  const xemHost=el('div');if(canAct)wrap.appendChild(xemHost);
+  function dungXem(){
+    const box=el('div','dcq');
+    box.appendChild(el('div','dcq-h','Hàng xin điều chuyển'));
+    codes.forEach(c=>{
+      const it=r.items[c];
+      const row=el('div','dcp-i');
+      const nm=el('div','nm');
+      nm.appendChild(el('b',null,it.name||c));
+      nm.appendChild(el('span','tnum',c+' · '+(it.uom||'—')));
+      row.appendChild(nm);
+      row.appendChild(el('div','q tnum',it.qtyReq+' '+(it.uom||'')));
+      box.appendChild(row);
+    });
+    return box;
+  }
+  if(!canAct){/* phiếu chỉ-xem đi đường riêng bên dưới (bảng đầy đủ), không dựng ở đây */}
+  else if(codes.length<=6)xemHost.appendChild(dungXem());
+  else{
+    const bX=el('button','btn btn-ghost btn-sm','▾ Xem chi tiết '+codes.length+' mã');
+    bX.style.marginBottom='10px';
+    bX.onclick=()=>{
+      if(xemHost.querySelector('.dcq')){xemHost.innerHTML='';xemHost.appendChild(bX);
+        bX.textContent='▾ Xem chi tiết '+codes.length+' mã';}
+      else{xemHost.appendChild(dungXem());bX.textContent='▴ Thu gọn';}
+    };
+    xemHost.appendChild(bX);
+  }
   if(!canAct){
     // Phiếu chỉ để xem: ít mã thì mở luôn, nhiều mã thì thu lại cho đỡ dài màn
     if(codes.length<=6)showTable();
@@ -6825,7 +6866,7 @@ function dcReqCard(r,canAct){
         approveTransferReq(r,qs).finally(()=>{bFull.disabled=false;bEdit.disabled=false;
           bNo.disabled=false;bFull.textContent=cu;});
       };
-      bEdit.onclick=()=>{showTable();bEdit.hidden=true;bFull.hidden=true;bOk.hidden=false;
+      bEdit.onclick=()=>{showTable();xemHost.hidden=true;bEdit.hidden=true;bFull.hidden=true;bOk.hidden=false;
         hint.textContent='Hạ "SL thực giao" theo hàng có thật. Ghi 0 là mã đó không giao. Không cho ghi quá số đã xin.';};
       bOk.onclick=()=>{
         const qs={};Object.keys(inputs).forEach(c=>qs[c]=Number(inputs[c].value||0));
