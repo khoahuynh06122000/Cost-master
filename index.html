@@ -390,6 +390,24 @@
     font-family:ui-monospace,Consolas,monospace;font-size:11.5px;color:var(--ink);white-space:pre-wrap;word-break:break-word}
   .errbox-f{display:flex;gap:9px;justify-content:flex-end;padding:11px 16px;border-top:1px solid var(--line);background:var(--surface-2);flex-wrap:wrap}
   /* Hop thoai binh thuong (khong phai bao loi): dung lai khung .errbox, dau trang mau brand. */
+  /* So dieu chuyen gom theo PHIEU: moi the la mot phieu, bam ra moi thay dong hang. */
+  .dcp{border:1px solid var(--line);border-radius:12px;background:var(--surface);margin-bottom:9px;overflow:hidden}
+  .dcp>summary{list-style:none;cursor:pointer;padding:11px 13px;display:flex;flex-wrap:wrap;gap:3px 10px;align-items:baseline}
+  .dcp>summary::-webkit-details-marker{display:none}
+  .dcp>summary:hover{background:var(--surface-2)}
+  .dcp .pid{font-weight:800;color:var(--brand-ink);font-size:13.5px;word-break:break-all}
+  .dcp .pdate{font-size:12.5px;color:var(--muted)}
+  .dcp .pmo{margin-left:auto;color:var(--muted);font-size:12px;flex:none;display:inline-block;transition:transform .15s}
+  .dcp[open] .pmo{transform:rotate(180deg)}
+  .dcp .pnote{flex:1 0 100%;font-size:13px;color:var(--ink)}
+  .dcp .pline{flex:1 0 100%;font-size:12.5px;color:var(--muted)}
+  .dcp-b{border-top:1px solid var(--line);background:var(--surface-2)}
+  .dcp-i{display:flex;align-items:center;gap:10px;padding:9px 13px;border-bottom:1px solid var(--line)}
+  .dcp-i:last-child{border-bottom:none}
+  .dcp-i .nm{flex:1 1 auto;min-width:0;font-size:13px}
+  .dcp-i .nm b{display:block;font-weight:700;color:var(--ink)}
+  .dcp-i .nm span{font-size:12px;color:var(--muted)}
+  .dcp-i .q{flex:none;font-weight:800;font-size:13.5px;color:var(--ink);white-space:nowrap}
   .errbox.dlg{border-color:var(--brand)}
   .errbox.dlg .errbox-h{background:var(--brand)}
   .errbox.dlg .errbox-b .field:last-of-type{margin-bottom:6px}
@@ -1063,7 +1081,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2309-02';
+const APP_VER='2309-03';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1083,6 +1101,11 @@ Object.assign(TXT.hi,{"Mật khẩu hiện tại":"वर्तमान पा�
 /* Bo sung 23/09/2026 — man Theo doi so dieu chuyen chia theo khu. */
 Object.assign(TXT.en,{"Điểm nhận hàng (phiếu đã duyệt)":"Receiving outlets (approved requests)","🔎 Chọn khu cho hàng (kho nguồn)":"🔎 Choose the giving area (source store)","Khu / điểm bán cho hàng":"Giving area / outlet","Tất cả các khu":"All areas","Kho nguồn trong khu":"Source store in that area","Tất cả kho của khu":"All stores in the area","Chọn một khu để xem phiếu đi từ khu đó sang các điểm khác.":"Choose an area to see the requests going from it to other outlets.","Phiếu đi ra từ khu này":"Requests out of this area","Đã duyệt — hàng đã rời kho":"Approved — goods left the store","Chờ khu này duyệt":"Waiting for this area to approve","Điểm đã nhận hàng":"Outlets that received goods","Dòng sổ đã ghi":"Ledger lines recorded","Phiếu đi ra theo khu (bên cho hàng)":"Requests out, by area (the giving side)","Dòng sổ theo lý do":"Ledger lines by reason","Chỉ hiện 10 lý do có nhiều dòng sổ nhất.":"Only the 10 reasons with the most ledger lines are shown.","Dòng sổ điều chuyển gần đây":"Recent transfer ledger lines","Chưa có dòng sổ nào":"No ledger lines yet","Khu này chưa ghi sổ điều chuyển nào đi ra.":"This area has no outgoing transfer recorded yet.","Khi giám sát duyệt phiếu, dòng sổ sẽ hiện ở đây.":"Once a supervisor approves a request, the ledger line appears here.","Khu này chưa có phiếu nào được duyệt đi ra.":"No request out of this area has been approved yet.","Chọn một khu để xem phiếu đi từ khu đó sang các điểm":"Choose an area to see the requests going from it to other outlets"});
 Object.assign(TXT.hi,{"Điểm nhận hàng (phiếu đã duyệt)":"माल पाने वाले आउटलेट (स्वीकृत पर्चियाँ)","🔎 Chọn khu cho hàng (kho nguồn)":"🔎 देने वाला क्षेत्र चुनें (स्रोत स्टोर)","Khu / điểm bán cho hàng":"देने वाला क्षेत्र / आउटलेट","Tất cả các khu":"सभी क्षेत्र","Kho nguồn trong khu":"उस क्षेत्र का स्रोत स्टोर","Tất cả kho của khu":"क्षेत्र के सभी स्टोर","Chọn một khu để xem phiếu đi từ khu đó sang các điểm khác.":"किसी क्षेत्र को चुनें ताकि वहाँ से अन्य आउटलेट को गई पर्चियाँ दिखें।","Phiếu đi ra từ khu này":"इस क्षेत्र से बाहर गई पर्चियाँ","Đã duyệt — hàng đã rời kho":"स्वीकृत — माल स्टोर से निकल गया","Chờ khu này duyệt":"इस क्षेत्र की स्वीकृति की प्रतीक्षा","Điểm đã nhận hàng":"माल पाने वाले आउटलेट","Dòng sổ đã ghi":"दर्ज बही पंक्तियाँ","Phiếu đi ra theo khu (bên cho hàng)":"क्षेत्र अनुसार बाहर गई पर्चियाँ (देने वाला पक्ष)","Dòng sổ theo lý do":"कारण अनुसार बही पंक्तियाँ","Chỉ hiện 10 lý do có nhiều dòng sổ nhất.":"केवल सबसे अधिक बही पंक्तियों वाले 10 कारण दिखाए गए हैं।","Dòng sổ điều chuyển gần đây":"हाल की स्थानांतरण बही पंक्तियाँ","Chưa có dòng sổ nào":"अभी कोई बही पंक्ति नहीं","Khu này chưa ghi sổ điều chuyển nào đi ra.":"इस क्षेत्र से अब तक कोई स्थानांतरण दर्ज नहीं हुआ।","Khi giám sát duyệt phiếu, dòng sổ sẽ hiện ở đây.":"सुपरवाइज़र द्वारा पर्ची स्वीकृत होते ही बही पंक्ति यहाँ दिखेगी।","Khu này chưa có phiếu nào được duyệt đi ra.":"इस क्षेत्र से अब तक कोई पर्ची स्वीकृत नहीं हुई।","Chọn một khu để xem phiếu đi từ khu đó sang các điểm":"किसी क्षेत्र को चुनें ताकि वहाँ से अन्य आउटलेट को गई पर्चियाँ दिखें"});
+/* Bo sung 23/09/2026 (dot 2) — so dieu chuyen gom theo phieu. */
+Object.assign(TXT.en,{"Phiếu đã ghi sổ gần đây":"Recently recorded requests","Không có mã phiếu":"No request number","⚠ có dòng ghi trùng":"⚠ has a duplicated line","ghi trùng":"duplicated","Hiện 40 phiếu mới nhất.":"Showing the 40 most recent requests.","Xóa dòng sổ này":"Delete this ledger line"});
+Object.assign(TXT.hi,{"Phiếu đã ghi sổ gần đây":"हाल में दर्ज पर्चियाँ","Không có mã phiếu":"पर्ची संख्या नहीं","⚠ có dòng ghi trùng":"⚠ दोहरी पंक्ति है","ghi trùng":"दोहरा दर्ज","Hiện 40 phiếu mới nhất.":"सबसे हाल की 40 पर्चियाँ दिखाई गई हैं।","Xóa dòng sổ này":"यह बही पंक्ति हटाएँ"});
+/* Mau dong: chen len DAU mang de an truoc cac mau tong quat hon. */
+const TXT_RE_BS=[{re:new RegExp("^([\\d.,]+) loại lý do$"),en:"$1 kinds of reason",hi:"$1 प्रकार के कारण",n:1,en1:"$1 kind of reason",hi1:"$1 प्रकार का कारण"},{re:new RegExp("^([\\d.,]+) phiếu$"),en:"$1 requests",hi:"$1 पर्चियाँ",n:1,en1:"$1 request",hi1:"$1 पर्ची"},{re:new RegExp("^([\\d.,]+) dòng$"),en:"$1 lines",hi:"$1 पंक्तियाँ",n:1,en1:"$1 line",hi1:"$1 पंक्ति"}];
 const TXT_RE=[
   {re:new RegExp("^Tháng (\\d{2}/\\d{4}) \\(hiện tại\\)$"),en:"Month $1 (current)",hi:"माह $1 (वर्तमान)"},
   {re:new RegExp("^Tháng (\\d{2}/\\d{4})$"),en:"Month $1",hi:"माह $1"},
@@ -1180,6 +1203,7 @@ const TXT_RE=[
   {re:new RegExp("^(\\d+)/(\\d+) mã đã có tên tiếng Anh$"),en:"$1/$2 items have an English name",hi:"$1/$2 वस्तुओं का अंग्रेज़ी नाम है"},
   {re:new RegExp("^Tìm theo mã hoặc tên hàng… \\((\\d+) mã của điểm bán\\)$"),en:"Search by code or item name… ($1 items at this outlet)",hi:"कोड या नाम से खोजें… (इस आउटलेट की $1 वस्तुएँ)",n:1,en1:"Search by code or item name… ($1 item at this outlet)",hi1:"कोड या नाम से खोजें… (इस आउटलेट की $1 वस्तु)"}
 ];
+TXT_RE.unshift(...TXT_RE_BS);
 function L(s){
   if(LANG==='vi')return s;
   const k=String(s==null?'':s).trim();
@@ -5022,6 +5046,20 @@ async function deleteTransferRow(t,laTrung){
    Mot phieu 20 ma dem thanh 20. Phieu that nam o `trReqs`. Gio tach hai con so ra va
    goi dung ten tung cai. */
 function dcKhuTen(p){return p?plantName(p):'—';}
+/* `reason` cua dong so do approveTransferReq dung nen:
+     "<loai>: <ghi chu> · <ma phieu>"   vi du "Xin hàng: ĐIỀU CHUYỂN HÀNG 14.9 · DC-1049-2028-20260918-6"
+   Phieu cu chi ghi moi ma phieu, dong nap tu Excel thi khong co ma nao.
+   Tach o doan CUOI cung, nen ghi chu cua nguoi dung co chua " · " cung khong sao. */
+function dcMaPhieu(t){
+  const p=String((t&&t.reason)||'').split(' · ');
+  const c=p[p.length-1].trim();
+  return /^[A-Z]{2,4}-[A-Za-z0-9-]+$/.test(c)?c:'';
+}
+function dcGhiChu(t){
+  const p=String((t&&t.reason)||'').split(' · ');
+  if(dcMaPhieu(t))p.pop();
+  return p.join(' · ').trim();
+}
 function dcDashList(v){
   const P=dashPlantDC,S=dashSlocDC;
   const hopPhieu=r=>(!P||r.fromPlant===P)&&(!S||r.fromSloc===S);
@@ -5082,7 +5120,11 @@ function dcDashList(v){
   v.appendChild(bl);
 
   const card=el('div','card');
-  card.appendChild(el('div','card-h',`<span class="ct">Dòng sổ điều chuyển gần đây</span><span class="badge badge-soft">${so.length}</span>`));
+  const soPhieu=new Set();so.forEach(t=>soPhieu.add(dcMaPhieu(t)||('#'+t.id)));
+  const ch=el('div','card-h',`<span class="ct">Phiếu đã ghi sổ gần đây</span>`);
+  ch.appendChild(el('span','badge badge-soft',soPhieu.size+' phiếu'));
+  ch.appendChild(el('span','badge badge-soft',so.length+' dòng'));
+  card.appendChild(ch);
   const body=el('div');
   if(!so.length)body.appendChild(el('div','empty',`<div class="big">Chưa có dòng sổ nào</div><div>${P?'Khu này chưa ghi sổ điều chuyển nào đi ra.':'Khi giám sát duyệt phiếu, dòng sổ sẽ hiện ở đây.'}</div>`));
   else{
@@ -5109,27 +5151,56 @@ function dcDashList(v){
       c.appendChild(in3);body.appendChild(c);
     }
     const laAdmin=session&&session.role==='admin';
-    const w=el('div','tbl-wrap');const tbl=el('table');
-    tbl.innerHTML=`<thead><tr><th>Ngày</th><th>Hàng hóa</th><th class="num">SL</th><th>Từ → Đến</th><th>Lý do</th><th>Người nhập</th>${laAdmin?'<th></th>':''}</tr></thead>`;
-    const tb=el('tbody');
-    so.slice(0,80).forEach(t=>{
-      const trung=dem[dcVan(t)]>1;
-      const tr=el('tr',null,`<td class="tnum">${t.date}</td>
-      <td><div class="cell-strong">${t.name}</div><div class="cell-sub tnum">${t.code}${trung?' · <b style="color:var(--red)">ghi trùng</b>':''}</div></td>
-      <td class="num cell-strong tnum">${t.qty} ${t.uom}</td>
-      <td style="font-size:12.5px">${t.from} <span style="color:var(--brand-ink);font-weight:700">→</span> ${t.to}</td>
-      <td><span class="badge badge-soft">${t.reason}</span></td><td>${t.user||''}</td>`);
-      if(laAdmin){
-        const td=el('td');
-        const b=el('button','btn btn-ghost btn-sm','🗑');
-        b.title='Xóa dòng sổ này';b.style.color='var(--red)';
-        b.onclick=()=>deleteTransferRow(t,trung);
-        td.appendChild(b);tr.appendChild(td);
-      }
-      tb.appendChild(tr);
+    /* GOM THEO PHIEU. Truoc day moi ma hang mot dong nen mot phieu 20 ma chiem 20
+       dong, doc khong ra phieu nao voi phieu nao. Gio moi the la MOT PHIEU
+       (so phieu · ngay · ghi chu), bam ra moi thay tung ma. */
+    const nhom=new Map();
+    so.forEach(t=>{
+      const id=dcMaPhieu(t);
+      const k=id||('#'+t.id);   // dong khong co ma phieu dung rieng mot the, khong gom chung
+      if(!nhom.has(k))nhom.set(k,{id:id,date:t.date,note:dcGhiChu(t),from:t.from,to:t.to,user:t.user,rows:[]});
+      const g=nhom.get(k);g.rows.push(t);
+      if(t.date&&(!g.date||t.date<g.date))g.date=t.date;
     });
-    tbl.appendChild(tb);w.appendChild(tbl);body.appendChild(w);
-    if(so.length>80)body.appendChild(el('div','list-hint','Hiện 80 dòng mới nhất trong '+so.length+' dòng.'));
+    const ds=[...nhom.values()].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+    const DCP=40;
+    ds.slice(0,DCP).forEach(g=>{
+      const coTrung=g.rows.some(t=>dem[dcVan(t)]>1);
+      const d=el('details','dcp');
+      const sm=el('summary');
+      sm.appendChild(el('span','pid',g.id||'Không có mã phiếu'));
+      if(g.date)sm.appendChild(el('span','pdate',g.date));
+      if(coTrung)sm.appendChild(el('span','badge badge-soft','⚠ có dòng ghi trùng'));
+      sm.appendChild(el('span','pmo','▾'));
+      if(g.note)sm.appendChild(el('div','pnote',g.note));
+      const ln=el('div','pline');
+      ln.appendChild(el('span',null,(g.from||'')+' → '+(g.to||'')));
+      ln.appendChild(document.createTextNode(' · '));
+      ln.appendChild(el('span',null,g.rows.length+' mã'));
+      if(g.user){ln.appendChild(document.createTextNode(' · '));ln.appendChild(el('span',null,g.user));}
+      sm.appendChild(ln);
+      d.appendChild(sm);
+      const b=el('div','dcp-b');
+      g.rows.forEach(t=>{
+        const trung=dem[dcVan(t)]>1;
+        const r=el('div','dcp-i');
+        const nm=el('div','nm');
+        nm.appendChild(el('b',null,t.name||t.code));
+        nm.appendChild(el('span','tnum',t.code+(trung?' · ':'')));
+        if(trung){const w=el('b',null,'ghi trùng');w.style.cssText='display:inline;color:var(--red)';nm.lastChild.appendChild(w);}
+        r.appendChild(nm);
+        r.appendChild(el('div','q tnum',t.qty+' '+(t.uom||'')));
+        if(laAdmin){
+          const bt=el('button','btn btn-ghost btn-sm','🗑');
+          bt.title='Xóa dòng sổ này';bt.style.color='var(--red)';bt.style.flex='none';
+          bt.onclick=e=>{e.preventDefault();e.stopPropagation();deleteTransferRow(t,trung);};
+          r.appendChild(bt);
+        }
+        b.appendChild(r);
+      });
+      d.appendChild(b);body.appendChild(d);
+    });
+    if(ds.length>DCP)body.appendChild(el('div','list-hint','Hiện 40 phiếu mới nhất.'));
   }
   card.appendChild(body);v.appendChild(card);
 }
