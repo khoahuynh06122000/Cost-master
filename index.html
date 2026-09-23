@@ -1063,7 +1063,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2309-01';
+const APP_VER='2309-02';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1080,6 +1080,9 @@ const TXT={en:{"Kiểm kê F&B": "F&B Stocktake","Tổng quan": "Overview","Nghi
 /* Bo sung 23/09/2026 — man doi mat khau. Dat NGOAI khoi TXT sinh tu tu-dien-ngon-ngu.py de lan sinh lai sau khong nuot mat; nguon goc van duoc them vao file .py do. */
 Object.assign(TXT.en,{"Mật khẩu hiện tại":"Current password","Nhập lại mật khẩu mới":"Re-enter the new password","Hiện mật khẩu":"Show password","Nhập đủ ba ô.":"Fill in all three boxes.","Mật khẩu tối thiểu 6 ký tự.":"The password must be at least 6 characters.","Hai mật khẩu không khớp.":"The two passwords do not match.","Mật khẩu mới phải khác mật khẩu hiện tại.":"The new password must be different from the current one.","Chưa kết nối máy chủ.":"Not connected to the server.","Không có mạng — đổi mật khẩu cần kết nối.":"No connection — changing the password needs the internet.","Mật khẩu hiện tại không đúng.":"The current password is wrong.","Đang đổi mật khẩu…":"Changing the password…","Không đổi được mật khẩu. Thử lại sau ít phút hoặc liên hệ kế toán.":"The password could not be changed. Try again in a few minutes or contact accounting.","✓ Đã đổi mật khẩu. Lần đăng nhập sau dùng mật khẩu mới.":"✓ Password changed. Use the new one the next time you sign in."});
 Object.assign(TXT.hi,{"Mật khẩu hiện tại":"वर्तमान पासवर्ड","Nhập lại mật khẩu mới":"नया पासवर्ड दोबारा डालें","Hiện mật khẩu":"पासवर्ड दिखाएँ","Nhập đủ ba ô.":"तीनों खाने भरें।","Mật khẩu tối thiểu 6 ký tự.":"पासवर्ड कम से कम 6 अक्षर का होना चाहिए।","Hai mật khẩu không khớp.":"दोनों पासवर्ड मेल नहीं खाते।","Mật khẩu mới phải khác mật khẩu hiện tại.":"नया पासवर्ड वर्तमान पासवर्ड से अलग होना चाहिए।","Chưa kết nối máy chủ.":"सर्वर से कनेक्ट नहीं है।","Không có mạng — đổi mật khẩu cần kết nối.":"कनेक्शन नहीं है — पासवर्ड बदलने के लिए इंटरनेट चाहिए।","Mật khẩu hiện tại không đúng.":"वर्तमान पासवर्ड गलत है।","Đang đổi mật khẩu…":"पासवर्ड बदला जा रहा है…","Không đổi được mật khẩu. Thử lại sau ít phút hoặc liên hệ kế toán.":"पासवर्ड नहीं बदला जा सका। कुछ मिनट बाद दोबारा कोशिश करें या लेखा से संपर्क करें।","✓ Đã đổi mật khẩu. Lần đăng nhập sau dùng mật khẩu mới.":"✓ पासवर्ड बदल गया। अगली बार साइन इन करते समय नया पासवर्ड डालें।"});
+/* Bo sung 23/09/2026 — man Theo doi so dieu chuyen chia theo khu. */
+Object.assign(TXT.en,{"Điểm nhận hàng (phiếu đã duyệt)":"Receiving outlets (approved requests)","🔎 Chọn khu cho hàng (kho nguồn)":"🔎 Choose the giving area (source store)","Khu / điểm bán cho hàng":"Giving area / outlet","Tất cả các khu":"All areas","Kho nguồn trong khu":"Source store in that area","Tất cả kho của khu":"All stores in the area","Chọn một khu để xem phiếu đi từ khu đó sang các điểm khác.":"Choose an area to see the requests going from it to other outlets.","Phiếu đi ra từ khu này":"Requests out of this area","Đã duyệt — hàng đã rời kho":"Approved — goods left the store","Chờ khu này duyệt":"Waiting for this area to approve","Điểm đã nhận hàng":"Outlets that received goods","Dòng sổ đã ghi":"Ledger lines recorded","Phiếu đi ra theo khu (bên cho hàng)":"Requests out, by area (the giving side)","Dòng sổ theo lý do":"Ledger lines by reason","Chỉ hiện 10 lý do có nhiều dòng sổ nhất.":"Only the 10 reasons with the most ledger lines are shown.","Dòng sổ điều chuyển gần đây":"Recent transfer ledger lines","Chưa có dòng sổ nào":"No ledger lines yet","Khu này chưa ghi sổ điều chuyển nào đi ra.":"This area has no outgoing transfer recorded yet.","Khi giám sát duyệt phiếu, dòng sổ sẽ hiện ở đây.":"Once a supervisor approves a request, the ledger line appears here.","Khu này chưa có phiếu nào được duyệt đi ra.":"No request out of this area has been approved yet.","Chọn một khu để xem phiếu đi từ khu đó sang các điểm":"Choose an area to see the requests going from it to other outlets"});
+Object.assign(TXT.hi,{"Điểm nhận hàng (phiếu đã duyệt)":"माल पाने वाले आउटलेट (स्वीकृत पर्चियाँ)","🔎 Chọn khu cho hàng (kho nguồn)":"🔎 देने वाला क्षेत्र चुनें (स्रोत स्टोर)","Khu / điểm bán cho hàng":"देने वाला क्षेत्र / आउटलेट","Tất cả các khu":"सभी क्षेत्र","Kho nguồn trong khu":"उस क्षेत्र का स्रोत स्टोर","Tất cả kho của khu":"क्षेत्र के सभी स्टोर","Chọn một khu để xem phiếu đi từ khu đó sang các điểm khác.":"किसी क्षेत्र को चुनें ताकि वहाँ से अन्य आउटलेट को गई पर्चियाँ दिखें।","Phiếu đi ra từ khu này":"इस क्षेत्र से बाहर गई पर्चियाँ","Đã duyệt — hàng đã rời kho":"स्वीकृत — माल स्टोर से निकल गया","Chờ khu này duyệt":"इस क्षेत्र की स्वीकृति की प्रतीक्षा","Điểm đã nhận hàng":"माल पाने वाले आउटलेट","Dòng sổ đã ghi":"दर्ज बही पंक्तियाँ","Phiếu đi ra theo khu (bên cho hàng)":"क्षेत्र अनुसार बाहर गई पर्चियाँ (देने वाला पक्ष)","Dòng sổ theo lý do":"कारण अनुसार बही पंक्तियाँ","Chỉ hiện 10 lý do có nhiều dòng sổ nhất.":"केवल सबसे अधिक बही पंक्तियों वाले 10 कारण दिखाए गए हैं।","Dòng sổ điều chuyển gần đây":"हाल की स्थानांतरण बही पंक्तियाँ","Chưa có dòng sổ nào":"अभी कोई बही पंक्ति नहीं","Khu này chưa ghi sổ điều chuyển nào đi ra.":"इस क्षेत्र से अब तक कोई स्थानांतरण दर्ज नहीं हुआ।","Khi giám sát duyệt phiếu, dòng sổ sẽ hiện ở đây.":"सुपरवाइज़र द्वारा पर्ची स्वीकृत होते ही बही पंक्ति यहाँ दिखेगी।","Khu này chưa có phiếu nào được duyệt đi ra.":"इस क्षेत्र से अब तक कोई पर्ची स्वीकृत नहीं हुई।","Chọn một khu để xem phiếu đi từ khu đó sang các điểm":"किसी क्षेत्र को चुनें ताकि वहाँ से अन्य आउटलेट को गई पर्चियाँ दिखें"});
 const TXT_RE=[
   {re:new RegExp("^Tháng (\\d{2}/\\d{4}) \\(hiện tại\\)$"),en:"Month $1 (current)",hi:"माह $1 (वर्तमान)"},
   {re:new RegExp("^Tháng (\\d{2}/\\d{4})$"),en:"Month $1",hi:"माह $1"},
@@ -1605,7 +1608,9 @@ let dashPlantSC='';    // plant đang lọc ở dashboard Bàn giao ca
 let dashSlocSC='';     // sloc đang lọc ở dashboard Bàn giao ca
 let dashPlantOP='';    // plant đang lọc ở dashboard Tồn đầu kỳ
 let dashSlocOP='';     // sloc đang lọc ở dashboard Tồn đầu kỳ
-let dashPlantDX='';    // plant đang lọc ở dashboard Kiểm kê đột xuất
+let dashPlantDC='';    // khu (plant) CHO hàng đang lọc ở Theo dõi sổ điều chuyển
+ let dashSlocDC='';     // kho nguồn cụ thể trong khu đó
+ let dashPlantDX='';    // plant đang lọc ở dashboard Kiểm kê đột xuất
 let dashSlocDX='';     // sloc đang lọc ở dashboard Kiểm kê đột xuất
 let phPeriod='',phPlant='';  // bộ lọc tab Phân tích (kỳ + điểm bán)
 let usersView='list',userSearch='',userRoleF='',userStatusF='',userEdit=null;  // màn Người dùng
@@ -4418,7 +4423,7 @@ function barBlock(title,data,fmt){
 // Không truyền opts thì thẻ lọc y như cũ, các dashboard khác không đổi.
 function dashFilterCard(curPlant,curSloc,onPickPlant,onPickSloc,opts){
   const card=el('div','card');const b=el('div','card-b');
-  b.innerHTML=`<div class="section-eyebrow">🔎 Lọc theo ${opts&&opts.periods?'tháng / ':''}điểm bán / kho</div>`;
+  b.innerHTML=`<div class="section-eyebrow">${(opts&&opts.nhan)||('🔎 Lọc theo '+((opts&&opts.periods)?'tháng / ':'')+'điểm bán / kho')}</div>`;
   if(opts&&opts.periods){
     const pf=el('label','field','<span>Kỳ kiểm kê (tháng)</span>');const sel=el('select','input');
     const oAll=el('option',null,'Tất cả tháng');oAll.value='';sel.appendChild(oAll);
@@ -4427,16 +4432,16 @@ function dashFilterCard(curPlant,curSloc,onPickPlant,onPickSloc,opts){
     pf.style.marginBottom='10px';b.appendChild(pf);
   }
   const row=el('div','grid2');
-  const pf=el('label','field','<span>Điểm bán (Plant)</span>');const psel=el('select','input');
-  const oAll=el('option',null,'Tất cả điểm bán');oAll.value='';psel.appendChild(oAll);
+  const pf=el('label','field','<span>'+((opts&&opts.nhanP)||'Điểm bán (Plant)')+'</span>');const psel=el('select','input');
+  const oAll=el('option',null,(opts&&opts.moiP)||'Tất cả điểm bán');oAll.value='';psel.appendChild(oAll);
   allowedPlants().forEach(p=>{const o=el('option',null,p.name);o.value=p.plant;if(curPlant===p.plant)o.selected=true;psel.appendChild(o);});
   psel.onchange=()=>onPickPlant(psel.value);pf.appendChild(psel);
-  const sf=el('label','field','<span>Kho (Sloc)</span>');const ssel=el('select','input');
-  const sAll=el('option',null,'Tất cả kho');sAll.value='';ssel.appendChild(sAll);
+  const sf=el('label','field','<span>'+((opts&&opts.nhanS)||'Kho (Sloc)')+'</span>');const ssel=el('select','input');
+  const sAll=el('option',null,(opts&&opts.moiS)||'Tất cả kho');sAll.value='';ssel.appendChild(sAll);
   if(curPlant){allowedSlocsOf(curPlant).forEach(w=>{const o=el('option',null,`${w.sloc_name} (${w.sloc})`);o.value=w.sloc;if(curSloc===w.sloc)o.selected=true;ssel.appendChild(o);});}
   ssel.disabled=!curPlant;ssel.onchange=()=>onPickSloc(ssel.value);sf.appendChild(ssel);
   row.appendChild(pf);row.appendChild(sf);b.appendChild(row);
-  if(!curPlant)b.appendChild(el('div','list-hint','Chọn một điểm bán để lọc tiếp theo kho.'));
+  if(!curPlant)b.appendChild(el('div','list-hint',(opts&&opts.goiY)||'Chọn một điểm bán để lọc tiếp theo kho.'));
   card.appendChild(b);return card;
 }
 // ---- Nhập số kiểm kê từ Excel (admin/kế toán tạo phiếu 'Chờ duyệt' thay điểm bán) ----
@@ -4925,7 +4930,7 @@ function renderDieuchuyenDash(v){
     // phiếu hủy nằm treo mãi không ai xử lý được.
     {k:'duyet',ico:HIC.clock,title:'Chờ tôi duyệt',sub:'Phiếu hủy / hao hụt cần kế toán duyệt (admin duyệt được mọi phiếu)',n:nCho?nCho+' phiếu chờ':'',warm:!!nCho,render:dcChoDuyet},
     {k:'yc',ico:HIC.eye,title:'Toàn bộ phiếu yêu cầu',sub:'Mọi phiếu xin / đẩy / hủy của các điểm bán, đối chiếu phiếu với sổ',n:nYC?nYC+' phiếu chưa duyệt':'',render:dcAllReqs},
-    {k:'theodoi',ico:HIC.list,title:'Theo dõi sổ điều chuyển',sub:'Thống kê theo lý do và các dòng đã ghi sổ',n:transfers.length?transfers.length+' dòng sổ':'',render:dcDashList},
+    {k:'theodoi',ico:HIC.list,title:'Theo dõi sổ điều chuyển',sub:'Chọn một khu để xem phiếu đi từ khu đó sang các điểm',n:transfers.length?transfers.length+' dòng sổ':'',render:dcDashList},
     {k:'sap',ico:HIC.sheet,title:'Xuất Excel mẫu SAP',sub:'Xuất phiếu điều chuyển trong tháng đúng mẫu import SAP',render:dcSapExport},
     {k:'xls',ico:HIC.sheet,title:'Nạp Excel điều chuyển',sub:'File SharePoint — ghi nhận việc đã xảy ra, vào thẳng sổ',render:dcNapExcel},
   ]);
@@ -5007,21 +5012,82 @@ async function deleteTransferRow(t,laTrung){
   renderView();return true;
 }
 
+/* ===== THEO DOI SO DIEU CHUYEN — CHIA THEO KHU CHO HANG (23/09/2026) =====
+   Khoa: "chon khu lau dai thi se la tong so phieu phat sinh di tu lau dai sang cac
+   diem (tuc la cac diem di xin hang va lau dai duyet)". Vay KHU = plant, va bo loc
+   luon nham vao BEN CHO HANG (kho nguon) — dung ben ma nguoi duyet ngoi.
+
+   DEM PHIEU, KHONG DEM DONG SO. `transfers` la SO GHI NHAN: moi dong la MOT MA HANG,
+   nen `transfers.length` (so cu ghi la "Tong phieu dieu chuyen") that ra la so DONG.
+   Mot phieu 20 ma dem thanh 20. Phieu that nam o `trReqs`. Gio tach hai con so ra va
+   goi dung ten tung cai. */
+function dcKhuTen(p){return p?plantName(p):'—';}
 function dcDashList(v){
-  const total=transfers.length;
-  const byReason={};transfers.forEach(t=>{byReason[t.reason]=(byReason[t.reason]||0)+1;});
+  const P=dashPlantDC,S=dashSlocDC;
+  const hopPhieu=r=>(!P||r.fromPlant===P)&&(!S||r.fromSloc===S);
+  const hopSo=t=>{const k=String(t.fromKey||'').split('|');return (!P||k[0]===P)&&(!S||k[1]===S);};
+  const phieu=(trReqs||[]).filter(hopPhieu);
+  const so=(transfers||[]).filter(hopSo);
+  const duyet=phieu.filter(r=>r.status==='Đã duyệt');
+  const cho=phieu.filter(r=>r.status!=='Đã duyệt'&&r.status!=='Từ chối');
+
+  v.appendChild(dashFilterCard(P,S,
+    val=>{dashPlantDC=val;dashSlocDC='';renderView();},
+    val=>{dashSlocDC=val;renderView();},
+    {nhan:'🔎 Chọn khu cho hàng (kho nguồn)',nhanP:'Khu / điểm bán cho hàng',
+     moiP:'Tất cả các khu',nhanS:'Kho nguồn trong khu',moiS:'Tất cả kho của khu',
+     goiY:'Chọn một khu để xem phiếu đi từ khu đó sang các điểm khác.'}));
+
+  const nDiem=new Set();duyet.forEach(r=>{if(r.kind!=='huy'&&r.toPlant)nDiem.add(r.toPlant);});
   const stats=el('div','stats');
   stats.innerHTML=`
-    <div class="stat"><div class="ic" style="background:#EAF1F0;color:var(--brand-ink)">🔁</div><div><div class="n tnum">${total}</div><div class="l">Tổng phiếu điều chuyển</div></div></div>
-    <div class="stat"><div class="ic" style="background:#FDF1DC;color:var(--accent-600)">🏷️</div><div><div class="n tnum">${Object.keys(byReason).length}</div><div class="l">Số loại lý do</div></div></div>`;
+    <div class="stat"><div class="ic" style="background:#EAF1F0;color:var(--brand-ink)">📤</div><div><div class="n tnum">${phieu.length}</div><div class="l">${P?'Phiếu đi ra từ khu này':'Tổng phiếu điều chuyển'}</div></div></div>
+    <div class="stat"><div class="ic" style="background:#EAF1F0;color:var(--brand-ink)">✓</div><div><div class="n tnum">${duyet.length}</div><div class="l">Đã duyệt — hàng đã rời kho</div></div></div>
+    <div class="stat"><div class="ic" style="background:#FDF1DC;color:var(--accent-600)">⏳</div><div><div class="n tnum">${cho.length}</div><div class="l">${P?'Chờ khu này duyệt':'Chờ duyệt'}</div></div></div>
+    <div class="stat"><div class="ic" style="background:#EAF1F0;color:var(--brand-ink)">🏬</div><div><div class="n tnum">${nDiem.size}</div><div class="l">Điểm đã nhận hàng</div></div></div>
+    <div class="stat"><div class="ic" style="background:#EAF1F0;color:var(--brand-ink)">🔁</div><div><div class="n tnum">${so.length}</div><div class="l">Dòng sổ đã ghi</div></div></div>`;
   v.appendChild(stats);
-  const bars=Object.entries(byReason).map(([r,n])=>[r,n]).sort((a,b)=>b[1]-a[1]);
-  v.appendChild(barBlock('Phiếu theo lý do',bars));
+
+  /* Mot phieu = mot lan xin, du bao nhieu ma hang. Noi ro de khong ai doc nham
+     con so nay thanh so ma. */
+  const gt=el('div','note');const gtIn=el('div');gtIn.style.minWidth='0';
+  gtIn.innerHTML='<b>Một phiếu = một lần xin hàng</b>, dù trong phiếu có bao nhiêu mã. '
+    +'<b>Dòng sổ</b> mới đếm theo từng mã — nên hai con số này luôn khác nhau.';
+  gt.appendChild(gtIn);v.appendChild(gt);
+
+  if(!P){
+    const theoKhu={};
+    (trReqs||[]).forEach(r=>{const k=dcKhuTen(r.fromPlant);theoKhu[k]=(theoKhu[k]||0)+1;});
+    v.appendChild(barBlock('Phiếu đi ra theo khu (bên cho hàng)',
+      Object.entries(theoKhu).sort((a,b)=>b[1]-a[1])));
+  }else{
+    const theoDiem={};
+    duyet.forEach(r=>{const k=(r.kind==='huy')?'Hủy / hao hụt':dcKhuTen(r.toPlant);theoDiem[k]=(theoDiem[k]||0)+1;});
+    const bd=Object.entries(theoDiem).sort((a,b)=>b[1]-a[1]);
+    const bb=barBlock('Điểm nhận hàng (phiếu đã duyệt)',bd);
+    bb.querySelector('.card-h').innerHTML+='<span class="badge badge-soft">'+dcKhuTen(P)+'</span>';
+    if(!bd.length)bb.querySelector('.card-b').innerHTML=
+      '<div class="list-hint">Khu này chưa có phiếu nào được duyệt đi ra.</div>';
+    v.appendChild(bb);
+  }
+
+  /* Ly do la chu tu do nen rat nhieu loai; chi hien 10 loai nhieu nhat, so loai
+     day du van nam o thong ke ben duoi tieu de. */
+  const byReason={};so.forEach(t=>{byReason[t.reason]=(byReason[t.reason]||0)+1;});
+  const rs=Object.entries(byReason).sort((a,b)=>b[1]-a[1]);
+  const bl=barBlock('Dòng sổ theo lý do',rs.slice(0,10));
+  bl.querySelector('.card-h').innerHTML+=`<span class="badge badge-soft">${rs.length} loại lý do</span>`;
+  if(rs.length>10)bl.querySelector('.card-b').appendChild(
+    el('div','list-hint','Chỉ hiện 10 lý do có nhiều dòng sổ nhất.'));
+  v.appendChild(bl);
+
   const card=el('div','card');
-  card.appendChild(el('div','card-h',`<span class="ct">Phiếu điều chuyển gần đây</span><span class="badge badge-soft">${total}</span>`));
+  card.appendChild(el('div','card-h',`<span class="ct">Dòng sổ điều chuyển gần đây</span><span class="badge badge-soft">${so.length}</span>`));
   const body=el('div');
-  if(!total)body.appendChild(el('div','empty',`<div class="big">Chưa có phiếu điều chuyển</div><div>Khi giám sát nhập điều chuyển, phiếu sẽ hiện ở đây.</div>`));
+  if(!so.length)body.appendChild(el('div','empty',`<div class="big">Chưa có dòng sổ nào</div><div>${P?'Khu này chưa ghi sổ điều chuyển nào đi ra.':'Khi giám sát duyệt phiếu, dòng sổ sẽ hiện ở đây.'}</div>`));
   else{
+    /* Canh bao ghi trung tinh tren TOAN SO, khong theo bo loc: mot dong trung van la
+       trung du dang xem khu nao, giau di theo bo loc la giau mat loi lech kho. */
     const dem=dcDemTrung();
     const soTrung=Object.values(dem).filter(x=>x>1).reduce((a,b)=>a+(b-1),0);
     if(soTrung){
@@ -5033,11 +5099,20 @@ function dcDashList(v){
           :'Báo admin xóa bản dư.');
       c.appendChild(in2);body.appendChild(c);
     }
+    /* Dong so cu chua co from_key thi khong biet no thuoc khu nao -> bo loc se bo qua.
+       Phai noi ra, neu khong nguoi doc tuong khu minh it phieu hon thuc te. */
+    const thieuKey=(transfers||[]).filter(t=>!t.fromKey).length;
+    if(P&&thieuKey){
+      const c=el('div','note');const in3=el('div');in3.style.minWidth='0';
+      in3.innerHTML='<b>'+thieuKey+' dòng sổ cũ</b> không ghi kho nguồn nên không xếp được vào khu nào — '
+        +'bỏ chọn khu ở ô trên để xem đủ.';
+      c.appendChild(in3);body.appendChild(c);
+    }
     const laAdmin=session&&session.role==='admin';
     const w=el('div','tbl-wrap');const tbl=el('table');
     tbl.innerHTML=`<thead><tr><th>Ngày</th><th>Hàng hóa</th><th class="num">SL</th><th>Từ → Đến</th><th>Lý do</th><th>Người nhập</th>${laAdmin?'<th></th>':''}</tr></thead>`;
     const tb=el('tbody');
-    transfers.slice(0,80).forEach(t=>{
+    so.slice(0,80).forEach(t=>{
       const trung=dem[dcVan(t)]>1;
       const tr=el('tr',null,`<td class="tnum">${t.date}</td>
       <td><div class="cell-strong">${t.name}</div><div class="cell-sub tnum">${t.code}${trung?' · <b style="color:var(--red)">ghi trùng</b>':''}</div></td>
@@ -5054,6 +5129,7 @@ function dcDashList(v){
       tb.appendChild(tr);
     });
     tbl.appendChild(tb);w.appendChild(tbl);body.appendChild(w);
+    if(so.length>80)body.appendChild(el('div','list-hint','Hiện 80 dòng mới nhất trong '+so.length+' dòng.'));
   }
   card.appendChild(body);v.appendChild(card);
 }
