@@ -1085,7 +1085,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2409-16';
+const APP_VER='2409-17';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1124,6 +1124,9 @@ Object.assign(TXT.hi,{"↩ Bỏ từ chối (admin)":"↩ अस्वीकृ�
 /* Bo sung 24/09/2026 (dot ra soat) — 6 chuoi con sot khi quet lai toan app. */
 Object.assign(TXT.en,{"⚠ Trễ":"⚠ Late"});
 Object.assign(TXT.hi,{"⚠ Trễ":"⚠ देर"});
+/* Bo sung 24/09/2026 (dot 19) — bo phan sua so khi ke toan chua duyet. */
+Object.assign(TXT.en,{"✎ Sửa số / đếm bổ sung phiếu này":"✎ Edit / add to this count sheet","✎ Sửa số đã đếm":"✎ Edit the counted figures","Chờ Kế toán viên phê duyệt.":"Waiting for the accountant to approve.","Kế toán chưa duyệt nên kho vẫn sửa được số: sửa số cũ, thêm mã thiếu, bỏ mã đếm nhầm. Phiếu giữ nguyên mã số và mọi thay đổi được ghi lại để kế toán xem khi duyệt.":"The accountant has not approved yet, so the store can still edit: change a figure, add a missing item, drop an item counted by mistake. The sheet keeps its number and every change is recorded for the accountant to review at approval."});
+Object.assign(TXT.hi,{"✎ Sửa số / đếm bổ sung phiếu này":"✎ इस गणना पर्ची को संपादित करें / जोड़ें","✎ Sửa số đã đếm":"✎ गिने गए आंकड़े संपादित करें","Chờ Kế toán viên phê duyệt.":"लेखाकार की स्वीकृति की प्रतीक्षा है।","Kế toán chưa duyệt nên kho vẫn sửa được số: sửa số cũ, thêm mã thiếu, bỏ mã đếm nhầm. Phiếu giữ nguyên mã số và mọi thay đổi được ghi lại để kế toán xem khi duyệt.":"लेखाकार ने अभी स्वीकृति नहीं दी है, इसलिए स्टोर अब भी संपादित कर सकता है: आंकड़ा बदलें, छूटी वस्तु जोड़ें, गलती से गिनी वस्तु हटाएं। पर्ची का नंबर वही रहता है और हर बदलाव स्वीकृति के समय लेखाकार के देखने हेतु दर्ज होता है।"});
 const TXT_RE_BS=[{re:new RegExp("^([\\d.,]+)/([\\d.,]+) điểm bán$"),en:"$1/$2 outlets",hi:"$1/$2 आउटलेट"},{re:new RegExp("^còn ([\\d.,]+)$"),en:"$1 left",hi:"$1 शेष"},{re:new RegExp("^🔔 Đã tự nhắc ([\\d.,]+) điểm bán$"),en:"🔔 Auto-reminded $1 outlets",hi:"🔔 $1 आउटलेट को स्वतः याद दिलाया"},{re:new RegExp("^📋 Xem bảng xếp hạng chi tiết \\(([\\d.,]+) bộ phận\\)$"),en:"📋 See the full ranking ($1 departments)",hi:"📋 पूरी रैंकिंग देखें ($1 विभाग)"},{re:new RegExp("^🔒 Tháng (\\d{2}/\\d{4}) đã khóa$"),en:"🔒 Month $1 is locked",hi:"🔒 माह $1 बंद है"},{re:new RegExp("^đã được kế toán duyệt cho tháng (\\d{2}/\\d{4})\\. Không thể chỉnh sửa\\. Kỳ mới sẽ mở vào tháng sau\\.$"),en:"has been approved by accounting for month $1. It can no longer be edited. The next period opens next month.",hi:"लेखा द्वारा माह $1 हेतु स्वीकृत। अब संपादित नहीं किया जा सकता। अगली अवधि अगले माह खुलेगी।"},{re:new RegExp("^Đã bỏ từ chối (.+) — phiếu quay lại chờ duyệt$"),en:"Rejection of $1 undone — the request is back to awaiting approval",hi:"$1 की अस्वीकृति रद्द — पर्ची फिर से स्वीकृति की प्रतीक्षा में"},{re:new RegExp("^Phiếu này từng bị từ chối \\(lý do: (.+)\\) và đã được quản trị viên mở lại\\. Xem kỹ trước khi duyệt\\.$"),en:"This request was rejected before (reason: $1) and an administrator reopened it. Check it carefully before approving.",hi:"यह पर्ची पहले अस्वीकृत हुई थी (कारण: $1) और प्रशासक ने इसे फिर खोला। स्वीकृत करने से पहले ध्यान से देखें।"},{re:new RegExp("^(.+) đã duyệt phiếu (.+) · chuyển cho (.+) · ([\\d.,]+) mã · lúc (.+)$"),en:"$1 approved request $2 · sent to $3 · $4 items · at $5",hi:"$1 ने पर्ची $2 स्वीकृत की · $3 को भेजा · $4 वस्तुएँ · $5 बजे",n:4,en1:"$1 approved request $2 · sent to $3 · $4 item · at $5",hi1:"$1 ने पर्ची $2 स्वीकृत की · $3 को भेजा · $4 वस्तु · $5 बजे"},{re:new RegExp("^([\\d.,]+) loại lý do$"),en:"$1 kinds of reason",hi:"$1 प्रकार के कारण",n:1,en1:"$1 kind of reason",hi1:"$1 प्रकार का कारण"},{re:new RegExp("^([\\d.,]+) phiếu$"),en:"$1 requests",hi:"$1 पर्चियाँ",n:1,en1:"$1 request",hi1:"$1 पर्ची"},{re:new RegExp("^([\\d.,]+) dòng$"),en:"$1 lines",hi:"$1 पंक्तियाँ",n:1,en1:"$1 line",hi1:"$1 पंक्ति"}];
 const TXT_RE=[
   {re:new RegExp("^Tháng (\\d{2}/\\d{4}) \\(hiện tại\\)$"),en:"Month $1 (current)",hi:"माह $1 (वर्तमान)"},
@@ -5680,6 +5683,26 @@ function renderReconcileCard(v){
   refresh();card.appendChild(b);v.appendChild(card);
 }
 
+/* ---- Bộ phận SỬA số đã đếm khi kế toán chưa duyệt (Khoa 24/09/2026) ----
+   Việc sửa vốn đã chạy từ 04/09 dưới tên "Đếm bổ sung": nạp lại số cũ, sửa/thêm/bỏ
+   rồi UPDATE chính phiếu đó, mỗi lần sửa ghi một bản vào `submissions.edits`.
+   Đợt này chỉ mở thêm LỐI VÀO từ màn chi tiết phiếu và gọi đúng tên việc —
+   không đổi luật: vẫn một phiếu mỗi kho mỗi kỳ, vẫn ghi vết cho kế toán xem. */
+function coTheSuaPhieuKK(s){
+  if(!s||s.status!=='Chờ duyệt')return false;
+  /* Kế toán/admin vào màn tổng hợp (renderKiemkeDash) chứ không có bộ đếm, nên nút
+     sửa ở đây vô nghĩa với họ; sửa số của kho là việc của kho. */
+  if(isViewer())return false;
+  return (session&&session.wh?session.wh:[]).some(w=>w.plant===s.plant&&(!w.sloc||w.sloc===s.sloc));
+}
+function moSuaPhieuKK(s){
+  drafts[s.plant+'|'+s.sloc]={items:{...(s.items||{})},zones:zonesToDraft(s.zones)};saveDrafts();
+  kkSel={plant:s.plant,sloc:s.sloc};kkPeriod=s.period||curPeriod();
+  countEditId=s.id;kkMethod='direct';
+  counting={plant:s.plant,sloc:s.sloc,period:s.period||curPeriod()};
+  activeTab='kiemke';renderNav();renderView();
+  setTimeout(()=>{const c=$('#countCard');if(c)c.scrollIntoView({behavior:'smooth',block:'start'});},60);
+}
 function renderKiemke(v){
   const mine=allowedPlants();
   const ph=el('div','page-head',`<div><h1>Kiểm kê</h1><div class="ph-sub">Nhập số đếm thực tế theo từng kho. Kho đã có tồn đầu kỳ sẽ hiển thị để đối chiếu; kho kỳ đầu đếm mù.</div></div>`);
@@ -5720,13 +5743,10 @@ function renderKiemke(v){
         :'⏳ Kho này đã có phiếu đang chờ duyệt'}</div>
       ${_pend._choGui?`<div class="note" style="margin:8px 0"><div>Số đã đếm <b>nằm an toàn trong máy</b>. ${mangOK?'App đang gửi lên máy chủ.':'Khi nào máy có mạng, app <b>tự gửi</b> — không phải đếm lại.'} Vẫn <b>đếm bổ sung</b> được bình thường.</div></div>`:''}
       <div style="font-size:12.5px;color:var(--muted);margin:6px 0 10px">Phiếu <b class="tnum">${_pend.id}</b> · ${_pend.count} mã · gửi bởi ${_pend.user} lúc ${_pend.time}${(_pend.edits&&_pend.edits.length)?(' · đã bổ sung '+_pend.edits.length+' lần'):''}.<br>
-      Mỗi kho mỗi kỳ <b>chỉ có một phiếu</b>. Đếm thiếu hay đếm sai thì <b>bổ sung ngay trên phiếu này</b> — không lập phiếu mới. Mọi lần sửa đều được ghi lại để kế toán xem khi duyệt.</div>`;
+      Mỗi kho mỗi kỳ <b>chỉ có một phiếu</b>. Kế toán <b>chưa duyệt</b> nên số vẫn <b>sửa được</b>: sửa số cũ, thêm mã thiếu, bỏ mã đếm nhầm — <b>ngay trên phiếu này</b>, không lập phiếu mới. Mọi lần sửa đều được ghi lại để kế toán xem khi duyệt.</div>`;
     const pr=el('div');pr.style.cssText='display:flex;gap:10px;flex-wrap:wrap';
-    const bEd=el('button','btn btn-primary','➕ Đếm bổ sung phiếu này');
-    bEd.onclick=()=>{
-      drafts[_pend.plant+'|'+_pend.sloc]={items:{...(_pend.items||{})},zones:zonesToDraft(_pend.zones)};saveDrafts();
-      countEditId=_pend.id;kkMethod='direct';counting={plant:_pend.plant,sloc:_pend.sloc,period:_pend.period};
-      renderView();setTimeout(()=>{const c=$('#countCard');if(c)c.scrollIntoView({behavior:'smooth',block:'start'});},60);};
+    const bEd=el('button','btn btn-primary','✎ Sửa số / đếm bổ sung phiếu này');
+    bEd.onclick=()=>moSuaPhieuKK(_pend);
     const bSee=el('button','btn btn-ghost','Xem phiếu');bSee.onclick=()=>showDetail(_pend);
     pr.appendChild(bEd);pr.appendChild(bSee);pb.appendChild(pr);pc.appendChild(pb);v.appendChild(pc);
     return;
@@ -5918,6 +5938,13 @@ function xuatKiemTuan(b){
   XLSX.utils.book_append_sheet(wb,ws,'Kiem ke tuan');
   XLSX.writeFile(wb,'Kiem_ke_tuan_'+b.plant+'_'+b.sloc+'_'+b.week+'.xlsx');
 }
+/* Bỏ những mã để trống ra khỏi phiếu trước khi ghi.
+   Người đếm xóa số một mã (đếm nhầm) thì mã đó phải BIẾN MẤT khỏi phiếu, chứ không
+   nằm lại với ô trống — biên bản in ra sẽ có dòng trống, người ký không biết là đếm
+   ra 0 hay chưa đếm, và lúc duyệt ô trống đó đi thẳng vào tồn đầu kỳ.
+   Cột `count` vốn đã không tính mấy ô này (filled()), nút "Xuất biên bản" ở màn đếm
+   cũng đã lọc sẵn — chỗ ghi phiếu là chỗ duy nhất còn sót. */
+function itemsSach(o){const r={};Object.entries(o||{}).forEach(([c,v])=>{if(v!==''&&v!=null)r[c]=Number(v);});return r;}
 function renderCountSheet(v){
   const key=draftKey();if(!drafts[key])drafts[key]={items:{}};const items=drafts[key].items;
   /* Tồn đầu kỳ để đối chiếu khi đếm: ưu tiên bản chốt của kế toán, chưa có thì lấy
@@ -5960,7 +5987,7 @@ function renderCountSheet(v){
 
   const nt=el('div');nt.style.padding='14px 16px 0';
   if(countEditId){const es=submissions.find(x=>x.id===countEditId);
-    nt.appendChild(el('div','note',`<span>➕ <b>Đang đếm bổ sung phiếu ${countEditId}</b>${es?' ('+es.count+' mã đã gửi lúc '+es.time+')':''} — số cũ đã điền sẵn. Sửa hoặc thêm mã rồi bấm <b>Lưu bổ sung</b>; phiếu giữ nguyên mã, mọi thay đổi được ghi lại cho kế toán xem khi duyệt.</span>`));}
+    nt.appendChild(el('div','note',`<span>➕ <b>Đang đếm bổ sung phiếu ${countEditId}</b>${es?' ('+es.count+' mã đã gửi lúc '+es.time+')':''} — số cũ đã điền sẵn. Dòng đã có số bị <b>khóa</b> cho khỏi chạm nhầm, bấm nút <b>🔓</b> ở cuối dòng là sửa được. Sửa/thêm/bỏ xong thì bấm <b>Lưu bổ sung</b>; phiếu giữ nguyên mã, mọi thay đổi được ghi lại cho kế toán xem khi duyệt.</span>`));}
   /* Banner quy trình nói về điều chuyển / mở kỳ / chênh lệch — toàn chuyện của phân hệ
      tháng. Đếm tuần không dính gì tới mấy thứ đó nên không bày ra cho rối. */
   if(!_laTuan)nt.appendChild(procNote());
@@ -6331,7 +6358,7 @@ function renderCountSheet(v){
       if(dup){errBox('Kho này đã có phiếu chờ duyệt',[
         'Phiếu <b>'+dup.id+'</b> ('+dup.count+' mã, gửi bởi '+dup.user+') đang chờ kế toán duyệt.',
         'Mỗi kho mỗi kỳ <b>chỉ có một phiếu</b> — không lập phiếu thứ 2 để bổ sung hàng.',
-        'Số vừa đếm vẫn còn ở nháp. Quay ra bấm <b>➕ Đếm bổ sung phiếu này</b> để cộng vào phiếu cũ.'
+        'Số vừa đếm vẫn còn ở nháp. Quay ra bấm <b>✎ Sửa số / đếm bổ sung phiếu này</b> để cộng vào phiếu cũ.'
       ],'Kho: '+whName(counting.plant,counting.sloc)+'\nKỳ: '+(counting.period||curPeriod())+'\nPhiếu đang chờ: '+dup.id);return;}
     }
     // Đếm bổ sung: liệt kê đúng những gì thay đổi so với phiếu cũ
@@ -6366,26 +6393,26 @@ function renderCountSheet(v){
         const ed={at:now(),by:session.name,changes:diff};
         const edits=(editing.edits||[]).concat([ed]);
         const _zs2=zonesForSave(drafts[key],zonesOf(counting.plant,counting.sloc));
-        const patch={items:{...items},count:n,edits};
+        const patch={items:itemsSach(items),count:n,edits};
         if(zoneColOK&&_zs2)patch.zones=_zs2;    // giu chi tiet tieu kho cua ca hai nguoi cung dem
         // Cot zones co the chua duoc tao -> thu truoc bang duong im lang, thieu cot thi bo di
         if(patch.zones&&sb){
           const {error:e0}=await sb.from('submissions').update(patch).eq('id',editing.id).select();
           if(e0&&isMissingZoneCol(e0)){zoneColOK=false;delete patch.zones;warnZoneCol();}
-          else if(!e0){editing.items={...items};editing.count=n;editing.edits=edits;if(_zs2)editing.zones=_zs2;
+          else if(!e0){editing.items={...patch.items};editing.count=n;editing.edits=edits;if(_zs2)editing.zones=_zs2;
             log('Đếm bổ sung phiếu kiểm kê',editing.id+' · '+whName(counting.plant,counting.sloc)+' · '+diff.length+' mã đổi');
             delete drafts[key];saveDrafts();counting=null;countEditId=null;
             toast('Đã bổ sung '+diff.length+' mã vào phiếu '+editing.id);renderView();return;}
         }
         const upd=await dbUpd('submissions',{id:editing.id},patch);
         if(!upd.ok||upd.count===0){saveDrafts();return;}   // dbUpd đã dựng hộp lỗi
-        editing.items={...items};editing.count=n;editing.edits=edits;if(_zs2)editing.zones=_zs2;
+        editing.items={...patch.items};editing.count=n;editing.edits=edits;if(_zs2)editing.zones=_zs2;
         log('Đếm bổ sung phiếu kiểm kê',editing.id+' · '+whName(counting.plant,counting.sloc)+' · '+diff.length+' mã đổi');
         delete drafts[key];saveDrafts();counting=null;countEditId=null;
         toast('Đã bổ sung '+diff.length+' mã vào phiếu '+editing.id);renderView();return;
       }
       const _zs=zonesForSave(drafts[key],zonesOf(counting.plant,counting.sloc));
-      const sub={zones:_zs,id:await nextKKId(counting.plant,counting.sloc),plant:counting.plant,sloc:counting.sloc,user:session.name,role:ROLES[session.role].label,time:now(),period:counting.period||curPeriod(),status:'Chờ duyệt',items:{...items},count:n,edits:[]};
+      const sub={zones:_zs,id:await nextKKId(counting.plant,counting.sloc),plant:counting.plant,sloc:counting.sloc,user:session.name,role:ROLES[session.role].label,time:now(),period:counting.period||curPeriod(),status:'Chờ duyệt',items:itemsSach(items),count:n,edits:[]};
       /* MẤT MẠNG: xếp hàng đợi ngay, KHÔNG dựng hộp lỗi đỏ. BP đang đếm dở giữa
          kho không sóng mà thấy báo đỏ thì hoang mang, dễ bỏ dở. Phiếu nằm trong
          máy, có sóng là app tự gửi. */
@@ -7892,6 +7919,14 @@ function showDetail(s){
       bDel.onclick=()=>deleteSubmission(s,()=>renderView());bar.appendChild(bDel);
       bar.appendChild(el('span','',`<span style="font-size:12px;color:var(--muted)">Hủy duyệt = mở lại kỳ, <b>giữ</b> số liệu. Xóa phiếu = <b>mất</b> số đếm; app sẽ liệt kê đầy đủ những gì bị ảnh hưởng để anh/chị xác nhận.</span>`));
     }
+  }else if(coTheSuaPhieuKK(s)){
+    /* Kho mở phiếu của chính mình lúc kế toán chưa duyệt: cho sửa NGAY TẠI ĐÂY.
+       Trước đây chỗ này là ngõ cụt — chỉ một dòng "chờ duyệt", muốn sửa phải tự mò
+       về tab Kiểm kê mới thấy nút, nên gần như không ai biết là sửa được. */
+    const bSua=el('button','btn btn-primary btn-sm','✎ Sửa số đã đếm');
+    bSua.onclick=()=>moSuaPhieuKK(s);
+    bar.appendChild(bSua);
+    bar.appendChild(el('span','',`<span style="font-size:12.5px;color:var(--muted)">Kế toán chưa duyệt nên kho vẫn sửa được số: sửa số cũ, thêm mã thiếu, bỏ mã đếm nhầm. Phiếu giữ nguyên mã số và mọi thay đổi được ghi lại để kế toán xem khi duyệt.</span>`));
   }else{
     bar.appendChild(el('span','',`<span style="font-size:12.5px;color:var(--muted)">Chờ Kế toán viên phê duyệt.</span>`));
   }
@@ -7988,6 +8023,10 @@ function showDetail(s){
     card.appendChild(zc);
   }
   v.appendChild(card);
+  /* showDetail vẽ thẳng vào #view nên KHÔNG đi qua renderView — chỗ duy nhất gọi
+     dichMan. Vì vậy cả màn chi tiết phiếu xưa nay đứng nguyên tiếng Việt ở EN/HI,
+     kể cả nút mới. Chuỗi nào chưa có trong từ điển vẫn rơi về tiếng Việt như thường. */
+  try{dichMan(v);}catch(e){console.warn('dich',e);}
 }
 
 /* ---- Xuất BIÊN BẢN KIỂM KÊ ra Excel (đúng mẫu công ty) để in ký ---- */
