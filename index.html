@@ -1085,7 +1085,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2409-01';
+const APP_VER='2409-02';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1782,6 +1782,65 @@ async function insSubmissionSafe(sub,imLang){
   return false;
 }
 
+/* Chèn phiếu điều chuyển; TRÙNG MÃ thì nhảy số rồi thử lại.
+   BẮT BUỘC PHẢI CÓ: nextDCId chỉ đếm được những phiếu MÌNH ĐỌC ĐƯỢC, mà RLS giấu
+   phiếu của kho khác. Hai điểm bán cùng xin hàng của MỘT kho nguồn trong cùng một
+   ngày thì cả hai đều tưởng mã gốc còn trống -> cùng lấy một mã. Đúng họ với lỗi
+   mất phiếu kiểm kê 21/08/2026; submissions đã vá từ hồi đó, phiếu điều chuyển thì
+   bỏ sót đến 24/09/2026.
+   KHÔNG hỏi lại máy chủ để xin mã mới: RLS che đúng cái phiếu vừa trùng nên nó trả
+   về y mã cũ => vòng lặp mù. Tự tăng hậu tố trên chính mã vừa thử. */
+async function insTrReqSafe(row,kind,plant,sloc){
+  const pfx=(kind==='huy'?'HH-':'DC-')+plant+'-'+sloc+'-';
+  const tried=[];
+  for(let i=0;i<20;i++){
+    tried.push(row.id);
+    let data,error;
+    try{const r=await sb.from('transfer_requests').insert(row).select();data=r.data;error=r.error;}
+    catch(e){error=e;}
+    if(!error){
+      if(Array.isArray(data)&&data.length===0){
+        errBox('Máy chủ KHÔNG nhận phiếu',[
+          'Máy chủ nhận yêu cầu nhưng <b>không tạo dòng nào</b> — tài khoản này chưa được phép.',
+          'Số vừa gõ vẫn còn trên màn hình. Chụp màn hình này gửi kế toán.'
+        ],'Bảng: transfer_requests\nMã phiếu: '+row.id+'\nSố dòng tạo: 0');
+        return {ok:false};
+      }
+      return {ok:true};
+    }
+    const msg=String((error&&(error.message||error.code))||'');
+    if(/duplicate|pkey|23505|already exists/i.test(msg)){
+      const rest=String(row.id).indexOf(pfx)===0?String(row.id).slice(pfx.length):'';
+      const parts=rest?rest.split('-'):[];
+      const ymd=parts[0]||kkYmd();
+      const n=parseInt(parts[1]||'1',10)||1;
+      row.id=pfx+ymd+'-'+(n+1);
+      continue;
+    }
+    console.error('transfer_requests',error);
+    errBox('Không gửi được phiếu lên máy chủ',[
+      'Phiếu <b>CHƯA</b> được lưu — kho kia sẽ không thấy gì.',
+      'Số vừa gõ vẫn còn trên màn hình, thử gửi lại.',
+      'Chụp màn hình này gửi kế toán.'
+    ],'Bảng: transfer_requests\nMã phiếu: '+row.id+'\n'+msg);
+    return {ok:false};
+  }
+  console.error('transfer_requests: trùng mã sau 20 lần thử',tried);
+  errBox('Không cấp được mã phiếu',[
+    'Đã thử <b>'+tried.length+'</b> mã đều bị trùng — phiếu <b>CHƯA</b> lưu.',
+    'Số vừa gõ vẫn còn trên màn hình. Tải lại trang rồi gửi lại.',
+    'Chụp màn hình này gửi kế toán.'
+  ],'Bảng: transfer_requests\nCác mã đã thử:\n'+tried.join('\n'));
+  return {ok:false};
+}
+/* Hai phiếu KHÁC NHAU mà mang chung một mã — chỉ xảy ra khi bảng transfer_requests
+   chưa có khoá chính trên cột id (bảng dựng 28/08/2026, trước file SQL gộp; lệnh
+   `create table if not exists` sau này KHÔNG thêm khoá vào bảng đã có). */
+function dcTrungMa(){
+  const g={};
+  (trReqs||[]).forEach(r=>{if(r&&r.id)(g[r.id]=g[r.id]||[]).push(r);});
+  return Object.entries(g).filter(([,v])=>v.length>1);
+}
 /* ===== PHIẾU YÊU CẦU ĐIỀU CHUYỂN / HỦY — MÃ PHIẾU & QUYỀN DUYỆT =====
    Mã theo đúng quy ước phiếu kiểm kê: <tiền tố>-<plant>-<sloc>-<YYYYMMDD>, trùng ngày thì -2, -3...
    DC = xin hàng / đẩy hàng (lấy kho NGUỒN làm địa điểm) · HH = hủy, hao hụt. */
@@ -4989,6 +5048,18 @@ function dcAllReqs(v){
     b2.onclick=()=>{dcReqFilter=k;renderView();};bar.appendChild(b2);});
   card.appendChild(bar);
   const body=el('div');card.appendChild(body);v.appendChild(card);
+  {
+    const tr=dcTrungMa();
+    if(tr.length){
+      const c=el('div','note');const in2=el('div');in2.style.minWidth='0';
+      in2.innerHTML='<b style="color:var(--red)">⚠ '+tr.length+' mã phiếu đang bị trùng.</b> '
+        +'Mỗi mã dưới đây đang dùng cho nhiều phiếu khác nhau — app đã <b>chặn duyệt</b> các phiếu này '
+        +'vì duyệt một cái sẽ đánh dấu cả nhóm là đã duyệt mà chỉ một phiếu xuống sổ.<br>'
+        +tr.map(([id,v])=>'<b class="tnum">'+id+'</b> — '+v.length+' phiếu: '
+            +v.map(x=>(x.by||'?')+' '+(x.time||'')).join(' · ')).join('<br>');
+      c.appendChild(in2);body.appendChild(c);
+    }
+  }
   const list=dcReqFilter==='all'?trReqs:trReqs.filter(r=>r.status===dcReqFilter);
   if(!list.length){body.appendChild(el('div','empty',`<div class="big">Không có phiếu</div><div>Chưa có phiếu nào khớp bộ lọc này.</div>`));return;}
   list.slice(0,60).forEach(r=>body.appendChild(dcReqCard(r,isMyApproval(r))));
@@ -6730,14 +6801,12 @@ function dcRequestForm(v,kind){
         'Muốn chuyển thêm thật thì sửa số lượng cho khác đi, hoặc để phiếu cũ xử lý xong trước.'
       ],'Phiếu đã có: '+dup.id+'\nTrạng thái: '+dup.status+'\nNgười lập: '+(dup.by||'')+' · '+(dup.time||''));
       return;}
-    const id=await nextDCId(kind,fp,fs);
+    let id=await nextDCId(kind,fp,fs);
     const row={id,kind,from_plant:fp,from_sloc:fs,to_plant:tp,to_sloc:ts,items,reason:iR.value.trim(),status:'Chờ duyệt',created_by:session.name};
     if(sb){
-      const {data,error}=await sb.from('transfer_requests').insert(row).select();
-      if(error){console.error('transfer_requests',error);
-        errBox('Không gửi được phiếu lên máy chủ',['Phiếu <b>CHƯA</b> được lưu — kho kia sẽ không thấy gì.','Số vừa gõ vẫn còn trên màn hình, thử gửi lại.','Chụp màn hình này gửi admin.'],'Bảng: transfer_requests\nMã phiếu: '+id+'\n'+(error.message||'')+(error.code?'\nMã lỗi: '+error.code:''));return;}
-      if(Array.isArray(data)&&data.length===0){
-        errBox('Máy chủ KHÔNG nhận phiếu',['Máy chủ nhận yêu cầu nhưng <b>không tạo dòng nào</b> — tài khoản này chưa được phép.','Chụp màn hình này gửi kế toán.'],'Bảng: transfer_requests\nMã phiếu: '+id+'\nSố dòng tạo: 0');return;}
+      const kqIns=await insTrReqSafe(row,kind,fp,fs);   // trùng mã thì tự nhảy số
+      if(!kqIns.ok)return;                              // insTrReqSafe đã dựng hộp lỗi
+      id=row.id;                                        // có thể đã khác mã ban đầu
     }
     const rec={id,kind,fromPlant:fp,fromSloc:fs,toPlant:tp,toSloc:ts,items,reason:row.reason,status:'Chờ duyệt',period:null,by:session.name,time:now(),approvedBy:null,approvedAt:null,rejectNote:''};
     trReqs.unshift(rec);
@@ -6964,6 +7033,20 @@ async function approveTransferReq(r,qtys){
       'Duyệt lần nữa sẽ ghi thêm một lần vào sổ và <b>trừ kho gấp đôi</b>.',
       'Nếu cần sửa, admin dùng "↩ Mở lại phiếu" ở màn Toàn bộ phiếu yêu cầu.'
     ],'Phiếu: '+r.id+'\nDuyệt bởi: '+(r.approvedBy||'?')+' '+(r.approvedAt||''));return;
+  }
+  /* Hai phiếu chung một mã thì TUYỆT ĐỐI không cho duyệt: lệnh chốt phiếu dùng
+     .match({id}) nên nó đánh dấu CẢ HAI là "Đã duyệt", trong khi chỉ một phiếu
+     được ghi sổ — phiếu kia thành "đã duyệt mà sổ trống", hàng không bị trừ kho
+     mà ai cũng tưởng xong việc. */
+  const _trung=(trReqs||[]).filter(x=>x&&x.id===r.id);
+  if(_trung.length>1){
+    errBox('Mã phiếu này đang bị trùng — không duyệt được',[
+      'Có <b>'+_trung.length+' phiếu khác nhau</b> cùng mang mã <b>'+r.id+'</b>.',
+      'Duyệt một phiếu sẽ đánh dấu <b>cả '+_trung.length+' phiếu</b> là đã duyệt, trong khi chỉ một phiếu được ghi sổ — số kho sẽ sai.',
+      'Gửi mã phiếu này cho kế toán xử lý trước, đừng duyệt.'
+    ],'Bảng: transfer_requests\nMã trùng: '+r.id+'\nSố phiếu cùng mã: '+_trung.length
+      +'\n'+_trung.map(x=>'- '+(x.by||'?')+' · '+(x.time||'?')+' · '+Object.keys(x.items||{}).length+' mã · '+x.status).join('\n'));
+    return;
   }
   const daGhi=transfers.filter(t=>t.reason&&String(t.reason).includes(r.id));
   if(daGhi.length){
