@@ -1085,7 +1085,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2409-07';
+const APP_VER='2409-08';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1841,6 +1841,17 @@ async function insTrReqSafe(row,base){
 /* Hai phiếu KHÁC NHAU mà mang chung một mã — chỉ xảy ra khi bảng transfer_requests
    chưa có khoá chính trên cột id (bảng dựng 28/08/2026, trước file SQL gộp; lệnh
    `create table if not exists` sau này KHÔNG thêm khoá vào bảng đã có). */
+/* Dòng sổ của MỘT phiếu. Phải khớp ĐUÔI CHÍNH XÁC, KHÔNG dùng includes():
+   mã phiếu con là mã cha cộng '-2', nên includes('BMU-LDA-092126') vớ luôn cả dòng
+   sổ của 'BMU-LDA-092126-2'. Hậu quả thật (Khoa phát hiện 24/09/2026):
+     · duyệt phiếu gốc -> app tưởng sổ đã có dòng của nó rồi nên CHẶN, báo trùng;
+     · mở lại / xóa phiếu gốc -> XÓA LUÔN dòng sổ của phiếu -2, hàng không được trả về kho.
+   Mã cũ (DC-...-20260921 và ...-20260921-2) cũng dính y hệt, lỗi có từ đầu. */
+function dcLaDongSoCua(t,id){
+  const s=String(id||''),r=String((t&&t.reason)||'');
+  return !!s&&!!r&&(r===s||r.endsWith(' · '+s));
+}
+function dcDongSoCua(id){return (transfers||[]).filter(t=>dcLaDongSoCua(t,id));}
 function dcTrungMa(){
   const g={};
   (trReqs||[]).forEach(r=>{if(r&&r.id)(g[r.id]=g[r.id]||[]).push(r);});
@@ -7065,7 +7076,7 @@ function dcReqCard(r,canAct){
     wrap.appendChild(el('div','note',`<span>✕ Từ chối bởi <b>${r.approvedBy||'—'}</b> ${r.approvedAt||''} · Lý do: ${r.rejectNote}</span>`));
   }else if(r.status==='Đã duyệt'){
     // Đối chiếu phiếu với sổ: cột reason của mỗi dòng sổ có mang mã phiếu nên đếm được
-    const nBook=transfers.filter(t=>t.reason&&String(t.reason).includes(r.id)).length;
+    const nBook=dcDongSoCua(r.id).length;
     const nItems=Object.keys(r.items||{}).filter(c=>Number(r.items[c].qtyOk!=null?r.items[c].qtyOk:r.items[c].qtyReq)>0).length;
     wrap.appendChild(el('div','note',`<span>✓ Duyệt bởi <b>${r.approvedBy||'—'}</b> ${r.approvedAt||''} · kỳ tháng ${periodVN(r.period||'')} · sổ có <b>${nBook}</b>/${nItems} dòng</span>`));
     if(nBook<nItems)wrap.appendChild(el('div','note',`<span style="color:var(--red)">⚠ Phiếu đã duyệt nhưng sổ điều chuyển <b>thiếu ${nItems-nBook} dòng</b> — hàng chưa bị trừ kho. Admin mở lại phiếu rồi duyệt lại sau khi đã cấp quyền ghi sổ.</span>`));
@@ -7160,7 +7171,7 @@ async function approveTransferReq(r,qtys){
       +'\n'+_trung.map(x=>'- '+(x.by||'?')+' · '+(x.time||'?')+' · '+Object.keys(x.items||{}).length+' mã · '+x.status).join('\n'));
     return;
   }
-  const daGhi=transfers.filter(t=>t.reason&&String(t.reason).includes(r.id));
+  const daGhi=dcDongSoCua(r.id);
   if(daGhi.length){
     errBox('Sổ đã có dòng của phiếu này',[
       daGhi.length+' dòng mang mã phiếu <b>'+r.id+'</b> đã nằm trong sổ điều chuyển.',
@@ -7305,14 +7316,14 @@ async function _approveTransferReq(r,qtys){
 // Dọn luôn các dòng sổ của phiếu (nếu có) để duyệt lại không bị ghi hai lần.
 async function reopenTransferReq(r){
   if(session.role!=='admin'){toast('Chỉ admin mới mở lại được phiếu');return;}
-  const rows=transfers.filter(t=>t.reason&&String(t.reason).includes(r.id));
+  const rows=dcDongSoCua(r.id);
   if(!confirm('MỞ LẠI PHIẾU '+r.id+'\n\nPhiếu về trạng thái Chờ duyệt để người có quyền duyệt lại.\n'
     +(rows.length?rows.length+' dòng đã ghi trong sổ điều chuyển của phiếu này sẽ bị XÓA để duyệt lại không ghi trùng.\n':'Sổ điều chuyển hiện không có dòng nào của phiếu này.\n')
     +'\nSố lượng trong phiếu giữ nguyên. Bấm OK để mở lại.'))return;
   let cleaned=0;
   for(const t of rows){const del=await dbDel('transfers',{reason:t.reason,code:t.code,period:t.period});if(del.ok&&del.count)cleaned+=del.count;}
   if(rows.length&&cleaned<rows.length){toast('Chỉ xóa được '+cleaned+'/'+rows.length+' dòng sổ — kiểm lại trước khi duyệt lại');}
-  transfers=transfers.filter(t=>!(t.reason&&String(t.reason).includes(r.id)));
+  transfers=transfers.filter(t=>!dcLaDongSoCua(t,r.id));
   const upd=await dbUpd('transfer_requests',{id:r.id},{status:'Chờ duyệt',period:null,approved_by:null,approved_at:null});
   if(!upd.ok||upd.count===0)return;
   r.status='Chờ duyệt';r.period=null;r.approvedBy=null;r.approvedAt=null;
@@ -7377,7 +7388,7 @@ async function boTuChoiTransferReq(r){
 // XÓA HẲN phiếu (chỉ admin) — kèm mọi dòng sổ do phiếu này sinh ra
 async function deleteTransferReq(r){
   if(session.role!=='admin'){toast('Chỉ admin mới xóa được phiếu');return;}
-  const rows=transfers.filter(t=>t.reason&&String(t.reason).includes(r.id));
+  const rows=dcDongSoCua(r.id);
   const codes=Object.keys(r.items||{});
   let t='XÓA PHIẾU '+r.id+'\n'+dcKindLabel(r.kind)+' · '+whName(r.fromPlant,r.fromSloc)+(r.toPlant?' → '+whName(r.toPlant,r.toSloc):' → hủy')+'\n\n';
   t+='SẼ BỊ XÓA:\n1. Toàn bộ phiếu và số lượng của '+codes.length+' mã (xin, thực giao, HSD) — mất hẳn.\n';
@@ -7396,7 +7407,7 @@ async function deleteTransferReq(r){
     ],'Phiếu: '+r.id+'\nDọn được: '+cleaned+'/'+rows.length);return;}
   const del=await dbDel('transfer_requests',{id:r.id});
   if(!del.ok||del.count===0)return;   // dbDel đã dựng hộp lỗi
-  transfers=transfers.filter(t2=>!(t2.reason&&String(t2.reason).includes(r.id)));
+  transfers=transfers.filter(t2=>!dcLaDongSoCua(t2,r.id));
   trReqs=trReqs.filter(x=>x.id!==r.id);
   log('Xóa phiếu điều chuyển (admin)',`${r.id} · ${dcKindLabel(r.kind)} · ${whName(r.fromPlant,r.fromSloc)} · xóa kèm ${cleaned} dòng sổ`);
   toast('Đã xóa phiếu '+r.id+(cleaned?' & '+cleaned+' dòng sổ':''));renderView();
