@@ -1085,7 +1085,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2409-03';
+const APP_VER='2409-04';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -3137,7 +3137,7 @@ async function dbLoadAll(){
     try{const rp=await sb.from('receipts').select('*').order('created_at',{ascending:false}).limit(2000);receipts=(rp.data||[]).map(r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,code:r.code,name:r.name,uom:r.uom,qty:Number(r.qty)||0,date:r.date,period:r.period||periodOfDate(r.date),note:r.note,by:r.created_by,time:fmt(r.created_at)}));}catch(e){receipts=[];console.warn('Chưa có bảng receipts (nhập kho) — bỏ qua',e&&e.message);}
     try{const tq=await sb.from('transfer_requests').select('*').order('created_at',{ascending:false}).limit(500);
       trReqs=(tq.data||[]).map(r=>({id:r.id,kind:r.kind,fromPlant:r.from_plant,fromSloc:r.from_sloc,toPlant:r.to_plant,toSloc:r.to_sloc,
-        items:r.items||{},reason:r.reason||'',status:r.status||'Chờ duyệt',period:r.period||null,
+        items:r.items||{},reason:r.reason||'',status:r.status||'Chờ duyệt',period:r.period||null,idCu:r.id_cu||'',
         by:r.created_by,time:fmt(r.created_at),approvedBy:r.approved_by,approvedAt:r.approved_at?fmt(r.approved_at):null,rejectNote:r.reject_note||''}));
     }catch(e){trReqs=[];console.warn('Chưa có bảng transfer_requests — bỏ qua',e&&e.message);}
     // Chênh lệch kho: định lượng món · lượng quy đổi từ doanh thu · giải trình
@@ -6871,6 +6871,7 @@ function dcReqCard(r,canAct){
     ${dcStatusBadge(r.status)}
     <span style="font-size:12.5px;color:var(--muted)">${whName(r.fromPlant,r.fromSloc)}${r.toPlant?' → '+whName(r.toPlant,r.toSloc):' → hủy/hao hụt'} · ${codes.length} mã · ${r.by} · ${r.time}</span>
   </div>
+  ${r.idCu?`<div style="font-size:12px;color:var(--muted);margin:-4px 0 8px">Mã cũ: <span class="tnum">${r.idCu}</span></div>`:''}
   <div style="font-size:12.5px;margin-bottom:8px">${dcStepLine(r)}</div>
   ${r.reason?`<div style="font-size:12.5px;color:var(--muted);margin-bottom:8px">Lý do: <b>${r.reason}</b></div>`:''}`));
   /* Bảng chi tiết mã KHÔNG dựng sẵn nữa (việc 10).
