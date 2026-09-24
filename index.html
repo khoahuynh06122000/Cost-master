@@ -1085,7 +1085,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2409-06';
+const APP_VER='2409-07';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1118,7 +1118,10 @@ Object.assign(TXT.hi,{"Kho bạn vừa duyệt cho hàng":"आपके स्�
 /* Bo sung 24/09/2026 — o cai dat AI quet anh o man Nhap kho. */
 Object.assign(TXT.en,{"Cài đặt AI quét ảnh":"Image-scan AI settings","Khai khóa AI của riêng bạn để quét ảnh phiếu xuất kho tổng — lưu tại máy bạn":"Enter your own AI key to scan the main store's issue slip — kept on your device","đã có khóa":"key saved","Khóa Gemini API":"Gemini API key","💾 Lưu khóa":"💾 Save the key","⚡ Thử khóa":"⚡ Test the key","🗑 Xóa khóa khỏi máy này":"🗑 Remove the key from this device","Chưa dán khóa vào ô trên.":"You have not pasted a key in the box above.","Chưa có khóa để thử.":"There is no key to test.","Đang thử khóa…":"Testing the key…","✓ Khóa dùng được.":"✓ The key works.","✗ Khóa không dùng được — kiểm tra lại chuỗi vừa dán.":"✗ The key does not work — check the string you pasted.","✗ Khóa đúng nhưng đã hết lượt hôm nay.":"✗ The key is valid but today's quota is used up.","✗ Chưa thử được — kiểm tra mạng rồi thử lại.":"✗ Could not test — check the connection and try again.","Đã lưu khóa AI vào máy này":"The AI key is saved on this device","Đã xóa khóa khỏi máy này":"The key is removed from this device"});
 Object.assign(TXT.hi,{"Cài đặt AI quét ảnh":"छवि-स्कैन AI सेटिंग","Khai khóa AI của riêng bạn để quét ảnh phiếu xuất kho tổng — lưu tại máy bạn":"मुख्य स्टोर की निर्गम पर्ची स्कैन करने हेतु अपनी AI कुंजी डालें — आपके ही डिवाइस पर रहती है","đã có khóa":"कुंजी सहेजी गई","Khóa Gemini API":"Gemini API कुंजी","💾 Lưu khóa":"💾 कुंजी सहेजें","⚡ Thử khóa":"⚡ कुंजी जाँचें","🗑 Xóa khóa khỏi máy này":"🗑 इस डिवाइस से कुंजी हटाएँ","Chưa dán khóa vào ô trên.":"ऊपर के खाने में कुंजी नहीं डाली गई।","Chưa có khóa để thử.":"जाँचने के लिए कोई कुंजी नहीं है।","Đang thử khóa…":"कुंजी जाँची जा रही है…","✓ Khóa dùng được.":"✓ कुंजी काम करती है।","✗ Khóa không dùng được — kiểm tra lại chuỗi vừa dán.":"✗ कुंजी काम नहीं करती — डाली गई कुंजी जाँचें।","✗ Khóa đúng nhưng đã hết lượt hôm nay.":"✗ कुंजी सही है पर आज का कोटा समाप्त हो गया।","✗ Chưa thử được — kiểm tra mạng rồi thử lại.":"✗ जाँच नहीं हो सकी — कनेक्शन देखकर फिर कोशिश करें।","Đã lưu khóa AI vào máy này":"AI कुंजी इस डिवाइस पर सहेजी गई","Đã xóa khóa khỏi máy này":"कुंजी इस डिवाइस से हटा दी गई"});
-const TXT_RE_BS=[{re:new RegExp("^(.+) đã duyệt phiếu (.+) · chuyển cho (.+) · ([\\d.,]+) mã · lúc (.+)$"),en:"$1 approved request $2 · sent to $3 · $4 items · at $5",hi:"$1 ने पर्ची $2 स्वीकृत की · $3 को भेजा · $4 वस्तुएँ · $5 बजे",n:4,en1:"$1 approved request $2 · sent to $3 · $4 item · at $5",hi1:"$1 ने पर्ची $2 स्वीकृत की · $3 को भेजा · $4 वस्तु · $5 बजे"},{re:new RegExp("^([\\d.,]+) loại lý do$"),en:"$1 kinds of reason",hi:"$1 प्रकार के कारण",n:1,en1:"$1 kind of reason",hi1:"$1 प्रकार का कारण"},{re:new RegExp("^([\\d.,]+) phiếu$"),en:"$1 requests",hi:"$1 पर्चियाँ",n:1,en1:"$1 request",hi1:"$1 पर्ची"},{re:new RegExp("^([\\d.,]+) dòng$"),en:"$1 lines",hi:"$1 पंक्तियाँ",n:1,en1:"$1 line",hi1:"$1 पंक्ति"}];
+/* Bo sung 24/09/2026 (dot 2) — admin bo tu choi phieu dieu chuyen. */
+Object.assign(TXT.en,{"↩ Bỏ từ chối (admin)":"↩ Undo the rejection (admin)","Chỉ admin mới bỏ được từ chối":"Only an administrator can undo a rejection","Phiếu này không ở trạng thái Từ chối":"This request is not in the Rejected state","Không bỏ được từ chối":"The rejection could not be undone","Phiếu này đã được xử lý ở nơi khác":"This request was already handled elsewhere","Phiếu điều chuyển quay lại chờ duyệt":"Transfer request is back to awaiting approval"});
+Object.assign(TXT.hi,{"↩ Bỏ từ chối (admin)":"↩ अस्वीकृति रद्द करें (प्रशासक)","Chỉ admin mới bỏ được từ chối":"केवल प्रशासक ही अस्वीकृति रद्द कर सकता है","Phiếu này không ở trạng thái Từ chối":"यह पर्ची अस्वीकृत स्थिति में नहीं है","Không bỏ được từ chối":"अस्वीकृति रद्द नहीं हो सकी","Phiếu này đã được xử lý ở nơi khác":"यह पर्ची कहीं और निपटाई जा चुकी है","Phiếu điều chuyển quay lại chờ duyệt":"स्थानांतरण पर्ची फिर से स्वीकृति की प्रतीक्षा में"});
+const TXT_RE_BS=[{re:new RegExp("^Đã bỏ từ chối (.+) — phiếu quay lại chờ duyệt$"),en:"Rejection of $1 undone — the request is back to awaiting approval",hi:"$1 की अस्वीकृति रद्द — पर्ची फिर से स्वीकृति की प्रतीक्षा में"},{re:new RegExp("^Phiếu này từng bị từ chối \\(lý do: (.+)\\) và đã được quản trị viên mở lại\\. Xem kỹ trước khi duyệt\\.$"),en:"This request was rejected before (reason: $1) and an administrator reopened it. Check it carefully before approving.",hi:"यह पर्ची पहले अस्वीकृत हुई थी (कारण: $1) और प्रशासक ने इसे फिर खोला। स्वीकृत करने से पहले ध्यान से देखें।"},{re:new RegExp("^(.+) đã duyệt phiếu (.+) · chuyển cho (.+) · ([\\d.,]+) mã · lúc (.+)$"),en:"$1 approved request $2 · sent to $3 · $4 items · at $5",hi:"$1 ने पर्ची $2 स्वीकृत की · $3 को भेजा · $4 वस्तुएँ · $5 बजे",n:4,en1:"$1 approved request $2 · sent to $3 · $4 item · at $5",hi1:"$1 ने पर्ची $2 स्वीकृत की · $3 को भेजा · $4 वस्तु · $5 बजे"},{re:new RegExp("^([\\d.,]+) loại lý do$"),en:"$1 kinds of reason",hi:"$1 प्रकार के कारण",n:1,en1:"$1 kind of reason",hi1:"$1 प्रकार का कारण"},{re:new RegExp("^([\\d.,]+) phiếu$"),en:"$1 requests",hi:"$1 पर्चियाँ",n:1,en1:"$1 request",hi1:"$1 पर्ची"},{re:new RegExp("^([\\d.,]+) dòng$"),en:"$1 lines",hi:"$1 पंक्तियाँ",n:1,en1:"$1 line",hi1:"$1 पंक्ति"}];
 const TXT_RE=[
   {re:new RegExp("^Tháng (\\d{2}/\\d{4}) \\(hiện tại\\)$"),en:"Month $1 (current)",hi:"माह $1 (वर्तमान)"},
   {re:new RegExp("^Tháng (\\d{2}/\\d{4})$"),en:"Month $1",hi:"माह $1"},
@@ -6943,6 +6946,16 @@ function dcReqCard(r,canAct){
   ${r.idCu?`<div style="font-size:12px;color:var(--muted);margin:-4px 0 8px">Mã cũ: <span class="tnum">${r.idCu}</span></div>`:''}
   <div style="font-size:12.5px;margin-bottom:8px">${dcStepLine(r)}</div>
   ${r.reason?`<div style="font-size:12.5px;color:var(--muted);margin-bottom:8px">Lý do: <b>${r.reason}</b></div>`:''}`));
+  /* Phiếu đã được admin bỏ từ chối: người sắp duyệt cần biết nó từng bị từ chối vì
+     lý do gì, nếu không họ duyệt lại đúng cái đã bị chặn lần trước. */
+  if(r.status==='Chờ duyệt'&&r.rejectNote){
+    const c0=el('div','note');const i0=el('div');i0.style.minWidth='0';
+    /* MOT text node duy nhat, khong chen <b> vao giua: dichMan duyet text node,
+       cau bi the <b> cat lam ba manh thi mau dong khong khop duoc. */
+    i0.style.fontWeight='700';
+    i0.textContent='Phiếu này từng bị từ chối (lý do: '+r.rejectNote+') và đã được quản trị viên mở lại. Xem kỹ trước khi duyệt.';
+    c0.appendChild(i0);wrap.appendChild(c0);
+  }
   /* Bảng chi tiết mã KHÔNG dựng sẵn nữa (việc 10).
      Trước đây mọi phiếu bung hết bảng: 3 phiếu 45 mã = màn cao 5740px, giám sát phải cuộn
      ~7 màn hình chỉ để bấm một nút. Giờ chỉ dựng khi bấm "Sửa số" hoặc "Xem chi tiết". */
@@ -7064,9 +7077,13 @@ function dcReqCard(r,canAct){
       const bRe=el('button','btn btn-ghost btn-sm','↩ Mở lại phiếu (admin)');bRe.style.color='var(--accent-600)';
       bRe.onclick=()=>reopenTransferReq(r);bar2.appendChild(bRe);
     }
+    if(r.status==='Từ chối'){
+      const bBo=el('button','btn btn-ghost btn-sm','↩ Bỏ từ chối (admin)');bBo.style.color='var(--accent-600)';
+      bBo.onclick=()=>boTuChoiTransferReq(r);bar2.appendChild(bBo);
+    }
     const bDel=el('button','btn btn-ghost btn-sm','🗑 Xóa phiếu (admin)');bDel.style.color='var(--red)';
     bDel.onclick=()=>deleteTransferReq(r);bar2.appendChild(bDel);
-    bar2.appendChild(el('span','',`<span style="font-size:12px;color:var(--muted)">Mở lại = duyệt lại, giữ số. Xóa = mất phiếu; app liệt kê đầy đủ hệ quả để xác nhận.</span>`));
+    bar2.appendChild(el('span','',`<span style="font-size:12px;color:var(--muted)">${r.status==='Từ chối'?'Bỏ từ chối = phiếu quay lại Chờ duyệt, giữ nguyên số. ':'Mở lại = duyệt lại, giữ số. '}Xóa = mất phiếu; app liệt kê đầy đủ hệ quả để xác nhận.</span>`));
     wrap.appendChild(bar2);
   }
   return wrap;
@@ -7301,6 +7318,61 @@ async function reopenTransferReq(r){
   r.status='Chờ duyệt';r.period=null;r.approvedBy=null;r.approvedAt=null;
   log('Mở lại phiếu điều chuyển (admin)',`${r.id} · xóa ${cleaned} dòng sổ`);
   toast('Đã mở lại '+r.id+' — chờ duyệt lại');renderView();
+}
+/* BỎ TỪ CHỐI (chỉ admin) — phiếu quay lại bước "Chờ duyệt" (Khoa 24/09/2026).
+   Trước đây từ chối là đường một chiều: bấm nhầm, hoặc từ chối vì "trùng" rồi phát
+   hiện không trùng, thì chỉ còn cách bắt kho kia lập lại phiếu mới — mất luôn số
+   đã gõ và vết ai xin lúc nào.
+   Phiếu từ chối CHƯA hề ghi sổ nên bỏ từ chối không đụng gì đến số kho — nhẹ hơn
+   hẳn "Mở lại phiếu" của phiếu đã duyệt (cái đó phải xóa dòng sổ trước).
+   GIỮ LẠI reject_note: đó là vết lịch sử, và người sắp duyệt cần biết phiếu này
+   từng bị từ chối vì lý do gì. */
+async function boTuChoiTransferReq(r){
+  if(!session||session.role!=='admin'){toast('Chỉ admin mới bỏ được từ chối');return;}
+  if(r.status!=='Từ chối'){toast('Phiếu này không ở trạng thái Từ chối');return;}
+  const codes=Object.keys(r.items||{});
+  const ai=r.toPlant?whName(r.toPlant,r.toSloc):'hủy / hao hụt';
+  if(!confirm('BỎ TỪ CHỐI PHIẾU '+r.id+NL+NL
+    +dcKindLabel(r.kind)+' · '+whName(r.fromPlant,r.fromSloc)+' → '+ai+' · '+codes.length+' mã'+NL
+    +'Đã từ chối bởi '+(r.approvedBy||'—')+' '+(r.approvedAt||'')
+    +(r.rejectNote?' · lý do: '+r.rejectNote:'')+NL+NL
+    +'Phiếu sẽ quay lại bước CHỜ DUYỆT để giám sát kho cho hàng xử lý lại.'+NL
+    +'Số lượng trong phiếu giữ nguyên. Sổ điều chuyển không đổi (phiếu từ chối vốn chưa ghi sổ).'+NL+NL
+    +'Bấm OK để bỏ từ chối.'))return;
+  if(sb){
+    /* Chốt có điều kiện: chỉ đổi khi phiếu VẪN đang Từ chối. Gọi thẳng sb chứ không
+       qua dbUpd vì dbUpd thấy 0 dòng là dựng hộp lỗi "chưa được phép" — ở đây 0 dòng
+       nghĩa khác: người khác vừa xử lý phiếu này trước mình. */
+    const u=await sb.from('transfer_requests')
+      .update({status:'Chờ duyệt',approved_by:null,approved_at:null})
+      .match({id:r.id,status:'Từ chối'}).select();
+    if(u.error){
+      console.error('transfer_requests',u.error);
+      errBox('Không bỏ được từ chối',[
+        'Phiếu <b>vẫn đang ở trạng thái Từ chối</b> — chưa có gì thay đổi.',
+        'Kiểm tra mạng rồi thử lại. Vẫn lỗi thì chụp màn hình này gửi kế toán.'
+      ],'Bảng: transfer_requests'+String.fromCharCode(10)+'Phiếu: '+r.id+String.fromCharCode(10)+(u.error.message||''));
+      return;
+    }
+    if(!Array.isArray(u.data)||u.data.length===0){
+      errBox('Phiếu này đã được xử lý ở nơi khác',[
+        'Phiếu <b>'+r.id+'</b> không còn ở trạng thái Từ chối — có người vừa đổi trước bạn.',
+        'Tải lại trang để xem trạng thái mới nhất.'
+      ],'Bảng: transfer_requests'+String.fromCharCode(10)+'Phiếu: '+r.id+String.fromCharCode(10)+'Số dòng đổi: 0');
+      return;
+    }
+  }
+  r.status='Chờ duyệt';r.approvedBy=null;r.approvedAt=null;
+  log('Bỏ từ chối phiếu điều chuyển (admin)',
+      r.id+' · '+whName(r.fromPlant,r.fromSloc)+' → '+ai+' · '+codes.length+' mã'
+      +(r.rejectNote?' · lý do từ chối cũ: '+r.rejectNote:''));
+  /* Báo cho kho CHO hàng: phiếu vừa quay lại hàng chờ của họ, không thì nó nằm im
+     ở "Chờ tôi duyệt" mà không ai biết là có việc mới. */
+  notifyWh(r.fromPlant,r.fromSloc,
+    session.name+' đã bỏ từ chối phiếu '+r.id+' · phiếu quay lại chờ kho bạn duyệt · '+codes.length+' mã',
+    'transfer','Phiếu điều chuyển quay lại chờ duyệt',session.name);
+  toast('Đã bỏ từ chối '+r.id+' — phiếu quay lại chờ duyệt');
+  renderView();
 }
 // XÓA HẲN phiếu (chỉ admin) — kèm mọi dòng sổ do phiếu này sinh ra
 async function deleteTransferReq(r){
