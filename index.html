@@ -1085,7 +1085,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2409-08';
+const APP_VER='2409-12';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1121,7 +1121,10 @@ Object.assign(TXT.hi,{"Cài đặt AI quét ảnh":"छवि-स्कैन AI
 /* Bo sung 24/09/2026 (dot 2) — admin bo tu choi phieu dieu chuyen. */
 Object.assign(TXT.en,{"↩ Bỏ từ chối (admin)":"↩ Undo the rejection (admin)","Chỉ admin mới bỏ được từ chối":"Only an administrator can undo a rejection","Phiếu này không ở trạng thái Từ chối":"This request is not in the Rejected state","Không bỏ được từ chối":"The rejection could not be undone","Phiếu này đã được xử lý ở nơi khác":"This request was already handled elsewhere","Phiếu điều chuyển quay lại chờ duyệt":"Transfer request is back to awaiting approval"});
 Object.assign(TXT.hi,{"↩ Bỏ từ chối (admin)":"↩ अस्वीकृति रद्द करें (प्रशासक)","Chỉ admin mới bỏ được từ chối":"केवल प्रशासक ही अस्वीकृति रद्द कर सकता है","Phiếu này không ở trạng thái Từ chối":"यह पर्ची अस्वीकृत स्थिति में नहीं है","Không bỏ được từ chối":"अस्वीकृति रद्द नहीं हो सकी","Phiếu này đã được xử lý ở nơi khác":"यह पर्ची कहीं और निपटाई जा चुकी है","Phiếu điều chuyển quay lại chờ duyệt":"स्थानांतरण पर्ची फिर से स्वीकृति की प्रतीक्षा में"});
-const TXT_RE_BS=[{re:new RegExp("^Đã bỏ từ chối (.+) — phiếu quay lại chờ duyệt$"),en:"Rejection of $1 undone — the request is back to awaiting approval",hi:"$1 की अस्वीकृति रद्द — पर्ची फिर से स्वीकृति की प्रतीक्षा में"},{re:new RegExp("^Phiếu này từng bị từ chối \\(lý do: (.+)\\) và đã được quản trị viên mở lại\\. Xem kỹ trước khi duyệt\\.$"),en:"This request was rejected before (reason: $1) and an administrator reopened it. Check it carefully before approving.",hi:"यह पर्ची पहले अस्वीकृत हुई थी (कारण: $1) और प्रशासक ने इसे फिर खोला। स्वीकृत करने से पहले ध्यान से देखें।"},{re:new RegExp("^(.+) đã duyệt phiếu (.+) · chuyển cho (.+) · ([\\d.,]+) mã · lúc (.+)$"),en:"$1 approved request $2 · sent to $3 · $4 items · at $5",hi:"$1 ने पर्ची $2 स्वीकृत की · $3 को भेजा · $4 वस्तुएँ · $5 बजे",n:4,en1:"$1 approved request $2 · sent to $3 · $4 item · at $5",hi1:"$1 ने पर्ची $2 स्वीकृत की · $3 को भेजा · $4 वस्तु · $5 बजे"},{re:new RegExp("^([\\d.,]+) loại lý do$"),en:"$1 kinds of reason",hi:"$1 प्रकार के कारण",n:1,en1:"$1 kind of reason",hi1:"$1 प्रकार का कारण"},{re:new RegExp("^([\\d.,]+) phiếu$"),en:"$1 requests",hi:"$1 पर्चियाँ",n:1,en1:"$1 request",hi1:"$1 पर्ची"},{re:new RegExp("^([\\d.,]+) dòng$"),en:"$1 lines",hi:"$1 पंक्तियाँ",n:1,en1:"$1 line",hi1:"$1 पंक्ति"}];
+/* Bo sung 24/09/2026 (dot ra soat) — 6 chuoi con sot khi quet lai toan app. */
+Object.assign(TXT.en,{"⚠ Trễ":"⚠ Late"});
+Object.assign(TXT.hi,{"⚠ Trễ":"⚠ देर"});
+const TXT_RE_BS=[{re:new RegExp("^([\\d.,]+)/([\\d.,]+) điểm bán$"),en:"$1/$2 outlets",hi:"$1/$2 आउटलेट"},{re:new RegExp("^còn ([\\d.,]+)$"),en:"$1 left",hi:"$1 शेष"},{re:new RegExp("^🔔 Đã tự nhắc ([\\d.,]+) điểm bán$"),en:"🔔 Auto-reminded $1 outlets",hi:"🔔 $1 आउटलेट को स्वतः याद दिलाया"},{re:new RegExp("^📋 Xem bảng xếp hạng chi tiết \\(([\\d.,]+) bộ phận\\)$"),en:"📋 See the full ranking ($1 departments)",hi:"📋 पूरी रैंकिंग देखें ($1 विभाग)"},{re:new RegExp("^🔒 Tháng (\\d{2}/\\d{4}) đã khóa$"),en:"🔒 Month $1 is locked",hi:"🔒 माह $1 बंद है"},{re:new RegExp("^đã được kế toán duyệt cho tháng (\\d{2}/\\d{4})\\. Không thể chỉnh sửa\\. Kỳ mới sẽ mở vào tháng sau\\.$"),en:"has been approved by accounting for month $1. It can no longer be edited. The next period opens next month.",hi:"लेखा द्वारा माह $1 हेतु स्वीकृत। अब संपादित नहीं किया जा सकता। अगली अवधि अगले माह खुलेगी।"},{re:new RegExp("^Đã bỏ từ chối (.+) — phiếu quay lại chờ duyệt$"),en:"Rejection of $1 undone — the request is back to awaiting approval",hi:"$1 की अस्वीकृति रद्द — पर्ची फिर से स्वीकृति की प्रतीक्षा में"},{re:new RegExp("^Phiếu này từng bị từ chối \\(lý do: (.+)\\) và đã được quản trị viên mở lại\\. Xem kỹ trước khi duyệt\\.$"),en:"This request was rejected before (reason: $1) and an administrator reopened it. Check it carefully before approving.",hi:"यह पर्ची पहले अस्वीकृत हुई थी (कारण: $1) और प्रशासक ने इसे फिर खोला। स्वीकृत करने से पहले ध्यान से देखें।"},{re:new RegExp("^(.+) đã duyệt phiếu (.+) · chuyển cho (.+) · ([\\d.,]+) mã · lúc (.+)$"),en:"$1 approved request $2 · sent to $3 · $4 items · at $5",hi:"$1 ने पर्ची $2 स्वीकृत की · $3 को भेजा · $4 वस्तुएँ · $5 बजे",n:4,en1:"$1 approved request $2 · sent to $3 · $4 item · at $5",hi1:"$1 ने पर्ची $2 स्वीकृत की · $3 को भेजा · $4 वस्तु · $5 बजे"},{re:new RegExp("^([\\d.,]+) loại lý do$"),en:"$1 kinds of reason",hi:"$1 प्रकार के कारण",n:1,en1:"$1 kind of reason",hi1:"$1 प्रकार का कारण"},{re:new RegExp("^([\\d.,]+) phiếu$"),en:"$1 requests",hi:"$1 पर्चियाँ",n:1,en1:"$1 request",hi1:"$1 पर्ची"},{re:new RegExp("^([\\d.,]+) dòng$"),en:"$1 lines",hi:"$1 पंक्तियाँ",n:1,en1:"$1 line",hi1:"$1 पंक्ति"}];
 const TXT_RE=[
   {re:new RegExp("^Tháng (\\d{2}/\\d{4}) \\(hiện tại\\)$"),en:"Month $1 (current)",hi:"माह $1 (वर्तमान)"},
   {re:new RegExp("^Tháng (\\d{2}/\\d{4})$"),en:"Month $1",hi:"माह $1"},
@@ -3268,8 +3271,9 @@ async function dbDel(table,match){if(!sb)return {ok:true,count:null};const {data
   return {ok:true,count:n};}
 async function dbUpsert(table,row){if(!sb)return;const {error}=await sb.from(table).upsert(row);if(error){console.error(table,error);
   errBox('Không lưu được '+tblVN(table)+' lên máy chủ',['Dữ liệu vừa nhập <b>CHƯA</b> lên máy chủ. Tải lại trang là mất.','Chụp màn hình này gửi admin, rồi thử lại.'],'Bảng: '+table+'\n'+(error.message||'')+(error.code?'\nMã lỗi: '+error.code:''));}}
-async function dbUpsertOpening(plant,sloc,obj){if(!sb)return;const {error}=await sb.from('opening_stock').upsert({plant_code:plant,sloc_code:sloc,items:obj.items,from_id:obj.fromId,set_by:obj.by,set_at:new Date().toISOString()});if(error){console.error('opening',error);
-  errBox('Không lưu được tồn đầu kỳ lên máy chủ',['Tồn đầu kỳ của kho <b>'+whName(plant,sloc)+'</b> <b>CHƯA</b> được ghi lên máy chủ.','Các kỳ sau sẽ tính sai nếu không xử lý. Chụp màn hình này gửi admin.'],'Bảng: opening_stock\nKho: '+plant+'/'+sloc+'\n'+(error.message||'')+(error.code?'\nMã lỗi: '+error.code:''));}}
+async function dbUpsertOpening(plant,sloc,obj){if(!sb)return {ok:true};const {error}=await sb.from('opening_stock').upsert({plant_code:plant,sloc_code:sloc,items:obj.items,from_id:obj.fromId,set_by:obj.by,set_at:new Date().toISOString()});if(error){console.error('opening',error);
+  errBox('Không lưu được tồn đầu kỳ lên máy chủ',['Tồn đầu kỳ của kho <b>'+whName(plant,sloc)+'</b> <b>CHƯA</b> được ghi lên máy chủ.','Các kỳ sau sẽ tính sai nếu không xử lý. Chụp màn hình này gửi admin.'],'Bảng: opening_stock\nKho: '+plant+'/'+sloc+'\n'+(error.message||'')+(error.code?'\nMã lỗi: '+error.code:''));return {ok:false};}
+  return {ok:true};}
 async function dbUpsertCountList(plant,sloc,period,items){if(!sb)return;const {error}=await sb.from('count_lists').upsert({plant_code:plant,sloc_code:sloc,period,items,created_by:session.name,created_at:new Date().toISOString()});if(error){console.error('count_lists',error);
   errBox('Không lưu được danh sách mở kỳ',['Danh sách kiểm kê của kho <b>'+whName(plant,sloc)+'</b> kỳ tháng <b>'+periodVN(period)+'</b> <b>CHƯA</b> lên máy chủ — giám sát sẽ không thấy danh sách để đếm.','Chụp màn hình này gửi admin, rồi nạp lại.'],'Bảng: count_lists\nKho: '+plant+'/'+sloc+' · kỳ '+period+'\n'+(error.message||'')+(error.code?'\nMã lỗi: '+error.code:''));}}
 
@@ -5543,17 +5547,30 @@ function closingDetailCard(cl){
   return c;
 }
 // DUYỆT bản chốt tồn: khóa + dùng làm tồn đầu kỳ kỳ sau
-function approveClosing(cl,cb){
+async function approveClosing(cl,cb){
   const R=cl.recon||{};const done=Object.keys(cl.explain||{}).length;
   if(R.diffCnt&&done<R.diffCnt){if(!confirm(`Còn ${R.diffCnt-done}/${R.diffCnt} mã lệch CHƯA giải trình. Vẫn duyệt?`))return;}
   if(!confirm(`Duyệt bản chốt tồn tháng ${periodVN(cl.period)} — ${whName(cl.plant,cl.sloc)}?\n\nSau khi duyệt:\n• KHÔNG xóa được nữa (chỉ admin xóa).\n• Số kế toán này thành TỒN ĐẦU KỲ dùng cho kỳ sau.`))return;
-  cl.status='Đã duyệt';cl.approvedBy=session.name;cl.approvedAt=now();
+  /* CHỜ MÁY CHỦ XÁC NHẬN rồi mới đổi số trên máy — bản chốt này trở thành tồn
+     đầu kỳ của kỳ sau, ghi hụt là sai dây chuyền mọi kỳ về sau. */
   const key=cl.plant+'|'+cl.sloc;
   const prev=openingStock[key]?{items:{...openingStock[key].items},fromId:openingStock[key].fromId,at:openingStock[key].at,by:openingStock[key].by}:null;
-  cl.prevOpening=prev;
-  dbUpd('closing_stock',{id:cl.id},{status:'Đã duyệt',approved_by:session.name,approved_at:new Date().toISOString(),prev_opening:prev});
-  openingStock[key]={items:{...cl.items},fromId:'CHỐT TỒN THÁNG '+periodVN(cl.period)+' (KT)',at:now(),by:session.name};
-  dbUpsertOpening(cl.plant,cl.sloc,openingStock[key]);
+  const moc={items:{...cl.items},fromId:'CHỐT TỒN THÁNG '+periodVN(cl.period)+' (KT)',at:now(),by:session.name};
+  if(sb){
+    const u=await dbUpd('closing_stock',{id:cl.id},{status:'Đã duyệt',approved_by:session.name,approved_at:new Date().toISOString(),prev_opening:prev});
+    if(!u.ok||u.count===0)return;
+    const op=await dbUpsertOpening(cl.plant,cl.sloc,moc);
+    if(op&&op.ok===false){
+      errBox('Đã duyệt bản chốt nhưng CHƯA ghi được tồn đầu kỳ',[
+        'Bản chốt tồn tháng <b>'+periodVN(cl.period)+'</b> của <b>'+whName(cl.plant,cl.sloc)+'</b> đã duyệt, nhưng <b>tồn đầu kỳ chưa cập nhật</b>.',
+        'Kỳ sau sẽ tính Xuất bằng mốc cũ — số sẽ sai nếu để nguyên.',
+        'Chụp màn hình này gửi kế toán trước khi chốt kỳ.'
+      ],'Bảng: opening_stock'+String.fromCharCode(10)+'Kho: '+cl.plant+'/'+cl.sloc);
+      return;
+    }
+  }
+  cl.status='Đã duyệt';cl.approvedBy=session.name;cl.approvedAt=now();cl.prevOpening=prev;
+  openingStock[key]=moc;
   log('Duyệt bản chốt tồn tháng',`${whName(cl.plant,cl.sloc)} · kỳ ${periodVN(cl.period)} → thành tồn đầu kỳ kỳ sau`);
   toast('✓ Đã duyệt & khóa — đã dùng làm tồn đầu kỳ kỳ sau');
   cb&&cb();
@@ -7740,12 +7757,35 @@ function renderTonghop(v){
     tbl.appendChild(tb);w.appendChild(tbl);body.appendChild(w);
     card.appendChild(body);v.appendChild(card);
     const bb=$('#bulkApprove');
-    if(bb)bb.onclick=()=>{
+    if(bb)bb.onclick=async()=>{
       if(sel.size===0){toast('Chưa chọn phiếu nào');return;}
       if(!confirm(`Phê duyệt ${sel.size} phiếu đã chọn?\nMỗi phiếu sẽ được chốt làm tồn đầu kỳ cho kho tương ứng.`))return;
-      const arr=[...sel];arr.forEach(s=>{const ld=lastDayVN(s.period||curPeriod());s.status='Đã duyệt';s.approvedBy=session.name;s.approvedAt=ld.str;const k=s.plant+'|'+s.sloc;const prev=openingStock[k]?{items:{...openingStock[k].items},fromId:openingStock[k].fromId,at:openingStock[k].at,by:openingStock[k].by}:null;s.prevOpening=prev;openingStock[k]={items:{...s.items},fromId:s.id,at:s.approvedAt,by:session.name};
-        dbUpd('submissions',{id:s.id},{status:'Đã duyệt',approved_by:session.name,approved_at:ld.date.toISOString(),prev_opening:prev});dbUpsertOpening(s.plant,s.sloc,openingStock[k]);});
-      log('Duyệt hàng loạt',`${arr.length} phiếu`);toast('Đã duyệt '+arr.length+' phiếu');renderView();
+      /* Duyệt từng phiếu MỘT, chờ máy chủ xác nhận từng cái. Trước đây bắn hết
+         lệnh rồi báo "đã duyệt N phiếu" mà không chờ cái nào — máy chủ từ chối
+         vài phiếu thì màn hình vẫn nói duyệt hết. */
+      const arr=[...sel];let ok=0;const truot=[];
+      for(const s of arr){
+        const ld=lastDayVN(s.period||curPeriod());
+        const k=s.plant+'|'+s.sloc;
+        const prev=openingStock[k]?{items:{...openingStock[k].items},fromId:openingStock[k].fromId,at:openingStock[k].at,by:openingStock[k].by}:null;
+        const moc={items:{...s.items},fromId:s.id,at:ld.str,by:session.name};
+        if(sb){
+          const u=await dbUpd('submissions',{id:s.id},{status:'Đã duyệt',approved_by:session.name,approved_at:ld.date.toISOString(),prev_opening:prev});
+          if(!u.ok||u.count===0){truot.push(s.id+' · '+whName(s.plant,s.sloc));continue;}
+          const op=await dbUpsertOpening(s.plant,s.sloc,moc);
+          if(op&&op.ok===false){truot.push(s.id+' · '+whName(s.plant,s.sloc)+' (phiếu duyệt rồi nhưng chưa ghi được tồn đầu kỳ)');continue;}
+        }
+        s.status='Đã duyệt';s.approvedBy=session.name;s.approvedAt=ld.str;s.prevOpening=prev;
+        openingStock[k]=moc;ok++;
+      }
+      log('Duyệt hàng loạt',`${ok}/${arr.length} phiếu`);
+      if(truot.length)errBox('Có phiếu KHÔNG duyệt được',[
+        'Đã duyệt <b>'+ok+'/'+arr.length+'</b> phiếu.',
+        'Những phiếu dưới đây <b>vẫn ở trạng thái cũ</b>, chưa chốt tồn đầu kỳ:<br>'+truot.join('<br>'),
+        'Chụp màn hình này gửi kế toán.'
+      ],'Bảng: submissions'+String.fromCharCode(10)+truot.join(String.fromCharCode(10)));
+      else toast('Đã duyệt '+ok+' phiếu');
+      renderView();
     };
     return;
   }
@@ -7970,15 +8010,39 @@ ${body}
 }
 
 function showDetailOLD_placeholder(){}
-function approveSubmission(s){
+/* PHÊ DUYỆT BIÊN BẢN KIỂM KÊ — chờ máy chủ xác nhận rồi mới đổi số trên máy.
+   Trước đây đổi trước, bắn lệnh sau, không chờ kết quả. Máy chủ từ chối (RLS trả
+   0 dòng, KHÔNG báo lỗi) thì:
+     · phiếu vẫn hiện "Đã duyệt" trên màn,
+     · openingStock bị ghi đè trên máy,
+     · và `dbUpsertOpening` VẪN CHẠY -> tồn đầu kỳ được ghi lên MÁY CHỦ từ một
+       phiếu chưa hề được duyệt.
+   Tồn đầu kỳ là mốc để tính Xuất của MỌI kỳ sau, nên sai chỗ này là sai dây chuyền.
+   Đã dựng lại thành: ghi phiếu -> chờ kết quả -> ghi tồn đầu kỳ -> chờ kết quả ->
+   mới đổi trên máy và báo thành công. Thất bại ở bước nào thì dừng tại đó. */
+async function approveSubmission(s){
   const ld=lastDayVN(s.period||curPeriod());
-  s.status='Đã duyệt';s.approvedBy=session.name;s.approvedAt=ld.str;
   const key=s.plant+'|'+s.sloc;
   const prev=openingStock[key]?{items:{...openingStock[key].items},fromId:openingStock[key].fromId,at:openingStock[key].at,by:openingStock[key].by}:null;
-  s.prevOpening=prev;
-  openingStock[key]={items:{...s.items},fromId:s.id,at:s.approvedAt,by:session.name};
-  dbUpd('submissions',{id:s.id},{status:'Đã duyệt',approved_by:session.name,approved_at:ld.date.toISOString(),prev_opening:prev});
-  dbUpsertOpening(s.plant,s.sloc,openingStock[key]);
+  const moc={items:{...s.items},fromId:s.id,at:ld.str,by:session.name};
+  if(sb){
+    const upd=await dbUpd('submissions',{id:s.id},
+      {status:'Đã duyệt',approved_by:session.name,approved_at:ld.date.toISOString(),prev_opening:prev});
+    if(!upd.ok||upd.count===0)return;            // dbUpd đã dựng hộp lỗi
+    const op=await dbUpsertOpening(s.plant,s.sloc,moc);
+    if(op&&op.ok===false){
+      /* Phiếu đã đánh dấu duyệt nhưng tồn đầu kỳ chưa ghi được — nói thẳng, vì
+         kỳ sau sẽ tính Xuất bằng mốc cũ mà không ai hay. */
+      errBox('Đã duyệt phiếu nhưng CHƯA ghi được tồn đầu kỳ',[
+        'Phiếu <b>'+s.id+'</b> đã chuyển sang Đã duyệt, nhưng <b>tồn đầu kỳ của kho chưa được cập nhật</b>.',
+        'Kỳ sau sẽ tính Xuất bằng mốc cũ — số sẽ sai nếu để nguyên.',
+        'Chụp màn hình này gửi kế toán, đừng chốt kỳ cho tới khi xử lý xong.'
+      ],'Bảng: opening_stock'+String.fromCharCode(10)+'Kho: '+s.plant+'/'+s.sloc+String.fromCharCode(10)+'Phiếu: '+s.id);
+      return;
+    }
+  }
+  s.status='Đã duyệt';s.approvedBy=session.name;s.approvedAt=ld.str;s.prevOpening=prev;
+  openingStock[key]=moc;
   log('Phê duyệt & khóa kỳ',`${s.id} · ${whName(s.plant,s.sloc)} · khóa tháng ${periodVN(s.period)} · chốt ${s.count} mã`);
   toast('Đã duyệt '+s.id+' · khóa tháng '+periodVN(s.period));
   try{exportBBKK(s);}catch(e){console.error(e);}
@@ -8587,10 +8651,13 @@ function commitOpeningT6(r,cb){
   cb&&cb();
 }
 // XÓA tồn đầu kỳ để nhập lại
-function deleteOpeningT6(plant,sloc,cb){
+async function deleteOpeningT6(plant,sloc,cb){
   if(!confirm('Xóa toàn bộ tồn đầu kỳ của '+whName(plant,sloc)+'?\n\nSau khi xóa, bạn có thể nhập lại từ Excel. Thao tác này không xóa mã vật tư trong danh mục.'))return;
+  /* Chờ máy chủ xóa THẬT rồi mới bỏ khỏi bộ nhớ. Xóa hụt mà màn hình báo đã xóa
+     thì kế toán nạp lại file mới, tải trang là số cũ quay về, thành hai mốc chồng nhau. */
+  if(sb){const d=await dbDel('opening_stock',{plant_code:plant,sloc_code:sloc});
+    if(!d.ok)return;}           // count===0 là kho vốn chưa có tồn đầu kỳ -> vẫn coi là xong
   const key=plant+'|'+sloc;delete openingStock[key];
-  dbDel('opening_stock',{plant_code:plant,sloc_code:sloc});
   log('Xóa tồn đầu kỳ',whName(plant,sloc));
   toast('Đã xóa tồn đầu kỳ — có thể nhập lại');
   cb&&cb();
@@ -9186,7 +9253,10 @@ function openUserDrawer(view,p){
   dr.querySelector('.udx').onclick=()=>{userEdit=null;renderView();};
   save.onclick=async()=>{
     const role=rsel.value||null,status=ssel.value;
-    await dbUpd('profiles',{id:p.id},{role,status,plant_code:null,sloc_code:null});
+    /* Chờ xác nhận rồi mới đổi trên màn: báo "đã lưu" mà máy chủ từ chối thì
+       admin tưởng đã cấp quyền, người kia đăng nhập vào vẫn trắng. */
+    const uq=await dbUpd('profiles',{id:p.id},{role,status,plant_code:null,sloc_code:null});
+    if(!uq.ok||uq.count===0)return;
     p.role=role;p.status=status;
     const chosen=_ufield(role)?[...box.querySelectorAll('.ukitem input:checked')].map(c=>c.value):[]; // 'plant|sloc'
     try{await sb.from('user_plants').delete().eq('user_id',p.id);
