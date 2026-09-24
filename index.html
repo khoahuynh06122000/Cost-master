@@ -1085,7 +1085,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2409-15';
+const APP_VER='2409-16';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -6972,10 +6972,34 @@ function dcChoDuyet(v){
   if(!list.length){body.appendChild(el('div','empty',`<div class="big">Không có phiếu nào chờ mình</div><div>Khi kho khác xin hàng của kho mình, phiếu sẽ hiện ở đây.</div>`));return;}
   list.forEach(r=>body.appendChild(dcReqCard(r,true)));
 }
+/* Ngày ghi sổ ứng với kỳ người duyệt chọn.
+   Kỳ hiện tại -> hôm nay (giữ nguyên hành vi cũ, không đổi gì với 99% phiếu).
+   Kỳ tương lai -> ngày ĐẦU kỳ · kỳ quá khứ -> ngày CUỐI kỳ. Làm vậy để `date` và
+   `period` của dòng sổ luôn khớp nhau — lệch hai cái này thì file SAP ghi một
+   đằng, báo cáo kỳ một nẻo. */
+function _isoNgay(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function ngayGhiSoChoKy(ky){
+  const hnay=new Date(); const pNay=periodOfDate(_isoNgay(hnay));
+  if(!ky||ky===pNay)return _isoNgay(hnay);
+  if(ky>pNay)return ky+'-01';
+  return _isoNgay(lastDayVN(ky).date);
+}
+/* Danh sách kỳ cho ô "Ghi sổ vào kỳ": kỳ sau + kỳ này + 5 kỳ trước.
+   periodOptions() chỉ lùi về quá khứ, mà đúng cái cần nhất lại là KỲ SAU —
+   hàng rời kho sau khi đã đếm thì phải ghi sang kỳ sau. */
+function kyGhiSoOptions(){
+  const d=new Date(); const out=[];
+  for(let i=1;i>=-5;i--){const t=new Date(d.getFullYear(),d.getMonth()+i,1);
+    out.push(t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0'));}
+  return out;
+}
 function dcReqCard(r,canAct){
   const wrap=el('div','card-b');wrap.style.borderTop='1px solid var(--line)';
   const codes=Object.keys(r.items||{});
-  const per=curPeriod();
+  /* Kỳ ghi sổ do người duyệt chọn (mặc định kỳ của hôm nay). Vướng hay không là
+     xét theo CHÍNH kỳ đó — chọn sang kỳ sau thì kho vốn đã chốt kỳ này hết vướng. */
+  const _kyNay=periodOfDate(_isoNgay(new Date()))||curPeriod();
+  const per=r._kyGhiSo||_kyNay;
   const lock=dcBlockers(r.fromPlant,r.fromSloc,r.toPlant,r.toSloc,per);
   wrap.appendChild(el('div',null,`<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
     <span class="badge badge-soft">${dcKindLabel(r.kind)}</span>
@@ -7071,15 +7095,35 @@ function dcReqCard(r,canAct){
     /* Kho vướng kiểm kê: vai thường bị chặn hẳn, ADMIN chỉ bị CẢNH BÁO rồi vẫn
        duyệt được (Khoa chốt 24/09/2026). Lý do: có lúc hàng đã đi thật, phải ghi
        sổ cho khớp, chỉ mình admin đủ thẩm quyền quyết cái đó. */
+    /* Ô CHỌN KỲ GHI SỔ — mở cho MỌI VAI (Khoa chốt 24/09/2026).
+       Dùng khi hàng rời kho sau lúc đã đếm: ghi vào kỳ sau cho khỏi lệch mốc. */
+    {
+      const kf=el('div');kf.style.cssText='display:flex;gap:9px;align-items:center;flex-wrap:wrap;flex-basis:100%;font-size:12.5px;color:var(--muted)';
+      kf.appendChild(el('span',null,'Ghi sổ vào kỳ'));
+      const ks=el('select','input');ks.style.cssText='max-width:200px;height:38px;padding:6px 10px';
+      kyGhiSoOptions().forEach(function(p){
+        const o=el('option',null,'Tháng '+periodVN(p)+(p===_kyNay?' (nay)':''));
+        o.value=p;if(p===per)o.selected=true;ks.appendChild(o);});
+      ks.onchange=function(){r._kyGhiSo=ks.value;renderView();};
+      kf.appendChild(ks);
+      kf.appendChild(el('span',null,'· ngày ghi sổ '+ngayGhiSoChoKy(per).split('-').reverse().join('/')));
+      bar.appendChild(kf);
+    }
     const _laAdmin=!!(session&&session.role==='admin');
     if(lock.length&&!_laAdmin){
       bar.appendChild(el('div','note',`<span>🔒 Không duyệt được — ${lock.join(' · ')}. Điều chuyển phải xong TRƯỚC khi mở kỳ kiểm kê. Xử lý phiếu kiểm kê xong (hoặc nhờ kế toán xóa kỳ đã mở) rồi quay lại.</span>`));
     }else{
       if(lock.length){
+        /* Câu cũ dọa "làm lệch số kiểm kê" — SAI, đã đo lại 24/09/2026: duyệt sau
+           khi kho chốt kiểm kê thì SỐ ĐẾM và TỒN ĐẦU KỲ KỲ SAU đều không đổi, chỉ
+           Xuất (tính) của kỳ đó giảm đúng phần điều chuyển — mà giảm vậy là đúng,
+           hàng rời kho bằng điều chuyển chứ không phải bán ra.
+           Nên đây là THÔNG TIN, không phải cảnh báo. */
         const _c=el('div','note');const _i=el('div');_i.style.minWidth='0';
-        _i.innerHTML='<b style="color:var(--accent-600)">🔓 Kho đang vướng kiểm kê — '+lock.join(' · ')+'.</b> '
-          +'Vai khác không duyệt được ở trạng thái này. <b>Quản trị viên vẫn duyệt được</b>, nhưng ghi sổ lúc kho đang đếm '
-          +'sẽ làm <b>lệch số kiểm kê của kho đó</b> — chỉ làm khi hàng đã đi thật và bạn biết mình đang làm gì.';
+        _i.innerHTML='Kho này đã chốt kiểm kê — '+lock.join(' · ')+'. '
+          +'Duyệt vẫn <b>ghi sổ và trừ tồn bình thường</b>: số kiểm đếm và tồn đầu kỳ kỳ sau <b>không đổi</b>, '
+          +'chỉ <b>Xuất (tính)</b> của kỳ này giảm đúng phần điều chuyển. '
+          +'Nếu hàng rời kho <b>sau</b> lúc đếm thì chọn <b>kỳ sau</b> ở ô trên.';
         _c.appendChild(_i);bar.appendChild(_c);
       }
       // Trường hợp phổ biến nhất: giao đúng số đã xin -> MỘT chạm, không phải cuộn bảng
@@ -7237,8 +7281,11 @@ async function approveTransferReq(r,qtys){
 }
 async function _approveTransferReq(r,qtys){
   const d=new Date();
-  const dateStr=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-  const per=periodOfDate(dateStr);
+  let dateStr=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  let per=periodOfDate(dateStr);
+  /* Người duyệt chọn kỳ ghi sổ khác kỳ hôm nay -> lấy kỳ đó, và dời ngày ghi sổ
+     vào trong kỳ đó luôn cho `date` và `period` khớp nhau. */
+  if(r._kyGhiSo&&r._kyGhiSo!==per){per=r._kyGhiSo;dateStr=ngayGhiSoChoKy(per);}
   // Chặn kỳ đã khóa ở CẢ HAI đầu — kiểm lại ngay lúc bấm, phòng phiếu mở lâu trên màn
   const lock=dcBlockers(r.fromPlant,r.fromSloc,r.toPlant,r.toSloc,per);
   const _adminVuot=!!(session&&session.role==='admin');
@@ -7247,15 +7294,8 @@ async function _approveTransferReq(r,qtys){
     'Ghi điều chuyển vào kỳ đang đếm / đã chốt sẽ làm sai số kiểm kê.',
     'Xử lý xong phiếu kiểm kê (hoặc nhờ kế toán xóa kỳ đã mở) rồi quay lại duyệt phiếu này.'
   ],'Phiếu: '+r.id+'\nKỳ theo ngày duyệt: '+per+'\nKho vướng:\n- '+lock.join('\n- '));return;}
-  /* Admin vượt rào: KHÔNG lặng lẽ cho qua — bắt xác nhận một lần, nói thẳng hệ quả,
-     và ghi vào nhật ký là đã vượt rào để sau còn lần ra. */
-  if(lock.length&&_adminVuot){
-    if(!confirm('KHO ĐANG VƯỚNG KIỂM KÊ'+NL+NL
-      +lock.join(NL)+NL+NL
-      +'Ghi sổ lúc này sẽ làm LỆCH SỐ KIỂM KÊ của kho đó: hàng vừa ghi không nằm trong số đã đếm.'+NL
-      +'Vai khác bị chặn ở đây. Bạn là quản trị viên nên app vẫn cho duyệt.'+NL+NL
-      +'Chỉ bấm OK khi hàng đã thực sự đi và bạn chấp nhận số kiểm kê kho đó phải chỉnh lại.'))return;
-  }
+  /* Không hỏi lại admin nữa: đã đo và đây là thao tác bình thường, kiểm kê không
+     suy suyển. Vẫn ghi dấu vào nhật ký để sau còn tra. */
   // Không cho duyệt nhiều hơn số đã xin — chặn cả ở đây, không chỉ dựa vào ô input
   const over=Object.keys(r.items||{}).filter(c=>Number(qtys[c]||0)>Number(r.items[c].qtyReq||0));
   if(over.length){
@@ -7359,7 +7399,7 @@ async function _approveTransferReq(r,qtys){
     `${session.name} đã duyệt phiếu ${r.id} · chuyển cho ${nhanNoi} · ${codes.length} mã · lúc ${r.approvedAt}`,
     'transfer','Kho bạn vừa duyệt cho hàng',session.name);
   log('Duyệt '+dcKindLabel(r.kind),`${r.id} · ${fromNm} → ${toNm} · ${codes.length} mã · kỳ ${periodVN(per)}`
-    +(lock.length?' · ⚠ ADMIN DUYỆT KHI KHO ĐANG VƯỚNG KIỂM KÊ: '+lock.join(' · '):''));
+    +(lock.length?' · duyệt sau khi kho đã chốt kiểm kê: '+lock.join(' · '):''));
   toast('✓ Đã duyệt '+r.id+' — ghi sổ '+codes.length+' mã vào kỳ tháng '+periodVN(per));
   renderView();
 }
