@@ -1085,7 +1085,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2409-12';
+const APP_VER='2409-13';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -5576,7 +5576,7 @@ async function approveClosing(cl,cb){
   cb&&cb();
 }
 // XÓA bản chốt tồn (bản đã duyệt: chỉ admin)
-function deleteClosing(cl,cb){
+async function deleteClosing(cl,cb){
   if(cl.status==='Đã duyệt'&&session.role!=='admin'){toast('Bản đã duyệt — chỉ admin mới xóa được');return;}
   const key=cl.plant+'|'+cl.sloc;
   const tag='CHỐT TỒN THÁNG '+periodVN(cl.period)+' (KT)';
@@ -5584,10 +5584,17 @@ function deleteClosing(cl,cb){
   const hasPrev=opFromThis&&cl.prevOpening&&cl.prevOpening.items&&Object.keys(cl.prevOpening.items).length;
   const note=opFromThis?(hasPrev?'\n\nTỒN ĐẦU KỲ sẽ tự trả về số lần trước ('+(cl.prevOpening.fromId||'kỳ trước')+').':'\n\nTỒN ĐẦU KỲ do bản này chốt sẽ bị gỡ (trước đó chưa có tồn).'):'';
   if(!confirm('Xóa bản chốt tồn tháng '+periodVN(cl.period)+' — '+whName(cl.plant,cl.sloc)+'?'+note))return;
+  // Chờ máy chủ xóa THẬT rồi mới bỏ khỏi bộ nhớ và đụng tới tồn đầu kỳ.
+  if(sb){const d=await dbDel('closing_stock',{id:cl.id});if(!d.ok||d.count===0)return;}
   closings=closings.filter(x=>x.id!==cl.id);
-  dbDel('closing_stock',{id:cl.id});
-  if(opFromThis&&hasPrev){openingStock[key]={items:{...cl.prevOpening.items},fromId:cl.prevOpening.fromId,at:cl.prevOpening.at,by:cl.prevOpening.by};dbUpsertOpening(cl.plant,cl.sloc,openingStock[key]);log('Xóa bản chốt tồn + hoàn tồn đầu kỳ trước (admin)',`${whName(cl.plant,cl.sloc)} · kỳ ${periodVN(cl.period)} → về ${cl.prevOpening.fromId||'kỳ trước'}`);toast('Đã xóa bản chốt & trả tồn đầu kỳ về lần trước');}
-  else if(opFromThis){delete openingStock[key];dbDel('opening_stock',{plant_code:cl.plant,sloc_code:cl.sloc});log('Xóa bản chốt tồn + gỡ tồn đầu kỳ (admin)',`${whName(cl.plant,cl.sloc)} · kỳ ${periodVN(cl.period)}`);toast('Đã xóa bản chốt & gỡ tồn đầu kỳ (trước đó chưa có)');}
+  if(opFromThis&&hasPrev){const _m={items:{...cl.prevOpening.items},fromId:cl.prevOpening.fromId,at:cl.prevOpening.at,by:cl.prevOpening.by};
+    const _o=await dbUpsertOpening(cl.plant,cl.sloc,_m);
+    if(_o&&_o.ok===false){errBox('Đã xóa bản chốt nhưng CHƯA trả được tồn đầu kỳ',['Bản chốt đã xóa, nhưng <b>tồn đầu kỳ vẫn đang là số của bản vừa xóa</b>.','Kỳ sau sẽ tính Xuất bằng mốc sai. Chụp màn hình này gửi kế toán.'],'Bảng: opening_stock'+String.fromCharCode(10)+'Kho: '+cl.plant+'/'+cl.sloc);return;}
+    openingStock[key]=_m;log('Xóa bản chốt tồn + hoàn tồn đầu kỳ trước (admin)',`${whName(cl.plant,cl.sloc)} · kỳ ${periodVN(cl.period)} → về ${cl.prevOpening.fromId||'kỳ trước'}`);toast('Đã xóa bản chốt & trả tồn đầu kỳ về lần trước');}
+  else if(opFromThis){
+    if(sb){const d2=await dbDel('opening_stock',{plant_code:cl.plant,sloc_code:cl.sloc});
+      if(!d2.ok){errBox('Đã xóa bản chốt nhưng CHƯA gỡ được tồn đầu kỳ',['Bản chốt đã xóa, nhưng <b>tồn đầu kỳ do nó chốt vẫn còn</b>.','Kỳ sau sẽ tính Xuất bằng mốc sai. Chụp màn hình này gửi kế toán.'],'Bảng: opening_stock'+String.fromCharCode(10)+'Kho: '+cl.plant+'/'+cl.sloc);return;}}
+    delete openingStock[key];log('Xóa bản chốt tồn + gỡ tồn đầu kỳ (admin)',`${whName(cl.plant,cl.sloc)} · kỳ ${periodVN(cl.period)}`);toast('Đã xóa bản chốt & gỡ tồn đầu kỳ (trước đó chưa có)');}
   else{log('Xóa bản chốt tồn tháng',`${whName(cl.plant,cl.sloc)} · kỳ ${periodVN(cl.period)}`);toast('Đã xóa bản chốt tồn tháng');}
   cb&&cb();
 }
@@ -5646,8 +5653,10 @@ function renderReconcileCard(v){
         diff.forEach(r=>{const f=el('label','field');f.style.marginBottom='8px';f.innerHTML=`<span>${r.code} · ${r.name} (GS ${r.a} → KT ${r.b}, Δ ${(r.delta>0?'+':'')+r.delta})</span>`;
           const ta=el('input','input');ta.value=(cl.explain&&cl.explain[r.code])||'';ta.placeholder='Lý do lệch…';inputs[r.code]=ta;f.appendChild(ta);gb.appendChild(f);});
         const save=el('button','btn btn-ghost btn-sm','💾 Lưu giải trình');
-        save.onclick=()=>{const ex={};Object.entries(inputs).forEach(([c,ta])=>{if(ta.value.trim())ex[c]=ta.value.trim();});cl.explain=ex;
-          dbUpd('closing_stock',{id:cl.id},{explain:ex});log('Lưu giải trình chốt tồn',`${whName(cl.plant,cl.sloc)} · ${Object.keys(ex).length} mã`);toast('Đã lưu giải trình');};
+        save.onclick=async()=>{const ex={};Object.entries(inputs).forEach(([c,ta])=>{if(ta.value.trim())ex[c]=ta.value.trim();});
+          const _u=await dbUpd('closing_stock',{id:cl.id},{explain:ex});
+          if(!_u.ok||_u.count===0)return;                     // chữ vừa gõ vẫn còn trên ô
+          cl.explain=ex;log('Lưu giải trình chốt tồn',`${whName(cl.plant,cl.sloc)} · ${Object.keys(ex).length} mã`);toast('Đã lưu giải trình');};
         gb.appendChild(save);gt.appendChild(gb);wrap.appendChild(gt);
       }
     }
@@ -7661,7 +7670,9 @@ function dcNhapKho(v){
     tbl.innerHTML=`<thead><tr><th>Ngày</th><th>Mã</th><th>Tên hàng</th><th class="num">SL nhập</th><th>Ghi chú</th><th></th></tr></thead>`;
     const tb=el('tbody');
     list.forEach(r=>{const tr=el('tr',null,`<td class="tnum" style="font-size:12px">${r.date||''}</td><td class="tnum">${r.code}</td><td>${r.name}</td><td class="num cell-strong tnum">${r.qty} ${r.uom||''}</td><td style="font-size:12px">${r.note||''}</td><td><button class="btn btn-ghost btn-sm rmk" style="color:var(--red)">Xóa</button></td>`);
-      tr.querySelector('.rmk').onclick=()=>{if(!confirm('Xóa dòng nhập kho '+r.code+'?'))return;receipts=receipts.filter(x=>x.id!==r.id);dbDel('receipts',{id:r.id});log('Xóa dòng nhập kho',`${r.code} · ${whName(r.plant,r.sloc)}`);renderList();};
+      tr.querySelector('.rmk').onclick=async()=>{if(!confirm('Xóa dòng nhập kho '+r.code+'?'))return;
+        const _d=await dbDel('receipts',{id:r.id});if(!_d.ok||_d.count===0)return;
+        receipts=receipts.filter(x=>x.id!==r.id);log('Xóa dòng nhập kho',`${r.code} · ${whName(r.plant,r.sloc)}`);renderList();};
       tb.appendChild(tr);});
     tbl.appendChild(tb);w.appendChild(tbl);listWrap.appendChild(w);
   }
@@ -8106,8 +8117,13 @@ async function deleteSubmission(s,cb){
   if(!r.ok){toast('Máy chủ báo lỗi — phiếu CHƯA bị xóa. Xem Console để biết chi tiết.');return;}
   if(r.count===0){toast('Máy chủ từ chối xóa phiếu. Phiếu vẫn còn — dùng "↩ Hủy duyệt (mở lại kỳ)" để mở khóa ngay.');return;}
   submissions=submissions.filter(x=>x.id!==s.id);
-  if(opFromThis&&hasPrev){openingStock[key]={items:{...s.prevOpening.items},fromId:s.prevOpening.fromId,at:s.prevOpening.at,by:s.prevOpening.by};await dbUpsertOpening(s.plant,s.sloc,openingStock[key]);log('Xóa phiếu kiểm kê + hoàn tồn đầu kỳ trước (admin)',`${s.id} · ${whName(s.plant,s.sloc)} → về ${s.prevOpening.fromId||'kỳ trước'}`);toast('Đã xóa '+s.id+' & trả tồn đầu kỳ về lần trước');}
-  else if(opFromThis){delete openingStock[key];await dbDel('opening_stock',{plant_code:s.plant,sloc_code:s.sloc});log('Xóa phiếu kiểm kê + gỡ tồn đầu kỳ (admin)',`${s.id} · ${whName(s.plant,s.sloc)}`);toast('Đã xóa '+s.id+' & gỡ tồn đầu kỳ (trước đó chưa có)');}
+  if(opFromThis&&hasPrev){const _m={items:{...s.prevOpening.items},fromId:s.prevOpening.fromId,at:s.prevOpening.at,by:s.prevOpening.by};
+    const _o=await dbUpsertOpening(s.plant,s.sloc,_m);
+    if(_o&&_o.ok===false){errBox('Đã xóa phiếu nhưng CHƯA trả được tồn đầu kỳ',['Phiếu đã xóa, nhưng <b>tồn đầu kỳ vẫn đang là số của phiếu vừa xóa</b>.','Kỳ sau sẽ tính Xuất bằng mốc sai. Chụp màn hình này gửi kế toán.'],'Bảng: opening_stock'+String.fromCharCode(10)+'Kho: '+s.plant+'/'+s.sloc);return;}
+    openingStock[key]=_m;log('Xóa phiếu kiểm kê + hoàn tồn đầu kỳ trước (admin)',`${s.id} · ${whName(s.plant,s.sloc)} → về ${s.prevOpening.fromId||'kỳ trước'}`);toast('Đã xóa '+s.id+' & trả tồn đầu kỳ về lần trước');}
+  else if(opFromThis){const _d=await dbDel('opening_stock',{plant_code:s.plant,sloc_code:s.sloc});
+    if(!_d.ok){errBox('Đã xóa phiếu nhưng CHƯA gỡ được tồn đầu kỳ',['Phiếu đã xóa, nhưng <b>tồn đầu kỳ do nó chốt vẫn còn</b>.','Kỳ sau sẽ tính Xuất bằng mốc sai. Chụp màn hình này gửi kế toán.'],'Bảng: opening_stock'+String.fromCharCode(10)+'Kho: '+s.plant+'/'+s.sloc);return;}
+    delete openingStock[key];log('Xóa phiếu kiểm kê + gỡ tồn đầu kỳ (admin)',`${s.id} · ${whName(s.plant,s.sloc)}`);toast('Đã xóa '+s.id+' & gỡ tồn đầu kỳ (trước đó chưa có)');}
   else{log('Xóa phiếu kiểm kê (admin)',`${s.id} · ${whName(s.plant,s.sloc)}`);toast('Đã xóa phiếu '+s.id);}
   cb&&cb();
 }
@@ -8130,8 +8146,13 @@ async function unapproveSubmission(s,cb){
   if(!r.ok){toast('Máy chủ báo lỗi — phiếu CHƯA đổi. Xem Console.');return;}
   if(r.count===0){toast('Máy chủ từ chối cập nhật — phiếu vẫn đang duyệt. Báo kế toán xử lý.');return;}
   s.status='Chờ duyệt';s.approvedBy=null;s.approvedAt=null;
-  if(opFromThis&&hasPrev){openingStock[key]={items:{...s.prevOpening.items},fromId:s.prevOpening.fromId,at:s.prevOpening.at,by:s.prevOpening.by};await dbUpsertOpening(s.plant,s.sloc,openingStock[key]);}
-  else if(opFromThis){delete openingStock[key];await dbDel('opening_stock',{plant_code:s.plant,sloc_code:s.sloc});}
+  if(opFromThis&&hasPrev){const _m={items:{...s.prevOpening.items},fromId:s.prevOpening.fromId,at:s.prevOpening.at,by:s.prevOpening.by};
+    const _o=await dbUpsertOpening(s.plant,s.sloc,_m);
+    if(_o&&_o.ok===false){errBox('Đã hủy duyệt nhưng CHƯA trả được tồn đầu kỳ',['Phiếu đã về Chờ duyệt, nhưng <b>tồn đầu kỳ vẫn là số của lần duyệt cũ</b>.','Chụp màn hình này gửi kế toán trước khi duyệt lại.'],'Bảng: opening_stock'+String.fromCharCode(10)+'Kho: '+s.plant+'/'+s.sloc);return;}
+    openingStock[key]=_m;}
+  else if(opFromThis){const _d=await dbDel('opening_stock',{plant_code:s.plant,sloc_code:s.sloc});
+    if(!_d.ok){errBox('Đã hủy duyệt nhưng CHƯA gỡ được tồn đầu kỳ',['Phiếu đã về Chờ duyệt, nhưng <b>tồn đầu kỳ do nó chốt vẫn còn</b>.','Chụp màn hình này gửi kế toán trước khi duyệt lại.'],'Bảng: opening_stock'+String.fromCharCode(10)+'Kho: '+s.plant+'/'+s.sloc);return;}
+    delete openingStock[key];}
   log('Hủy duyệt phiếu kiểm kê (admin)',`${s.id} · ${whName(s.plant,s.sloc)} · kỳ ${periodVN(per)}`);
   toast('Đã mở lại kỳ tháng '+periodVN(per)+' cho '+whName(s.plant,s.sloc)+' — số liệu phiếu vẫn giữ');
   cb&&cb();
@@ -8299,7 +8320,11 @@ function shiftList(v){
         <td>${s.ca}</td><td>${s.fromUser}</td><td class="num cell-strong tnum">${s.count}</td><td>${badge}</td>
         <td style="display:flex;gap:6px">${canReceive?'<button class="btn btn-primary btn-sm rcv">Nhận</button>':''}<button class="btn btn-ghost btn-sm det">Chi tiết</button></td>`);
       tr.querySelector('.det').onclick=()=>showShiftDetail(s);
-      const rc=tr.querySelector('.rcv');if(rc)rc.onclick=()=>{s.status='Đã nhận';s.receivedBy=session.name;s.receivedAt=now();dbUpd('shifts',{id:s.id},{status:'Đã nhận',received_by:session.name,received_at:new Date().toISOString()});log('Nhận bàn giao ca',`${s.id} · ${whName(s.plant,s.sloc)} · ${s.ca}`);toast('Đã nhận bàn giao '+s.id);renderView();};
+      const rc=tr.querySelector('.rcv');if(rc)rc.onclick=async()=>{
+        const _u=await dbUpd('shifts',{id:s.id},{status:'Đã nhận',received_by:session.name,received_at:new Date().toISOString()});
+        if(!_u.ok||_u.count===0)return;                       // dbUpd đã dựng hộp lỗi
+        s.status='Đã nhận';s.receivedBy=session.name;s.receivedAt=now();
+        log('Nhận bàn giao ca',`${s.id} · ${whName(s.plant,s.sloc)} · ${s.ca}`);toast('Đã nhận bàn giao '+s.id);renderView();};
       tb.appendChild(tr);
     });
     tbl.appendChild(tb);w.appendChild(tbl);body.appendChild(w);
@@ -8995,8 +9020,10 @@ function spotList(v){
         const rowb=el('div','btn-row');rowb.style.cssText='padding:0 20px 16px;display:flex;gap:8px;flex-wrap:wrap';
         if(canReview){
           const ok=el('button','btn btn-primary btn-sm','✓ Đúng — Duyệt');
-          ok.onclick=()=>{s.status='Đã duyệt';s.reviewedBy=session.name;s.reviewedAt=now();
-            dbUpd('spot_checks',{id:s.id},{status:'Đã duyệt',reviewed_by:session.name,reviewed_at:new Date().toISOString()});
+          ok.onclick=async()=>{
+            const _u=await dbUpd('spot_checks',{id:s.id},{status:'Đã duyệt',reviewed_by:session.name,reviewed_at:new Date().toISOString()});
+            if(!_u.ok||_u.count===0)return;
+            s.status='Đã duyệt';s.reviewedBy=session.name;s.reviewedAt=now();
             log('Duyệt kiểm kê đột xuất',`${s.id} · ${whName(s.plant,s.sloc)}`);toast('Đã duyệt '+s.id);renderView();};
           const no=el('button','btn btn-ghost btn-sm','✕ Từ chối (xóa phiếu)');
           no.onclick=()=>{if(!confirm('Từ chối phiếu '+s.id+'?\nPhiếu sẽ bị XÓA khỏi hệ thống.'))return;deleteSpot(s,renderView);};
@@ -9702,15 +9729,26 @@ function catPlant(v){
         const chk=editable?`<td><input type="checkbox" class="rowchk cchk" data-c="${code}"></td>`:'';
         const del=editable?`<td><button class="btn btn-ghost btn-sm rm">Xóa</button></td>`:'';
         const tr=el('tr',null,`${chk}<td class="tnum">${code}</td><td>${m.name}</td><td><span class="badge badge-uom">${m.uom}</span></td>${del}`);
-        const rm=tr.querySelector('.rm');if(rm)rm.onclick=()=>{const i=assigned.indexOf(code);if(i>=0)assigned.splice(i,1);dbDel('plant_materials',{plant_code:plant,code});log('Xóa mã vật tư',`${code} khỏi ${plantName(plant)}`);toast('Đã xóa '+code);refreshPlantOptions();show();};
+        const rm=tr.querySelector('.rm');if(rm)rm.onclick=async()=>{
+          const _d=await dbDel('plant_materials',{plant_code:plant,code});if(!_d.ok||_d.count===0)return;
+          const i=assigned.indexOf(code);if(i>=0)assigned.splice(i,1);
+          log('Xóa mã vật tư',`${code} khỏi ${plantName(plant)}`);toast('Đã xóa '+code);refreshPlantOptions();show();};
         const cc=tr.querySelector('.cchk');if(cc)cc.onchange=()=>{if(cc.checked)selSet.add(code);else selSet.delete(code);const s=$('#catSel');if(s)s.textContent=selSet.size;};
         tb.appendChild(tr);});
       tbl.appendChild(tb);w.appendChild(tbl);body.appendChild(w);
       card.appendChild(body);holder.appendChild(card);
       // wiring xóa hàng loạt
       const all=$('#catAll');if(all)all.onchange=()=>{tb.querySelectorAll('.cchk').forEach(c=>{c.checked=all.checked;if(all.checked)selSet.add(c.dataset.c);else selSet.delete(c.dataset.c);});const s=$('#catSel');if(s)s.textContent=selSet.size;};
-      const dSel=$('#catDelSel');if(dSel)dSel.onclick=()=>{if(!selSet.size){toast('Chưa chọn mã nào');return;}if(!confirm(`Xóa ${selSet.size} mã đã chọn khỏi ${plantName(plant)}?`))return;const codes=[...selSet];plantMaterials[plant]=assigned.filter(c=>!selSet.has(c));if(sb)sb.from('plant_materials').delete().eq('plant_code',plant).in('code',codes).then(({error})=>{if(error)console.error(error);});log('Xóa mã hàng loạt',`${codes.length} mã khỏi ${plantName(plant)}`);toast('Đã xóa '+codes.length+' mã');refreshPlantOptions();show();};
-      const dAll=$('#catDelAll');if(dAll)dAll.onclick=()=>{if(!confirm(`Xóa TẤT CẢ ${assigned.length} mã của ${plantName(plant)}? Không thể hoàn tác.`))return;plantMaterials[plant]=[];dbDel('plant_materials',{plant_code:plant});log('Xóa toàn bộ danh mục',plantName(plant));toast('Đã xóa toàn bộ');refreshPlantOptions();show();};
+      const dSel=$('#catDelSel');if(dSel)dSel.onclick=async()=>{if(!selSet.size){toast('Chưa chọn mã nào');return;}if(!confirm(`Xóa ${selSet.size} mã đã chọn khỏi ${plantName(plant)}?`))return;
+        const codes=[...selSet];
+        if(sb){const {data,error}=await sb.from('plant_materials').delete().eq('plant_code',plant).in('code',codes).select();
+          if(error){console.error(error);errBox('Không xóa được mã khỏi danh mục kho',['Danh mục <b>vẫn còn nguyên</b> trên máy chủ. Tải lại trang sẽ thấy các mã quay lại.','Chụp màn hình này gửi kế toán.'],'Bảng: plant_materials'+String.fromCharCode(10)+(error.message||''));return;}
+          if(Array.isArray(data)&&data.length===0){errBox('Máy chủ từ chối xóa mã',['Máy chủ nhận yêu cầu nhưng <b>không xóa mã nào</b> — tài khoản này chưa được phép.','Chụp màn hình này gửi kế toán.'],'Bảng: plant_materials'+String.fromCharCode(10)+'Số mã yêu cầu xóa: '+codes.length);return;}}
+        plantMaterials[plant]=assigned.filter(c=>!selSet.has(c));
+        log('Xóa mã hàng loạt',`${codes.length} mã khỏi ${plantName(plant)}`);toast('Đã xóa '+codes.length+' mã');refreshPlantOptions();show();};
+      const dAll=$('#catDelAll');if(dAll)dAll.onclick=async()=>{if(!confirm(`Xóa TẤT CẢ ${assigned.length} mã của ${plantName(plant)}? Không thể hoàn tác.`))return;
+        const _d=await dbDel('plant_materials',{plant_code:plant});if(!_d.ok||_d.count===0)return;
+        plantMaterials[plant]=[];log('Xóa toàn bộ danh mục',plantName(plant));toast('Đã xóa toàn bộ');refreshPlantOptions();show();};
       return;
     }
     card.appendChild(body);holder.appendChild(card);
