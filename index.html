@@ -1085,7 +1085,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2409-13';
+const APP_VER='2409-14';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -5067,7 +5067,9 @@ function renderDieuchuyenDash(v){
     {k:'duyet',ico:HIC.clock,title:'Chờ tôi duyệt',sub:'Phiếu hủy / hao hụt cần kế toán duyệt (admin duyệt được mọi phiếu)',n:nCho?nCho+' phiếu chờ':'',warm:!!nCho,render:dcChoDuyet},
     {k:'yc',ico:HIC.eye,title:'Toàn bộ phiếu yêu cầu',sub:'Mọi phiếu xin / đẩy / hủy của các điểm bán, đối chiếu phiếu với sổ',n:nYC?nYC+' phiếu chưa duyệt':'',render:dcAllReqs},
     {k:'theodoi',ico:HIC.list,title:'Theo dõi sổ điều chuyển',sub:'Chọn một khu để xem phiếu đi từ khu đó sang các điểm',n:transfers.length?transfers.length+' dòng sổ':'',render:dcDashList},
-    {k:'sap',ico:HIC.sheet,title:'Xuất Excel mẫu SAP',sub:'Xuất phiếu điều chuyển trong tháng đúng mẫu import SAP',render:dcSapExport},
+    /* Bỏ thẻ việc riêng cho "Xuất Excel mẫu SAP" (Khoa 24/09/2026): nó chỉ là một
+       nút tải file, tách thành một khung riêng làm màn rườm ra. Nút giờ nằm ngay
+       cuối màn "Theo dõi sổ điều chuyển" — chỗ người ta vốn đang xem sổ. */
     {k:'xls',ico:HIC.sheet,title:'Nạp Excel điều chuyển',sub:'File SharePoint — ghi nhận việc đã xảy ra, vào thẳng sổ',render:dcNapExcel},
   ]);
 }
@@ -5329,6 +5331,7 @@ function dcDashList(v){
     if(ds.length>DCP)body.appendChild(el('div','list-hint','Hiện 40 phiếu mới nhất.'));
   }
   card.appendChild(body);v.appendChild(card);
+  dcSapExport(v);          // nút tải file mẫu SAP, đặt cuối màn sổ
 }
 function renderOpeningDash(v){
   v.appendChild(el('div','page-head',`<div><h1>Tồn đầu kỳ</h1><div class="ph-sub">Chọn việc cần làm — xem kho đã chốt tồn, hoặc nạp bản chốt tồn tháng để đối chiếu.</div></div>`));
@@ -10062,12 +10065,29 @@ const HEADER_SAP=[
 ["Nhập theo định dạng DD.MM.YYYY","Nhập theo định dạng DD.MM.YYYY","Mặc định\nA07: Goods issue","Người dùng nhập tự do:\nR09: Reservation\nR10: Others","Nhập diễn giải đầu tiêu đề","Người dùng nhập tự do\n- 241: xuất vật tư thành CCDC\n- Z69: xuất vật tư thành tài sản\n- Z75: xuất vật tư cho chương trình sự kiện\n- Z77: xuất vật tư thanh lý\n- Z57: xuất vật tư vào chi phí\n","Người dùng nhập tự do","Người dùng nhập mã PO/Reservation","Nhập số thứ tự trên PO/Reservation","Người dùng nhập tự do","Người dùng nhập tự do","Nhập đơn vị tính","Người dùng nhập tự do","Người dùng nhập tự do","Nhập batch nếu vật tư có quản lý theo lô","Người dùng nhập tên đơn vị xuất kho","Người dùng nhập tên người thực hiện nhận hàng","Người dùng nhập tự do","Người dùng nhập mã trung tâm phát sinh chi phí","Người dùng nhập mã tài sản","Mã Sub-asset","Người dùng nhập mã chương trình sự kiện cần xuất vật tư","Người dùng nhập mã Cost place","Người dùng nhập ","Người dùng nhập ","Chỉ dùng khi thực hiện chuyển kho bằng movement type Z55","Chỉ dùng khi thực hiện chuyển kho bằng movement type Z55","Chỉ dùng khi thực hiện chuyển kho bằng movement type Z55"]
 ];
 function toSAPDate(s){s=String(s||'').trim();if(!s)return '';let m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);if(m)return m[3].padStart(2,'0')+'.'+m[2].padStart(2,'0')+'.'+m[1];m=s.match(/^(\d{1,2})[\/.](\d{1,2})[\/.](\d{4})$/);if(m)return m[1].padStart(2,'0')+'.'+m[2].padStart(2,'0')+'.'+m[3];return s;}
+/* Viết tắt một đầu kho cho cột Text của file SAP.
+   Dòng nạp từ Excel không có khóa kho (fromKey='EXT') -> đành lấy chính tên hiển
+   thị, cắt ngắn; thà đọc được tên còn hơn ra dấu '?'. */
+function dcTatSap(key,tenHienThi){
+  const k=String(key||'');
+  if(k==='HUY')return 'HUY';
+  if(k&&k!=='EXT'&&k.indexOf('|')>0){
+    const a=k.split('|');const t=dcTatKho(a[0],a[1]);
+    if(t&&t!=='?')return t;
+  }
+  return String(tenHienThi||'').trim().slice(0,12)||'?';
+}
 function sapTransferRow(t){
   const fk=(t.fromKey&&t.fromKey!=='EXT')?String(t.fromKey).split('|'):['',''];
   const tk=(t.toKey&&t.toKey!=='EXT')?String(t.toKey).split('|'):['',''];
   const d=toSAPDate(t.date);const r=new Array(28).fill('');
   const dmy=d.length>=5?d.slice(0,5):d; // 'DD.MM' từ ngày phiếu
-  const txt=((t.reason||'').trim()+' '+dmy).trim(); // Text = diễn giải + ngày (mẫu SAP)
+  /* Cột Text theo quy ước Khoa chốt 24/09/2026:
+       Điều chuyển <tắt kho cho>-<tắt kho nhận> DD.MM
+     Trước đây nhét cả ghi chú tự do lẫn mã phiếu đầy đủ vào đây nên mỗi dòng một
+     kiểu, dài ngắn khác nhau, đọc trên SAP không ra quy luật. Chữ viết tắt lấy
+     đúng bảng KHO_TAT đang dùng cho mã phiếu — một bảng, hai chỗ dùng. */
+  const txt=('Điều chuyển '+dcTatSap(t.fromKey,t.from)+'-'+dcTatSap(t.toKey,t.to)+' '+dmy).trim();
   r[0]=d;r[1]=d;r[2]='A07';r[3]='R10';r[4]=txt;r[5]='Z55';
   r[9]=String(t.code||'');r[10]=isFinite(Number(t.qty))?Number(t.qty):'';
   r[12]=fk[0]||'';r[13]=fk[1]||'';r[14]='1368';r[16]=txt;
