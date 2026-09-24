@@ -1085,7 +1085,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2409-14';
+const APP_VER='2409-15';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -7068,9 +7068,20 @@ function dcReqCard(r,canAct){
   }
   if(canAct){
     const bar=el('div');bar.style.cssText='display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;align-items:center';
-    if(lock.length){
+    /* Kho vướng kiểm kê: vai thường bị chặn hẳn, ADMIN chỉ bị CẢNH BÁO rồi vẫn
+       duyệt được (Khoa chốt 24/09/2026). Lý do: có lúc hàng đã đi thật, phải ghi
+       sổ cho khớp, chỉ mình admin đủ thẩm quyền quyết cái đó. */
+    const _laAdmin=!!(session&&session.role==='admin');
+    if(lock.length&&!_laAdmin){
       bar.appendChild(el('div','note',`<span>🔒 Không duyệt được — ${lock.join(' · ')}. Điều chuyển phải xong TRƯỚC khi mở kỳ kiểm kê. Xử lý phiếu kiểm kê xong (hoặc nhờ kế toán xóa kỳ đã mở) rồi quay lại.</span>`));
     }else{
+      if(lock.length){
+        const _c=el('div','note');const _i=el('div');_i.style.minWidth='0';
+        _i.innerHTML='<b style="color:var(--accent-600)">🔓 Kho đang vướng kiểm kê — '+lock.join(' · ')+'.</b> '
+          +'Vai khác không duyệt được ở trạng thái này. <b>Quản trị viên vẫn duyệt được</b>, nhưng ghi sổ lúc kho đang đếm '
+          +'sẽ làm <b>lệch số kiểm kê của kho đó</b> — chỉ làm khi hàng đã đi thật và bạn biết mình đang làm gì.';
+        _c.appendChild(_i);bar.appendChild(_c);
+      }
       // Trường hợp phổ biến nhất: giao đúng số đã xin -> MỘT chạm, không phải cuộn bảng
       const nOk=codes.length;
       const bFull=el('button','btn btn-primary','✓ Duyệt đủ '+nOk+' mã');
@@ -7230,11 +7241,21 @@ async function _approveTransferReq(r,qtys){
   const per=periodOfDate(dateStr);
   // Chặn kỳ đã khóa ở CẢ HAI đầu — kiểm lại ngay lúc bấm, phòng phiếu mở lâu trên màn
   const lock=dcBlockers(r.fromPlant,r.fromSloc,r.toPlant,r.toSloc,per);
-  if(lock.length){errBox('Kho đang kiểm kê — không duyệt được',[
+  const _adminVuot=!!(session&&session.role==='admin');
+  if(lock.length&&!_adminVuot){errBox('Kho đang kiểm kê — không duyệt được',[
     lock.map(x=>'<b>'+x+'</b>').join('<br>'),
     'Ghi điều chuyển vào kỳ đang đếm / đã chốt sẽ làm sai số kiểm kê.',
     'Xử lý xong phiếu kiểm kê (hoặc nhờ kế toán xóa kỳ đã mở) rồi quay lại duyệt phiếu này.'
   ],'Phiếu: '+r.id+'\nKỳ theo ngày duyệt: '+per+'\nKho vướng:\n- '+lock.join('\n- '));return;}
+  /* Admin vượt rào: KHÔNG lặng lẽ cho qua — bắt xác nhận một lần, nói thẳng hệ quả,
+     và ghi vào nhật ký là đã vượt rào để sau còn lần ra. */
+  if(lock.length&&_adminVuot){
+    if(!confirm('KHO ĐANG VƯỚNG KIỂM KÊ'+NL+NL
+      +lock.join(NL)+NL+NL
+      +'Ghi sổ lúc này sẽ làm LỆCH SỐ KIỂM KÊ của kho đó: hàng vừa ghi không nằm trong số đã đếm.'+NL
+      +'Vai khác bị chặn ở đây. Bạn là quản trị viên nên app vẫn cho duyệt.'+NL+NL
+      +'Chỉ bấm OK khi hàng đã thực sự đi và bạn chấp nhận số kiểm kê kho đó phải chỉnh lại.'))return;
+  }
   // Không cho duyệt nhiều hơn số đã xin — chặn cả ở đây, không chỉ dựa vào ô input
   const over=Object.keys(r.items||{}).filter(c=>Number(qtys[c]||0)>Number(r.items[c].qtyReq||0));
   if(over.length){
@@ -7337,7 +7358,8 @@ async function _approveTransferReq(r,qtys){
   notifyWh(r.fromPlant,r.fromSloc,
     `${session.name} đã duyệt phiếu ${r.id} · chuyển cho ${nhanNoi} · ${codes.length} mã · lúc ${r.approvedAt}`,
     'transfer','Kho bạn vừa duyệt cho hàng',session.name);
-  log('Duyệt '+dcKindLabel(r.kind),`${r.id} · ${fromNm} → ${toNm} · ${codes.length} mã · kỳ ${periodVN(per)}`);
+  log('Duyệt '+dcKindLabel(r.kind),`${r.id} · ${fromNm} → ${toNm} · ${codes.length} mã · kỳ ${periodVN(per)}`
+    +(lock.length?' · ⚠ ADMIN DUYỆT KHI KHO ĐANG VƯỚNG KIỂM KÊ: '+lock.join(' · '):''));
   toast('✓ Đã duyệt '+r.id+' — ghi sổ '+codes.length+' mã vào kỳ tháng '+periodVN(per));
   renderView();
 }
