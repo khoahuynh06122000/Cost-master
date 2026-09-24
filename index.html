@@ -1085,7 +1085,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2409-02';
+const APP_VER='2409-03';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1790,8 +1790,8 @@ async function insSubmissionSafe(sub,imLang){
    bỏ sót đến 24/09/2026.
    KHÔNG hỏi lại máy chủ để xin mã mới: RLS che đúng cái phiếu vừa trùng nên nó trả
    về y mã cũ => vòng lặp mù. Tự tăng hậu tố trên chính mã vừa thử. */
-async function insTrReqSafe(row,kind,plant,sloc){
-  const pfx=(kind==='huy'?'HH-':'DC-')+plant+'-'+sloc+'-';
+async function insTrReqSafe(row,base){
+  const pfx=base+'-';
   const tried=[];
   for(let i=0;i<20;i++){
     tried.push(row.id);
@@ -1810,11 +1810,10 @@ async function insTrReqSafe(row,kind,plant,sloc){
     }
     const msg=String((error&&(error.message||error.code))||'');
     if(/duplicate|pkey|23505|already exists/i.test(msg)){
+      // row.id đang là <base> hoặc <base>-N -> lên số kế tiếp
       const rest=String(row.id).indexOf(pfx)===0?String(row.id).slice(pfx.length):'';
-      const parts=rest?rest.split('-'):[];
-      const ymd=parts[0]||kkYmd();
-      const n=parseInt(parts[1]||'1',10)||1;
-      row.id=pfx+ymd+'-'+(n+1);
+      const n=parseInt(rest,10);
+      row.id=base+'-'+((n>1?n:1)+1);
       continue;
     }
     console.error('transfer_requests',error);
@@ -1844,11 +1843,34 @@ function dcTrungMa(){
 /* ===== PHIẾU YÊU CẦU ĐIỀU CHUYỂN / HỦY — MÃ PHIẾU & QUYỀN DUYỆT =====
    Mã theo đúng quy ước phiếu kiểm kê: <tiền tố>-<plant>-<sloc>-<YYYYMMDD>, trùng ngày thì -2, -3...
    DC = xin hàng / đẩy hàng (lấy kho NGUỒN làm địa điểm) · HH = hủy, hao hụt. */
-function dcIdBase(kind,plant,sloc,d){return (kind==='huy'?'HH-':'DC-')+plant+'-'+sloc+'-'+kkYmd(d);}
-async function nextDCId(kind,plant,sloc,d){
-  const base=dcIdBase(kind,plant,sloc,d);
+/* ===== VIẾT TẮT KHO — dùng cho mã phiếu điều chuyển (Khoa chốt 24/09/2026) =====
+   Mã cũ `DC-<plant>-<sloc>-<YYYYMMDD>` chỉ mang mã SAP của kho nguồn, đọc lên không
+   biết hàng đi đâu, và hai điểm bán cùng xin một kho nguồn thì đụng mã nhau.
+   Mã mới: <tắt kho CHO>-<tắt kho NHẬN>-<MMDDYY>, ví dụ LHB-BGG-092326.
+   BẢNG NÀY LÀ BẢN CHỐT, KHÔNG SINH TỰ ĐỘNG LÚC CHẠY: đã in ra mã phiếu rồi thì đổi
+   chữ tắt là làm mã cũ đọc không ra kho nào. Muốn sửa thì sửa thẳng ở đây.
+   Kho mới chưa khai trong bảng -> rơi về chính mã sloc, vẫn phân biệt được. */
+const KHO_TAT={'2240|2000':'RAN','2240|2001':'RAB','2255|2002':'SBB','2255|2000':'SHR','2255|2001':'SHN','2336|1000':'BGG','1986|2206':'CAH','1986|2207':'CAB','1985|2205':'CFG','1984|2204':'CHO','1983|2202':'TAI','1983|2203':'BTA','2118|2000':'LDA','2118|2001':'BLD','2337|1000':'BGB','1032|2000':'BAR','1032|2001':'ARA','1035|2006':'BBP','1035|2007':'BPE','1038|2012':'BBR','1038|2013':'BRA','1040|2016':'BCL','1040|2017':'CLP','1043|2020':'LPE','1042|2019':'LTE','1044|2021':'TVD','1047|2024':'RB10','1046|2023':'CFO','1048|2025':'LHB','1048|2445':'BLB','1049|2026':'BF3','1049|2027':'G4','1049|2028':'SUN','1049|2029':'MTA','1049|2030':'G12','1049|2031':'BF2','1049|2032':'BSU','1049|2033':'NOE','1049|2034':'MTD','1050|2458':'BG8','1050|2035':'DOU','1050|2036':'G10','1050|2037':'CVA','1050|2038':'G11','1050|2039':'G8','1050|2040':'HLD','1050|2041':'CCO','1051|2042':'HR1','1052|2023':'HAB','1052|2044':'CT1','1052|2045':'CT2','1052|2046':'G9','1052|2047':'BXA','1052|2048':'MTH','1052|2049':'HAN','2192|2002':'PTG','2192|2004':'RHO','2192|2000':'CDN','2192|2001':'TGR','2218|2025':'MOR','2218|2445':'BMO','2228|2000':'BBM','2228|2001':'BMU','2229|2000':'BMC','2229|2001':'MCA','2114|2000':'ROS','2115|2000':'RSC','2116|2001':'RGR','2116|2000':'BRG','2117|2000':'SUS','2117|2001':'BSS','1034|2004':'BHB','1034|2005':'BHA','2339|1000':'HR2','2340|1000':'HB2','2329|1000':'BFA','2329|1001':'BFB','2341|1000':'MKA','2341|1001':'MKB'};
+function dcTatKho(plant,sloc){
+  return KHO_TAT[plant+'|'+sloc]||String(sloc||plant||'?');
+}
+/* MMDDYY đúng theo ví dụ Khoa đưa: 23/09/2026 -> 092326. */
+function dcMMDDYY(d){
+  const t=d?new Date(d):new Date();
+  return String(t.getMonth()+1).padStart(2,'0')+String(t.getDate()).padStart(2,'0')
+        +String(t.getFullYear()).slice(-2);
+}
+function dcIdBase(kind,fp,fs,tp,ts,d){
+  const cho=dcTatKho(fp,fs);
+  const nhan=(kind==='huy'||!tp)?'HUY':dcTatKho(tp,ts);
+  return cho+'-'+nhan+'-'+dcMMDDYY(d);
+}
+async function nextDCId(kind,fp,fs,tp,ts,d){
+  const base=dcIdBase(kind,fp,fs,tp,ts,d);
   const taken=new Set();
   trReqs.forEach(x=>{if(x.id&&String(x.id).indexOf(base)===0)taken.add(String(x.id));});
+  /* Vẫn hỏi máy chủ, nhưng KHÔNG tin hẳn: RLS giấu phiếu của kho khác nên con số
+     này có thể thiếu. Lớp chắc chắn là insTrReqSafe — trùng khoá thì nhảy số. */
   if(sb){try{const {data}=await sb.from('transfer_requests').select('id').like('id',base+'%');(data||[]).forEach(r=>taken.add(String(r.id)));}catch(e){}}
   if(!taken.has(base))return base;
   for(let i=2;i<500;i++){const c=base+'-'+i;if(!taken.has(c))return c;}
@@ -5134,7 +5156,9 @@ function dcKhuTen(p){return p?plantName(p):'—';}
 function dcMaPhieu(t){
   const p=String((t&&t.reason)||'').split(' · ');
   const c=p[p.length-1].trim();
-  return /^[A-Z]{2,4}-[A-Za-z0-9-]+$/.test(c)?c:'';
+  /* Chap ca ma cu (DC-1049-2028-20260918-4) lan ma moi (LHB-BGG-092326, RB10-G10-092326).
+     Doan dau co the co chu so (RB10, G10, CT1) nen khong bo [A-Z] thuan duoc. */
+  return /^[A-Z][A-Z0-9]{1,4}-[A-Za-z0-9-]+$/.test(c)?c:'';
 }
 function dcGhiChu(t){
   const p=String((t&&t.reason)||'').split(' · ');
@@ -6801,10 +6825,11 @@ function dcRequestForm(v,kind){
         'Muốn chuyển thêm thật thì sửa số lượng cho khác đi, hoặc để phiếu cũ xử lý xong trước.'
       ],'Phiếu đã có: '+dup.id+'\nTrạng thái: '+dup.status+'\nNgười lập: '+(dup.by||'')+' · '+(dup.time||''));
       return;}
-    let id=await nextDCId(kind,fp,fs);
+    const _base=dcIdBase(kind,fp,fs,tp,ts);
+    let id=await nextDCId(kind,fp,fs,tp,ts);
     const row={id,kind,from_plant:fp,from_sloc:fs,to_plant:tp,to_sloc:ts,items,reason:iR.value.trim(),status:'Chờ duyệt',created_by:session.name};
     if(sb){
-      const kqIns=await insTrReqSafe(row,kind,fp,fs);   // trùng mã thì tự nhảy số
+      const kqIns=await insTrReqSafe(row,_base);       // trùng mã thì tự nhảy số
       if(!kqIns.ok)return;                              // insTrReqSafe đã dựng hộp lỗi
       id=row.id;                                        // có thể đã khác mã ban đầu
     }
