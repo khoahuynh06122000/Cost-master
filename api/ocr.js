@@ -45,12 +45,21 @@ const SCHEMA = {
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') { res.status(405).json({ error: 'Chỉ nhận POST' }); return; }
-  if (!AI_KEYS.length) { res.status(500).json({ error: 'Server chưa cấu hình AI_API_KEY (env Vercel)' }); return; }
 
   try {
     // body có thể đã parse sẵn (Vercel) hoặc là string
     let body = req.body;
     if (typeof body === 'string') { try { body = JSON.parse(body); } catch { body = {}; } }
+
+    // Key RIÊNG của người dùng (nhập trong app, lưu ở máy họ) được ưu tiên trước key
+    // chung của công ty: ai tự khai key thì thường vì key chung chưa có hoặc hết lượt.
+    // KHÔNG ghi log key này ở bất cứ đâu; phần `detail` trả về chỉ ghi "key#N".
+    const userKey = String(body?.key || '').trim();
+    const keys = (userKey && userKey.length < 200 ? [userKey] : []).concat(AI_KEYS);
+    if (!keys.length) {
+      res.status(400).json({ error: 'Chưa có khóa AI — vào "Cài đặt AI quét ảnh" trong tab Nhập kho & ĐC để nhập khóa của bạn' });
+      return;
+    }
     const images = Array.isArray(body?.images) ? body.images : (body?.image ? [body.image] : []);
     if (!images.length) { res.status(400).json({ error: 'Thiếu ảnh (images[])' }); return; }
 
@@ -74,7 +83,7 @@ module.exports = async (req, res) => {
     // 503 (quá tải) ở tổ hợp cuối -> chờ ngắn rồi thử lại 1 lần nữa.
     let j = null, lastStatus = 0, lastDetail = '', retried503 = false;
     const attempts = [];
-    for (const model of MODELS) for (let i = 0; i < AI_KEYS.length; i++) attempts.push({ model, key: AI_KEYS[i], ki: i });
+    for (const model of MODELS) for (let i = 0; i < keys.length; i++) attempts.push({ model, key: keys[i], ki: i });
 
     for (let a = 0; a < attempts.length; a++) {
       const { model, key, ki } = attempts[a];

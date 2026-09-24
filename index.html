@@ -1085,7 +1085,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2409-04';
+const APP_VER='2409-06';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1115,6 +1115,9 @@ Object.assign(TXT.hi,{"Hàng xin điều chuyển":"माँगी गई व�
 /* Bo sung 23/09/2026 (dot 4) — bao nguoc ve kho cho hang khi duyet. */
 Object.assign(TXT.en,{"Kho bạn vừa duyệt cho hàng":"Your store just approved goods going out"});
 Object.assign(TXT.hi,{"Kho bạn vừa duyệt cho hàng":"आपके स्टोर ने अभी माल देना स्वीकृत किया"});
+/* Bo sung 24/09/2026 — o cai dat AI quet anh o man Nhap kho. */
+Object.assign(TXT.en,{"Cài đặt AI quét ảnh":"Image-scan AI settings","Khai khóa AI của riêng bạn để quét ảnh phiếu xuất kho tổng — lưu tại máy bạn":"Enter your own AI key to scan the main store's issue slip — kept on your device","đã có khóa":"key saved","Khóa Gemini API":"Gemini API key","💾 Lưu khóa":"💾 Save the key","⚡ Thử khóa":"⚡ Test the key","🗑 Xóa khóa khỏi máy này":"🗑 Remove the key from this device","Chưa dán khóa vào ô trên.":"You have not pasted a key in the box above.","Chưa có khóa để thử.":"There is no key to test.","Đang thử khóa…":"Testing the key…","✓ Khóa dùng được.":"✓ The key works.","✗ Khóa không dùng được — kiểm tra lại chuỗi vừa dán.":"✗ The key does not work — check the string you pasted.","✗ Khóa đúng nhưng đã hết lượt hôm nay.":"✗ The key is valid but today's quota is used up.","✗ Chưa thử được — kiểm tra mạng rồi thử lại.":"✗ Could not test — check the connection and try again.","Đã lưu khóa AI vào máy này":"The AI key is saved on this device","Đã xóa khóa khỏi máy này":"The key is removed from this device"});
+Object.assign(TXT.hi,{"Cài đặt AI quét ảnh":"छवि-स्कैन AI सेटिंग","Khai khóa AI của riêng bạn để quét ảnh phiếu xuất kho tổng — lưu tại máy bạn":"मुख्य स्टोर की निर्गम पर्ची स्कैन करने हेतु अपनी AI कुंजी डालें — आपके ही डिवाइस पर रहती है","đã có khóa":"कुंजी सहेजी गई","Khóa Gemini API":"Gemini API कुंजी","💾 Lưu khóa":"💾 कुंजी सहेजें","⚡ Thử khóa":"⚡ कुंजी जाँचें","🗑 Xóa khóa khỏi máy này":"🗑 इस डिवाइस से कुंजी हटाएँ","Chưa dán khóa vào ô trên.":"ऊपर के खाने में कुंजी नहीं डाली गई।","Chưa có khóa để thử.":"जाँचने के लिए कोई कुंजी नहीं है।","Đang thử khóa…":"कुंजी जाँची जा रही है…","✓ Khóa dùng được.":"✓ कुंजी काम करती है।","✗ Khóa không dùng được — kiểm tra lại chuỗi vừa dán.":"✗ कुंजी काम नहीं करती — डाली गई कुंजी जाँचें।","✗ Khóa đúng nhưng đã hết lượt hôm nay.":"✗ कुंजी सही है पर आज का कोटा समाप्त हो गया।","✗ Chưa thử được — kiểm tra mạng rồi thử lại.":"✗ जाँच नहीं हो सकी — कनेक्शन देखकर फिर कोशिश करें।","Đã lưu khóa AI vào máy này":"AI कुंजी इस डिवाइस पर सहेजी गई","Đã xóa khóa khỏi máy này":"कुंजी इस डिवाइस से हटा दी गई"});
 const TXT_RE_BS=[{re:new RegExp("^(.+) đã duyệt phiếu (.+) · chuyển cho (.+) · ([\\d.,]+) mã · lúc (.+)$"),en:"$1 approved request $2 · sent to $3 · $4 items · at $5",hi:"$1 ने पर्ची $2 स्वीकृत की · $3 को भेजा · $4 वस्तुएँ · $5 बजे",n:4,en1:"$1 approved request $2 · sent to $3 · $4 item · at $5",hi1:"$1 ने पर्ची $2 स्वीकृत की · $3 को भेजा · $4 वस्तु · $5 बजे"},{re:new RegExp("^([\\d.,]+) loại lý do$"),en:"$1 kinds of reason",hi:"$1 प्रकार के कारण",n:1,en1:"$1 kind of reason",hi1:"$1 प्रकार का कारण"},{re:new RegExp("^([\\d.,]+) phiếu$"),en:"$1 requests",hi:"$1 पर्चियाँ",n:1,en1:"$1 request",hi1:"$1 पर्ची"},{re:new RegExp("^([\\d.,]+) dòng$"),en:"$1 lines",hi:"$1 पंक्तियाँ",n:1,en1:"$1 line",hi1:"$1 पंक्ति"}];
 const TXT_RE=[
   {re:new RegExp("^Tháng (\\d{2}/\\d{4}) \\(hiện tại\\)$"),en:"Month $1 (current)",hi:"माह $1 (वर्तमान)"},
@@ -6488,9 +6491,75 @@ function renderDieuchuyen(v){
     {k:'duyet',ico:HIC.clock,title:'Chờ tôi duyệt',sub:'Phiếu kho khác gửi tới — duyệt, sửa số thực giao hoặc từ chối',n:nCho?nCho+' phiếu chờ':'',warm:!!nCho,render:dcChoDuyet},
     {k:'ds',ico:HIC.list,title:'Xem lại & xuất file',sub:'Phiếu yêu cầu và sổ điều chuyển đã ghi, xuất CSV',n:nTr?nTr+' dòng sổ kỳ này':'',render:dcXemLai},
   ];
+  acts.push({k:'ai',ico:HIC.warn,title:'Cài đặt AI quét ảnh',
+    sub:'Khai khóa AI của riêng bạn để quét ảnh phiếu xuất kho tổng — lưu tại máy bạn',
+    n:((getCfg().gemini||'').trim()?'đã có khóa':''),render:nkCaiDatAI});
   // Nạp Excel điều chuyển: chỉ kế toán/admin — các vai còn lại gõ tay trên danh sách có sẵn
   if(isPrivileged())acts.push({k:'xls',ico:HIC.sheet,title:'Nạp Excel điều chuyển',sub:'File SharePoint — ghi nhận việc đã xảy ra, vào thẳng sổ',render:dcNapExcel});
   renderHubView(v,'dieuchuyen',acts);
+}
+/* Khóa AI cho việc QUÉT ẢNH phiếu nhập kho (Khoa 24/09/2026).
+   Dùng CHUNG ô lưu với Cài đặt AI của tab Báo cáo (localStorage 'kk_ai_cfg' →
+   getCfg/setCfg): một người chỉ phải khai khóa Gemini một lần, cả hai việc đều chạy.
+   Khóa nằm trên máy người dùng, chỉ được gửi kèm đúng lúc bấm quét ảnh. */
+function nkCaiDatAI(v){
+  const cfg=getCfg();
+  const daCo=!!(cfg.gemini||'').trim();
+  const card=el('div','card');const b=el('div','card-b');
+  b.innerHTML='<div class="section-eyebrow">🤖 Cài đặt AI quét ảnh</div>';
+  const n1=el('div','note');const i1=el('div');i1.style.minWidth='0';
+  i1.innerHTML='Khóa này để máy <b>đọc ảnh phiếu xuất của kho tổng</b> thành danh sách mã hàng, '
+    +'khỏi gõ tay. Khóa <b>chỉ lưu trên máy bạn</b>, không đẩy lên máy chủ và không ai khác thấy. '
+    +'Bỏ trống thì app dùng khóa chung của công ty — hết lượt trong ngày thì khai khóa riêng ở đây.';
+  n1.appendChild(i1);b.appendChild(n1);
+
+  const f=el('label','field','<span>Khóa Gemini API</span>');
+  const i=el('input','input');i.type='password';i.autocomplete='off';
+  i.placeholder=daCo?'••••••••  (đã có khóa — dán khóa mới để thay)':'AIza…';
+  f.appendChild(i);b.appendChild(f);
+
+  const msg=el('div');msg.style.cssText='font-size:13px;line-height:1.6;margin:6px 0 10px;min-height:1px';
+  b.appendChild(msg);
+  const bao=(t,xau)=>{msg.style.color=xau?'var(--red)':'#16a34a';msg.textContent=t;};
+
+  const hang=el('div');hang.style.cssText='display:flex;gap:9px;flex-wrap:wrap';
+  const bLuu=el('button','btn btn-primary','💾 Lưu khóa');
+  const bThu=el('button','btn btn-ghost','⚡ Thử khóa');
+  const bXoa=el('button','btn btn-ghost','🗑 Xóa khóa khỏi máy này');bXoa.style.color='var(--red)';
+  if(!daCo)bXoa.hidden=true;
+  hang.appendChild(bLuu);hang.appendChild(bThu);hang.appendChild(bXoa);b.appendChild(hang);
+
+  bLuu.onclick=()=>{
+    const k=i.value.trim();
+    if(!k){bao('Chưa dán khóa vào ô trên.',1);return;}
+    const c=getCfg();c.gemini=k;c.gmodel=c.gmodel||'gemini-2.0-flash';setCfg(c);
+    i.value='';toast('Đã lưu khóa AI vào máy này');renderView();
+  };
+  bThu.onclick=async()=>{
+    const k=i.value.trim()||(getCfg().gemini||'').trim();
+    if(!k){bao('Chưa có khóa để thử.',1);return;}
+    bThu.disabled=true;bao('Đang thử khóa…');
+    try{
+      const r=await geminiGen('Trả lời đúng hai chữ: OK',k,getCfg().gmodel);
+      bao(r?('✓ Khóa dùng được — máy chủ AI trả lời: '+String(r).slice(0,40)):'✓ Khóa dùng được.');
+    }catch(e){
+      console.error('thu khoa AI',e);
+      const m=String((e&&e.message)||'');
+      bao(/400|401|403|API_KEY|invalid/i.test(m)?'✗ Khóa không dùng được — kiểm tra lại chuỗi vừa dán.'
+         :/429|quota|RESOURCE_EXHAUSTED/i.test(m)?'✗ Khóa đúng nhưng đã hết lượt hôm nay.'
+         :'✗ Chưa thử được — kiểm tra mạng rồi thử lại.',1);
+    }finally{bThu.disabled=false;}
+  };
+  bXoa.onclick=()=>{
+    if(!confirm('Xóa khóa AI khỏi máy này? Sau đó việc quét ảnh sẽ dùng khóa chung của công ty.'))return;
+    const c=getCfg();delete c.gemini;setCfg(c);toast('Đã xóa khóa khỏi máy này');renderView();
+  };
+
+  const n2=el('div','note');const i2=el('div');i2.style.minWidth='0';
+  i2.innerHTML='<b>Lấy khóa ở đâu:</b> vào <b>aistudio.google.com</b> → <i>Get API key</i> → tạo khóa mới rồi dán vào đây. '
+    +'Khóa miễn phí có giới hạn lượt mỗi ngày. Đây cũng chính là khóa dùng cho mục <b>Báo cáo AI</b> — khai một lần là cả hai chỗ đều chạy.';
+  n2.appendChild(i2);b.appendChild(n2);
+  card.appendChild(b);v.appendChild(card);
 }
 function dcXemLai(v){
   // 1) Phiếu yêu cầu của chính mình / kho mình — theo dõi trạng thái duyệt
@@ -7424,9 +7493,19 @@ function dcNhapKho(v){
     prevWrap.innerHTML='';statusEl.innerHTML='<span style="color:var(--brand-ink)">⏳ Đang nén ảnh & đọc biên bản… (vài giây)</span>';
     try{
       const imgs=[];for(const f of files.slice(0,4))imgs.push(await compressImage(f));
-      const resp=await fetch('/api/ocr',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({images:imgs})});
+      /* Kèm khóa AI riêng của người dùng (nếu họ đã khai ở "Cài đặt AI quét ảnh").
+         Máy chủ ưu tiên khóa này, không có thì dùng khóa chung của công ty. */
+      const _k=(getCfg().gemini||'').trim();
+      const resp=await fetch('/api/ocr',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({images:imgs,key:_k})});
       const data=await resp.json().catch(()=>({}));
-      if(!resp.ok){statusEl.innerHTML='<span style="color:var(--red)">✗ '+(data.error||('Lỗi '+resp.status))+(data.detail?' — '+data.detail:'')+'</span>';return;}
+      if(!resp.ok){
+        /* detail mang tên model + số thứ tự khóa — thứ người dùng không làm gì được,
+           đúng rule 18/09: chỉ Console, không in ra màn. */
+        if(data.detail)console.error('ocr',data.detail);
+        const hetLuot=resp.status===429||/quota|RESOURCE_EXHAUSTED|hết lượt/i.test(String(data.error||''));
+        statusEl.innerHTML='<span style="color:var(--red)">✗ '+(data.error||('Lỗi '+resp.status))+'</span>'
+          +((hetLuot||resp.status===400)?'<div style="font-size:12px;color:var(--muted);margin-top:4px">Khóa AI đang dùng đã hết lượt hoặc chưa có. Vào <b>Cài đặt AI quét ảnh</b> (thẻ việc ở màn Nhập kho & ĐC) để khai khóa riêng của bạn.</div>':'');
+        return;}
       const rows=data.rows||[];
       if(!rows.length){statusEl.innerHTML='<span style="color:var(--red)">Không đọc được dòng hàng nào. Thử chụp rõ, thẳng, đủ sáng hơn.</span>';return;}
       statusEl.innerHTML='<span style="color:#16a34a">✓ Đọc được '+rows.length+' dòng — kiểm tra mã & số lượng rồi bấm lưu.</span>';
