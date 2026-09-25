@@ -14,7 +14,7 @@
 <title>Kiểm kê F&B — Sun World Ba Na Hills</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e89217'/%3E%3Ctext x='32' y='45' font-size='30' font-family='Arial,sans-serif' font-weight='bold' fill='white' text-anchor='middle'%3EBN%3C/text%3E%3C/svg%3E">
 <style>
-  :root{
+  :root{/* Nen nhat co ban cho nen toi (dot 21). Dung cho o icon the KPI, badge, the canh bao — nhung cho truoc day ghi cung ma mau sang thang vao inline style. */--t-mint:#EAF1F0;--t-amber:#FDF1DC;--t-amber-soft:#FEF9F0;--t-red:#F3E7E7;--t-mint-line:#A9D8BF;--t-amber-line:#F2DDB2;/* `--accent-600` va `#1C6B44` la mau CHU: tren nen toi phai sang len, dung ho `--brand-ink` (rule dot 3A: lam nen thi dung mau goc, lam chu thi dung ban -ink). */--accent-ink:#C9790A;--ok-ink:#1C6B44;
     --bg:#EDF0EF; --surface:#FFFFFF; --surface-2:#F7F9F8;
     --ink:#132320; --ink-soft:#394946; --muted:#6A7773; --faint:#95A09C;
     --brand:#0E5C55; --brand-600:#0B4B45; --brand-700:#083A35;
@@ -230,10 +230,10 @@
 
   .badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.2px}
   .badge-uom{background:var(--surface-2);color:var(--brand-ink);border:1px solid var(--line)}
-  .badge-blind{background:#FDF1DC;color:var(--accent-600);border:1px solid #F2DDB2}
+  .badge-blind{background:var(--t-amber);color:var(--accent-ink);border:1px solid var(--t-amber-line)}
   .badge-done{background:var(--green-bg);color:var(--green);border:1px solid var(--green-line)}
   .badge-soft{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
-  .badge-wait{background:#FDF1DC;color:var(--accent-600);border:1px solid #F2DDB2}
+  .badge-wait{background:var(--t-amber);color:var(--accent-ink);border:1px solid var(--t-amber-line)}
   .badge-open{background:#EAF2F7;color:#1c5f86;border:1px solid #CADEEA}
   .open-tag{font-size:11px;font-weight:700;color:#1c5f86;background:#EAF2F7;border:1px solid #CADEEA;padding:2px 7px;border-radius:20px}
   .ai-out{border:1px solid #CADEEA;background:#F5FAFD;border-radius:11px;overflow:hidden}
@@ -347,8 +347,8 @@
   .stepbtn:hover{background:var(--surface-2);border-color:var(--brand-ink)}
   .stepbtn:active{transform:translateY(1px)}
   .qty.warn{border-color:var(--accent);background:#FFF6E8}
-  .warn-tag{font-size:11px;font-weight:700;color:var(--accent-600);background:#FDF1DC;border:1px solid #F2DDB2;padding:2px 7px;border-radius:20px}
-  .badge-none{background:#F3E7E7;color:var(--red);border:1px solid #EAD2D2}
+  .warn-tag{font-size:11px;font-weight:700;color:var(--accent-600);background:#FDF1DC;border:1px solid var(--t-amber-line);padding:2px 7px;border-radius:20px}
+  .badge-none{background:var(--t-red);color:var(--red);border:1px solid #EAD2D2}
   .rowchk{width:17px;height:17px;accent-color:var(--brand-ink);cursor:pointer}
   .sticky-actions{position:sticky;bottom:0;background:linear-gradient(to top,var(--bg) 65%,transparent);padding:16px 0 6px;margin-top:8px}
 
@@ -535,7 +535,7 @@
     .addrow>summary{padding:11px 13px}
   }
   /* ===== Dark mode TOÀN APP (html.dark) — mặc định sáng ===== */
-  html.dark{--brand-ink:#9fe6d8;--background:#0b1220;--surface:#131c31;--surface-2:#1a2540;--bg:#0b1220;--ink:#eef1f8;--ink-soft:#cdd5e6;--muted:#9aa6bf;--faint:#7a8399;--line:rgba(255,255,255,.09);--line-strong:rgba(255,255,255,.16);--green-bg:rgba(31,138,84,.22);--red-bg:rgba(196,61,61,.20);--green-line:rgba(31,138,84,.45);--red:#ff6b6b}
+  html.dark{--brand-ink:#9fe6d8;--t-mint:rgba(159,230,216,.13);--t-amber:rgba(240,192,105,.15);--t-amber-soft:rgba(240,192,105,.09);--t-red:rgba(255,107,107,.15);--t-mint-line:rgba(159,230,216,.30);--t-amber-line:rgba(240,192,105,.34);--accent-ink:#F0C069;--ok-ink:#7FDCA9;--background:#0b1220;--surface:#131c31;--surface-2:#1a2540;--bg:#0b1220;--ink:#eef1f8;--ink-soft:#cdd5e6;--muted:#9aa6bf;--faint:#7a8399;--line:rgba(255,255,255,.09);--line-strong:rgba(255,255,255,.16);--green-bg:rgba(31,138,84,.22);--red-bg:rgba(196,61,61,.20);--green-line:rgba(31,138,84,.45);--red:#ff6b6b}
   html.dark body{background:var(--background);color:var(--ink)}
   html.dark .card,html.dark .stat,html.dark .note{color:var(--ink)}
   html.dark .content{background:var(--background);transition:background .25s ease}
@@ -676,7 +676,7 @@
   .hub-tile:active{transform:scale(.99)}
   .hub-ic{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;
     background:rgba(14,92,85,.10);color:var(--brand-ink);margin-bottom:10px}
-  .hub-tile.warm .hub-ic{background:#FDF1DC;color:var(--accent-600)}
+  .hub-tile.warm .hub-ic{background:var(--t-amber);color:var(--accent-ink)}
   .hub-t{font-weight:800;font-size:14.5px;color:var(--ink);line-height:1.25}
   .hub-s{font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.35}
   .hub-n{margin-top:9px;font-size:11.5px;font-weight:800;color:var(--accent-600)}
@@ -806,6 +806,8 @@
   html.dark .badge-none{background:rgba(196,61,61,.22);border-color:rgba(255,107,107,.35)}
   html.dark .badge-wait,html.dark .badge-blind,html.dark .warn-tag{background:rgba(214,158,46,.16);border-color:rgba(214,158,46,.34);color:#f0d9a0}
   html.dark .badge-open,html.dark .open-tag{background:rgba(28,95,134,.28);border-color:rgba(120,180,220,.32);color:#bcdcf0}
+  /* .badge-open cung nen xanh nhat nhu .open-tag ma bi bo quen o dot 3A. */
+  html.dark .badge-open{background:rgba(28,95,134,.28);border-color:rgba(120,180,220,.32);color:#bcdcf0}
 
   /* Chip trạng thái mạng: chỉ hiện khi MẤT MẠNG hoặc còn phiếu chờ gửi.
      Bình thường ẩn hẳn để không chiếm chỗ trên thanh đầu vốn đã chật. */
@@ -1085,7 +1087,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2509-05';
+const APP_VER='2509-07';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1996,7 +1998,7 @@ function dcStepLine(r){
 }
 function dcStatusBadge(st){
   if(st==='Đã duyệt')return '<span class="badge badge-done">✓ Đã duyệt</span>';
-  if(st==='Từ chối')return '<span class="badge" style="background:#F7E4E4;color:var(--red)">✕ Từ chối</span>';
+  if(st==='Từ chối')return '<span class="badge" style="background:var(--t-red);color:var(--red)">✕ Từ chối</span>';
   return '<span class="badge badge-wait">⏳ Chờ duyệt</span>';
 }
 /* ===== Danh mục vật tư THEO PLANT (không dùng chung) ===== */
@@ -3792,7 +3794,7 @@ function renderPhantich(v){
   const topX=Object.entries(xuatByCode).map(([c,o])=>({name:o.name,val:Math.round(o.v)})).sort((a,b)=>b.val-a.val).slice(0,6);
   if(topX.length){const tot=Object.values(xuatByCode).reduce((a,o)=>a+o.v,0),t6=topX.reduce((a,x)=>a+x.val,0);
     g.appendChild(_phCard('Top mã tiêu hao nhiều nhất','Mã ngốn lượng lớn — siết định mức',svgHBars(topX)+`<div style="background:var(--surface-2);border-left:3px solid var(--brand);border-radius:0 8px 8px 0;padding:9px 12px;font-size:12.5px;margin-top:10px;color:var(--ink-soft)">📌 ${topX.length} mã này chiếm <b style="color:var(--brand-ink)">${tot?Math.round(t6/tot*100):0}%</b> tổng tiêu hao — ưu tiên kiểm soát.</div>`));}
-  if(abn.length){const ic={red:['var(--red-bg)','var(--red)'],accent:['#FDF1DC','var(--accent-600)']};
+  if(abn.length){const ic={red:['var(--red-bg)','var(--red)'],accent:['var(--t-amber)','var(--accent-ink)']};
     g.appendChild(_phCard('⚠ Cảnh báo bất thường','Cần rà soát gấp — có diễn giải',`<div>${abn.slice(0,6).map(a=>`<div style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line)"><span style="flex:none;font-size:10px;font-weight:800;padding:3px 8px;border-radius:6px;background:${ic[a.col][0]};color:${ic[a.col][1]}">${a.type}</span><div style="font-size:12.5px;line-height:1.4"><b>${_esc(a.t)}</b><div style="color:var(--muted);font-size:11.5px;margin-top:2px">→ ${_esc(a.fix)}</div></div></div>`).join('')}${abn.length>6?`<div style="font-size:12px;color:var(--muted);margin-top:8px">…và ${abn.length-6} cảnh báo khác</div>`:''}</div>`));}
   if(g.children.length)v.appendChild(g);
   const hhPlants=Object.entries(dbp).map(([p,n])=>({name:plantName(p),val:n})).sort((a,b)=>b.val-a.val).slice(0,6);
@@ -3815,7 +3817,7 @@ function renderPhantich(v){
   }).sort((a,b)=>b.days-a.days);
   const warn=disc.filter(d=>d.late||(d.none&&d.days<=2));
   const grade=d=>d.none?(d.late?'🔴 Cảnh báo':'🔴 Cảnh báo'):d.late?'🔴 Cảnh báo':d.days>=5?'🟢 Tốt':'🟡 Khá';
-  const gbadge=d=>{const g=grade(d);const bg=g[0]==='🟢'?'var(--green-bg)':g[0]==='🟡'?'#FDF1DC':'var(--red-bg)';const co=g[0]==='🟢'?'var(--green)':g[0]==='🟡'?'var(--accent-600)':'var(--red)';return `<span style="display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:${bg};color:${co}">${g}</span>`;};
+  const gbadge=d=>{const g=grade(d);const bg=g[0]==='🟢'?'var(--green-bg)':g[0]==='🟡'?'var(--t-amber)':'var(--red-bg)';const co=g[0]==='🟢'?'var(--green)':g[0]==='🟡'?'var(--accent-ink)':'var(--red)';return `<span style="display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:${bg};color:${co}">${g}</span>`;};
   const warnBox=warn.length?`<div style="display:flex;gap:10px;align-items:center;background:var(--red-bg);border:1px solid #F0C9C9;border-radius:12px;padding:11px 14px;margin:4px 0 16px"><div style="font-size:20px">⚠️</div><div style="font-size:13px;line-height:1.5"><b style="color:var(--red)">${warn.length} bộ phận cần cảnh báo:</b> ${warn.map(d=>`<b>${_esc(d.name)}</b> ${d.none?(d.late?'chưa nộp, ĐÃ QUÁ HẠN':'chưa nộp (còn '+d.days+' ngày)'):'TRỄ '+(-d.days)+' ngày'}`).join(' · ')}.</div></div>`:`<div style="background:var(--green-bg);border:1px solid var(--green-line);border-radius:12px;padding:11px 14px;margin:4px 0 16px;font-size:13px;color:var(--green);font-weight:600">✓ Không có bộ phận nào trễ hạn kỳ này.</div>`;
   const discSorted=[...disc].sort((a,b)=>(((a.late||a.none)?0:1)-((b.late||b.none)?0:1))||a.days-b.days);
   const discChart=svgDiverge(discSorted.slice(0,8).map(d=>({name:d.name,days:d.days>60?60:d.days<-30?-30:d.days})));
@@ -4933,7 +4935,7 @@ function renderOpenCountCard(v){
   function curKey(){return plantSel.value+'|'+slocSel.value+'|'+perSel.value;}
   function refresh(){
     const cl=countLists[curKey()];
-    stat.innerHTML=cl?`<span class="badge badge-done">Đã mở kỳ: ${Object.keys(cl.items||{}).length} mã · ${cl.by||''} ${cl.at||''}</span>`:'<span class="badge" style="background:#FEF3E0;color:var(--accent-600)">Chưa mở kỳ cho kho này</span>';
+    stat.innerHTML=cl?`<span class="badge badge-done">Đã mở kỳ: ${Object.keys(cl.items||{}).length} mã · ${cl.by||''} ${cl.at||''}</span>`:'<span class="badge" style="background:var(--t-amber);color:var(--accent-ink)">Chưa mở kỳ cho kho này</span>';
     // Mở nhầm kho / nhầm kỳ thì phải xóa được, không thì danh sách sai nằm đó mãi
     if(cl){
       const bDel=el('button','btn btn-ghost btn-sm','🗑 Xóa kỳ đã mở');bDel.style.cssText='color:var(--red);margin-left:8px';
@@ -4969,7 +4971,7 @@ function renderKiemkeDash(v){
   {
     const bad=undeclaredCodes();
     if(bad.length){
-      const bn=el('div','card');bn.style.cssText='margin-bottom:14px;border:1.5px solid var(--accent-600);background:#FEF9F0';
+      const bn=el('div','card');bn.style.cssText='margin-bottom:14px;border:1.5px solid var(--accent-600);background:var(--t-amber-soft)';
       const bb=el('div','card-b');bb.style.cssText='display:flex;gap:12px;align-items:center;flex-wrap:wrap';
       bb.innerHTML=`<div style="font-size:20px">⚠️</div><div style="flex:1;min-width:200px"><div style="font-weight:800;color:var(--accent-600)">${bad.length} mã chưa khai báo tên</div><div style="font-size:12.5px;color:var(--muted)">Có mã vật tư đang hiển thị dấu "?" vì chưa có tên trong danh mục. Bổ sung tên để app hiển thị đầy đủ cho bộ phận kiểm kê.</div></div>`;
       const bGo=el('button','btn btn-primary btn-sm','Bổ sung ngay →');
@@ -5001,10 +5003,10 @@ function kkDashList(v){
   const plantsWith=new Set(rows.map(s=>s.plant)).size;
   const stats=el('div','stats');
   stats.innerHTML=`
-    <div class="stat"><div class="ic" style="background:#EAF1F0;color:var(--brand-ink)">📋</div><div><div class="n tnum">${total}</div><div class="l">Tổng phiếu</div></div></div>
-    <div class="stat"><div class="ic" style="background:#FDF1DC;color:var(--accent-600)">⏳</div><div><div class="n tnum">${cho}</div><div class="l">Chờ duyệt</div></div></div>
+    <div class="stat"><div class="ic" style="background:var(--t-mint);color:var(--brand-ink)">📋</div><div><div class="n tnum">${total}</div><div class="l">Tổng phiếu</div></div></div>
+    <div class="stat"><div class="ic" style="background:var(--t-amber);color:var(--accent-ink)">⏳</div><div><div class="n tnum">${cho}</div><div class="l">Chờ duyệt</div></div></div>
     <div class="stat"><div class="ic" style="background:var(--green-bg);color:var(--green)">✓</div><div><div class="n tnum">${duyet}</div><div class="l">Đã duyệt</div></div></div>
-    <div class="stat"><div class="ic" style="background:#F3E7E7;color:var(--red)">🏪</div><div><div class="n tnum">${dashPlantKK?new Set(rows.map(s=>s.sloc)).size:plantsWith}</div><div class="l">${dashPlantKK?'Kho có phiếu':'Điểm bán có phiếu'}</div></div></div>`;
+    <div class="stat"><div class="ic" style="background:var(--t-red);color:var(--red)">🏪</div><div><div class="n tnum">${dashPlantKK?new Set(rows.map(s=>s.sloc)).size:plantsWith}</div><div class="l">${dashPlantKK?'Kho có phiếu':'Điểm bán có phiếu'}</div></div></div>`;
   v.appendChild(stats);
   let bars;
   if(dashPlantKK){const bySloc={};rows.forEach(s=>{bySloc[s.sloc]=(bySloc[s.sloc]||0)+1;});bars=Object.entries(bySloc).map(([sl,n])=>[whName(dashPlantKK,sl),n]).sort((a,b)=>b[1]-a[1]).slice(0,12);}
@@ -5047,8 +5049,8 @@ function shiftDashStats(v){
   const nhan=rows.filter(s=>s.status==='Đã nhận').length;
   const stats=el('div','stats');
   stats.innerHTML=`
-    <div class="stat"><div class="ic" style="background:#EAF1F0;color:var(--brand-ink)">🕐</div><div><div class="n tnum">${total}</div><div class="l">Tổng phiếu ca</div></div></div>
-    <div class="stat"><div class="ic" style="background:#FDF1DC;color:var(--accent-600)">⏳</div><div><div class="n tnum">${cho}</div><div class="l">Chờ nhận</div></div></div>
+    <div class="stat"><div class="ic" style="background:var(--t-mint);color:var(--brand-ink)">🕐</div><div><div class="n tnum">${total}</div><div class="l">Tổng phiếu ca</div></div></div>
+    <div class="stat"><div class="ic" style="background:var(--t-amber);color:var(--accent-ink)">⏳</div><div><div class="n tnum">${cho}</div><div class="l">Chờ nhận</div></div></div>
     <div class="stat"><div class="ic" style="background:var(--green-bg);color:var(--green)">✓</div><div><div class="n tnum">${nhan}</div><div class="l">Đã nhận</div></div></div>`;
   v.appendChild(stats);
   let bars;
@@ -5229,11 +5231,11 @@ function dcDashList(v){
   const nDiem=new Set();duyet.forEach(r=>{if(r.kind!=='huy'&&r.toPlant)nDiem.add(r.toPlant);});
   const stats=el('div','stats');
   stats.innerHTML=`
-    <div class="stat"><div class="ic" style="background:#EAF1F0;color:var(--brand-ink)">📤</div><div><div class="n tnum">${phieu.length}</div><div class="l">${P?'Phiếu đi ra từ khu này':'Tổng phiếu điều chuyển'}</div></div></div>
-    <div class="stat"><div class="ic" style="background:#EAF1F0;color:var(--brand-ink)">✓</div><div><div class="n tnum">${duyet.length}</div><div class="l">Đã duyệt — hàng đã rời kho</div></div></div>
-    <div class="stat"><div class="ic" style="background:#FDF1DC;color:var(--accent-600)">⏳</div><div><div class="n tnum">${cho.length}</div><div class="l">${P?'Chờ khu này duyệt':'Chờ duyệt'}</div></div></div>
-    <div class="stat"><div class="ic" style="background:#EAF1F0;color:var(--brand-ink)">🏬</div><div><div class="n tnum">${nDiem.size}</div><div class="l">Điểm đã nhận hàng</div></div></div>
-    <div class="stat"><div class="ic" style="background:#EAF1F0;color:var(--brand-ink)">🔁</div><div><div class="n tnum">${so.length}</div><div class="l">Dòng sổ đã ghi</div></div></div>`;
+    <div class="stat"><div class="ic" style="background:var(--t-mint);color:var(--brand-ink)">📤</div><div><div class="n tnum">${phieu.length}</div><div class="l">${P?'Phiếu đi ra từ khu này':'Tổng phiếu điều chuyển'}</div></div></div>
+    <div class="stat"><div class="ic" style="background:var(--t-mint);color:var(--brand-ink)">✓</div><div><div class="n tnum">${duyet.length}</div><div class="l">Đã duyệt — hàng đã rời kho</div></div></div>
+    <div class="stat"><div class="ic" style="background:var(--t-amber);color:var(--accent-ink)">⏳</div><div><div class="n tnum">${cho.length}</div><div class="l">${P?'Chờ khu này duyệt':'Chờ duyệt'}</div></div></div>
+    <div class="stat"><div class="ic" style="background:var(--t-mint);color:var(--brand-ink)">🏬</div><div><div class="n tnum">${nDiem.size}</div><div class="l">Điểm đã nhận hàng</div></div></div>
+    <div class="stat"><div class="ic" style="background:var(--t-mint);color:var(--brand-ink)">🔁</div><div><div class="n tnum">${so.length}</div><div class="l">Dòng sổ đã ghi</div></div></div>`;
   v.appendChild(stats);
 
   /* Mot phieu = mot lan xin, du bao nhieu ma hang. Noi ro de khong ai doc nham
@@ -5376,7 +5378,7 @@ function opDashList(v){
   const totalMa=entries.reduce((s,[,val])=>s+Object.keys(val.items||{}).length,0);
   const stats=el('div','stats');
   stats.innerHTML=`
-    <div class="stat"><div class="ic" style="background:#EAF1F0;color:var(--brand-ink)">📦</div><div><div class="n tnum">${totalKho}</div><div class="l">Kho có tồn đầu kỳ</div></div></div>
+    <div class="stat"><div class="ic" style="background:var(--t-mint);color:var(--brand-ink)">📦</div><div><div class="n tnum">${totalKho}</div><div class="l">Kho có tồn đầu kỳ</div></div></div>
     <div class="stat"><div class="ic" style="background:var(--green-bg);color:var(--green)">#</div><div><div class="n tnum">${totalMa}</div><div class="l">Tổng dòng mã</div></div></div>`;
   v.appendChild(stats);
   const card=el('div','card');
@@ -5553,9 +5555,9 @@ function closingDetailCard(cl){
   c.appendChild(el('div','card-h',`<div><span class="ct">🧾 Bản chốt tồn tháng (Kế toán)</span><div class="cs">Kỳ tháng ${periodVN(cl.period)} · lập ${cl.by||''} ${cl.time||''}${cl.approvedBy?` · duyệt ${cl.approvedBy} ${cl.approvedAt||''}`:''}</div></div>${badge}`));
   const s=el('div','stats');
   s.innerHTML=`<div class="stat"><div class="ic" style="background:var(--green-bg);color:var(--green)">✓</div><div><div class="n tnum">${R.matchCnt||0}</div><div class="l">Khớp</div></div></div>
-    <div class="stat"><div class="ic" style="background:#FEF3E0;color:var(--accent-600)">⚠</div><div><div class="n tnum">${R.diffCnt||0}</div><div class="l">Lệch</div></div></div>
-    <div class="stat"><div class="ic" style="background:#F3E7E7;color:var(--red)">➖</div><div><div class="n tnum">${R.onlyACnt||0}</div><div class="l">Thiếu ở bản KT</div></div></div>
-    <div class="stat"><div class="ic" style="background:#EAF1F0;color:var(--brand-ink)">➕</div><div><div class="n tnum">${R.onlyBCnt||0}</div><div class="l">Dư ở bản KT</div></div></div>`;
+    <div class="stat"><div class="ic" style="background:var(--t-amber);color:var(--accent-ink)">⚠</div><div><div class="n tnum">${R.diffCnt||0}</div><div class="l">Lệch</div></div></div>
+    <div class="stat"><div class="ic" style="background:var(--t-red);color:var(--red)">➖</div><div><div class="n tnum">${R.onlyACnt||0}</div><div class="l">Thiếu ở bản KT</div></div></div>
+    <div class="stat"><div class="ic" style="background:var(--t-mint);color:var(--brand-ink)">➕</div><div><div class="n tnum">${R.onlyBCnt||0}</div><div class="l">Dư ở bản KT</div></div></div>`;
   c.appendChild(s);
   const diff=R.diff||[],oa=R.onlyA||[],ob=R.onlyB||[];
   if(diff.length){
@@ -6273,7 +6275,7 @@ function renderCountSheet(v){
       const devTag = dev ? `<span class="warn-tag">⚠ lệch lớn</span>` : '';
       const _inPlant=(plantMaterials[counting.plant]||[]).includes(m.code);
       const movedTag = (_moved.has(m.code)&&!_inPlant&&!(opening&&opening[m.code]!=null))
-        ? `<span class="open-tag" style="background:#FDF1DC;color:var(--accent-600)">✚ phát sinh trong kỳ</span>` : '';
+        ? `<span class="open-tag" style="background:var(--t-amber);color:var(--accent-ink)">✚ phát sinh trong kỳ</span>` : '';
       const _phu=tenHangPhu(m);
       r.innerHTML=`<div class="item-main"><div class="item-name">${tenHang(m)}</div>
         <div class="item-meta">${_phu?`<span style="opacity:.75">${_phu}</span>`:''}<span class="tnum">${m.code}</span><span class="badge badge-uom">${m.uom}</span>${openTag}${devTag}${movedTag}</div></div>`;
@@ -7819,7 +7821,7 @@ function statusBadge(x){
    BP biết chưa xong, mà không phải là lỗi của họ. */
 function nhanChoGui(){
   return mangOK
-    ? '<span class="badge" style="background:#E6EFEE;color:#1C6B44;border:1px solid #A9D8BF">📤 Đang gửi…</span>'
+    ? '<span class="badge" style="background:var(--t-mint);color:var(--ok-ink);border:1px solid var(--t-mint-line)">📤 Đang gửi…</span>'
     : '<span class="badge badge-wait">📴 Chưa gửi — chờ có mạng</span>';
 }
 function renderTonghop(v){
@@ -7829,8 +7831,8 @@ function renderTonghop(v){
   const stats=el('div','stats');
   stats.innerHTML=`
     <div class="stat"><div class="ic" style="background:var(--green-bg);color:var(--green)">${IC.count}</div><div><div class="n tnum">${submissions.length}</div><div class="l">Phiếu kiểm kê đã gửi</div></div></div>
-    <div class="stat"><div class="ic" style="background:#FDF1DC;color:var(--accent-600)">⏳</div><div><div class="n tnum">${pending}</div><div class="l">Đang chờ phê duyệt</div></div></div>
-    <div class="stat"><div class="ic" style="background:#EAF1F0;color:var(--brand-ink)">${IC.transfer}</div><div><div class="n tnum">${transfers.length}</div><div class="l">Phiếu điều chuyển</div></div></div>`;
+    <div class="stat"><div class="ic" style="background:var(--t-amber);color:var(--accent-ink)">⏳</div><div><div class="n tnum">${pending}</div><div class="l">Đang chờ phê duyệt</div></div></div>
+    <div class="stat"><div class="ic" style="background:var(--t-mint);color:var(--brand-ink)">${IC.transfer}</div><div><div class="n tnum">${transfers.length}</div><div class="l">Phiếu điều chuyển</div></div></div>`;
   v.appendChild(stats);
 
   // ===== Dashboard đánh giá rủi ro (kiểm kê đột xuất) =====
@@ -7839,9 +7841,9 @@ function renderTonghop(v){
     const totalAmt=approved.reduce((a,s)=>a+s.amount,0);
     const rstats=el('div','stats');
     rstats.innerHTML=`
-      <div class="stat"><div class="ic" style="background:#F3E7E7;color:var(--red)">⚠</div><div><div class="n tnum">${spotChecks.length}</div><div class="l">Phiếu đột xuất</div></div></div>
+      <div class="stat"><div class="ic" style="background:var(--t-red);color:var(--red)">⚠</div><div><div class="n tnum">${spotChecks.length}</div><div class="l">Phiếu đột xuất</div></div></div>
       <div class="stat"><div class="ic" style="background:var(--green-bg);color:var(--green)">✓</div><div><div class="n tnum">${approved.length}</div><div class="l">Đã giám sát duyệt</div></div></div>
-      <div class="stat"><div class="ic" style="background:#FDF1DC;color:var(--accent-600)">₫</div><div><div class="n tnum" style="font-size:18px">${fmtVnd(totalAmt)}</div><div class="l">Tổng đề xuất bù (đã duyệt)</div></div></div>`;
+      <div class="stat"><div class="ic" style="background:var(--t-amber);color:var(--accent-ink)">₫</div><div><div class="n tnum" style="font-size:18px">${fmtVnd(totalAmt)}</div><div class="l">Tổng đề xuất bù (đã duyệt)</div></div></div>`;
     v.appendChild(rstats);
     // rủi ro theo điểm bán: số vụ + tổng tiền (đã duyệt)
     const byPlant={};spotChecks.forEach(s=>{const k=s.plant;(byPlant[k]=byPlant[k]||{n:0,amt:0});byPlant[k].n++;if(s.status==='Đã duyệt')byPlant[k].amt+=s.amount;});
@@ -8328,9 +8330,9 @@ function renderAudit(v){
   const late=sup.filter(s=>s.late).length;
   const stats=el('div','stats');
   stats.innerHTML=`
-    <div class="stat"><div class="ic" style="background:#EAF1F0;color:var(--brand-ink)">🏪</div><div><div class="n tnum">${sup.length}</div><div class="l">Điểm bán theo dõi</div></div></div>
+    <div class="stat"><div class="ic" style="background:var(--t-mint);color:var(--brand-ink)">🏪</div><div><div class="n tnum">${sup.length}</div><div class="l">Điểm bán theo dõi</div></div></div>
     <div class="stat"><div class="ic" style="background:var(--green-bg);color:var(--green)">✓</div><div><div class="n tnum">${sup.length-late}</div><div class="l">Đúng hạn</div></div></div>
-    <div class="stat"><div class="ic" style="background:#F3E7E7;color:var(--red)">⚠</div><div><div class="n tnum">${late}</div><div class="l">Trễ cập nhật</div></div></div>`;
+    <div class="stat"><div class="ic" style="background:var(--t-red);color:var(--red)">⚠</div><div><div class="n tnum">${late}</div><div class="l">Trễ cập nhật</div></div></div>`;
   v.appendChild(stats);
   const dcard=el('div','card');
   const lateList=sup.filter(s=>s.late);
@@ -8578,10 +8580,10 @@ function renderDieuhanh(v){
 
   const stats=el('div','stats');
   stats.innerHTML=`
-    <div class="stat"><div class="ic" style="background:#EAF1F0;color:var(--brand-ink)">📋</div><div><div class="n tnum">${khoDone}/${whs.length}</div><div class="l">Kho đã kiểm kỳ này · ${pctKho}%</div></div></div>
-    <div class="stat"><div class="ic" style="background:#FDF1DC;color:var(--accent-600)">⏳</div><div><div class="n tnum">${pending}</div><div class="l">Phiếu chờ kế toán duyệt</div></div></div>
-    <div class="stat"><div class="ic" style="background:#FEF3E0;color:var(--accent-600)">⚠️</div><div><div class="n tnum">${scAll}</div><div class="l">Vụ đột xuất · bù duyệt ${fmtVnd(scAmt)}</div></div></div>
-    <div class="stat"><div class="ic" style="background:${diffKho?'#F3E7E7':'#EAF1F0'};color:${diffKho?'var(--red)':'var(--muted)'}">±</div><div><div class="n tnum">${closThis.length?diffKho:'—'}</div><div class="l">${closThis.length?`Kho lệch tồn cuối · ${diffItems} mã`:'Chưa đối chiếu tồn cuối'}</div></div></div>`;
+    <div class="stat"><div class="ic" style="background:var(--t-mint);color:var(--brand-ink)">📋</div><div><div class="n tnum">${khoDone}/${whs.length}</div><div class="l">Kho đã kiểm kỳ này · ${pctKho}%</div></div></div>
+    <div class="stat"><div class="ic" style="background:var(--t-amber);color:var(--accent-ink)">⏳</div><div><div class="n tnum">${pending}</div><div class="l">Phiếu chờ kế toán duyệt</div></div></div>
+    <div class="stat"><div class="ic" style="background:var(--t-amber);color:var(--accent-ink)">⚠️</div><div><div class="n tnum">${scAll}</div><div class="l">Vụ đột xuất · bù duyệt ${fmtVnd(scAmt)}</div></div></div>
+    <div class="stat"><div class="ic" style="background:${diffKho?'var(--t-red)':'var(--t-mint)'};color:${diffKho?'var(--red)':'var(--muted)'}">±</div><div><div class="n tnum">${closThis.length?diffKho:'—'}</div><div class="l">${closThis.length?`Kho lệch tồn cuối · ${diffItems} mã`:'Chưa đối chiếu tồn cuối'}</div></div></div>`;
   v.appendChild(stats);
 
   // ===== ② Tiến độ theo điểm bán =====
@@ -8621,9 +8623,9 @@ function renderProgress(v){
   const stats=el('div','stats');
   stats.innerHTML=`
     <div class="stat"><div class="ic" style="background:var(--green-bg);color:var(--green)">✓</div><div><div class="n tnum">${done}</div><div class="l">Đã duyệt</div></div></div>
-    <div class="stat"><div class="ic" style="background:#FDF1DC;color:var(--accent-600)">⏳</div><div><div class="n tnum">${wait}</div><div class="l">Chờ duyệt</div></div></div>
-    <div class="stat"><div class="ic" style="background:#F3E7E7;color:var(--red)">○</div><div><div class="n tnum">${none}</div><div class="l">Chưa đếm</div></div></div>
-    <div class="stat"><div class="ic" style="background:#EAF1F0;color:var(--brand-ink)">%</div><div><div class="n tnum">${pct}%</div><div class="l">Đã nộp</div></div></div>`;
+    <div class="stat"><div class="ic" style="background:var(--t-amber);color:var(--accent-ink)">⏳</div><div><div class="n tnum">${wait}</div><div class="l">Chờ duyệt</div></div></div>
+    <div class="stat"><div class="ic" style="background:var(--t-red);color:var(--red)">○</div><div><div class="n tnum">${none}</div><div class="l">Chưa đếm</div></div></div>
+    <div class="stat"><div class="ic" style="background:var(--t-mint);color:var(--brand-ink)">%</div><div><div class="n tnum">${pct}%</div><div class="l">Đã nộp</div></div></div>`;
   v.appendChild(stats);
 
   // Biểu đồ tỷ lệ hoàn thành theo điểm bán
@@ -8670,7 +8672,7 @@ function renderProgress(v){
       const clickable=(st.k==='done'||st.k==='wait');
       const view=clickable?'<span style="color:var(--brand-ink);font-size:11.5px;font-weight:700;white-space:nowrap">👁 Xem số lượng</span>':'';
       const tr=el('tr',null,`<td><div class="cell-strong">${w.sloc_name}</div><div class="cell-sub tnum">Sloc ${w.sloc}</div></td><td>${w.plant_name}</td><td>${badge}</td><td style="text-align:right">${view}</td>`);
-      if(clickable){const sub=subForKho(w.plant,w.sloc);if(sub){tr.style.cursor='pointer';tr.onclick=()=>showDetail(sub);tr.onmouseenter=()=>tr.style.background='#F6FAF9';tr.onmouseleave=()=>tr.style.background='';}}
+      if(clickable){const sub=subForKho(w.plant,w.sloc);if(sub){tr.style.cursor='pointer';tr.onclick=()=>showDetail(sub);tr.onmouseenter=()=>tr.style.background='var(--surface-2)';tr.onmouseleave=()=>tr.style.background='';}}
       tb.appendChild(tr);});
     tbl.appendChild(tb);holder.appendChild(tbl);
   }
@@ -8986,10 +8988,10 @@ function spotDashStats(v){
   const totalAmt=duyet.reduce((a,s)=>a+(s.amount||0),0);
   const stats=el('div','stats');
   stats.innerHTML=`
-    <div class="stat"><div class="ic" style="background:#F3E7E7;color:var(--red)">⚠</div><div><div class="n tnum">${list.length}</div><div class="l">Tổng phiếu đột xuất</div></div></div>
-    <div class="stat"><div class="ic" style="background:#FDF1DC;color:var(--accent-600)">⏳</div><div><div class="n tnum">${cho}</div><div class="l">Chờ duyệt</div></div></div>
+    <div class="stat"><div class="ic" style="background:var(--t-red);color:var(--red)">⚠</div><div><div class="n tnum">${list.length}</div><div class="l">Tổng phiếu đột xuất</div></div></div>
+    <div class="stat"><div class="ic" style="background:var(--t-amber);color:var(--accent-ink)">⏳</div><div><div class="n tnum">${cho}</div><div class="l">Chờ duyệt</div></div></div>
     <div class="stat"><div class="ic" style="background:var(--green-bg);color:var(--green)">✓</div><div><div class="n tnum">${duyet.length}</div><div class="l">Đã duyệt</div></div></div>
-    <div class="stat"><div class="ic" style="background:#EAF1F0;color:var(--brand-ink)">₫</div><div><div class="n tnum" style="font-size:18px">${fmtVnd(totalAmt)}</div><div class="l">Tổng bù (đã duyệt)</div></div></div>`;
+    <div class="stat"><div class="ic" style="background:var(--t-mint);color:var(--brand-ink)">₫</div><div><div class="n tnum" style="font-size:18px">${fmtVnd(totalAmt)}</div><div class="l">Tổng bù (đã duyệt)</div></div></div>`;
   v.appendChild(stats);
   // biểu đồ tiền bù đã duyệt theo điểm bán
   const byPlant={};duyet.forEach(s=>{byPlant[s.plant]=(byPlant[s.plant]||0)+(s.amount||0);});
@@ -9305,7 +9307,7 @@ function renderUsers(view){
   const card=el('div','card');card.style.overflow='hidden';
   card.innerHTML=`<div class="utbl-h"><div>Người dùng</div><div>Vai trò</div><div>Trạng thái</div><div>Kho</div><div></div></div>`;
   const body=el('div');card.appendChild(body);view.appendChild(card);
-  const stB={active:['✓ Kích hoạt','var(--green-bg)','var(--green)'],pending:['⏳ Chờ duyệt','#FDF1DC','var(--accent-600)'],disabled:['🔒 Khóa','var(--red-bg)','var(--red)']};
+  const stB={active:['✓ Kích hoạt','var(--green-bg)','var(--green)'],pending:['⏳ Chờ duyệt','var(--t-amber)','var(--accent-ink)'],disabled:['🔒 Khóa','var(--red-bg)','var(--red)']};
   function drawList(){
     const q=vnTerms(userSearch);
     const list=profiles.filter(p=>(!userRoleF||(p.role||'')===userRoleF)&&(!userStatusF||(p.status||'pending')===userStatusF)&&vnAll(vnNorm(p.full_name)+'|'+vnNorm(p.email),q));
