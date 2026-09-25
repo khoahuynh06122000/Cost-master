@@ -326,7 +326,7 @@
     font-size:12.5px;font-weight:800;letter-spacing:.02em;
     background:transparent;color:inherit;border:1px solid currentColor;opacity:.55}
   .lang-b:hover{opacity:.85}
-  .lang-b.on{opacity:1;background:var(--accent);border-color:var(--accent);color:#fff}
+  .lang-b.on{opacity:1;background:var(--accent);border-color:var(--accent);color:#2A1A00;font-weight:800}
   .sidebar .lang-bar{justify-content:flex-start;padding:0 16px;margin:0 0 8px}
   .auth-switch{margin-top:14px;font-size:13px;color:rgba(255,255,255,.75);text-align:center}
   .auth-switch a{color:var(--accent);font-weight:700;cursor:pointer;text-decoration:underline}
@@ -1085,7 +1085,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2409-17';
+const APP_VER='2509-05';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1127,7 +1127,15 @@ Object.assign(TXT.hi,{"⚠ Trễ":"⚠ देर"});
 /* Bo sung 24/09/2026 (dot 19) — bo phan sua so khi ke toan chua duyet. */
 Object.assign(TXT.en,{"✎ Sửa số / đếm bổ sung phiếu này":"✎ Edit / add to this count sheet","✎ Sửa số đã đếm":"✎ Edit the counted figures","Chờ Kế toán viên phê duyệt.":"Waiting for the accountant to approve.","Kế toán chưa duyệt nên kho vẫn sửa được số: sửa số cũ, thêm mã thiếu, bỏ mã đếm nhầm. Phiếu giữ nguyên mã số và mọi thay đổi được ghi lại để kế toán xem khi duyệt.":"The accountant has not approved yet, so the store can still edit: change a figure, add a missing item, drop an item counted by mistake. The sheet keeps its number and every change is recorded for the accountant to review at approval."});
 Object.assign(TXT.hi,{"✎ Sửa số / đếm bổ sung phiếu này":"✎ इस गणना पर्ची को संपादित करें / जोड़ें","✎ Sửa số đã đếm":"✎ गिने गए आंकड़े संपादित करें","Chờ Kế toán viên phê duyệt.":"लेखाकार की स्वीकृति की प्रतीक्षा है।","Kế toán chưa duyệt nên kho vẫn sửa được số: sửa số cũ, thêm mã thiếu, bỏ mã đếm nhầm. Phiếu giữ nguyên mã số và mọi thay đổi được ghi lại để kế toán xem khi duyệt.":"लेखाकार ने अभी स्वीकृति नहीं दी है, इसलिए स्टोर अब भी संपादित कर सकता है: आंकड़ा बदलें, छूटी वस्तु जोड़ें, गलती से गिनी वस्तु हटाएं। पर्ची का नंबर वही रहता है और हर बदलाव स्वीकृति के समय लेखाकार के देखने हेतु दर्ज होता है।"});
-const TXT_RE_BS=[{re:new RegExp("^([\\d.,]+)/([\\d.,]+) điểm bán$"),en:"$1/$2 outlets",hi:"$1/$2 आउटलेट"},{re:new RegExp("^còn ([\\d.,]+)$"),en:"$1 left",hi:"$1 शेष"},{re:new RegExp("^🔔 Đã tự nhắc ([\\d.,]+) điểm bán$"),en:"🔔 Auto-reminded $1 outlets",hi:"🔔 $1 आउटलेट को स्वतः याद दिलाया"},{re:new RegExp("^📋 Xem bảng xếp hạng chi tiết \\(([\\d.,]+) bộ phận\\)$"),en:"📋 See the full ranking ($1 departments)",hi:"📋 पूरी रैंकिंग देखें ($1 विभाग)"},{re:new RegExp("^🔒 Tháng (\\d{2}/\\d{4}) đã khóa$"),en:"🔒 Month $1 is locked",hi:"🔒 माह $1 बंद है"},{re:new RegExp("^đã được kế toán duyệt cho tháng (\\d{2}/\\d{4})\\. Không thể chỉnh sửa\\. Kỳ mới sẽ mở vào tháng sau\\.$"),en:"has been approved by accounting for month $1. It can no longer be edited. The next period opens next month.",hi:"लेखा द्वारा माह $1 हेतु स्वीकृत। अब संपादित नहीं किया जा सकता। अगली अवधि अगले माह खुलेगी।"},{re:new RegExp("^Đã bỏ từ chối (.+) — phiếu quay lại chờ duyệt$"),en:"Rejection of $1 undone — the request is back to awaiting approval",hi:"$1 की अस्वीकृति रद्द — पर्ची फिर से स्वीकृति की प्रतीक्षा में"},{re:new RegExp("^Phiếu này từng bị từ chối \\(lý do: (.+)\\) và đã được quản trị viên mở lại\\. Xem kỹ trước khi duyệt\\.$"),en:"This request was rejected before (reason: $1) and an administrator reopened it. Check it carefully before approving.",hi:"यह पर्ची पहले अस्वीकृत हुई थी (कारण: $1) और प्रशासक ने इसे फिर खोला। स्वीकृत करने से पहले ध्यान से देखें।"},{re:new RegExp("^(.+) đã duyệt phiếu (.+) · chuyển cho (.+) · ([\\d.,]+) mã · lúc (.+)$"),en:"$1 approved request $2 · sent to $3 · $4 items · at $5",hi:"$1 ने पर्ची $2 स्वीकृत की · $3 को भेजा · $4 वस्तुएँ · $5 बजे",n:4,en1:"$1 approved request $2 · sent to $3 · $4 item · at $5",hi1:"$1 ने पर्ची $2 स्वीकृत की · $3 को भेजा · $4 वस्तु · $5 बजे"},{re:new RegExp("^([\\d.,]+) loại lý do$"),en:"$1 kinds of reason",hi:"$1 प्रकार के कारण",n:1,en1:"$1 kind of reason",hi1:"$1 प्रकार का कारण"},{re:new RegExp("^([\\d.,]+) phiếu$"),en:"$1 requests",hi:"$1 पर्चियाँ",n:1,en1:"$1 request",hi1:"$1 पर्ची"},{re:new RegExp("^([\\d.,]+) dòng$"),en:"$1 lines",hi:"$1 पंक्तियाँ",n:1,en1:"$1 line",hi1:"$1 पंक्ति"}];
+/* Bo sung 25/09/2026 (dot 20) — 5 man chi tiet gio moi di qua dichMan. */
+Object.assign(TXT.en,{"← Quay lại tổng hợp":"← Back to summary","← Quay lại tổng quan":"← Back to overview","← Quay lại bàn giao ca":"← Back to shift handover","← Quay lại danh sách báo cáo":"← Back to the report list","📂 Chọn thư mục lưu tự động":"📂 Choose an auto-save folder","📊 Dòng kho & xuất kho tự tính (bấm để xem khi cần đối chiếu)":"📊 Stock flow & computed outflow (tap to cross-check)","Xuất = Tồn đầu + Nhập mua + ĐC đến − ĐC đi − Tồn cuối (đếm). Số âm nghĩa là đếm nhiều hơn dự tính — cần rà lại.":"Outflow = Opening + Purchases + Transfers in − Transfers out − Closing (counted). A negative number means more was counted than expected — check again.","Đầu kỳ":"Opening","Nhập mua":"Purchases","ĐC đến":"Transfers in","ĐC đi":"Transfers out","Tồn cuối (đếm)":"Closing (counted)","Xuất (tính)":"Outflow (calc.)","SL đếm (cuối kỳ)":"Counted qty (closing)","Số cũ":"Old figure","Số mới":"New figure","Tổng":"Total","Cộng":"Sum","Cuối ca":"End of shift","📥 Xuất biên bản tách theo tiểu kho":"📥 Export the report split by sub-store","🧾 Chi tiết theo tiểu kho (kho đếm)":"🧾 Breakdown by sub-store (counting zone)","Số chính thức của phiếu là cột Tổng — đúng bằng số đã gửi kế toán. Các cột bên trái cho biết mỗi khu đếm được bao nhiêu.":"The official figure on this sheet is the Total column — exactly what was sent to accounting. The columns on the left show how much each zone counted.","📥 Tải Excel kho này":"📥 Download this store's Excel","Thời gian ghi nhận":"Recorded at","Số tiền đề xuất bù":"Proposed compensation","Đang chờ giám sát điểm bán duyệt.":"Waiting for the outlet supervisor to approve."});
+Object.assign(TXT.hi,{"← Quay lại tổng hợp":"← सारांश पर वापस","← Quay lại tổng quan":"← अवलोकन पर वापस","← Quay lại bàn giao ca":"← शिफ्ट हैंडओवर पर वापस","← Quay lại danh sách báo cáo":"← रिपोर्ट सूची पर वापस","📂 Chọn thư mục lưu tự động":"📂 स्वतः सहेजने का फ़ोल्डर चुनें","📊 Dòng kho & xuất kho tự tính (bấm để xem khi cần đối chiếu)":"📊 स्टॉक प्रवाह और गणना किया गया निकास (मिलान हेतु टैप करें)","Xuất = Tồn đầu + Nhập mua + ĐC đến − ĐC đi − Tồn cuối (đếm). Số âm nghĩa là đếm nhiều hơn dự tính — cần rà lại.":"निकास = प्रारंभिक + खरीद + आवक स्थानांतरण − जावक स्थानांतरण − अंतिम (गिना)। ऋणात्मक संख्या का अर्थ है अपेक्षा से अधिक गिना गया — फिर से जाँचें।","Đầu kỳ":"प्रारंभिक","Nhập mua":"खरीद","ĐC đến":"आवक स्थानांतरण","ĐC đi":"जावक स्थानांतरण","Tồn cuối (đếm)":"अंतिम (गिना)","Xuất (tính)":"निकास (गणना)","SL đếm (cuối kỳ)":"गिनी मात्रा (अंतिम)","Số cũ":"पुराना आंकड़ा","Số mới":"नया आंकड़ा","Tổng":"कुल","Cộng":"योग","Cuối ca":"शिफ्ट समाप्ति","📥 Xuất biên bản tách theo tiểu kho":"📥 उप-स्टोर अनुसार रिपोर्ट निर्यात करें","🧾 Chi tiết theo tiểu kho (kho đếm)":"🧾 उप-स्टोर अनुसार विवरण (गणना क्षेत्र)","Số chính thức của phiếu là cột Tổng — đúng bằng số đã gửi kế toán. Các cột bên trái cho biết mỗi khu đếm được bao nhiêu.":"इस पर्ची का आधिकारिक आंकड़ा कुल स्तंभ है — ठीक वही जो लेखा को भेजा गया। बाईं ओर के स्तंभ बताते हैं कि प्रत्येक क्षेत्र ने कितना गिना।","📥 Tải Excel kho này":"📥 इस स्टोर की Excel डाउनलोड करें","Thời gian ghi nhận":"दर्ज समय","Số tiền đề xuất bù":"प्रस्तावित क्षतिपूर्ति","Đang chờ giám sát điểm bán duyệt.":"आउटलेट पर्यवेक्षक की स्वीकृति की प्रतीक्षा है।"});
+const TXT_RE_TQ=[{re:new RegExp("^(.+) · ([\\d.,]+) mã$"),en:"$1 · $2 items",hi:"$1 · $2 वस्तुएँ",n:2,en1:"$1 · $2 item",hi1:"$1 · $2 वस्तु"}];
+/* Bo sung 25/09/2026 (dot 20c) — quet lan hai tren 5 man chi tiet. */
+Object.assign(TXT.en,{"ĐVT":"UoM","Đầu kỳ lấy từ":"Opening taken from","tồn đầu kỳ đã nạp":"the opening stock uploaded","— kế toán chưa chốt tồn tháng, số có thể còn đổi":"— accounting has not closed the monthly stock yet, the figure may still change"});
+Object.assign(TXT.hi,{"ĐVT":"इकाई","Đầu kỳ lấy từ":"प्रारंभिक स्टॉक का स्रोत","tồn đầu kỳ đã nạp":"अपलोड किया गया प्रारंभिक स्टॉक","— kế toán chưa chốt tồn tháng, số có thể còn đổi":"— लेखा ने मासिक स्टॉक अभी बंद नहीं किया, आंकड़ा बदल सकता है"});
+/* Nut xem them cua the doc — chi lo ra khi bang dai hon CARD_PAGE. */
+const TXT_RE_BS=[{re:new RegExp("^▾ Xem thêm ([\\d.,]+) \\(còn ([\\d.,]+)\\)$"),en:"▾ Show $1 more ($2 left)",hi:"▾ $1 और दिखाएँ ($2 शेष)"},{re:new RegExp("^Ca sáng · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"Morning shift · $1 · handed over by $2 · received by $3",hi:"सुबह की शिफ़्ट · $1 · $2 द्वारा सौंपा · $3 द्वारा प्राप्त"},{re:new RegExp("^Ca sáng · ([0-9/-]+) · giao bởi (.+)$"),en:"Morning shift · $1 · handed over by $2",hi:"सुबह की शिफ़्ट · $1 · $2 द्वारा सौंपा"},{re:new RegExp("^Ca chiều · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"Afternoon shift · $1 · handed over by $2 · received by $3",hi:"दोपहर की शिफ़्ट · $1 · $2 द्वारा सौंपा · $3 द्वारा प्राप्त"},{re:new RegExp("^Ca chiều · ([0-9/-]+) · giao bởi (.+)$"),en:"Afternoon shift · $1 · handed over by $2",hi:"दोपहर की शिफ़्ट · $1 · $2 द्वारा सौंपा"},{re:new RegExp("^Ca tối · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"Night shift · $1 · handed over by $2 · received by $3",hi:"रात की शिफ़्ट · $1 · $2 द्वारा सौंपा · $3 द्वारा प्राप्त"},{re:new RegExp("^Ca tối · ([0-9/-]+) · giao bởi (.+)$"),en:"Night shift · $1 · handed over by $2",hi:"रात की शिफ़्ट · $1 · $2 द्वारा सौंपा"},{re:new RegExp("^Chốt tồn tháng (\\d{2}/\\d{4}) \\(kế toán\\)$"),en:"Month-end stock close $1 (accounting)",hi:"माह-अंत स्टॉक समापन $1 (लेखा)"},{re:new RegExp("^Phiếu kiểm kê (.+) \\(kỳ (\\d{2}/\\d{4})\\)$"),en:"Count sheet $1 (period $2)",hi:"गणना पर्ची $1 (अवधि $2)"},{re:new RegExp("^(.+) · Sloc ([0-9]+) · gửi bởi (.+) lúc (.+)$"),en:"$1 · Sloc $2 · submitted by $3 at $4",hi:"$1 · Sloc $2 · $3 द्वारा $4 पर भेजा गया"},{re:new RegExp("^(.+) · Sloc ([0-9]+) · Chốt từ (.*) · (.*) · Người chốt (.*)$"),en:"$1 · Sloc $2 · closed from $3 · $4 · closed by $5",hi:"$1 · Sloc $2 · $3 से बंद · $4 · $5 द्वारा बंद"},{re:new RegExp("^(.+) · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"$1 · $2 · handed over by $3 · received by $4",hi:"$1 · $2 · $3 द्वारा सौंपा · $4 द्वारा प्राप्त"},{re:new RegExp("^(.+) · ([0-9/-]+) · giao bởi (.+)$"),en:"$1 · $2 · handed over by $3",hi:"$1 · $2 · $3 द्वारा सौंपा"},{re:new RegExp("^✏️ Phiếu này đã đếm bổ sung ([\\d.,]+) lần — bấm để xem đã sửa gì$"),en:"✏️ This sheet has been edited $1 times — tap to see what changed",hi:"✏️ यह पर्ची $1 बार संपादित हुई — क्या बदला देखने हेतु टैप करें",n:1,en1:"✏️ This sheet has been edited once — tap to see what changed",hi1:"✏️ यह पर्ची एक बार संपादित हुई — क्या बदला देखने हेतु टैप करें"},{re:new RegExp("^📋 Bảng kiểm đếm thực tế · ([\\d.,]+) mã$"),en:"📋 Actual count table · $1 items",hi:"📋 वास्तविक गणना तालिका · $1 वस्तुएँ",n:1,en1:"📋 Actual count table · $1 item",hi1:"📋 वास्तविक गणना तालिका · $1 वस्तु"},{re:new RegExp("^Tạo bởi (.+) · (.+) · (.+)$"),en:"Created by $1 · $2 · $3",hi:"$1 द्वारा बनाया · $2 · $3"},{re:new RegExp("^([\\d.,]+)/([\\d.,]+) điểm bán$"),en:"$1/$2 outlets",hi:"$1/$2 आउटलेट"},{re:new RegExp("^còn ([\\d.,]+)$"),en:"$1 left",hi:"$1 शेष"},{re:new RegExp("^🔔 Đã tự nhắc ([\\d.,]+) điểm bán$"),en:"🔔 Auto-reminded $1 outlets",hi:"🔔 $1 आउटलेट को स्वतः याद दिलाया"},{re:new RegExp("^📋 Xem bảng xếp hạng chi tiết \\(([\\d.,]+) bộ phận\\)$"),en:"📋 See the full ranking ($1 departments)",hi:"📋 पूरी रैंकिंग देखें ($1 विभाग)"},{re:new RegExp("^🔒 Tháng (\\d{2}/\\d{4}) đã khóa$"),en:"🔒 Month $1 is locked",hi:"🔒 माह $1 बंद है"},{re:new RegExp("^đã được kế toán duyệt cho tháng (\\d{2}/\\d{4})\\. Không thể chỉnh sửa\\. Kỳ mới sẽ mở vào tháng sau\\.$"),en:"has been approved by accounting for month $1. It can no longer be edited. The next period opens next month.",hi:"लेखा द्वारा माह $1 हेतु स्वीकृत। अब संपादित नहीं किया जा सकता। अगली अवधि अगले माह खुलेगी।"},{re:new RegExp("^Đã bỏ từ chối (.+) — phiếu quay lại chờ duyệt$"),en:"Rejection of $1 undone — the request is back to awaiting approval",hi:"$1 की अस्वीकृति रद्द — पर्ची फिर से स्वीकृति की प्रतीक्षा में"},{re:new RegExp("^Phiếu này từng bị từ chối \\(lý do: (.+)\\) và đã được quản trị viên mở lại\\. Xem kỹ trước khi duyệt\\.$"),en:"This request was rejected before (reason: $1) and an administrator reopened it. Check it carefully before approving.",hi:"यह पर्ची पहले अस्वीकृत हुई थी (कारण: $1) और प्रशासक ने इसे फिर खोला। स्वीकृत करने से पहले ध्यान से देखें।"},{re:new RegExp("^(.+) đã duyệt phiếu (.+) · chuyển cho (.+) · ([\\d.,]+) mã · lúc (.+)$"),en:"$1 approved request $2 · sent to $3 · $4 items · at $5",hi:"$1 ने पर्ची $2 स्वीकृत की · $3 को भेजा · $4 वस्तुएँ · $5 बजे",n:4,en1:"$1 approved request $2 · sent to $3 · $4 item · at $5",hi1:"$1 ने पर्ची $2 स्वीकृत की · $3 को भेजा · $4 वस्तु · $5 बजे"},{re:new RegExp("^([\\d.,]+) loại lý do$"),en:"$1 kinds of reason",hi:"$1 प्रकार के कारण",n:1,en1:"$1 kind of reason",hi1:"$1 प्रकार का कारण"},{re:new RegExp("^([\\d.,]+) phiếu$"),en:"$1 requests",hi:"$1 पर्चियाँ",n:1,en1:"$1 request",hi1:"$1 पर्ची"},{re:new RegExp("^([\\d.,]+) dòng$"),en:"$1 lines",hi:"$1 पंक्तियाँ",n:1,en1:"$1 line",hi1:"$1 पंक्ति"}];
 const TXT_RE=[
   {re:new RegExp("^Tháng (\\d{2}/\\d{4}) \\(hiện tại\\)$"),en:"Month $1 (current)",hi:"माह $1 (वर्तमान)"},
   {re:new RegExp("^Tháng (\\d{2}/\\d{4})$"),en:"Month $1",hi:"माह $1"},
@@ -1226,6 +1234,8 @@ const TXT_RE=[
   {re:new RegExp("^Tìm theo mã hoặc tên hàng… \\((\\d+) mã của điểm bán\\)$"),en:"Search by code or item name… ($1 items at this outlet)",hi:"कोड या नाम से खोजें… (इस आउटलेट की $1 वस्तुएँ)",n:1,en1:"Search by code or item name… ($1 item at this outlet)",hi1:"कोड या नाम से खोजें… (इस आउटलेट की $1 वस्तु)"}
 ];
 TXT_RE.unshift(...TXT_RE_BS);
+/* Mau TONG QUAT phai nam CUOI mang: len truoc la no nuot mat cac mau cu the. */
+TXT_RE.push(...TXT_RE_TQ);
 function L(s){
   if(LANG==='vi')return s;
   const k=String(s==null?'':s).trim();
@@ -3885,6 +3895,15 @@ let hubOpen={};   // {tab: 'khóa việc đang mở'} — nhớ để vẽ lại
 /* Gan nhan cot tu <thead> vao tung <td> de bang hien duoc dang THE tren dien thoai.
    Chay mot lan sau moi lan ve man -> ap cho MOI bang, ke ca bang viet sau nay.
    Bang duoi 5 cot khong doi (da vua man 390px). */
+/* Hai bước cuối của MỌI màn: dịch + bẻ bảng thành thẻ dọc trên điện thoại.
+   `renderView` vốn đã làm, nhưng các màn chi tiết (phiếu kiểm kê, tồn kho, bàn giao
+   ca, đột xuất, báo cáo) vẽ THẲNG vào #view nên không đi qua đó — hậu quả: mấy màn
+   này xưa nay đứng nguyên tiếng Việt ở EN/HI và bảng phải kéo ngang trên điện thoại.
+   Màn chi tiết nào viết sau này cũng gọi hàm này ở dòng cuối. */
+function veXongMan(v){
+  try{dichMan(v);}catch(e){console.warn('dich',e);}
+  try{cardifyTables(v);}catch(e){console.warn('cards',e);}
+}
 function cardifyTables(root){
   (root||document).querySelectorAll('.tbl-wrap table').forEach(t=>{
     const w=t.closest('.tbl-wrap');if(!w)return;
@@ -3933,7 +3952,7 @@ function cardifyTables(root){
         trs.forEach((tr,i)=>{tr.style.display=i<shown?'':'none';});
         const left=trs.length-shown;
         if(left<=0){more.remove();return;}
-        more.textContent='▾ Xem thêm '+Math.min(CARD_PAGE,left)+' (còn '+left+')';
+        more.textContent=L('▾ Xem thêm '+Math.min(CARD_PAGE,left)+' (còn '+left+')');
       };
       more.onclick=()=>{shown+=CARD_PAGE;paint();};
       paint();w.appendChild(more);
@@ -5435,6 +5454,7 @@ function showOpeningDetail(plant,sloc,val){
   });
   tbl.appendChild(tb);w.appendChild(tbl);card.appendChild(w);
   v.appendChild(card);
+  veXongMan(v);
   window.scrollTo(0,0);
 }
 // Xuất bảng tồn kho ra Excel (.xls)
@@ -7940,14 +7960,14 @@ function showDetail(s){
   {
     const flow=inventoryFlow(s);
     const fw=el('div','card-b');fw.style.borderTop='1px solid var(--line)';
-    const det=document.createElement('details');const sum=document.createElement('summary');sum.style.cssText='cursor:pointer;font-weight:700;font-size:13px;color:var(--brand-ink)';sum.textContent='📊 Dòng kho & xuất kho tự tính (bấm để xem khi cần đối chiếu)';det.appendChild(sum);det.appendChild(el('div',null,`<div style="font-size:12px;color:var(--muted);margin:8px 0">Xuất = Tồn đầu + Nhập mua + ĐC đến − ĐC đi − Tồn cuối (đếm). Số <b style="color:var(--red)">âm</b> nghĩa là đếm nhiều hơn dự tính — cần rà lại.</div>`));
+    const det=document.createElement('details');const sum=document.createElement('summary');sum.style.cssText='cursor:pointer;font-weight:700;font-size:13px;color:var(--brand-ink)';sum.textContent='📊 Dòng kho & xuất kho tự tính (bấm để xem khi cần đối chiếu)';det.appendChild(sum);det.appendChild(el('div',null,`<div style="font-size:12px;color:var(--muted);margin:8px 0">Xuất = Tồn đầu + Nhập mua + ĐC đến − ĐC đi − Tồn cuối (đếm). Số âm nghĩa là đếm nhiều hơn dự tính — cần rà lại.</div>`));
     const w2=el('div','tbl-wrap');const t2=el('table');
     let _dkLine=null;
     {const _dkP=dkCuaPhieu(s);
      if(_dkP.nguon)_dkLine=el('div',null,'<div style="font-size:11.5px;color:var(--muted);margin:2px 0 8px">Đầu kỳ lấy từ <b>'+_dkP.nguon+'</b>'+nhanTamTinh(_dkP,true)+'</div>');}
     t2.innerHTML=`<thead><tr><th>Mã</th><th>Tên hàng</th><th>ĐVT</th><th class="num">Đầu kỳ</th><th class="num">Nhập mua</th><th class="num">ĐC đến</th><th class="num">ĐC đi</th><th class="num">Tồn cuối (đếm)</th><th class="num">Xuất (tính)</th></tr></thead>`;
     const tb2=el('tbody');
-    flow.forEach(r=>{const neg=r.xuat<0;tb2.appendChild(el('tr',null,`<td class="tnum">${r.code}</td><td>${r.name}</td><td><span class="badge badge-uom">${r.uom}</span></td><td class="num tnum">${r.dk}</td><td class="num tnum">${r.buy||0}</td><td class="num tnum">${r.tin||0}</td><td class="num tnum">${r.tout||0}</td><td class="num tnum">${r.cuoi}</td><td class="num cell-strong tnum" style="color:${neg?'var(--red)':'var(--brand)'}">${r.xuat}</td>`));});
+    flow.forEach(r=>{const neg=r.xuat<0;tb2.appendChild(el('tr',null,`<td class="tnum">${r.code}</td><td>${r.name}</td><td><span class="badge badge-uom">${r.uom}</span></td><td class="num tnum">${r.dk}</td><td class="num tnum">${r.buy||0}</td><td class="num tnum">${r.tin||0}</td><td class="num tnum">${r.tout||0}</td><td class="num tnum">${r.cuoi}</td><td class="num cell-strong tnum" style="color:${neg?'var(--red)':'var(--brand-ink)'}">${r.xuat}</td>`));});
     t2.appendChild(tb2);w2.appendChild(t2);if(_dkLine)det.appendChild(_dkLine);det.appendChild(w2);fw.appendChild(det);card.appendChild(fw);
   }
 
@@ -7974,7 +7994,7 @@ function showDetail(s){
     ec.appendChild(det);card.appendChild(ec);
   }
   // ---- Bảng kiểm đếm thực tế (bảng chính, làm nổi bật) ----
-  if(!document.getElementById('kkDetailStyle')){const st=document.createElement('style');st.id='kkDetailStyle';st.textContent='.kk-count-tbl td{padding:10px 12px;font-size:13.5px}.kk-count-tbl tbody tr:nth-child(even){background:#F6FAF9}.kk-count-tbl .qbig{font-size:16px;font-weight:800;color:var(--brand-ink)}';document.head.appendChild(st);}
+  if(!document.getElementById('kkDetailStyle')){const st=document.createElement('style');st.id='kkDetailStyle';st.textContent='.kk-count-tbl td{padding:10px 12px;font-size:13.5px}.kk-count-tbl tbody tr:nth-child(even){background:var(--surface-2)}.kk-count-tbl .qbig{font-size:16px;font-weight:800;color:var(--brand-ink)}';document.head.appendChild(st);}
   const _dkSD=dkCuaPhieu(s);
   const op=Object.keys(_dkSD.items||{}).length&&s.status!=='Đã duyệt'?_dkSD.items:null;
   const rowsCnt=Object.entries(s.items).map(([code,qty])=>{const m=masterByCode[code]||DATA.materials.find(x=>x.code===code)||{name:'?',uom:''};return {code,qty,name:m.name,uom:m.uom};}).sort((a,b)=>(a.name||'').localeCompare(b.name||'','vi'));
@@ -7993,8 +8013,7 @@ function showDetail(s){
     const zs=s.zones.map(z=>z.name);
     const zc=el('div','card-b');zc.style.borderTop='1px solid var(--line)';
     zc.appendChild(el('div',null,`<div class="section-eyebrow" style="margin-bottom:4px">🧾 Chi tiết theo tiểu kho (kho đếm)</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Số chính thức của phiếu là cột <b>Tổng</b> — đúng bằng số đã gửi kế toán.
-      Các cột bên trái cho biết mỗi khu đếm được bao nhiêu.</div>`));
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Số chính thức của phiếu là cột Tổng — đúng bằng số đã gửi kế toán. Các cột bên trái cho biết mỗi khu đếm được bao nhiêu.</div>`));
     const codes=new Set();s.zones.forEach(z=>Object.keys(z.items||{}).forEach(c=>codes.add(c)));
     Object.keys(s.items||{}).forEach(c=>codes.add(c));
     const rws=[...codes].map(c=>{const m=masterByCode[c]||{name:c,uom:''};return {code:c,name:m.name||c,uom:m.uom||''};})
@@ -8023,10 +8042,7 @@ function showDetail(s){
     card.appendChild(zc);
   }
   v.appendChild(card);
-  /* showDetail vẽ thẳng vào #view nên KHÔNG đi qua renderView — chỗ duy nhất gọi
-     dichMan. Vì vậy cả màn chi tiết phiếu xưa nay đứng nguyên tiếng Việt ở EN/HI,
-     kể cả nút mới. Chuỗi nào chưa có trong từ điển vẫn rơi về tiếng Việt như thường. */
-  try{dichMan(v);}catch(e){console.warn('dich',e);}
+  veXongMan(v);
 }
 
 /* ---- Xuất BIÊN BẢN KIỂM KÊ ra Excel (đúng mẫu công ty) để in ký ---- */
@@ -8528,6 +8544,7 @@ function showShiftDetail(s){
     const opCell=op?`<td class="num tnum" style="color:var(--muted)">${op[code]!=null?op[code]:'—'}</td>`:'';
     tb.appendChild(el('tr',null,`<td class="tnum">${code}</td><td>${m.name}</td><td><span class="badge badge-uom">${m.uom}</span></td>${opCell}<td class="num cell-strong tnum">${qty}</td>${diffCell}`));});
   tbl.appendChild(tb);w.appendChild(tbl);card.appendChild(w);v.appendChild(card);
+  veXongMan(v);
 }
 
 /* ============ TIẾN ĐỘ KIỂM KÊ (giám sát) ============ */
@@ -9038,7 +9055,7 @@ function showSpotDetail(s){
     <div class="kv"><span class="k">Thời gian ghi nhận</span><span class="v tnum">${s.time}</span></div>
     <div class="kv"><span class="k">Số tiền đề xuất bù</span><span class="v cell-strong" style="color:var(--accent-600)">${fmtVnd(s.amount)}</span></div>
     <div style="margin:14px 0 6px;font-weight:700;font-size:13px">Mô tả sự cố / thất thoát</div>
-    <div style="font-size:14px;line-height:1.6;background:var(--bg-soft,#F7F7F5);padding:12px 14px;border-radius:10px;white-space:pre-wrap">${s.desc||'(không có mô tả)'}</div>
+    <div style="font-size:14px;line-height:1.6;background:var(--surface-2);padding:12px 14px;border-radius:10px;white-space:pre-wrap">${s.desc||'(không có mô tả)'}</div>
     ${s.status!=='Chờ duyệt'?`<div class="note" style="margin-top:14px"><span>${s.status==='Đã duyệt'?'✓ Đã duyệt':'✕ Từ chối'} bởi <b>${s.reviewedBy||'—'}</b> lúc ${s.reviewedAt||'—'}${s.note?`<br>Ghi chú: ${s.note}`:''}</span></div>`:'<div class="note" style="margin-top:14px"><span>Đang chờ giám sát điểm bán duyệt.</span></div>'}`;
   card.appendChild(b);
   if(session.role==='admin'||s.by===session.name){
@@ -9047,7 +9064,7 @@ function showSpotDetail(s){
     del.onclick=()=>{if(!confirm('Xóa phiếu '+s.id+' khỏi hệ thống?'))return;deleteSpot(s,renderView);};
     bar.appendChild(del);card.appendChild(bar);
   }
-  v.appendChild(card);window.scrollTo(0,0);
+  v.appendChild(card);veXongMan(v);window.scrollTo(0,0);
 }
 function renderSpotcheck(v){
   if(session.role==='admin'){renderSpotDash(v);return;} // Quản trị: dùng dashboard
@@ -10074,6 +10091,7 @@ function showReport(r){
   const b=el('div','card-b');
   b.innerHTML=`<div class="report-body">${mdToHtml(r.content)}</div>`;
   card.appendChild(b);v.appendChild(card);
+  veXongMan(v);
 }
 function mdToHtml(t){
   // markdown tối giản: ## heading, **bold**, - bullet
