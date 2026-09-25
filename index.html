@@ -1087,7 +1087,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2509-08';
+const APP_VER='2509-10';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1140,6 +1140,12 @@ Object.assign(TXT.hi,{"ĐVT":"इकाई","Đầu kỳ lấy từ":"प्र�
 /* Bo sung 25/09/2026 (dot 22) — bao khi ke toan chua mo ky. */
 Object.assign(TXT.en,{"Kế toán chưa mở kỳ cho kho này — danh sách dưới đây lấy theo danh mục kho nên có thể khác danh sách kế toán sẽ chốt. App cũng chưa khóa điều chuyển: hàng vẫn ra vào kho được trong lúc đếm. Cần chắc số thì nhờ kế toán mở kỳ trước.":"Accounting has not opened the period for this store — the list below comes from the store catalogue, so it may differ from the list accounting will set. Transfers are not locked either: goods can still move in and out while you count. If the figure must be exact, ask accounting to open the period first."});
 Object.assign(TXT.hi,{"Kế toán chưa mở kỳ cho kho này — danh sách dưới đây lấy theo danh mục kho nên có thể khác danh sách kế toán sẽ chốt. App cũng chưa khóa điều chuyển: hàng vẫn ra vào kho được trong lúc đếm. Cần chắc số thì nhờ kế toán mở kỳ trước.":"लेखा ने इस स्टोर हेतु अवधि नहीं खोली — नीचे की सूची स्टोर की सामग्री-सूची से ली गई है, इसलिए यह लेखा द्वारा तय सूची से भिन्न हो सकती है। स्थानांतरण भी बंद नहीं हैं: गिनती के दौरान माल आ-जा सकता है। आंकड़ा पक्का चाहिए तो पहले लेखा से अवधि खुलवाएँ।"});
+/* Bo sung 25/09/2026 (dot 23) — BP tu khai khoa AI. */
+Object.assign(TXT.en,{"Khóa này để máy đọc ảnh phiếu xuất của kho tổng thành danh sách mã hàng, khỏi gõ tay. Mỗi người khai khóa của riêng mình — khóa chỉ lưu trên máy bạn, không đẩy lên máy chủ và không ai khác nhìn thấy.":"This key lets the app read a photo of the central store's issue slip into a list of items, so you do not have to type them. Each person enters their own key — it is stored only on your device, never sent to the server, and nobody else can see it.","Máy này chưa khai khóa. App còn chạy tạm bằng khóa chung của công ty, nhưng khóa chung sắp tắt — khai khóa riêng ngay để lúc nhập hàng khỏi gián đoạn.":"This device has no key yet. The app still runs on the shared company key for now, but that key is being switched off soon — enter your own key now so receiving goods is not interrupted.","Lấy khóa ở đâu? Miễn phí, làm một lần khoảng một phút":"Where do I get a key? Free, takes about a minute, one time only","1. Mở trang aistudio.google.com/apikey trên trình duyệt.":"1. Open aistudio.google.com/apikey in your browser.","2. Đăng nhập bằng Gmail của bạn.":"2. Sign in with your Gmail account.","3. Bấm \"Create API key\" (Tạo khóa), chọn project nào cũng được.":"3. Tap \"Create API key\" and pick any project.","4. Sao chép dãy bắt đầu bằng AIza… rồi dán vào ô bên dưới, bấm Lưu khóa.":"4. Copy the string starting with AIza… paste it in the box below, then tap Save key.","Máy này chưa khai khóa AI riêng — đang dùng khóa chung của công ty, khóa đó sắp tắt. Vào thẻ việc “Cài đặt AI quét ảnh” để khai khóa của bạn.":"This device has no personal AI key — it is using the shared company key, which is being switched off soon. Open the “AI photo-scan settings” card to enter your own key.","chưa khai khóa":"no key yet"});
+Object.assign(TXT.hi,{"Khóa này để máy đọc ảnh phiếu xuất của kho tổng thành danh sách mã hàng, khỏi gõ tay. Mỗi người khai khóa của riêng mình — khóa chỉ lưu trên máy bạn, không đẩy lên máy chủ và không ai khác nhìn thấy.":"यह कुंजी ऐप को केंद्रीय स्टोर की निर्गम पर्ची की तस्वीर से वस्तु-सूची पढ़ने देती है, ताकि आपको टाइप न करना पड़े। हर व्यक्ति अपनी कुंजी डालता है — यह केवल आपके डिवाइस पर रहती है, सर्वर पर नहीं जाती, और कोई और इसे नहीं देख सकता।","Máy này chưa khai khóa. App còn chạy tạm bằng khóa chung của công ty, nhưng khóa chung sắp tắt — khai khóa riêng ngay để lúc nhập hàng khỏi gián đoạn.":"इस डिवाइस पर अभी कोई कुंजी नहीं है। ऐप फ़िलहाल कंपनी की साझा कुंजी पर चल रहा है, पर वह कुंजी जल्द बंद होगी — अभी अपनी कुंजी डालें ताकि माल प्राप्ति में रुकावट न आए।","Lấy khóa ở đâu? Miễn phí, làm một lần khoảng một phút":"कुंजी कहाँ से लें? निःशुल्क, लगभग एक मिनट, केवल एक बार","1. Mở trang aistudio.google.com/apikey trên trình duyệt.":"1. ब्राउज़र में aistudio.google.com/apikey खोलें।","2. Đăng nhập bằng Gmail của bạn.":"2. अपने Gmail खाते से साइन इन करें।","3. Bấm \"Create API key\" (Tạo khóa), chọn project nào cũng được.":"3. \"Create API key\" दबाएँ और कोई भी प्रोजेक्ट चुनें।","4. Sao chép dãy bắt đầu bằng AIza… rồi dán vào ô bên dưới, bấm Lưu khóa.":"4. AIza… से शुरू होने वाली लाइन कॉपी करें, नीचे बॉक्स में चिपकाएँ, फिर कुंजी सहेजें दबाएँ।","Máy này chưa khai khóa AI riêng — đang dùng khóa chung của công ty, khóa đó sắp tắt. Vào thẻ việc “Cài đặt AI quét ảnh” để khai khóa của bạn.":"इस डिवाइस पर अपनी AI कुंजी नहीं है — यह कंपनी की साझा कुंजी उपयोग कर रहा है, जो जल्द बंद होगी। अपनी कुंजी डालने हेतु “AI फ़ोटो-स्कैन सेटिंग” कार्ड खोलें।","chưa khai khóa":"कोई कुंजी नहीं"});
+/* Bo sung 25/09/2026 (dot 23b) — gop hai cho noi ve 'lay khoa o dau'. */
+Object.assign(TXT.en,{"Khóa miễn phí nên có giới hạn lượt mỗi ngày. Đây cũng chính là khóa dùng cho mục Báo cáo AI — khai một lần là cả hai chỗ đều chạy.":"The free key has a daily quota. It is also the same key used for AI Reports — enter it once and both places work.","Xóa khóa AI khỏi máy này? Việc quét ảnh sẽ tạm chạy bằng khóa chung của công ty, mà khóa chung sắp tắt.":"Remove the AI key from this device? Photo scanning will fall back to the shared company key for now, and that key is being switched off soon."});
+Object.assign(TXT.hi,{"Khóa miễn phí nên có giới hạn lượt mỗi ngày. Đây cũng chính là khóa dùng cho mục Báo cáo AI — khai một lần là cả hai chỗ đều chạy.":"निःशुल्क कुंजी की दैनिक सीमा होती है। यही कुंजी AI रिपोर्ट के लिए भी है — एक बार डालें, दोनों जगह चलेगी।","Xóa khóa AI khỏi máy này? Việc quét ảnh sẽ tạm chạy bằng khóa chung của công ty, mà khóa chung sắp tắt.":"इस डिवाइस से AI कुंजी हटाएँ? फ़ोटो स्कैन फ़िलहाल कंपनी की साझा कुंजी पर चलेगा, और वह कुंजी जल्द बंद होगी।"});
 const TXT_RE_BS=[{re:new RegExp("^▾ Xem thêm ([\\d.,]+) \\(còn ([\\d.,]+)\\)$"),en:"▾ Show $1 more ($2 left)",hi:"▾ $1 और दिखाएँ ($2 शेष)"},{re:new RegExp("^Ca sáng · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"Morning shift · $1 · handed over by $2 · received by $3",hi:"सुबह की शिफ़्ट · $1 · $2 द्वारा सौंपा · $3 द्वारा प्राप्त"},{re:new RegExp("^Ca sáng · ([0-9/-]+) · giao bởi (.+)$"),en:"Morning shift · $1 · handed over by $2",hi:"सुबह की शिफ़्ट · $1 · $2 द्वारा सौंपा"},{re:new RegExp("^Ca chiều · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"Afternoon shift · $1 · handed over by $2 · received by $3",hi:"दोपहर की शिफ़्ट · $1 · $2 द्वारा सौंपा · $3 द्वारा प्राप्त"},{re:new RegExp("^Ca chiều · ([0-9/-]+) · giao bởi (.+)$"),en:"Afternoon shift · $1 · handed over by $2",hi:"दोपहर की शिफ़्ट · $1 · $2 द्वारा सौंपा"},{re:new RegExp("^Ca tối · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"Night shift · $1 · handed over by $2 · received by $3",hi:"रात की शिफ़्ट · $1 · $2 द्वारा सौंपा · $3 द्वारा प्राप्त"},{re:new RegExp("^Ca tối · ([0-9/-]+) · giao bởi (.+)$"),en:"Night shift · $1 · handed over by $2",hi:"रात की शिफ़्ट · $1 · $2 द्वारा सौंपा"},{re:new RegExp("^Chốt tồn tháng (\\d{2}/\\d{4}) \\(kế toán\\)$"),en:"Month-end stock close $1 (accounting)",hi:"माह-अंत स्टॉक समापन $1 (लेखा)"},{re:new RegExp("^Phiếu kiểm kê (.+) \\(kỳ (\\d{2}/\\d{4})\\)$"),en:"Count sheet $1 (period $2)",hi:"गणना पर्ची $1 (अवधि $2)"},{re:new RegExp("^(.+) · Sloc ([0-9]+) · gửi bởi (.+) lúc (.+)$"),en:"$1 · Sloc $2 · submitted by $3 at $4",hi:"$1 · Sloc $2 · $3 द्वारा $4 पर भेजा गया"},{re:new RegExp("^(.+) · Sloc ([0-9]+) · Chốt từ (.*) · (.*) · Người chốt (.*)$"),en:"$1 · Sloc $2 · closed from $3 · $4 · closed by $5",hi:"$1 · Sloc $2 · $3 से बंद · $4 · $5 द्वारा बंद"},{re:new RegExp("^(.+) · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"$1 · $2 · handed over by $3 · received by $4",hi:"$1 · $2 · $3 द्वारा सौंपा · $4 द्वारा प्राप्त"},{re:new RegExp("^(.+) · ([0-9/-]+) · giao bởi (.+)$"),en:"$1 · $2 · handed over by $3",hi:"$1 · $2 · $3 द्वारा सौंपा"},{re:new RegExp("^✏️ Phiếu này đã đếm bổ sung ([\\d.,]+) lần — bấm để xem đã sửa gì$"),en:"✏️ This sheet has been edited $1 times — tap to see what changed",hi:"✏️ यह पर्ची $1 बार संपादित हुई — क्या बदला देखने हेतु टैप करें",n:1,en1:"✏️ This sheet has been edited once — tap to see what changed",hi1:"✏️ यह पर्ची एक बार संपादित हुई — क्या बदला देखने हेतु टैप करें"},{re:new RegExp("^📋 Bảng kiểm đếm thực tế · ([\\d.,]+) mã$"),en:"📋 Actual count table · $1 items",hi:"📋 वास्तविक गणना तालिका · $1 वस्तुएँ",n:1,en1:"📋 Actual count table · $1 item",hi1:"📋 वास्तविक गणना तालिका · $1 वस्तु"},{re:new RegExp("^Tạo bởi (.+) · (.+) · (.+)$"),en:"Created by $1 · $2 · $3",hi:"$1 द्वारा बनाया · $2 · $3"},{re:new RegExp("^([\\d.,]+)/([\\d.,]+) điểm bán$"),en:"$1/$2 outlets",hi:"$1/$2 आउटलेट"},{re:new RegExp("^còn ([\\d.,]+)$"),en:"$1 left",hi:"$1 शेष"},{re:new RegExp("^🔔 Đã tự nhắc ([\\d.,]+) điểm bán$"),en:"🔔 Auto-reminded $1 outlets",hi:"🔔 $1 आउटलेट को स्वतः याद दिलाया"},{re:new RegExp("^📋 Xem bảng xếp hạng chi tiết \\(([\\d.,]+) bộ phận\\)$"),en:"📋 See the full ranking ($1 departments)",hi:"📋 पूरी रैंकिंग देखें ($1 विभाग)"},{re:new RegExp("^🔒 Tháng (\\d{2}/\\d{4}) đã khóa$"),en:"🔒 Month $1 is locked",hi:"🔒 माह $1 बंद है"},{re:new RegExp("^đã được kế toán duyệt cho tháng (\\d{2}/\\d{4})\\. Không thể chỉnh sửa\\. Kỳ mới sẽ mở vào tháng sau\\.$"),en:"has been approved by accounting for month $1. It can no longer be edited. The next period opens next month.",hi:"लेखा द्वारा माह $1 हेतु स्वीकृत। अब संपादित नहीं किया जा सकता। अगली अवधि अगले माह खुलेगी।"},{re:new RegExp("^Đã bỏ từ chối (.+) — phiếu quay lại chờ duyệt$"),en:"Rejection of $1 undone — the request is back to awaiting approval",hi:"$1 की अस्वीकृति रद्द — पर्ची फिर से स्वीकृति की प्रतीक्षा में"},{re:new RegExp("^Phiếu này từng bị từ chối \\(lý do: (.+)\\) và đã được quản trị viên mở lại\\. Xem kỹ trước khi duyệt\\.$"),en:"This request was rejected before (reason: $1) and an administrator reopened it. Check it carefully before approving.",hi:"यह पर्ची पहले अस्वीकृत हुई थी (कारण: $1) और प्रशासक ने इसे फिर खोला। स्वीकृत करने से पहले ध्यान से देखें।"},{re:new RegExp("^(.+) đã duyệt phiếu (.+) · chuyển cho (.+) · ([\\d.,]+) mã · lúc (.+)$"),en:"$1 approved request $2 · sent to $3 · $4 items · at $5",hi:"$1 ने पर्ची $2 स्वीकृत की · $3 को भेजा · $4 वस्तुएँ · $5 बजे",n:4,en1:"$1 approved request $2 · sent to $3 · $4 item · at $5",hi1:"$1 ने पर्ची $2 स्वीकृत की · $3 को भेजा · $4 वस्तु · $5 बजे"},{re:new RegExp("^([\\d.,]+) loại lý do$"),en:"$1 kinds of reason",hi:"$1 प्रकार के कारण",n:1,en1:"$1 kind of reason",hi1:"$1 प्रकार का कारण"},{re:new RegExp("^([\\d.,]+) phiếu$"),en:"$1 requests",hi:"$1 पर्चियाँ",n:1,en1:"$1 request",hi1:"$1 पर्ची"},{re:new RegExp("^([\\d.,]+) dòng$"),en:"$1 lines",hi:"$1 पंक्तियाँ",n:1,en1:"$1 line",hi1:"$1 पंक्ति"}];
 const TXT_RE=[
   {re:new RegExp("^Tháng (\\d{2}/\\d{4}) \\(hiện tại\\)$"),en:"Month $1 (current)",hi:"माह $1 (वर्तमान)"},
@@ -6599,7 +6605,8 @@ function renderDieuchuyen(v){
   ];
   acts.push({k:'ai',ico:HIC.warn,title:'Cài đặt AI quét ảnh',
     sub:'Khai khóa AI của riêng bạn để quét ảnh phiếu xuất kho tổng — lưu tại máy bạn',
-    n:((getCfg().gemini||'').trim()?'đã có khóa':''),render:nkCaiDatAI});
+    n:((getCfg().gemini||'').trim()?'đã có khóa':'chưa khai khóa'),
+    warm:!((getCfg().gemini||'').trim()),render:nkCaiDatAI});
   // Nạp Excel điều chuyển: chỉ kế toán/admin — các vai còn lại gõ tay trên danh sách có sẵn
   if(isPrivileged())acts.push({k:'xls',ico:HIC.sheet,title:'Nạp Excel điều chuyển',sub:'File SharePoint — ghi nhận việc đã xảy ra, vào thẳng sổ',render:dcNapExcel});
   renderHubView(v,'dieuchuyen',acts);
@@ -6613,11 +6620,30 @@ function nkCaiDatAI(v){
   const daCo=!!(cfg.gemini||'').trim();
   const card=el('div','card');const b=el('div','card-b');
   b.innerHTML='<div class="section-eyebrow">🤖 Cài đặt AI quét ảnh</div>';
+  /* Chữ để trong MỘT text node sạch (không <b>) cho dịch được — quy tắc i18n. */
   const n1=el('div','note');const i1=el('div');i1.style.minWidth='0';
-  i1.innerHTML='Khóa này để máy <b>đọc ảnh phiếu xuất của kho tổng</b> thành danh sách mã hàng, '
-    +'khỏi gõ tay. Khóa <b>chỉ lưu trên máy bạn</b>, không đẩy lên máy chủ và không ai khác thấy. '
-    +'Bỏ trống thì app dùng khóa chung của công ty — hết lượt trong ngày thì khai khóa riêng ở đây.';
+  i1.textContent='Khóa này để máy đọc ảnh phiếu xuất của kho tổng thành danh sách mã hàng, khỏi gõ tay. Mỗi người khai khóa của riêng mình — khóa chỉ lưu trên máy bạn, không đẩy lên máy chủ và không ai khác nhìn thấy.';
   n1.appendChild(i1);b.appendChild(n1);
+  /* Chưa khai khóa thì nhắc, và nói rõ khóa chung sắp tắt (Khoa chốt 25/09/2026:
+     đổi chữ trước, gỡ biến khóa chung trên Vercel sau khi BP kịp khai). */
+  if(!daCo){
+    const n2=el('div','note');const i2=el('div');i2.style.minWidth='0';
+    i2.style.color='var(--accent-ink)';i2.style.fontWeight='700';
+    i2.textContent='Máy này chưa khai khóa. App còn chạy tạm bằng khóa chung của công ty, nhưng khóa chung sắp tắt — khai khóa riêng ngay để lúc nhập hàng khỏi gián đoạn.';
+    n2.appendChild(i2);b.appendChild(n2);
+  }
+  /* Rào lớn nhất với BP không phải ô nhập mà là KHÔNG BIẾT LẤY KHÓA Ở ĐÂU. */
+  {
+    const d=document.createElement('details');d.style.cssText='margin:2px 0 10px';
+    const sm=document.createElement('summary');
+    sm.style.cssText='cursor:pointer;font-weight:700;font-size:13px;color:var(--brand-ink)';
+    sm.textContent='Lấy khóa ở đâu? Miễn phí, làm một lần khoảng một phút';
+    d.appendChild(sm);
+    const ol=el('div');ol.style.cssText='font-size:12.5px;color:var(--muted);line-height:1.8;margin:8px 0 0 2px';
+    ['1. Mở trang aistudio.google.com/apikey trên trình duyệt.','2. Đăng nhập bằng Gmail của bạn.','3. Bấm "Create API key" (Tạo khóa), chọn project nào cũng được.','4. Sao chép dãy bắt đầu bằng AIza… rồi dán vào ô bên dưới, bấm Lưu khóa.'].forEach(function(t){
+      const r=el('div');r.textContent=t;ol.appendChild(r);});
+    d.appendChild(ol);b.appendChild(d);
+  }
 
   const f=el('label','field','<span>Khóa Gemini API</span>');
   const i=el('input','input');i.type='password';i.autocomplete='off';
@@ -6657,14 +6683,15 @@ function nkCaiDatAI(v){
     }finally{bThu.disabled=false;}
   };
   bXoa.onclick=()=>{
-    if(!confirm('Xóa khóa AI khỏi máy này? Sau đó việc quét ảnh sẽ dùng khóa chung của công ty.'))return;
+    if(!confirm('Xóa khóa AI khỏi máy này? Việc quét ảnh sẽ tạm chạy bằng khóa chung của công ty, mà khóa chung sắp tắt.'))return;
     const c=getCfg();delete c.gemini;setCfg(c);toast('Đã xóa khóa khỏi máy này');renderView();
   };
 
-  const n2=el('div','note');const i2=el('div');i2.style.minWidth='0';
-  i2.innerHTML='<b>Lấy khóa ở đâu:</b> vào <b>aistudio.google.com</b> → <i>Get API key</i> → tạo khóa mới rồi dán vào đây. '
-    +'Khóa miễn phí có giới hạn lượt mỗi ngày. Đây cũng chính là khóa dùng cho mục <b>Báo cáo AI</b> — khai một lần là cả hai chỗ đều chạy.';
-  n2.appendChild(i2);b.appendChild(n2);
+  /* Phần "lấy khóa ở đâu" đã chuyển lên khối 4 bước phía trên ô nhập — ở đây chỉ
+     còn điều mà khối kia không nói: khóa miễn phí có hạn lượt, và dùng chung với Báo cáo AI. */
+  const n3=el('div','note');const i3=el('div');i3.style.minWidth='0';
+  i3.textContent='Khóa miễn phí nên có giới hạn lượt mỗi ngày. Đây cũng chính là khóa dùng cho mục Báo cáo AI — khai một lần là cả hai chỗ đều chạy.';
+  n3.appendChild(i3);b.appendChild(n3);
   card.appendChild(b);v.appendChild(card);
 }
 function dcXemLai(v){
@@ -7722,6 +7749,13 @@ function dcNhapKho(v){
   const pickBtn=el('button','btn btn-brand','📷 Chọn / chụp ảnh biên bản');
   const statusEl=el('div');statusEl.style.cssText='font-size:12.5px;margin-top:8px';
   const prevWrap=el('div');prevWrap.style.marginTop='10px';
+  /* Nhắc ngay chỗ người ta sắp bấm quét, chứ không chỉ nằm trong thẻ cài đặt. */
+  if(!((getCfg().gemini||'').trim())){
+    const _nk=el('div','note');const _ni=el('div');_ni.style.minWidth='0';
+    _ni.style.color='var(--accent-ink)';_ni.style.fontWeight='700';
+    _ni.textContent='Máy này chưa khai khóa AI riêng — đang dùng khóa chung của công ty, khóa đó sắp tắt. Vào thẻ việc “Cài đặt AI quét ảnh” để khai khóa của bạn.';
+    _nk.appendChild(_ni);_nk.style.margin='0 0 10px';scanWrap.appendChild(_nk);
+  }
   scanWrap.appendChild(pickBtn);scanWrap.appendChild(fileIn);scanWrap.appendChild(statusEl);scanWrap.appendChild(prevWrap);
   b.appendChild(scanWrap);
   pickBtn.onclick=()=>fileIn.click();
