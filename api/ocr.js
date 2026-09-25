@@ -57,7 +57,7 @@ module.exports = async (req, res) => {
     const userKey = String(body?.key || '').trim();
     const keys = (userKey && userKey.length < 200 ? [userKey] : []).concat(AI_KEYS);
     if (!keys.length) {
-      res.status(400).json({ error: 'Chưa có khóa AI — vào "Cài đặt AI quét ảnh" trong tab Nhập kho & ĐC để nhập khóa của bạn' });
+      res.status(400).json({ error: 'Chưa có khóa AI trên máy này — vào "Cài đặt AI quét ảnh" ở tab Nhập kho & ĐC, dán khóa rồi bấm Lưu khóa (khóa lưu riêng từng máy)' });
       return;
     }
     const images = Array.isArray(body?.images) ? body.images : (body?.image ? [body.image] : []);
