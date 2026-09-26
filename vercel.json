@@ -1,5 +1,13 @@
 {
   "rewrites": [
-    { "source": "/sb/:path*", "destination": "https://jygrdbuwveitrlfuwigs.supabase.co/:path*" }
-  ]
+    {
+      "source": "/sb/:path*",
+      "destination": "https://jygrdbuwveitrlfuwigs.supabase.co/:path*"
+    }
+  ],
+  "functions": {
+    "api/*.js": {
+      "maxDuration": 60
+    }
+  }
 }

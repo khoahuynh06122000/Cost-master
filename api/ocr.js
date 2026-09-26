@@ -81,12 +81,21 @@ module.exports = async (req, res) => {
 
     // Thử tổ hợp (model × key). Lỗi tạm thời/quá tải (429,500,502,503,quota,overload) -> thử tổ hợp kế.
     // 503 (quá tải) ở tổ hợp cuối -> chờ ngắn rồi thử lại 1 lần nữa.
+    // Ngân sách thời gian: Gemini đọc ảnh bảng mất 8-20s/lượt, mà vòng thử là
+    // (số model x số key). Hết ngân sách thì DỪNG và nói rõ, để người dùng nhận được
+    // câu trả lời thay vì bị Vercel cắt giữa chừng (lúc đó client chỉ thấy "Lỗi 504").
+    const T0 = Date.now(), NGAN_SACH = 45000;
     let j = null, lastStatus = 0, lastDetail = '', retried503 = false;
     const attempts = [];
     for (const model of MODELS) for (let i = 0; i < keys.length; i++) attempts.push({ model, key: keys[i], ki: i });
 
     for (let a = 0; a < attempts.length; a++) {
       const { model, key, ki } = attempts[a];
+      if (a > 0 && Date.now() - T0 > NGAN_SACH) {
+        res.status(504).json({ error: 'Đọc ảnh quá lâu — thử lại với ít ảnh hơn',
+          detail: `het ngan sach ${Math.round((Date.now() - T0) / 1000)}s sau ${a} luot · ${lastDetail}` });
+        return;
+      }
       const r = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
         { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: reqBody }
