@@ -1087,7 +1087,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='3009-05';
+const APP_VER='3009-06';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -8333,7 +8333,9 @@ async function deliverBienBan(s,blob,filename){
   return false;
 }
 /* byZone=true -> tach cot theo tieu kho dung mau cong ty:
-   TT | Ten hang | DVT | Bao cao | <Kho> <Starbuck> <Ve> <Vuon> | Ghi chu */
+   TT | Ma vat tu | Ten hang | DVT | Bao cao | <Kho> <Starbuck> <Ve> <Vuon> | Ghi chu
+   Cot "Ma vat tu" them 30/09/2026 (Khoa) — de doi chieu thang voi SAP, ten hang
+   viet moi noi mot kieu con ma thi khong. */
 function exportBBKK(s,byZone){
   const esc=t=>String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const wh=whName(s.plant,s.sloc);
@@ -8344,14 +8346,17 @@ function exportBBKK(s,byZone){
     .sort((a,b)=>a.name.localeCompare(b.name,'vi'));
   const C='style="border:1px solid #000;padding:3px 6px;font-family:\'Times New Roman\';font-size:12pt;"';
   const Cc='style="border:1px solid #000;padding:3px 6px;font-family:\'Times New Roman\';font-size:12pt;text-align:center;"';
+  /* Ma vat tu phai la CHU trong Excel: de mac dinh thi ma dai / ma co so 0 dau
+     bi Excel cat hoac doi sang dang khoa hoc, dan nguoc vao SAP la sai ma. */
+  const Cm='style="border:1px solid #000;padding:3px 6px;font-family:\'Times New Roman\';font-size:12pt;text-align:center;mso-number-format:\'\\@\';"';
   // Tach cot theo tieu kho khi phieu co chi tiet (mau cong ty: Kho | Starbuck | Ve | Vuon)
   const zList=(byZone&&s.zones&&s.zones.length)?s.zones.map(z=>z.name):[];
-  const NC=6+zList.length;                       // so cot cua bang
+  const NC=7+zList.length;                       // so cot cua bang (da co cot Ma vat tu)
   const zQty=(z,code)=>{const o=s.zones.find(x=>x.name===z);const v=o&&o.items?o.items[code]:null;return v==null?'':v;};
   let body='';
   rows.forEach((r,i)=>{
     const zc=zList.map(z=>`<td ${Cc}>${zQty(z,r.code)}</td>`).join('');
-    body+=`<tr><td ${Cc}>${i+1}</td><td ${C}>${esc(r.name)}</td><td ${Cc}>${esc(r.uom)}</td><td ${Cc}></td>${zc}<td ${Cc}>${r.qty}</td><td ${C}></td></tr>`; });
+    body+=`<tr><td ${Cc}>${i+1}</td><td ${Cm}>${esc(r.code)}</td><td ${C}>${esc(r.name)}</td><td ${Cc}>${esc(r.uom)}</td><td ${Cc}></td>${zc}<td ${Cc}>${r.qty}</td><td ${C}></td></tr>`; });
   for(let k=0;k<3;k++){ body+='<tr>'+`<td ${Cc} style="height:24px;border:1px solid #000">&nbsp;</td>`+new Array(NC-1).fill(`<td ${C}></td>`).join('')+'</tr>'; }
   const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
 <head><meta charset="UTF-8"><style>td{font-family:'Times New Roman';font-size:12pt;vertical-align:top} @page{margin:1cm}</style></head>
@@ -8371,7 +8376,7 @@ function exportBBKK(s,byZone){
 </table>
 <table style="width:100%;border-collapse:collapse">
 <tr>
-  <td ${Cc}><b>TT</b></td><td ${Cc}><b>Tên hàng</b></td><td ${Cc}><b>ĐVT</b></td>
+  <td ${Cc}><b>TT</b></td><td ${Cc}><b>Mã vật tư</b></td><td ${Cc}><b>Tên hàng</b></td><td ${Cc}><b>ĐVT</b></td>
   <td ${Cc}><b>Báo cáo</b></td>${zList.map(z=>`<td ${Cc}><b>${esc(z)}</b></td>`).join('')}<td ${Cc}><b>${zList.length?'Cộng':'Số lượng kiểm kê'}</b></td><td ${Cc}><b>Ghi chú</b></td>
 </tr>
 ${body}
