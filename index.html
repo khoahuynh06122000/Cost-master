@@ -1087,7 +1087,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='3009-01';
+const APP_VER='3009-03';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -4674,7 +4674,16 @@ function templateRowsFor(plant,sloc,period,tuan){
       .sort((a,b)=>(a[1]||'').localeCompare(b[1]||'','vi'));
   }
   if(cl&&cl.items)rows=Object.keys(cl.items).map(c=>[c,cl.items[c].name||'',cl.items[c].uom||'']);
-  else if((plantMaterials[plant]||[]).length)rows=(plantMaterials[plant]||[]).map(c=>{const m=masterByCode[c]||{};return [c,m.name||'',m.uom||''];});
+  else if((plantMaterials[plant]||[]).length){
+    /* Danh mục khóa theo ĐIỂM BÁN (đợt 28) -> file mẫu của bếp trước đây kèm luôn
+       hàng của nhà hàng. Kho nào đã có dấu vết riêng thì chỉ xuất mã của kho đó;
+       kho mới tinh thì vẫn xuất cả rổ, thà thừa còn hơn đưa BP một file trống.
+       Thiếu mã vẫn không kẹt: BP thêm dòng vào file, lúc nạp lên app vẫn nhận. */
+    let ds=(plantMaterials[plant]||[]);
+    const _ck=maCuaKhoNay(plant,sloc);
+    if(khoCuaDiemBan(plant)>1&&ds.some(c=>_ck.has(c)))ds=ds.filter(c=>_ck.has(c));
+    rows=ds.map(c=>{const m=masterByCode[c]||{};return [c,m.name||'',m.uom||''];});
+  }
   else{const op=(openingStock[plant+'|'+sloc]||{}).items||{};rows=Object.keys(op).map(c=>{const m=masterByCode[c]||{};return [c,m.name||'',m.uom||''];});}
   return rows.sort((a,b)=>(a[1]||'').localeCompare(b[1]||'','vi'));
 }
@@ -7749,13 +7758,25 @@ function dcNhapKho(v){
     const daCo=new Set();
     const hay=Object.keys(dem).filter(c=>masterByCode[c])
       .sort((a,b2)=>dem[b2]-dem[a]).map(c=>{daCo.add(c);return masterByCode[c];});
-    const kho=(plantMaterials[plant]||[]).filter(c=>masterByCode[c]&&!daCo.has(c))
-      .map(c=>{daCo.add(c);return masterByCode[c];})
+    /* Danh mục khóa theo ĐIỂM BÁN chứ không theo kho (xem đợt 28), nên nhóm này
+       trước đây dán nhãn "Danh mục <tên kho>" mà nội dung lại là mã của cả điểm bán
+       — nhãn nói sai. Tách làm hai: đúng mã của kho này, rồi mới tới mã đi mượn. */
+    const _cuaKho=maCuaKhoNay(plant,sloc);
+    const _conLai=(plantMaterials[plant]||[]).filter(c=>masterByCode[c]&&!daCo.has(c));
+    /* Dieu kien dung la "KHO NAY co dau vet rieng", KHONG phai "phan con lai co ma
+       cua kho" — nhom "Hay nhap o kho nay" o tren da vet het ma bep roi nen phan con
+       lai duong nhien khong con ma nao cua kho, va nhanh tach khong bao gio bat.
+       Nhom nao rong thi vePick() tu bo qua (if(!ds.length)return). */
+    const _tach=khoCuaDiemBan(plant)>1&&_cuaKho.size>0;
+    const sx=(arr)=>arr.map(c=>{daCo.add(c);return masterByCode[c];})
       .sort((a,b2)=>(a.name||'').localeCompare(b2.name||'','vi'));
+    const kho=sx(_tach?_conLai.filter(c=>_cuaKho.has(c)):_conLai);
+    const khac=_tach?sx(_conLai.filter(c=>!_cuaKho.has(c))):[];
     const mst=DATA.materials.filter(m=>m&&m.code&&!daCo.has(m.code))
       .sort((a,b2)=>(a.name||'').localeCompare(b2.name||'','vi'));
     return [{t:'Hay nhập ở kho này',ds:hay},
             {t:'Danh mục '+whName(plant,sloc),ds:kho},
+            {t:'Mã khác của điểm bán',ds:khac},
             {t:'Master data — kho này chưa có mã',ds:mst,ngoai:true}];
   }
   function vePick(){
