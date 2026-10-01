@@ -869,6 +869,19 @@
     .sb-user .sb-acts{gap:6px}
     .sb-user .sb-acts button{padding:10px}
   }
+  /* Hàng Ngày + Ghi chú của dòng đếm — CHỈ kho bếp (01/10/2026).
+     Phải nằm trên MỘT DÒNG RIÊNG: .item là flex, nhét thêm ô vào hàng ngang thì
+     ô số bị bóp lại. Khối này đặt cuối <style> cho chắc thứ tự đè. */
+  .item-xtra{flex:1 0 100%;order:9;display:flex;align-items:center;gap:8px;margin-top:9px;flex-wrap:wrap}
+  .item.has-xtra{flex-wrap:wrap}
+  .item-xtra .xi-lb{font-size:11.5px;color:var(--muted);font-weight:700;flex:none}
+  .item-xtra .xi-date{flex:0 0 auto;width:min(168px,100%);height:40px}
+  .item-xtra .xi-note{flex:1 1 150px;min-width:0;height:40px}
+  @media (max-width:640px){
+    .item-xtra{margin-top:10px}
+    .item-xtra .xi-date,.item-xtra .xi-note{height:44px}
+    .item-xtra .xi-note{flex:1 1 100%}
+  }
 </style>
 <script>try{if(localStorage.getItem('appDark')==='1')document.documentElement.classList.add('dark');}catch(e){}</script>
 </head>
@@ -1087,7 +1100,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='3009-06';
+const APP_VER='0110-01';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1167,6 +1180,9 @@ Object.assign(TXT.hi,{"Nhờ kế toán thêm mã vào Danh mục VT rồi nạp
 /* Bo sung 30/09/2026 (dot 31) — loc so dieu chuyen theo KHO LIEN QUAN. */
 Object.assign(TXT.en,{"Chọn một kho để xem mọi phiếu kho đó chuyển đi hoặc nhận về":"Choose a store to see every request it sends out or receives","🔎 Chọn kho liên quan đến phiếu":"🔎 Choose a store involved in the request","Khu / điểm bán":"Area / outlet","Kho trong khu":"Store in that area","Chọn khu / kho — phiếu nào kho đó chuyển đi hoặc nhận về đều hiện ra.":"Choose an area / store — every request that store sends out or receives will show up.","Phiếu liên quan đến kho này":"Requests involving this store","Kho này cho hàng":"This store gave goods","Kho này nhận hàng":"This store received goods","Điểm bán đối tác (phiếu đã duyệt)":"Counterpart outlets (approved requests)","→ là kho này cho hàng · ← là kho này nhận hàng.":"→ means this store gave the goods · ← means this store received them.","Kho này chưa có phiếu nào được duyệt.":"No request of this store has been approved yet.","Kho này chưa có dòng sổ điều chuyển nào.":"This store has no transfer ledger line yet."});
 Object.assign(TXT.hi,{"Chọn một kho để xem mọi phiếu kho đó chuyển đi hoặc nhận về":"किसी स्टोर को चुनें — उसकी भेजी और पाई हर पर्ची दिखेगी","🔎 Chọn kho liên quan đến phiếu":"🔎 पर्ची से जुड़ा स्टोर चुनें","Khu / điểm bán":"क्षेत्र / आउटलेट","Kho trong khu":"उस क्षेत्र का स्टोर","Chọn khu / kho — phiếu nào kho đó chuyển đi hoặc nhận về đều hiện ra.":"क्षेत्र / स्टोर चुनें — उस स्टोर द्वारा भेजी या प्राप्त की गई हर पर्ची दिखेगी।","Phiếu liên quan đến kho này":"इस स्टोर से जुड़ी पर्चियाँ","Kho này cho hàng":"इस स्टोर ने माल दिया","Kho này nhận hàng":"इस स्टोर ने माल पाया","Điểm bán đối tác (phiếu đã duyệt)":"साझेदार आउटलेट (स्वीकृत पर्चियाँ)","→ là kho này cho hàng · ← là kho này nhận hàng.":"→ यानी इस स्टोर ने माल दिया · ← यानी इस स्टोर ने माल पाया।","Kho này chưa có phiếu nào được duyệt.":"इस स्टोर की अब तक कोई पर्ची स्वीकृत नहीं हुई।","Kho này chưa có dòng sổ điều chuyển nào.":"इस स्टोर की अभी कोई स्थानांतरण बही पंक्ति नहीं है।"});
+/* Bo sung 01/10/2026 (dot 33) — o Ngay + Ghi chu tung ma cho kho bep. */
+Object.assign(TXT.en,{"Ngày":"Date","Ghi chú":"Note","Mỗi dòng có thêm ô Ngày và Ghi chú — điền khi cần, để trống cũng được. Hai ô này không ảnh hưởng số đếm; kế toán xem được khi duyệt phiếu.":"Each line now has a Date and a Note box — fill them in when you need to, leaving them empty is fine. They do not affect the counted figure; accounting can see them when approving the sheet.","Mẫu của bếp có thêm hai cột date và ghi chú ở cuối — điền khi cần, để trống cũng nạp được bình thường.":"The kitchen template has two extra columns, date and note, at the end — fill them in when you need to; leaving them empty still uploads fine.","⚠ Chưa lưu được ngày / ghi chú của từng mã — số kiểm kê vẫn gửi bình thường, tổng vẫn đúng. Báo kế toán để xử lý.":"⚠ The per-item date / note could not be saved — the count itself was sent normally and the totals are correct. Tell accounting to sort it out."});
+Object.assign(TXT.hi,{"Ngày":"तारीख़","Ghi chú":"टिप्पणी","Mỗi dòng có thêm ô Ngày và Ghi chú — điền khi cần, để trống cũng được. Hai ô này không ảnh hưởng số đếm; kế toán xem được khi duyệt phiếu.":"हर पंक्ति में अब तारीख़ और टिप्पणी का खाना है — ज़रूरत हो तो भरें, खाली छोड़ना भी ठीक है। ये गिनती के आँकड़े को नहीं बदलते; पर्ची स्वीकृत करते समय लेखा इन्हें देख सकता है।","Mẫu của bếp có thêm hai cột date và ghi chú ở cuối — điền khi cần, để trống cũng nạp được bình thường.":"रसोई के टेम्पलेट के अंत में दो अतिरिक्त कॉलम हैं, date और ghi chú — ज़रूरत हो तो भरें; खाली छोड़ने पर भी अपलोड ठीक चलता है।","⚠ Chưa lưu được ngày / ghi chú của từng mã — số kiểm kê vẫn gửi bình thường, tổng vẫn đúng. Báo kế toán để xử lý.":"⚠ प्रति-वस्तु तारीख़ / टिप्पणी सहेजी नहीं जा सकी — गिनती सामान्य रूप से भेज दी गई और योग सही हैं। समाधान हेतु लेखा को बताएँ।"});
 const TXT_RE_BS=[{re:new RegExp("^([\\d.,]+) dòng sổ cũ không ghi đủ kho đi / kho đến nên không lọt vào bộ lọc — bỏ chọn kho ở ô trên để xem đủ\\.$"),en:"$1 old ledger lines do not record both the source and the destination store, so they fall outside this filter — clear the store above to see them all.",hi:"$1 पुरानी बही पंक्तियों में भेजने और पाने वाला स्टोर दोनों दर्ज नहीं हैं, इसलिए वे इस फ़िल्टर में नहीं आतीं — सब देखने हेतु ऊपर का स्टोर हटाएँ।",n:1,en1:"$1 old ledger line does not record both the source and the destination store, so it falls outside this filter — clear the store above to see them all.",hi1:"$1 पुरानी बही पंक्ति में भेजने और पाने वाला स्टोर दोनों दर्ज नहीं हैं, इसलिए वह इस फ़िल्टर में नहीं आती — सब देखने हेतु ऊपर का स्टोर हटाएँ।"},{re:new RegExp("^([\\d.,]+) mã trong file chưa có trong danh mục tổng — không nạp$"),en:"$1 codes in the file are not in the item catalogue — not uploaded",hi:"फ़ाइल के $1 कोड वस्तु-सूची में नहीं हैं — अपलोड नहीं हुए",n:1,en1:"$1 code in the file is not in the item catalogue — not uploaded",hi1:"फ़ाइल का $1 कोड वस्तु-सूची में नहीं है — अपलोड नहीं हुआ"},{re:new RegExp("^▾ Xem thêm ([\\d.,]+) mã khác của điểm bán$"),en:"▾ Show $1 more items of the outlet",hi:"▾ आउटलेट की $1 और वस्तुएँ दिखाएँ",n:1,en1:"▾ Show $1 more item of the outlet",hi1:"▾ आउटलेट की $1 और वस्तु दिखाएँ"},{re:new RegExp("^▾ Xem thêm ([\\d.,]+) \\(còn ([\\d.,]+)\\)$"),en:"▾ Show $1 more ($2 left)",hi:"▾ $1 और दिखाएँ ($2 शेष)"},{re:new RegExp("^Ca sáng · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"Morning shift · $1 · handed over by $2 · received by $3",hi:"सुबह की शिफ़्ट · $1 · $2 द्वारा सौंपा · $3 द्वारा प्राप्त"},{re:new RegExp("^Ca sáng · ([0-9/-]+) · giao bởi (.+)$"),en:"Morning shift · $1 · handed over by $2",hi:"सुबह की शिफ़्ट · $1 · $2 द्वारा सौंपा"},{re:new RegExp("^Ca chiều · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"Afternoon shift · $1 · handed over by $2 · received by $3",hi:"दोपहर की शिफ़्ट · $1 · $2 द्वारा सौंपा · $3 द्वारा प्राप्त"},{re:new RegExp("^Ca chiều · ([0-9/-]+) · giao bởi (.+)$"),en:"Afternoon shift · $1 · handed over by $2",hi:"दोपहर की शिफ़्ट · $1 · $2 द्वारा सौंपा"},{re:new RegExp("^Ca tối · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"Night shift · $1 · handed over by $2 · received by $3",hi:"रात की शिफ़्ट · $1 · $2 द्वारा सौंपा · $3 द्वारा प्राप्त"},{re:new RegExp("^Ca tối · ([0-9/-]+) · giao bởi (.+)$"),en:"Night shift · $1 · handed over by $2",hi:"रात की शिफ़्ट · $1 · $2 द्वारा सौंपा"},{re:new RegExp("^Chốt tồn tháng (\\d{2}/\\d{4}) \\(kế toán\\)$"),en:"Month-end stock close $1 (accounting)",hi:"माह-अंत स्टॉक समापन $1 (लेखा)"},{re:new RegExp("^Phiếu kiểm kê (.+) \\(kỳ (\\d{2}/\\d{4})\\)$"),en:"Count sheet $1 (period $2)",hi:"गणना पर्ची $1 (अवधि $2)"},{re:new RegExp("^(.+) · Sloc ([0-9]+) · gửi bởi (.+) lúc (.+)$"),en:"$1 · Sloc $2 · submitted by $3 at $4",hi:"$1 · Sloc $2 · $3 द्वारा $4 पर भेजा गया"},{re:new RegExp("^(.+) · Sloc ([0-9]+) · Chốt từ (.*) · (.*) · Người chốt (.*)$"),en:"$1 · Sloc $2 · closed from $3 · $4 · closed by $5",hi:"$1 · Sloc $2 · $3 से बंद · $4 · $5 द्वारा बंद"},{re:new RegExp("^(.+) · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"$1 · $2 · handed over by $3 · received by $4",hi:"$1 · $2 · $3 द्वारा सौंपा · $4 द्वारा प्राप्त"},{re:new RegExp("^(.+) · ([0-9/-]+) · giao bởi (.+)$"),en:"$1 · $2 · handed over by $3",hi:"$1 · $2 · $3 द्वारा सौंपा"},{re:new RegExp("^✏️ Phiếu này đã đếm bổ sung ([\\d.,]+) lần — bấm để xem đã sửa gì$"),en:"✏️ This sheet has been edited $1 times — tap to see what changed",hi:"✏️ यह पर्ची $1 बार संपादित हुई — क्या बदला देखने हेतु टैप करें",n:1,en1:"✏️ This sheet has been edited once — tap to see what changed",hi1:"✏️ यह पर्ची एक बार संपादित हुई — क्या बदला देखने हेतु टैप करें"},{re:new RegExp("^📋 Bảng kiểm đếm thực tế · ([\\d.,]+) mã$"),en:"📋 Actual count table · $1 items",hi:"📋 वास्तविक गणना तालिका · $1 वस्तुएँ",n:1,en1:"📋 Actual count table · $1 item",hi1:"📋 वास्तविक गणना तालिका · $1 वस्तु"},{re:new RegExp("^Tạo bởi (.+) · (.+) · (.+)$"),en:"Created by $1 · $2 · $3",hi:"$1 द्वारा बनाया · $2 · $3"},{re:new RegExp("^([\\d.,]+)/([\\d.,]+) điểm bán$"),en:"$1/$2 outlets",hi:"$1/$2 आउटलेट"},{re:new RegExp("^còn ([\\d.,]+)$"),en:"$1 left",hi:"$1 शेष"},{re:new RegExp("^🔔 Đã tự nhắc ([\\d.,]+) điểm bán$"),en:"🔔 Auto-reminded $1 outlets",hi:"🔔 $1 आउटलेट को स्वतः याद दिलाया"},{re:new RegExp("^📋 Xem bảng xếp hạng chi tiết \\(([\\d.,]+) bộ phận\\)$"),en:"📋 See the full ranking ($1 departments)",hi:"📋 पूरी रैंकिंग देखें ($1 विभाग)"},{re:new RegExp("^🔒 Tháng (\\d{2}/\\d{4}) đã khóa$"),en:"🔒 Month $1 is locked",hi:"🔒 माह $1 बंद है"},{re:new RegExp("^đã được kế toán duyệt cho tháng (\\d{2}/\\d{4})\\. Không thể chỉnh sửa\\. Kỳ mới sẽ mở vào tháng sau\\.$"),en:"has been approved by accounting for month $1. It can no longer be edited. The next period opens next month.",hi:"लेखा द्वारा माह $1 हेतु स्वीकृत। अब संपादित नहीं किया जा सकता। अगली अवधि अगले माह खुलेगी।"},{re:new RegExp("^Đã bỏ từ chối (.+) — phiếu quay lại chờ duyệt$"),en:"Rejection of $1 undone — the request is back to awaiting approval",hi:"$1 की अस्वीकृति रद्द — पर्ची फिर से स्वीकृति की प्रतीक्षा में"},{re:new RegExp("^Phiếu này từng bị từ chối \\(lý do: (.+)\\) và đã được quản trị viên mở lại\\. Xem kỹ trước khi duyệt\\.$"),en:"This request was rejected before (reason: $1) and an administrator reopened it. Check it carefully before approving.",hi:"यह पर्ची पहले अस्वीकृत हुई थी (कारण: $1) और प्रशासक ने इसे फिर खोला। स्वीकृत करने से पहले ध्यान से देखें।"},{re:new RegExp("^(.+) đã duyệt phiếu (.+) · chuyển cho (.+) · ([\\d.,]+) mã · lúc (.+)$"),en:"$1 approved request $2 · sent to $3 · $4 items · at $5",hi:"$1 ने पर्ची $2 स्वीकृत की · $3 को भेजा · $4 वस्तुएँ · $5 बजे",n:4,en1:"$1 approved request $2 · sent to $3 · $4 item · at $5",hi1:"$1 ने पर्ची $2 स्वीकृत की · $3 को भेजा · $4 वस्तु · $5 बजे"},{re:new RegExp("^([\\d.,]+) loại lý do$"),en:"$1 kinds of reason",hi:"$1 प्रकार के कारण",n:1,en1:"$1 kind of reason",hi1:"$1 प्रकार का कारण"},{re:new RegExp("^([\\d.,]+) phiếu$"),en:"$1 requests",hi:"$1 पर्चियाँ",n:1,en1:"$1 request",hi1:"$1 पर्ची"},{re:new RegExp("^([\\d.,]+) dòng$"),en:"$1 lines",hi:"$1 पंक्तियाँ",n:1,en1:"$1 line",hi1:"$1 पंक्ति"}];
 const TXT_RE=[
   {re:new RegExp("^Tháng (\\d{2}/\\d{4}) \\(hiện tại\\)$"),en:"Month $1 (current)",hi:"माह $1 (वर्तमान)"},
@@ -1659,6 +1675,37 @@ function warnZoneCol(){
   if(warnZoneCol._done)return;warnZoneCol._done=true;
   toast('⚠ Chưa lưu được số tách theo từng tiểu kho — phiếu vẫn gửi bình thường, tổng vẫn đúng. Báo kế toán để xử lý.');
 }
+/* BẾP ghi thêm NGÀY + GHI CHÚ cho từng mã lúc đếm (Khoa 01/10/2026).
+   Để ở CỘT RIÊNG `item_notes`, KHÔNG nhét vào `items`: `items` là {mã: số} mà
+   tồn đầu kỳ, Xuất (tính), biên bản và file SAP đều đọc — đổi hình dạng nó là
+   đổi cả dây chuyền. Cột có thể chưa tạo -> cờ y như `zoneColOK`. */
+let noteColOK=true;
+function isMissingNoteCol(err){
+  const m=String((err&&(err.message||err.hint||err.details))||'');
+  return /item_notes/i.test(m)&&/(column|schema cache|does not exist)/i.test(m);
+}
+function warnNoteCol(){
+  if(warnNoteCol._done)return;warnNoteCol._done=true;
+  toast('\u26a0 Chưa lưu được ngày / ghi chú của từng mã — số kiểm kê vẫn gửi bình thường, tổng vẫn đúng. Báo kế toán để xử lý.');
+}
+/* Chỉ giữ ngày/ghi chú của mã THẬT SỰ CÓ SỐ trong phiếu — bỏ số một mã rồi mà
+   ghi chú còn nằm lại thì kế toán đọc phiếu sẽ thấy dòng không có số mà có chú
+   thích, không biết là đếm ra 0 hay bỏ. Cùng lý do với itemsSach(). */
+function metaSach(meta,items){
+  const r={};
+  Object.keys(meta||{}).forEach(c=>{
+    if(!items||items[c]==null)return;
+    const d=String((meta[c]&&meta[c].d)||'').trim(),g=String((meta[c]&&meta[c].g)||'').trim();
+    if(d||g)r[c]={d,g};
+  });
+  return Object.keys(r).length?r:null;
+}
+/* Nguoc lai: tu phieu da gui dung lai nhap de dem bo sung */
+function metaToDraft(o){
+  const r={};
+  Object.keys(o||{}).forEach(c=>{const x=o[c]||{};r[c]={d:String(x.d||''),g:String(x.g||'')};});
+  return r;
+}
 function zonesOf(plant,sloc){const a=countZones[plant+'|'+sloc];return Array.isArray(a)?a:[];}
 function canEditZones(plant){
   if(!session)return false;
@@ -1797,6 +1844,7 @@ async function insSubmissionSafe(sub,imLang){
   for(let i=0;i<20;i++){
     const row={id:sub.id,plant_code:sub.plant,sloc_code:sub.sloc,user_name:sub.user,role:sub.role,status:sub.status,count:sub.count,items:sub.items,period:sub.period};
     if(zoneColOK&&sub.zones&&sub.zones.length)row.zones=sub.zones;   // chi tiet theo tieu kho
+    if(noteColOK&&sub.itemNotes&&Object.keys(sub.itemNotes).length)row.item_notes=sub.itemNotes;   // ngay + ghi chu tung ma (bep)
     tried.push(sub.id);
     let data,error;
     try{const r=await sb.from('submissions').insert(row).select();data=r.data;error=r.error;}
@@ -1812,6 +1860,10 @@ async function insSubmissionSafe(sub,imLang){
     if(isMissingZoneCol(error)&&row.zones!==undefined){
       zoneColOK=false;delete sub.zones;warnZoneCol();
       i--;continue;                     // gui lai ngay, khong kem zones
+    }
+    if(isMissingNoteCol(error)&&row.item_notes!==undefined){
+      noteColOK=false;delete sub.itemNotes;warnNoteCol();
+      i--;continue;                     // gui lai ngay, khong kem ngay/ghi chu
     }
     const msg=String((error&&(error.message||error.code))||'');
     if(/duplicate|pkey|23505|already exists/i.test(msg)){
@@ -3188,7 +3240,8 @@ async function dbLoadAll(){
     // merge mã vật tư mới (do import tồn đầu kỳ thêm) vào danh mục tổng để bền qua các phiên
     (mt.data||[]).forEach(r=>{if(!r||r.code==null)return;const code=String(r.code).trim();if(!code)return;const nm=r.name!=null?String(r.name).trim():'';const um=r.uom!=null?String(r.uom).trim():'';const en=r.name_en!=null?String(r.name_en).trim():'';const ex=masterByCode[code];if(!ex){const m={code,name:nm||code,uom:um};if(en)m.nameEn=en;masterByCode[code]=m;DATA.materials.push(m);}else{if(nm&&(!ex.name||ex.name==='?'||ex.name===code)){ex.name=nm;if(um&&!ex.uom)ex.uom=um;}if(en)ex.nameEn=en;}});
     if(su.data&&su.data.length)zoneColOK=Object.prototype.hasOwnProperty.call(su.data[0],'zones');
-    submissions=(su.data||[]).map(r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,user:r.user_name,role:r.role,status:r.status,count:r.count,items:r.items||{},zones:Array.isArray(r.zones)?r.zones:null,period:r.period||(r.created_at?(new Date(r.created_at).getFullYear()+'-'+String(new Date(r.created_at).getMonth()+1).padStart(2,'0')):''),approvedBy:r.approved_by,approvedAt:r.approved_at?fmt(r.approved_at):null,prevOpening:r.prev_opening||null,edits:r.edits||[],time:fmt(r.created_at)}));
+    if(su.data&&su.data.length)noteColOK=Object.prototype.hasOwnProperty.call(su.data[0],'item_notes');
+    submissions=(su.data||[]).map(r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,user:r.user_name,role:r.role,status:r.status,count:r.count,items:r.items||{},zones:Array.isArray(r.zones)?r.zones:null,itemNotes:r.item_notes||null,period:r.period||(r.created_at?(new Date(r.created_at).getFullYear()+'-'+String(new Date(r.created_at).getMonth()+1).padStart(2,'0')):''),approvedBy:r.approved_by,approvedAt:r.approved_at?fmt(r.approved_at):null,prevOpening:r.prev_opening||null,edits:r.edits||[],time:fmt(r.created_at)}));
     // id của dòng sổ: bắt buộc phải có thì admin mới xóa được ĐÚNG một dòng dư
     // (xóa theo reason+code+period sẽ quét sạch cả dòng đúng lẫn dòng trùng).
     transfers=(tr.data||[]).map(r=>({id:r.id,date:r.date,code:r.code,name:r.name,uom:r.uom,qty:r.qty,from:r.from_wh,to:r.to_wh,fromKey:r.from_key||null,toKey:r.to_key||null,period:r.period||null,reason:r.reason,user:r.user_name,time:fmt(r.created_at)}));
@@ -3227,7 +3280,7 @@ async function dbLoadAll(){
        Kiểm kê tuần báo là chưa dùng được. */
     try{const wk=await sb.from('weekly_counts').select('*').order('created_at',{ascending:false}).limit(600);
       weeklyCounts=(wk.data||[]).map(r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,week:r.week,
-        items:r.items||{},count:r.count||0,by:r.created_by,note:r.note||'',time:fmt(r.created_at)}));
+        items:r.items||{},itemNotes:r.item_notes||null,count:r.count||0,by:r.created_by,note:r.note||'',time:fmt(r.created_at)}));
       wkTblOK=true;
     }catch(e){weeklyCounts=[];wkTblOK=false;console.warn('Chưa có bảng weekly_counts — bỏ qua',e&&e.message);}
     try{const cl2=await sb.from('count_lists').select('*');countLists={};(cl2.data||[]).forEach(r=>{countLists[r.plant_code+'|'+r.sloc_code+'|'+r.period]={items:r.items||{},by:r.created_by,at:r.created_at?fmt(r.created_at):''};});}catch(e){countLists={};console.warn('Chưa có bảng count_lists — bỏ qua',e&&e.message);}
@@ -4643,7 +4696,9 @@ function downloadTemplateXlsx(filename,header,rows){
   try{
     const aoa=[header].concat(rows||[]);
     const ws=XLSX.utils.aoa_to_sheet(aoa);
-    ws['!cols']=header.map((h,i)=>({wch:i===1?42:16}));
+    /* Cột tên hàng mới cần rộng. Trước đây lấy cứng cột số 1 — mẫu của bếp có
+       thêm cột stt ở đầu nên cột số 1 không còn là tên hàng nữa. */
+    ws['!cols']=header.map(h=>({wch:/t[eê]n|name/i.test(String(h))?42:16}));
     const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Mau');
     XLSX.writeFile(wb,filename);
     toast('Đã tải file mẫu: '+filename);
@@ -4717,6 +4772,13 @@ function renderKKUpload(v,fixed){
     b.appendChild(el('div',null,`<div style="margin:2px 0 6px"><span class="badge badge-open">Kho ${whName(fixed.plant,fixed.sloc)} · ${_tuan?tuanLabel(_tuan):('kỳ tháng '+periodVN(fixed.period))}</span></div>`));}
   else{b.appendChild(row);b.appendChild(perF);}
   b.appendChild(el('div','note',`<div><b>Làm 3 bước:</b> ① bấm <b>Tải mẫu</b> bên dưới → ② mở file, điền cột <b>Số lượng</b> (để trống mã nào là mã đó không tính) → ③ bấm <b>Chọn tệp</b> nạp lại lên.</div>`));
+  /* Kho bếp: mẫu có thêm 2 cột. Nói ra ngay chỗ tải mẫu, đừng để BP mở file ra
+     mới thấy hai cột lạ rồi không biết có bắt buộc không. */
+  if(laKhoBep(plantSel.value,slocSel.value)){
+    const _bn2=el('div','note');const _bi2=el('div');_bi2.style.minWidth='0';
+    _bi2.textContent='Mẫu của bếp có thêm hai cột date và ghi chú ở cuối — điền khi cần, để trống cũng nạp được bình thường.';
+    _bn2.appendChild(_bi2);b.appendChild(_bn2);
+  }
   const tplRow=el('div');tplRow.style.cssText='margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap';
   const bTpl=el('button','btn btn-ghost btn-sm','⬇ Tải file mẫu (điền số lượng)');
   const tplHint=el('span');tplHint.style.cssText='font-size:11.5px;color:var(--muted)';
@@ -4737,12 +4799,20 @@ function renderKKUpload(v,fixed){
     else{bTpl.textContent='⬇ Tải file mẫu (điền số lượng)';tplHint.innerHTML='Tải mẫu → điền cột <b>Số lượng</b> → nạp lên';}
   }
   bTpl.onclick=()=>{
-    const rows=templateRowsFor(plantSel.value,slocSel.value,perSel.value,_tuan).map(r=>[r[0],r[1],r[2],'']);
-    if(!rows.length)rows.push(['VD-001','Ví dụ: Nước suối 500ml','CHAI','']);
+    /* Mẫu của BẾP đúng theo file Khoa gửi 01/10/2026: thêm cột stt ở đầu, cột
+       date và ghi chú ở cuối. Kho khác giữ nguyên mẫu 4 cột. */
+    const _bepT=laKhoBep(plantSel.value,slocSel.value);
+    const ds=templateRowsFor(plantSel.value,slocSel.value,perSel.value,_tuan);
+    let rows=_bepT?ds.map((r,i)=>[i+1,r[0],r[1],r[2],'','',''])
+                  :ds.map(r=>[r[0],r[1],r[2],'']);
+    if(!rows.length)rows=[_bepT?[1,'VD-001','Ví dụ: Nước suối 500ml','CHAI','','','']
+                               :['VD-001','Ví dụ: Nước suối 500ml','CHAI','']];
     const ten=_tuan
       ? `Mau_kiem_ke_tuan_${plantSel.value}_${slocSel.value}_${_tuan}.xlsx`
       : `Mau_kiem_ke_${plantSel.value}_${slocSel.value}_${perSel.value}.xlsx`;
-    downloadTemplateXlsx(ten,['Mã hàng','Tên hàng','ĐVT','Số lượng'],rows);
+    downloadTemplateXlsx(ten,
+      _bepT?['stt','Mã hàng','Tên hàng','ĐVT','Số lượng','date','ghi chú']
+           :['Mã hàng','Tên hàng','ĐVT','Số lượng'],rows);
     toast('Đã tải mẫu '+rows.length+' mã — điền cột Số lượng rồi nạp lại lên');
   };
   tplRow.appendChild(bTpl);tplRow.appendChild(tplHint);b.appendChild(tplRow);
@@ -4783,9 +4853,10 @@ function renderKKUpload(v,fixed){
     }
     if(!r.ok){prev.appendChild(el('div','list-hint','Không còn dòng nào nạp được.'));return;}
     const w=el('div','tbl-wrap');w.style.cssText='max-height:320px;overflow:auto';const tbl=el('table');
-    tbl.innerHTML=`<thead><tr><th>Mã hàng</th><th>Tên hàng</th><th>ĐVT</th><th class="num">Số lượng</th></tr></thead>`;
+    const _coMeta=!!(r.meta&&Object.keys(r.meta).length);
+    tbl.innerHTML=`<thead><tr><th>Mã hàng</th><th>Tên hàng</th><th>ĐVT</th><th class="num">Số lượng</th>${_coMeta?'<th>Ngày</th><th>Ghi chú</th>':''}</tr></thead>`;
     const tb=el('tbody');
-    r.preview.forEach(x=>tb.appendChild(el('tr',null,`<td class="tnum">${x.code}${x.isNew?' <span class="badge badge-soft" style="font-size:9px;padding:1px 5px">mới</span>':''}</td><td>${x.name}</td><td><span class="badge badge-uom">${x.uom}</span></td><td class="num cell-strong tnum">${x.qty}</td>`)));
+    r.preview.forEach(x=>tb.appendChild(el('tr',null,`<td class="tnum">${x.code}${x.isNew?' <span class="badge badge-soft" style="font-size:9px;padding:1px 5px">mới</span>':''}</td><td>${x.name}</td><td><span class="badge badge-uom">${x.uom}</span></td><td class="num cell-strong tnum">${x.qty}</td>${_coMeta?('<td class="tnum">'+_esc(x.d||'')+'</td><td>'+_esc(x.g||'')+'</td>'):''}`)));
     tbl.appendChild(tb);w.appendChild(tbl);prev.appendChild(w);
     const brow=el('div');brow.style.cssText='display:flex;gap:10px;margin-top:12px';
     const bOk=el('button','btn btn-primary',_tuan?'💾 Lưu số kiểm tuần':'✓ Tạo phiếu kiểm kê (Chờ duyệt)');
@@ -4822,9 +4893,9 @@ function commitKKUpload(r,period,cb,tuan){
   if(sb&&matArr.length)sb.from('materials').upsert(matArr).then(({error})=>{if(error)console.error('materials',error);afterMat();}); else afterMat();
   /* Kiểm kê tuần: vẫn học mã mới vào danh mục như trên (để lần đếm sau có tên hàng),
      nhưng KHÔNG tạo phiếu — chỉ ghi một bản số tuần. */
-  if(tuan){luuKiemTuan(r.plant,r.sloc,tuan,{...r.items},null).then(()=>{cb&&cb();});return;}
+  if(tuan){luuKiemTuan(r.plant,r.sloc,tuan,{...r.items},null,r.meta).then(()=>{cb&&cb();});return;}
   (async()=>{
-    const sub={id:await nextKKId(r.plant,r.sloc),plant:r.plant,sloc:r.sloc,user:session.name+' (nhập từ Excel)',role:ROLES[session.role].label,time:now(),period:period,status:'Chờ duyệt',items:{...r.items},count:r.ok};
+    const sub={id:await nextKKId(r.plant,r.sloc),plant:r.plant,sloc:r.sloc,user:session.name+' (nhập từ Excel)',role:ROLES[session.role].label,time:now(),period:period,status:'Chờ duyệt',items:{...r.items},itemNotes:metaSach(r.meta,r.items),count:r.ok};
     const okIns=await insSubmissionSafe(sub);
     if(!okIns)return; // insSubmissionSafe đã dựng hộp lỗi chi tiết, không hiện thêm để khỏi che
     submissions.unshift(sub);
@@ -5806,7 +5877,7 @@ function coTheSuaPhieuKK(s){
   return (session&&session.wh?session.wh:[]).some(w=>w.plant===s.plant&&(!w.sloc||w.sloc===s.sloc));
 }
 function moSuaPhieuKK(s){
-  drafts[s.plant+'|'+s.sloc]={items:{...(s.items||{})},zones:zonesToDraft(s.zones)};saveDrafts();
+  drafts[s.plant+'|'+s.sloc]={items:{...(s.items||{})},zones:zonesToDraft(s.zones),meta:metaToDraft(s.itemNotes)};saveDrafts();
   kkSel={plant:s.plant,sloc:s.sloc};kkPeriod=s.period||curPeriod();
   countEditId=s.id;kkMethod='direct';
   counting={plant:s.plant,sloc:s.sloc,period:s.period||curPeriod()};
@@ -5913,7 +5984,7 @@ function procNote(open){
 const NL=String.fromCharCode(10);   // xuống dòng trong hộp thoại confirm
 /* Lưu một lần kiểm tuần. Mỗi kho mỗi tuần MỘT bản: đếm lại tuần đó thì ghi đè,
    đó là hành vi đúng — bếp đếm sót rồi đếm lại không nên đẻ ra hai bản. */
-async function luuKiemTuan(plant,sloc,week,sach,btn){
+async function luuKiemTuan(plant,sloc,week,sach,btn,meta){
   const soMa=Object.keys(sach).length;
   const cu=weeklyCounts.find(x=>x.plant===plant&&x.sloc===sloc&&x.week===week);
   const hoi='LƯU SỐ KIỂM TUẦN'+NL+whName(plant,sloc)+NL+tuanLabel(week)+NL+NL
@@ -5922,13 +5993,22 @@ async function luuKiemTuan(plant,sloc,week,sach,btn){
     +NL+'Số tuần là số nội bộ của bếp: KHÔNG gửi kế toán duyệt, không ảnh hưởng phiếu kiểm kê tháng.';
   if(!confirm(hoi))return;
   const id=ktTuanId(plant,sloc,week);
-  const ban={id:id,plant:plant,sloc:sloc,week:week,items:sach,count:soMa,by:session.name,time:now()};
+  const _gc=metaSach(meta,sach);
+  const ban={id:id,plant:plant,sloc:sloc,week:week,items:sach,itemNotes:_gc,count:soMa,by:session.name,time:now()};
   if(btn){btn.disabled=true;var _c=btn.textContent;btn.textContent='Đang lưu…';}
   let ok=true,vi='';
   if(sb){
     try{
-      const r=await sb.from('weekly_counts').upsert({id:id,plant_code:plant,sloc_code:sloc,week:week,
-        items:sach,count:soMa,created_by:session.name},{onConflict:'id'});
+      const _row={id:id,plant_code:plant,sloc_code:sloc,week:week,
+        items:sach,count:soMa,created_by:session.name};
+      if(noteColOK&&_gc)_row.item_notes=_gc;
+      let r=await sb.from('weekly_counts').upsert(_row,{onConflict:'id'});
+      /* Cột ngày/ghi chú có thể chưa tạo -> bỏ cột rồi lưu lại ngay, số tuần
+         không được mất chỉ vì phần ghi chú. */
+      if(r&&r.error&&isMissingNoteCol(r.error)&&_row.item_notes!==undefined){
+        noteColOK=false;delete _row.item_notes;warnNoteCol();
+        r=await sb.from('weekly_counts').upsert(_row,{onConflict:'id'});
+      }
       if(r&&r.error){ok=false;vi=r.error.message||'';}
     }catch(e){ok=false;vi=(e&&e.message)||'';}
   }
@@ -6078,9 +6158,13 @@ function maCuaKhoNay(plant,sloc){
 function khoCuaDiemBan(plant){return DATA.warehouses.filter(w=>w.plant===plant).length;}
 function renderCountSheet(v){
   const key=draftKey();if(!drafts[key])drafts[key]={items:{}};const items=drafts[key].items;
+  if(!drafts[key].meta)drafts[key].meta={};const meta=drafts[key].meta;
   /* Tồn đầu kỳ để đối chiếu khi đếm: ưu tiên bản chốt của kế toán, chưa có thì lấy
      phiếu kiểm kê kỳ trước (kể cả chưa duyệt) — rule Khoa 18/09/2026. */
   const _laTuan=!!counting.tuan;
+  /* Khoa 01/10/2026: CHỈ kho bếp mới có ô Ngày + Ghi chú từng mã. Kho khác giữ
+     nguyên dòng đếm cũ, không thêm ô nào. */
+  const _laBep=laKhoBep(counting.plant,counting.sloc);
   /* Kiểm kê tuần KHÔNG dùng tồn đầu kỳ tháng để đối chiếu. Thứ bếp cần là "tuần
      trước đếm bao nhiêu"; tồn đầu kỳ là số của phân hệ tháng, kéo theo cả chuyện
      kế toán đã chốt tồn hay chưa — không liên quan gì tới việc đếm tuần. */
@@ -6189,6 +6273,11 @@ function renderCountSheet(v){
   /* Dòng giải thích phải đặt SAU khi tính _chiaNhom — đặt trước là
      "Cannot access before initialization", cú pháp vẫn sạch nên node vm.Script
      báo 0 lỗi (cùng họ với bẫy b2.appendChild / _moved). */
+  if(_laBep){
+    const _bn=el('div','note');const _bi=el('div');_bi.style.minWidth='0';
+    _bi.textContent='Mỗi dòng có thêm ô Ngày và Ghi chú — điền khi cần, để trống cũng được. Hai ô này không ảnh hưởng số đếm; kế toán xem được khi duyệt phiếu.';
+    _bn.appendChild(_bi);nt.appendChild(_bn);
+  }
   if(_chiaNhom){
     const _cn=el('div','note');const _ci=el('div');_ci.style.minWidth='0';
     _ci.textContent='Danh sách ưu tiên mã kho này đang dùng. Mã còn lại của điểm bán nằm ở cuối danh sách và vẫn tìm được bằng ô tìm phía trên.';
@@ -6473,6 +6562,28 @@ function renderCountSheet(v){
       else setLock(has&&!unlocked.has(m.code));
       r.appendChild(box);
       if(hasZones())r.appendChild(split);
+      /* BẾP: ô Ngày + Ghi chú của riêng dòng này. Ghi vào drafts[key].meta, KHÔNG
+         đụng items -> mọi công thức tính số chạy y như cũ. */
+      if(_laBep){
+        r.classList.add('has-xtra');
+        const xt=el('div','item-xtra');
+        const g0=meta[m.code]||{};
+        const iD=el('input','input xi-date');
+        /* Giá trị đọc từ file Excel có thể không phải dạng ngày chuẩn — lúc đó
+           để ô là chữ cho người ta còn thấy và sửa được, đừng nuốt mất. */
+        iD.type=(!g0.d||/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(g0.d))?'date':'text';
+        iD.value=g0.d||'';
+        const iG=el('input','input xi-note');iG.type='text';iG.placeholder='Ghi chú';
+        iG.value=g0.g||'';
+        const ghiMeta=()=>{
+          const d=String(iD.value||'').trim(),g=String(iG.value||'').trim();
+          if(!d&&!g)delete meta[m.code]; else meta[m.code]={d,g};
+          autosaved();saveDraftsSoon();
+        };
+        iD.onchange=ghiMeta;iD.oninput=ghiMeta;iG.oninput=ghiMeta;
+        xt.appendChild(el('span','xi-lb','Ngày'));xt.appendChild(iD);xt.appendChild(iG);
+        r.appendChild(xt);
+      }
       list.appendChild(r);
     });
     /* Mã còn lại của điểm bán: KHÔNG bỏ đi, chỉ thu sau một nút. */
@@ -6522,7 +6633,7 @@ function renderCountSheet(v){
        nên bỏ qua toàn bộ luật của phiếu tháng (mỗi kho một phiếu, khóa kỳ, đếm bổ sung). */
     if(_tuan){
       const sach={};Object.entries(items).forEach(([c,v])=>{if(v!==''&&v!=null)sach[c]=Number(v);});
-      luuKiemTuan(counting.plant,counting.sloc,_tuan,sach,bDone);
+      luuKiemTuan(counting.plant,counting.sloc,_tuan,sach,bDone,meta);
       return;
     }
     const zeros=Object.entries(items).filter(([c,v])=>Number(v)===0).length;
@@ -6570,26 +6681,38 @@ function renderCountSheet(v){
         const ed={at:now(),by:session.name,changes:diff};
         const edits=(editing.edits||[]).concat([ed]);
         const _zs2=zonesForSave(drafts[key],zonesOf(counting.plant,counting.sloc));
-        const patch={items:itemsSach(items),count:n,edits};
+        const _it2=itemsSach(items),_gc2=metaSach(meta,_it2);
+        const patch={items:_it2,count:n,edits};
         if(zoneColOK&&_zs2)patch.zones=_zs2;    // giu chi tiet tieu kho cua ca hai nguoi cung dem
+        if(noteColOK&&_gc2)patch.item_notes=_gc2;   // ngay + ghi chu tung ma (bep)
         // Cot zones co the chua duoc tao -> thu truoc bang duong im lang, thieu cot thi bo di
         if(patch.zones&&sb){
           const {error:e0}=await sb.from('submissions').update(patch).eq('id',editing.id).select();
-          if(e0&&isMissingZoneCol(e0)){zoneColOK=false;delete patch.zones;warnZoneCol();}
+          if(e0&&isMissingNoteCol(e0)){noteColOK=false;delete patch.item_notes;warnNoteCol();}
+          else if(e0&&isMissingZoneCol(e0)){zoneColOK=false;delete patch.zones;warnZoneCol();}
           else if(!e0){editing.items={...patch.items};editing.count=n;editing.edits=edits;if(_zs2)editing.zones=_zs2;
+            editing.itemNotes=patch.item_notes||null;
             log('Đếm bổ sung phiếu kiểm kê',editing.id+' · '+whName(counting.plant,counting.sloc)+' · '+diff.length+' mã đổi');
             delete drafts[key];saveDrafts();counting=null;countEditId=null;
             toast('Đã bổ sung '+diff.length+' mã vào phiếu '+editing.id);renderView();return;}
         }
+        /* Cột item_notes có thể chưa tạo: thử lặng trước, thiếu cột thì bỏ phần
+           ngày/ghi chú rồi ghi lại — số đếm không được mất vì phần ghi chú. */
+        if(patch.item_notes&&sb){
+          const {error:e1}=await sb.from('submissions').update(patch).eq('id',editing.id).select();
+          if(e1&&isMissingNoteCol(e1)){noteColOK=false;delete patch.item_notes;warnNoteCol();}
+        }
         const upd=await dbUpd('submissions',{id:editing.id},patch);
         if(!upd.ok||upd.count===0){saveDrafts();return;}   // dbUpd đã dựng hộp lỗi
         editing.items={...patch.items};editing.count=n;editing.edits=edits;if(_zs2)editing.zones=_zs2;
+        editing.itemNotes=patch.item_notes||null;
         log('Đếm bổ sung phiếu kiểm kê',editing.id+' · '+whName(counting.plant,counting.sloc)+' · '+diff.length+' mã đổi');
         delete drafts[key];saveDrafts();counting=null;countEditId=null;
         toast('Đã bổ sung '+diff.length+' mã vào phiếu '+editing.id);renderView();return;
       }
       const _zs=zonesForSave(drafts[key],zonesOf(counting.plant,counting.sloc));
-      const sub={zones:_zs,id:await nextKKId(counting.plant,counting.sloc),plant:counting.plant,sloc:counting.sloc,user:session.name,role:ROLES[session.role].label,time:now(),period:counting.period||curPeriod(),status:'Chờ duyệt',items:itemsSach(items),count:n,edits:[]};
+      const _it=itemsSach(items);
+      const sub={zones:_zs,id:await nextKKId(counting.plant,counting.sloc),plant:counting.plant,sloc:counting.sloc,user:session.name,role:ROLES[session.role].label,time:now(),period:counting.period||curPeriod(),status:'Chờ duyệt',items:_it,itemNotes:metaSach(meta,_it),count:n,edits:[]};
       /* MẤT MẠNG: xếp hàng đợi ngay, KHÔNG dựng hộp lỗi đỏ. BP đang đếm dở giữa
          kho không sóng mà thấy báo đỏ thì hoang mang, dễ bỏ dở. Phiếu nằm trong
          máy, có sóng là app tự gửi. */
@@ -8257,10 +8380,15 @@ function showDetail(s){
   const cb=el('div','card-b');cb.style.borderTop='1px solid var(--line)';
   cb.innerHTML=`<div class="section-eyebrow">📋 Bảng kiểm đếm thực tế · ${rowsCnt.length} mã</div>`;
   const w=el('div','tbl-wrap');const tbl=el('table');tbl.className='kk-count-tbl';
-  tbl.innerHTML=`<thead><tr><th>Mã hàng</th><th>Tên hàng</th><th>ĐVT</th>${op?'<th class="num">Đầu kỳ</th>':''}<th class="num">SL đếm (cuối kỳ)</th></tr></thead>`;
+  /* Ngày + ghi chú của bếp: chỉ thêm cột khi phiếu thật sự có, không thì bảng
+     của mọi kho khác tự dưng mọc hai cột trống. */
+  const _gcS=s.itemNotes||null;
+  tbl.innerHTML=`<thead><tr><th>Mã hàng</th><th>Tên hàng</th><th>ĐVT</th>${op?'<th class="num">Đầu kỳ</th>':''}<th class="num">SL đếm (cuối kỳ)</th>${_gcS?'<th>Ngày</th><th>Ghi chú</th>':''}</tr></thead>`;
   const tb=el('tbody');
   rowsCnt.forEach(r=>{const opCell=op?`<td class="num tnum" style="color:var(--muted)">${op[r.code]!=null?op[r.code]:'—'}</td>`:'';
-    tb.appendChild(el('tr',null,`<td class="tnum" style="color:var(--muted)">${r.code}</td><td>${r.name}</td><td><span class="badge badge-uom">${r.uom}</span></td>${opCell}<td class="num tnum qbig">${r.qty}</td>`));});
+    const _g=_gcS?(_gcS[r.code]||{}):null;
+    const gcCell=_gcS?`<td class="tnum" style="color:var(--muted)">${_esc(_g.d||'')}</td><td>${_esc(_g.g||'')}</td>`:'';
+    tb.appendChild(el('tr',null,`<td class="tnum" style="color:var(--muted)">${r.code}</td><td>${r.name}</td><td><span class="badge badge-uom">${r.uom}</span></td>${opCell}<td class="num tnum qbig">${r.qty}</td>${gcCell}`));});
   tbl.appendChild(tb);w.appendChild(tbl);cb.appendChild(w);card.appendChild(cb);
   /* ---- Chi tiết theo TIỂU KHO (kho đếm) ----
      Số chính thức của phiếu vẫn là cột Tổng; bảng này để giám sát soi lại
@@ -8353,10 +8481,15 @@ function exportBBKK(s,byZone){
   const zList=(byZone&&s.zones&&s.zones.length)?s.zones.map(z=>z.name):[];
   const NC=7+zList.length;                       // so cot cua bang (da co cot Ma vat tu)
   const zQty=(z,code)=>{const o=s.zones.find(x=>x.name===z);const v=o&&o.items?o.items[code]:null;return v==null?'':v;};
+  /* Cột "Ghi chú" của biểu mẫu xưa nay để trống. Bếp đã gõ ghi chú lúc đếm thì
+     đổ thẳng vào đó — đúng cột, không thêm cột nào vào biểu mẫu công ty.
+     Ngày thì biểu mẫu không có cột, nên không in ra. */
+  const _gcB=s.itemNotes||null;
+  const gcOf=code=>{const g=_gcB?(_gcB[code]||{}):null;return g?String(g.g||''):'';};
   let body='';
   rows.forEach((r,i)=>{
     const zc=zList.map(z=>`<td ${Cc}>${zQty(z,r.code)}</td>`).join('');
-    body+=`<tr><td ${Cc}>${i+1}</td><td ${Cm}>${esc(r.code)}</td><td ${C}>${esc(r.name)}</td><td ${Cc}>${esc(r.uom)}</td><td ${Cc}></td>${zc}<td ${Cc}>${r.qty}</td><td ${C}></td></tr>`; });
+    body+=`<tr><td ${Cc}>${i+1}</td><td ${Cm}>${esc(r.code)}</td><td ${C}>${esc(r.name)}</td><td ${Cc}>${esc(r.uom)}</td><td ${Cc}></td>${zc}<td ${Cc}>${r.qty}</td><td ${C}>${esc(gcOf(r.code))}</td></tr>`; });
   for(let k=0;k<3;k++){ body+='<tr>'+`<td ${Cc} style="height:24px;border:1px solid #000">&nbsp;</td>`+new Array(NC-1).fill(`<td ${C}></td>`).join('')+'</tr>'; }
   const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
 <head><meta charset="UTF-8"><style>td{font-family:'Times New Roman';font-size:12pt;vertical-align:top} @page{margin:1cm}</style></head>
@@ -8945,6 +9078,24 @@ function renderProgress(v){
    để nhờ kế toán khai báo (rule 18/09: nơi duy nhất khai mã mới là Danh mục VT).
    Luồng KIỂM KÊ bật cờ này (Khoa chốt 30/09/2026). Luồng nạp TỒN ĐẦU KỲ của kế toán
    KHÔNG bật — đó là nạp gốc từ SAP, chặn ở đó là kế toán kẹt lúc khởi tạo kho. */
+/* Ô ngày trong file Excel có 3 dạng: số sê-ri của Excel (ô định dạng Date),
+   'dd/mm/yyyy' người ta gõ tay, hoặc 'yyyy-mm-dd'. Quy về 'yyyy-mm-dd' để ô
+   <input type=date> hiện được. ĐỌC KHÔNG RA thì GIỮ NGUYÊN CHỮ — màn đếm sẽ
+   để ô đó là chữ cho người ta thấy và sửa, chứ không vứt mất. */
+function docNgayO(v){
+  if(v==null)return '';
+  const ser=n=>new Date(Date.UTC(1899,11,30)+Math.round(n)*86400000).toISOString().slice(0,10);
+  if(typeof v==='number')return (isFinite(v)&&v>20&&v<80000)?ser(v):'';
+  let t=String(v).trim();if(!t)return '';
+  if(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(t))return t;
+  let m=t.match(/^([0-9]{1,2})[\/\-.]([0-9]{1,2})[\/\-.]([0-9]{2,4})$/);
+  if(m){let y=Number(m[3]);if(y<100)y+=2000;
+    return y+'-'+String(Number(m[2])).padStart(2,'0')+'-'+String(Number(m[1])).padStart(2,'0');}
+  m=t.match(/^([0-9]{4})[\/\-.]([0-9]{1,2})[\/\-.]([0-9]{1,2})$/);
+  if(m)return m[1]+'-'+String(Number(m[2])).padStart(2,'0')+'-'+String(Number(m[3])).padStart(2,'0');
+  if(/^[0-9]+(\.[0-9]+)?$/.test(t)){const n=Number(t);if(n>20&&n<80000)return ser(n);}
+  return t;
+}
 function importOpeningT6(plant,sloc,file,cb,chanMaLa){
   const msg=$('#opImportMsg');const reader=new FileReader();
   reader.onload=e=>{
@@ -8978,6 +9129,12 @@ function importOpeningT6(plant,sloc,file,cb,chanMaLa){
       if(qtyCol<0)qtyCol=(codeCol===0?1:0); // không thấy -> lấy cột còn lại
       let nameCol=header.findIndex(c=>c.includes('tênhàng')||c.includes('tenhang')||c==='tên'||c==='ten'||c.includes('name')||c.includes('diễngiải')||c.includes('môtả')||c.includes('description'));
       let uomCol=header.findIndex(c=>c==='đvt'||c==='dvt'||c.includes('đơnvị')||c.includes('donvi')||c.includes('uom')||c.includes('unit'));
+      /* Hai cột thêm của mẫu BẾP. Chỉ đọc khi kho đang nạp LÀ kho bếp — kho khác
+         giữ nguyên mẫu 4 cột như cũ (Khoa 01/10/2026: "chỉ chỉnh ở Bếp thôi"). */
+      const _bep=(typeof laKhoBep==='function')&&laKhoBep(plant,sloc);
+      const dateCol=_bep?header.findIndex(c=>c==='date'||c==='ngay'||c==='hsd'||c.includes('hansudung')||c.includes('ngayhet')):-1;
+      const gcCol=_bep?header.findIndex(c=>c.includes('ghichu')||c==='note'||c==='notes'||c.includes('dienqiai')):-1;
+      const metaF={};
       // danh mục MÃ hiện có của KHO đang chọn (để biết mã nào cần bổ sung vào danh mục kho)
       const allow=new Set(plantMaterials[plant]||[]);
       const items={};const preview=[];let ok=0,skipNoCode=0,badQty=0;const newMats=[],fixedMats=[],newCodesForPlant=[];
@@ -9004,11 +9161,15 @@ function importOpeningT6(plant,sloc,file,cb,chanMaLa){
         let raw=String(rows[i][qtyCol]==null?'':rows[i][qtyCol]).replace(/\s/g,'').replace(/,/g,''); // dấu chấm = thập phân; bỏ khoảng trắng & dấu phẩy phân cách nghìn
         const qty=Number(raw);
         if(!isFinite(qty)){badQty++;continue;}
-        items[code]=qty;preview.push({code,name,uom,qty,isNew});ok++;
+        let _d='',_g='';
+        if(dateCol>=0)_d=docNgayO(rows[i][dateCol]);
+        if(gcCol>=0)_g=String(rows[i][gcCol]==null?'':rows[i][gcCol]).trim();
+        if(_d||_g)metaF[code]={d:_d,g:_g};
+        items[code]=qty;preview.push({code,name,uom,qty,isNew,d:_d,g:_g});ok++;
       }
       /* Cả file toàn mã lạ -> KHÔNG báo "không đọc được dòng nào" (sai nguyên nhân,
          người dùng đi sửa cột trong khi lỗi là mã chưa khai). Trả về để màn nói đúng. */
-      if(!ok&&maLa.length){cb&&cb({plant,sloc,items,preview,newMats,fixedMats,newCodesForPlant,maLa,badQty,ok});return;}
+      if(!ok&&maLa.length){cb&&cb({plant,sloc,items,preview,newMats,fixedMats,newCodesForPlant,maLa,meta:metaF,badQty,ok});return;}
       if(!ok){
         const e2=new Error('Không đọc được dòng hợp lệ nào (kiểm tra cột Mã hàng / Số lượng).');
         e2.chanDoan={header:rows[hIdx]||[],hIdx,soDong:rows.length,codeCol,qtyCol,
@@ -9017,7 +9178,7 @@ function importOpeningT6(plant,sloc,file,cb,chanMaLa){
       }
       preview.sort((a,b)=>a.name.localeCompare(b.name,'vi'));
       // CHỈ trả kết quả để XEM TRƯỚC — chưa ghi gì lên máy chủ (chờ bấm Duyệt)
-      cb&&cb({plant,sloc,items,preview,newMats,fixedMats,newCodesForPlant,maLa,badQty,ok});
+      cb&&cb({plant,sloc,items,preview,newMats,fixedMats,newCodesForPlant,maLa,meta:metaF,badQty,ok});
     }catch(err){
       const cd=err&&err.chanDoan;
       let ct='File: '+file.name+' ('+Math.round(file.size/1024)+' KB)';
