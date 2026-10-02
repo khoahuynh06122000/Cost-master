@@ -1100,7 +1100,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='0110-01';
+const APP_VER='0210-01';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1183,6 +1183,9 @@ Object.assign(TXT.hi,{"Chọn một kho để xem mọi phiếu kho đó chuyể
 /* Bo sung 01/10/2026 (dot 33) — o Ngay + Ghi chu tung ma cho kho bep. */
 Object.assign(TXT.en,{"Ngày":"Date","Ghi chú":"Note","Mỗi dòng có thêm ô Ngày và Ghi chú — điền khi cần, để trống cũng được. Hai ô này không ảnh hưởng số đếm; kế toán xem được khi duyệt phiếu.":"Each line now has a Date and a Note box — fill them in when you need to, leaving them empty is fine. They do not affect the counted figure; accounting can see them when approving the sheet.","Mẫu của bếp có thêm hai cột date và ghi chú ở cuối — điền khi cần, để trống cũng nạp được bình thường.":"The kitchen template has two extra columns, date and note, at the end — fill them in when you need to; leaving them empty still uploads fine.","⚠ Chưa lưu được ngày / ghi chú của từng mã — số kiểm kê vẫn gửi bình thường, tổng vẫn đúng. Báo kế toán để xử lý.":"⚠ The per-item date / note could not be saved — the count itself was sent normally and the totals are correct. Tell accounting to sort it out."});
 Object.assign(TXT.hi,{"Ngày":"तारीख़","Ghi chú":"टिप्पणी","Mỗi dòng có thêm ô Ngày và Ghi chú — điền khi cần, để trống cũng được. Hai ô này không ảnh hưởng số đếm; kế toán xem được khi duyệt phiếu.":"हर पंक्ति में अब तारीख़ और टिप्पणी का खाना है — ज़रूरत हो तो भरें, खाली छोड़ना भी ठीक है। ये गिनती के आँकड़े को नहीं बदलते; पर्ची स्वीकृत करते समय लेखा इन्हें देख सकता है।","Mẫu của bếp có thêm hai cột date và ghi chú ở cuối — điền khi cần, để trống cũng nạp được bình thường.":"रसोई के टेम्पलेट के अंत में दो अतिरिक्त कॉलम हैं, date और ghi chú — ज़रूरत हो तो भरें; खाली छोड़ने पर भी अपलोड ठीक चलता है।","⚠ Chưa lưu được ngày / ghi chú của từng mã — số kiểm kê vẫn gửi bình thường, tổng vẫn đúng. Báo kế toán để xử lý.":"⚠ प्रति-वस्तु तारीख़ / टिप्पणी सहेजी नहीं जा सकी — गिनती सामान्य रूप से भेज दी गई और योग सही हैं। समाधान हेतु लेखा को बताएँ।"});
+/* Bo sung 02/10/2026 (dot 34) — khoa AI khong co model doc anh. */
+Object.assign(TXT.en,{"Khóa AI này không dùng được model đọc ảnh nào":"This AI key cannot use any photo-reading model","Khóa AI này không đọc được ảnh. Vào thẻ \"Cài đặt AI quét ảnh\" bấm ⚡ Thử khóa; vẫn báo lỗi thì tạo khóa mới ở aistudio.google.com/apikey rồi lưu lại.":"This AI key cannot read photos. Open the \"AI photo-scan settings\" card and press ⚡ Test key; if it still fails, create a new key at aistudio.google.com/apikey and save it.","Google đang quá tải — chờ một lát rồi quét lại.":"Google is overloaded — wait a moment and scan again.","Thử lại sau ít phút. Vẫn lỗi thì bấm 📋 Sao chép chi tiết lỗi rồi gửi kế toán.":"Try again in a few minutes. If it still fails, press 📋 Copy error details and send it to accounting.","✗ Khóa đúng nhưng không dùng được model đọc ảnh nào. Tạo khóa mới ở aistudio.google.com/apikey rồi lưu lại.":"✗ The key is valid but cannot use any photo-reading model. Create a new key at aistudio.google.com/apikey and save it."});
+Object.assign(TXT.hi,{"Khóa AI này không dùng được model đọc ảnh nào":"यह AI कुंजी किसी भी फ़ोटो-पठन मॉडल का उपयोग नहीं कर सकती","Khóa AI này không đọc được ảnh. Vào thẻ \"Cài đặt AI quét ảnh\" bấm ⚡ Thử khóa; vẫn báo lỗi thì tạo khóa mới ở aistudio.google.com/apikey rồi lưu lại.":"यह AI कुंजी तस्वीरें नहीं पढ़ सकती। \"AI फ़ोटो-स्कैन सेटिंग\" कार्ड खोलकर ⚡ कुंजी जाँचें दबाएँ; फिर भी विफल हो तो aistudio.google.com/apikey पर नई कुंजी बनाकर सहेजें।","Google đang quá tải — chờ một lát rồi quét lại.":"Google पर अत्यधिक भार है — थोड़ी देर रुककर फिर स्कैन करें।","Thử lại sau ít phút. Vẫn lỗi thì bấm 📋 Sao chép chi tiết lỗi rồi gửi kế toán.":"कुछ मिनट बाद फिर प्रयास करें। फिर भी विफल हो तो 📋 त्रुटि विवरण कॉपी करें दबाकर लेखा को भेजें।","✗ Khóa đúng nhưng không dùng được model đọc ảnh nào. Tạo khóa mới ở aistudio.google.com/apikey rồi lưu lại.":"✗ कुंजी सही है पर किसी फ़ोटो-पठन मॉडल का उपयोग नहीं कर सकती। aistudio.google.com/apikey पर नई कुंजी बनाकर सहेजें।"});
 const TXT_RE_BS=[{re:new RegExp("^([\\d.,]+) dòng sổ cũ không ghi đủ kho đi / kho đến nên không lọt vào bộ lọc — bỏ chọn kho ở ô trên để xem đủ\\.$"),en:"$1 old ledger lines do not record both the source and the destination store, so they fall outside this filter — clear the store above to see them all.",hi:"$1 पुरानी बही पंक्तियों में भेजने और पाने वाला स्टोर दोनों दर्ज नहीं हैं, इसलिए वे इस फ़िल्टर में नहीं आतीं — सब देखने हेतु ऊपर का स्टोर हटाएँ।",n:1,en1:"$1 old ledger line does not record both the source and the destination store, so it falls outside this filter — clear the store above to see them all.",hi1:"$1 पुरानी बही पंक्ति में भेजने और पाने वाला स्टोर दोनों दर्ज नहीं हैं, इसलिए वह इस फ़िल्टर में नहीं आती — सब देखने हेतु ऊपर का स्टोर हटाएँ।"},{re:new RegExp("^([\\d.,]+) mã trong file chưa có trong danh mục tổng — không nạp$"),en:"$1 codes in the file are not in the item catalogue — not uploaded",hi:"फ़ाइल के $1 कोड वस्तु-सूची में नहीं हैं — अपलोड नहीं हुए",n:1,en1:"$1 code in the file is not in the item catalogue — not uploaded",hi1:"फ़ाइल का $1 कोड वस्तु-सूची में नहीं है — अपलोड नहीं हुआ"},{re:new RegExp("^▾ Xem thêm ([\\d.,]+) mã khác của điểm bán$"),en:"▾ Show $1 more items of the outlet",hi:"▾ आउटलेट की $1 और वस्तुएँ दिखाएँ",n:1,en1:"▾ Show $1 more item of the outlet",hi1:"▾ आउटलेट की $1 और वस्तु दिखाएँ"},{re:new RegExp("^▾ Xem thêm ([\\d.,]+) \\(còn ([\\d.,]+)\\)$"),en:"▾ Show $1 more ($2 left)",hi:"▾ $1 और दिखाएँ ($2 शेष)"},{re:new RegExp("^Ca sáng · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"Morning shift · $1 · handed over by $2 · received by $3",hi:"सुबह की शिफ़्ट · $1 · $2 द्वारा सौंपा · $3 द्वारा प्राप्त"},{re:new RegExp("^Ca sáng · ([0-9/-]+) · giao bởi (.+)$"),en:"Morning shift · $1 · handed over by $2",hi:"सुबह की शिफ़्ट · $1 · $2 द्वारा सौंपा"},{re:new RegExp("^Ca chiều · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"Afternoon shift · $1 · handed over by $2 · received by $3",hi:"दोपहर की शिफ़्ट · $1 · $2 द्वारा सौंपा · $3 द्वारा प्राप्त"},{re:new RegExp("^Ca chiều · ([0-9/-]+) · giao bởi (.+)$"),en:"Afternoon shift · $1 · handed over by $2",hi:"दोपहर की शिफ़्ट · $1 · $2 द्वारा सौंपा"},{re:new RegExp("^Ca tối · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"Night shift · $1 · handed over by $2 · received by $3",hi:"रात की शिफ़्ट · $1 · $2 द्वारा सौंपा · $3 द्वारा प्राप्त"},{re:new RegExp("^Ca tối · ([0-9/-]+) · giao bởi (.+)$"),en:"Night shift · $1 · handed over by $2",hi:"रात की शिफ़्ट · $1 · $2 द्वारा सौंपा"},{re:new RegExp("^Chốt tồn tháng (\\d{2}/\\d{4}) \\(kế toán\\)$"),en:"Month-end stock close $1 (accounting)",hi:"माह-अंत स्टॉक समापन $1 (लेखा)"},{re:new RegExp("^Phiếu kiểm kê (.+) \\(kỳ (\\d{2}/\\d{4})\\)$"),en:"Count sheet $1 (period $2)",hi:"गणना पर्ची $1 (अवधि $2)"},{re:new RegExp("^(.+) · Sloc ([0-9]+) · gửi bởi (.+) lúc (.+)$"),en:"$1 · Sloc $2 · submitted by $3 at $4",hi:"$1 · Sloc $2 · $3 द्वारा $4 पर भेजा गया"},{re:new RegExp("^(.+) · Sloc ([0-9]+) · Chốt từ (.*) · (.*) · Người chốt (.*)$"),en:"$1 · Sloc $2 · closed from $3 · $4 · closed by $5",hi:"$1 · Sloc $2 · $3 से बंद · $4 · $5 द्वारा बंद"},{re:new RegExp("^(.+) · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"$1 · $2 · handed over by $3 · received by $4",hi:"$1 · $2 · $3 द्वारा सौंपा · $4 द्वारा प्राप्त"},{re:new RegExp("^(.+) · ([0-9/-]+) · giao bởi (.+)$"),en:"$1 · $2 · handed over by $3",hi:"$1 · $2 · $3 द्वारा सौंपा"},{re:new RegExp("^✏️ Phiếu này đã đếm bổ sung ([\\d.,]+) lần — bấm để xem đã sửa gì$"),en:"✏️ This sheet has been edited $1 times — tap to see what changed",hi:"✏️ यह पर्ची $1 बार संपादित हुई — क्या बदला देखने हेतु टैप करें",n:1,en1:"✏️ This sheet has been edited once — tap to see what changed",hi1:"✏️ यह पर्ची एक बार संपादित हुई — क्या बदला देखने हेतु टैप करें"},{re:new RegExp("^📋 Bảng kiểm đếm thực tế · ([\\d.,]+) mã$"),en:"📋 Actual count table · $1 items",hi:"📋 वास्तविक गणना तालिका · $1 वस्तुएँ",n:1,en1:"📋 Actual count table · $1 item",hi1:"📋 वास्तविक गणना तालिका · $1 वस्तु"},{re:new RegExp("^Tạo bởi (.+) · (.+) · (.+)$"),en:"Created by $1 · $2 · $3",hi:"$1 द्वारा बनाया · $2 · $3"},{re:new RegExp("^([\\d.,]+)/([\\d.,]+) điểm bán$"),en:"$1/$2 outlets",hi:"$1/$2 आउटलेट"},{re:new RegExp("^còn ([\\d.,]+)$"),en:"$1 left",hi:"$1 शेष"},{re:new RegExp("^🔔 Đã tự nhắc ([\\d.,]+) điểm bán$"),en:"🔔 Auto-reminded $1 outlets",hi:"🔔 $1 आउटलेट को स्वतः याद दिलाया"},{re:new RegExp("^📋 Xem bảng xếp hạng chi tiết \\(([\\d.,]+) bộ phận\\)$"),en:"📋 See the full ranking ($1 departments)",hi:"📋 पूरी रैंकिंग देखें ($1 विभाग)"},{re:new RegExp("^🔒 Tháng (\\d{2}/\\d{4}) đã khóa$"),en:"🔒 Month $1 is locked",hi:"🔒 माह $1 बंद है"},{re:new RegExp("^đã được kế toán duyệt cho tháng (\\d{2}/\\d{4})\\. Không thể chỉnh sửa\\. Kỳ mới sẽ mở vào tháng sau\\.$"),en:"has been approved by accounting for month $1. It can no longer be edited. The next period opens next month.",hi:"लेखा द्वारा माह $1 हेतु स्वीकृत। अब संपादित नहीं किया जा सकता। अगली अवधि अगले माह खुलेगी।"},{re:new RegExp("^Đã bỏ từ chối (.+) — phiếu quay lại chờ duyệt$"),en:"Rejection of $1 undone — the request is back to awaiting approval",hi:"$1 की अस्वीकृति रद्द — पर्ची फिर से स्वीकृति की प्रतीक्षा में"},{re:new RegExp("^Phiếu này từng bị từ chối \\(lý do: (.+)\\) và đã được quản trị viên mở lại\\. Xem kỹ trước khi duyệt\\.$"),en:"This request was rejected before (reason: $1) and an administrator reopened it. Check it carefully before approving.",hi:"यह पर्ची पहले अस्वीकृत हुई थी (कारण: $1) और प्रशासक ने इसे फिर खोला। स्वीकृत करने से पहले ध्यान से देखें।"},{re:new RegExp("^(.+) đã duyệt phiếu (.+) · chuyển cho (.+) · ([\\d.,]+) mã · lúc (.+)$"),en:"$1 approved request $2 · sent to $3 · $4 items · at $5",hi:"$1 ने पर्ची $2 स्वीकृत की · $3 को भेजा · $4 वस्तुएँ · $5 बजे",n:4,en1:"$1 approved request $2 · sent to $3 · $4 item · at $5",hi1:"$1 ने पर्ची $2 स्वीकृत की · $3 को भेजा · $4 वस्तु · $5 बजे"},{re:new RegExp("^([\\d.,]+) loại lý do$"),en:"$1 kinds of reason",hi:"$1 प्रकार के कारण",n:1,en1:"$1 kind of reason",hi1:"$1 प्रकार का कारण"},{re:new RegExp("^([\\d.,]+) phiếu$"),en:"$1 requests",hi:"$1 पर्चियाँ",n:1,en1:"$1 request",hi1:"$1 पर्ची"},{re:new RegExp("^([\\d.,]+) dòng$"),en:"$1 lines",hi:"$1 पंक्तियाँ",n:1,en1:"$1 line",hi1:"$1 पंक्ति"}];
 const TXT_RE=[
   {re:new RegExp("^Tháng (\\d{2}/\\d{4}) \\(hiện tại\\)$"),en:"Month $1 (current)",hi:"माह $1 (वर्तमान)"},
@@ -6923,7 +6926,7 @@ function nkCaiDatAI(v){
     const k=i.value.trim();
     if(!k){bao('Chưa dán khóa vào ô trên.',1);return;}
     bLuu.disabled=true;bao('Đang lưu…');
-    const c=getCfg();c.gemini=k;c.gmodel=c.gmodel||'gemini-2.0-flash';setCfg(c);
+    const c=getCfg();c.gemini=k;setCfg(c);
     const r=await aiKeyDayLen();            // lưu luôn lên tài khoản
     bLuu.disabled=false;i.value='';
     /* Nói THẬT chuyện đã xảy ra: lưu được lên tài khoản hay mới chỉ nằm ở máy này. */
@@ -6936,20 +6939,23 @@ function nkCaiDatAI(v){
     if(!k){bao('Chưa có khóa để thử.',1);return;}
     bThu.disabled=true;bao('Đang thử khóa…');
     try{
-      const r=await geminiGen('Trả lời đúng hai chữ: OK',k,getCfg().gmodel);
+      /* Không gọi thẳng MỘT model nữa: khóa nào không có đúng cái tên đó là nút
+         này báo hỏng oan, BP hết đường tự xử. */
+      const _mOK=await timModelChay(k,getCfg().gmodel);
       /* THỬ XONG LÀ LƯU LUÔN. Trước đây nút này thử chuỗi chưa lưu rồi báo
          "✓ Khóa dùng được" mà KHÔNG lưu — BP đọc câu đó tưởng xong việc, rời màn,
          khóa biến mất, lúc quét ảnh lại báo "chưa có khóa" dù vừa điền.
          Thử được nghĩa là khóa đúng, không có lý do bắt bấm thêm một nút nữa. */
       let _db=null;
-      if(goc){const c=getCfg();c.gemini=goc;c.gmodel=c.gmodel||'gemini-2.0-flash';setCfg(c);
-        _db=await aiKeyDayLen();}
+      {const c=getCfg();if(goc)c.gemini=goc;c.gmodel=_mOK;setCfg(c);}   // nhớ model chạy được
+      if(goc)_db=await aiKeyDayLen();
       bao(goc?((_db&&_db.ok)?'✓ Khóa dùng được — đã lưu, máy nào cũng dùng được.':'✓ Khóa dùng được — đã lưu vào máy này.'):'✓ Khóa dùng được.');
       if(goc){i.value='';setTimeout(()=>renderView(),900);}
     }catch(e){
       console.error('thu khoa AI',e);
       const m=String((e&&e.message)||'');
-      bao(/400|401|403|API_KEY|invalid/i.test(m)?'✗ Khóa không dùng được — kiểm tra lại chuỗi vừa dán.'
+      bao((e&&e.khongCoModel)?'✗ Khóa đúng nhưng không dùng được model đọc ảnh nào. Tạo khóa mới ở aistudio.google.com/apikey rồi lưu lại.'
+         :/400|401|403|API_KEY|invalid/i.test(m)?'✗ Khóa không dùng được — kiểm tra lại chuỗi vừa dán.'
          :/429|quota|RESOURCE_EXHAUSTED/i.test(m)?'✗ Khóa đúng nhưng đã hết lượt hôm nay.'
          :'✗ Chưa thử được — kiểm tra mạng rồi thử lại.',1);
     }finally{bThu.disabled=false;}
@@ -8074,7 +8080,7 @@ function dcNhapKho(v){
       const imgs=[];for(const f of files.slice(0,4))imgs.push(await compressImage(f));
       /* Kèm khóa AI riêng của người dùng (đã khai ở "Cài đặt AI quét ảnh"). */
       const _k=(getCfg().gemini||'').trim();
-      const _body=JSON.stringify({images:imgs,key:_k});
+      const _body=JSON.stringify({images:imgs,key:_k,model:(getCfg().gmodel||'')});
       _ctx={'Bản':APP_VER,'Số ảnh':imgs.length,'Dung lượng gửi':Math.round(_body.length/1024)+' KB',
             'Có khóa riêng':_k?('có · '+_k.length+' ký tự · '+_k.slice(0,6)+'…'):'KHÔNG'};
       /* Không để quay mãi: quá 75s thì cắt và nói rõ, thay vì đứng im. */
@@ -8092,11 +8098,22 @@ function dcNhapKho(v){
         _ctx['Mã lỗi']=resp.status;_ctx['Máy chủ nói']=String(data.error||'(không có)');
         _ctx['Chi tiết']=String(data.detail||'(không có)').slice(0,300);_ctx['Mất']=_giay+' giây';
         const hetLuot=resp.status===429||/quota|RESOURCE_EXHAUSTED|hết lượt/i.test(String(data.error||''));
-        _loi(String(data.error||('Lỗi '+resp.status)),
-          (hetLuot||resp.status===400)
-            ?'Khóa AI chưa có hoặc đã hết lượt. Vào thẻ "Cài đặt AI quét ảnh" ở màn này để khai khóa riêng của bạn.'
-            :(resp.status===504||resp.status===502)?'Máy chủ đọc ảnh quá lâu. Thử chụp ít ảnh hơn (1–2 tấm) rồi quét lại.':'');
+        /* Gợi ý phải khớp với lỗi THẬT. Trước đây mọi lỗi 502 đều bị gán câu
+           "máy chủ đọc ảnh quá lâu" — nên màn hiện "Gemini lỗi 404" mà bên dưới
+           lại khuyên chụp ít ảnh hơn, hai câu đá nhau. */
+        const _e=String(data.error||'');
+        const _khongModel=/không dùng được model|\b404\b/i.test(_e);
+        const _quaTai=resp.status===503||/quá tải/i.test(_e);
+        const _quaLau=resp.status===504||/quá lâu/i.test(_e);
+        _loi(_e||('Lỗi '+resp.status),
+          _khongModel?'Khóa AI này không đọc được ảnh. Vào thẻ "Cài đặt AI quét ảnh" bấm ⚡ Thử khóa; vẫn báo lỗi thì tạo khóa mới ở aistudio.google.com/apikey rồi lưu lại.'
+          :(hetLuot||resp.status===400)?'Khóa AI chưa có hoặc đã hết lượt. Vào thẻ "Cài đặt AI quét ảnh" ở màn này để khai khóa riêng của bạn.'
+          :_quaTai?'Google đang quá tải — chờ một lát rồi quét lại.'
+          :_quaLau?'Máy chủ đọc ảnh quá lâu. Thử chụp ít ảnh hơn (1–2 tấm) rồi quét lại.'
+          :'Thử lại sau ít phút. Vẫn lỗi thì bấm 📋 Sao chép chi tiết lỗi rồi gửi kế toán.');
         return;}
+      /* Máy chủ báo lại model nào chạy được -> nhớ, lần sau khỏi dò lại từ đầu. */
+      if(data.model&&data.model!==getCfg().gmodel){const c2=getCfg();c2.gmodel=data.model;setCfg(c2);}
       _ctx['Mất']=_giay+' giây';_ctx['Số dòng đọc được']=(data.rows||[]).length;
       const rows=data.rows||[];
       if(!rows.length){_loi('Không đọc được dòng hàng nào.','Thử chụp rõ, thẳng, đủ sáng hơn.');return;}
@@ -10435,6 +10452,47 @@ function buildProgressData(){
   txt+=`- Tổng phiếu kiểm kê: ${submissions.length}\n`;
   txt+=`- Điểm bán CHƯA có phiếu nào (${chua.length}): ${chua.join(', ')||'(không)'}\n`;
   return txt;
+}
+/* TÊN MODEL CỦA GOOGLE ĐỔI THEO THỜI GIAN và không phải khóa nào cũng có đủ.
+   02/10/2026: BP khai khóa thật, Google trả 404 cho gemini-2.0-flash — khóa ĐÚNG
+   (khóa sai thì Google trả 400 "API key not valid", đã đo) nhưng khóa đó không có
+   model mình ghi cứng. Nên: thử danh sách quen trước, hết thì HỎI GOOGLE xem khóa
+   đó thật sự có model nào. Cùng cách với api/ocr.js. */
+const AI_MODEL_THU=['gemini-2.0-flash','gemini-2.5-flash','gemini-flash-latest'];
+function aiDiemModel(n){let d=0;
+  if(/flash/i.test(n))d+=10;else if(/pro/i.test(n))d+=6;
+  if(/2\.5/.test(n))d+=4;else if(/2\.0/.test(n))d+=3;else if(/1\.5/.test(n))d+=1;
+  if(/latest/i.test(n))d+=1;if(/lite/i.test(n))d-=2;
+  if(/preview|exp|thinking/i.test(n))d-=5;return d;}
+async function aiModelCuaKhoa(key){
+  try{
+    const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key='+encodeURIComponent(key));
+    if(!r.ok)return [];
+    const d=await r.json();
+    return (d.models||[])
+      .filter(m=>(m.supportedGenerationMethods||[]).indexOf('generateContent')>=0)
+      .map(m=>String(m.name||'').replace(/^models\//,''))
+      .filter(n=>/gemini/i.test(n)&&!/embed|aqa|tts|audio|image-generation|live|learnlm/i.test(n))
+      .sort((a,b)=>aiDiemModel(b)-aiDiemModel(a));
+  }catch(e){return [];}
+}
+/* Trả về tên model chạy được với khóa này. Khóa sai / hết lượt / mất mạng thì
+   NÉM NGAY (thử model khác cũng vô ích); chỉ 404 mới đi tiếp. */
+async function timModelChay(key,uu){
+  const ds=[...new Set([uu,...AI_MODEL_THU].filter(Boolean))];
+  let cuoi='',co404=false;
+  const thu=async mm=>{
+    try{await geminiGen('Trả lời đúng hai chữ: OK',key,mm);return mm;}
+    catch(e){const t=String((e&&e.message)||'');cuoi=t;
+      if(/\b404\b|not found|is not supported/i.test(t)){co404=true;return null;}
+      throw e;}
+  };
+  for(const m of ds){const ok=await thu(m);if(ok)return ok;}
+  if(co404){
+    const them=(await aiModelCuaKhoa(key)).filter(x=>ds.indexOf(x)<0).slice(0,3);
+    for(const m of them){const ok=await thu(m);if(ok)return ok;}
+  }
+  const e=new Error('KHONG_CO_MODEL · '+cuoi.slice(0,120));e.khongCoModel=co404;throw e;
 }
 async function geminiGen(prompt,key,model){
   const m=model||'gemini-2.0-flash';
