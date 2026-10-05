@@ -1,0 +1,23 @@
+name: Kiem tra app hang tuan
+on:
+  schedule:
+    - cron: '30 0 * * 1'   # 07:30 sang THU 2 gio VN — truoc admin-audit (08:00)
+  workflow_dispatch: {}    # cho phep bam chay tay tren GitHub (tab Actions)
+permissions:
+  contents: read
+jobs:
+  kiem:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Kiem tra (chi doc, khong dung AI)
+        run: node kiem-tra/kiem-tuan.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          TEAMS_PERSONAL_URL: ${{ secrets.TEAMS_PERSONAL_URL }}
+          TEAMS_FLOW_URL: ${{ secrets.TEAMS_FLOW_URL }}
