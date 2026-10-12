@@ -10,7 +10,10 @@ const AI_KEYS = [
 ].map((k) => (k || '').trim()).filter(Boolean);
 // Mặc định gemini-2.0-flash: rẻ quota, hào phóng, ít bị 503 hơn 2.5-flash; vision đọc bảng in tốt.
 // 2.5-flash giữ làm phao dự phòng trong danh sách MODELS bên dưới.
-const AI_MODEL = process.env.AI_MODEL_VISION || process.env.AI_MODEL || 'gemini-2.0-flash';
+// 12/10/2026: Google đã TẮT gemini-2.0-flash (06/2026) và từ 18/09/2026 chỉ cấp
+// gemini-2.5-flash cho dự án đã dùng nó từ trước — khóa BP mới tạo chỉ có đời 3.x.
+// Nên alias 'gemini-flash-latest' (luôn trỏ bản Flash mới nhất) được thử TRƯỚC.
+const AI_MODEL = process.env.AI_MODEL_VISION || process.env.AI_MODEL || '';
 
 const PROMPT = `Bạn là công cụ đọc CHỨNG TỪ NHẬP KHO in trên giấy của bộ phận F&B nhà hàng.
 Chứng từ có thể mang tiêu đề "Phiếu nhập kho" HOẶC "Phiếu xuất điều chuyển" — cả hai đều là hàng NHẬP về kho, xử lý như nhau.
@@ -61,7 +64,7 @@ module.exports = async (req, res) => {
     const modelOK = /^[a-zA-Z0-9._-]{3,60}$/.test(userModel) ? userModel : '';
     const keys = (userKey && userKey.length < 200 ? [userKey] : []).concat(AI_KEYS);
     if (!keys.length) {
-      res.status(400).json({ error: 'Chưa có khóa AI trên máy này — vào "Cài đặt AI quét ảnh" ở tab Nhập kho & ĐC, dán khóa rồi bấm Lưu khóa (khóa lưu riêng từng máy)' });
+      res.status(400).json({ error: 'Chưa có khóa AI — vào "Cài đặt AI quét ảnh" ở tab Nhập kho & ĐC, dán khóa rồi bấm Lưu khóa (khóa đi theo tài khoản)' });
       return;
     }
     const images = Array.isArray(body?.images) ? body.images : (body?.image ? [body.image] : []);
@@ -82,7 +85,7 @@ module.exports = async (req, res) => {
     /* Danh sách thử sẵn. CHỈ là nước đi đầu — tên model của Google đổi theo thời
        gian và không phải khóa nào cũng có đủ; hết danh sách thì đi hỏi Google
        (modelCuaKhoa bên dưới) chứ không chịu thua. */
-    const MODELS = [...new Set([modelOK, AI_MODEL, 'gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-flash-latest'].filter(Boolean))];
+    const MODELS = [...new Set([modelOK, AI_MODEL, 'gemini-flash-latest', 'gemini-2.5-flash', 'gemini-2.0-flash'].filter(Boolean))];
     const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     /* Ngân sách thời gian: Gemini đọc ảnh bảng mất 8-20s/lượt, mà vòng thử là
        (số model x số key). Hết ngân sách thì DỪNG và nói rõ, để người dùng nhận
@@ -90,13 +93,16 @@ module.exports = async (req, res) => {
     const T0 = Date.now(), NGAN_SACH = 45000;
 
     // Chấm điểm để lấy model đọc ảnh tốt nhất mà khóa đó thật sự có.
+    // Chấm theo SỐ PHIÊN BẢN, không ghi cứng 2.5/2.0 — bản cũ trừ nặng "preview" và
+    // không biết đời 3.x nên chọn trúng model đã tắt. Flash > Pro (Pro thường không miễn phí).
     function diemModel(n) {
       let d = 0;
-      if (/flash/i.test(n)) d += 10; else if (/pro/i.test(n)) d += 6;
-      if (/2\.5/.test(n)) d += 4; else if (/2\.0/.test(n)) d += 3; else if (/1\.5/.test(n)) d += 1;
-      if (/latest/i.test(n)) d += 1;
-      if (/lite/i.test(n)) d -= 2;
-      if (/preview|exp|thinking/i.test(n)) d -= 5;
+      const v = String(n).match(/gemini-(\d+)(?:\.(\d+))?/i);
+      if (v) d += (Number(v[1]) + Number(v[2] || 0) / 10) * 2;
+      if (/flash/i.test(n)) d += 10; else if (/pro/i.test(n)) d += 3;
+      if (/latest/i.test(n)) d += 0.5;
+      if (/lite/i.test(n)) d -= 1;
+      if (/preview|exp|thinking/i.test(n)) d -= 1.5;
       return d;
     }
     let dsKhoa = null;                      // null = chưa hỏi; [] = hỏi rồi, không có gì
@@ -112,14 +118,14 @@ module.exports = async (req, res) => {
         dsKhoa = (d.models || [])
           .filter((m) => (m.supportedGenerationMethods || []).includes('generateContent'))
           .map((m) => String(m.name || '').replace(/^models\//, ''))
-          .filter((n) => /gemini/i.test(n) && !/embed|aqa|tts|audio|image-generation|live|learnlm/i.test(n))
+          .filter((n) => /gemini/i.test(n) && !/embed|aqa|tts|audio|image|live|learnlm|computer|robot|nano/i.test(n))
           .sort((a, b) => diemModel(b) - diemModel(a));
       } catch { dsKhoa = []; }
       return dsKhoa;
     }
 
     let j = null, lastStatus = 0, lastDetail = '', retried503 = false;
-    let co404 = false, dungHan = null, modelDung = '';
+    let co404 = false, khongMienPhi = false, dungHan = null, modelDung = '';
 
     async function thuCacModel(models) {
       const attempts = [];
@@ -133,8 +139,10 @@ module.exports = async (req, res) => {
         );
         if (r.ok) { j = await r.json(); modelDung = model; return { ok: true }; }
         const t = await r.text().catch(() => '');
-        lastStatus = r.status; lastDetail = `${model}/key#${ki + 1}: ${t.slice(0, 160)}`;
-        if (r.status === 404 || /not found|is not supported/i.test(t)) co404 = true;
+        lastStatus = r.status; lastDetail = `${model}/key#${ki + 1}: ${t.slice(0, 300)}`;
+        if (r.status === 404 || /not found|is not supported|no longer available/i.test(t)) co404 = true;
+        // 429 kèm "limit: 0" = model này KHÔNG miễn phí cho khóa đó -> coi như không có, thử model khác.
+        if (r.status === 429 && /limit:\s*0\b/i.test(t)) { co404 = true; khongMienPhi = true; }
         const overloaded = r.status === 503 || /UNAVAILABLE|overload|high demand/i.test(t);
         const transient = [429, 500, 502, 503].includes(r.status) || /RESOURCE_EXHAUSTED|quota|rate|internal/i.test(t);
         /* 404 PHẢI đi tiếp. Trước đây nó rơi vào nhánh "dừng hẳn" nên model đầu
@@ -151,7 +159,7 @@ module.exports = async (req, res) => {
     let kq = await thuCacModel(MODELS);
     // Hết danh sách ghi cứng mà toàn "không có model" -> hỏi Google rồi thử tiếp.
     if (!j && !kq.dung && kq.hetGio == null && co404) {
-      const ds = (await modelCuaKhoa(keys[0])).filter((n) => MODELS.indexOf(n) < 0).slice(0, 3);
+      const ds = (await modelCuaKhoa(keys[0])).filter((n) => MODELS.indexOf(n) < 0).slice(0, 4);
       if (ds.length) kq = await thuCacModel(ds);
     }
 
@@ -167,7 +175,7 @@ module.exports = async (req, res) => {
            model đọc ảnh nào -> nói đúng chuyện đó, và kèm danh sách model khóa đó
            CÓ để còn lần ra được. */
         res.status(502).json({ error: 'Khóa AI này không dùng được model đọc ảnh nào',
-          detail: `da thu: ${MODELS.join(', ')} · khoa co: ${(dsKhoa && dsKhoa.length) ? dsKhoa.slice(0, 8).join(', ')
+          detail: `${khongMienPhi ? 'co model khong mien phi (limit 0) · ' : ''}da thu: ${MODELS.join(', ')} · khoa co: ${(dsKhoa && dsKhoa.length) ? dsKhoa.slice(0, 8).join(', ')
             : (hoiDuoc ? `0/${soModelTho} model dung duoc` : '(hoi Google khong duoc)')} · ${lastDetail}` });
         return;
       }

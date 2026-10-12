@@ -1100,7 +1100,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='0510-01';
+const APP_VER='1210-01';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -8080,7 +8080,10 @@ function dcNhapKho(v){
     try{
       const imgs=[];for(const f of files.slice(0,4))imgs.push(await compressImage(f));
       /* Kèm khóa AI riêng của người dùng (đã khai ở "Cài đặt AI quét ảnh"). */
-      const _k=(getCfg().gemini||'').trim();
+      let _k=(getCfg().gemini||'').trim();
+      /* Khóa nằm trong bộ nhớ phiên, kéo từ tài khoản về lúc tải dữ liệu — chỉ một lần.
+         Lần đó trượt (sóng chập chờn) thì cả phiên không có khóa -> kéo lại ngay lúc quét. */
+      if(!_k){try{await aiKeyKeoVe();}catch(e){}_k=(getCfg().gemini||'').trim();}
       const _body=JSON.stringify({images:imgs,key:_k,model:(getCfg().gmodel||'')});
       _ctx={'Bản':APP_VER,'Số ảnh':imgs.length,'Dung lượng gửi':Math.round(_body.length/1024)+' KB',
             'Có khóa riêng':_k?('có · '+_k.length+' ký tự · '+_k.slice(0,6)+'…'):'KHÔNG'};
@@ -10463,12 +10466,15 @@ function buildProgressData(){
    (khóa sai thì Google trả 400 "API key not valid", đã đo) nhưng khóa đó không có
    model mình ghi cứng. Nên: thử danh sách quen trước, hết thì HỎI GOOGLE xem khóa
    đó thật sự có model nào. Cùng cách với api/ocr.js. */
-const AI_MODEL_THU=['gemini-2.0-flash','gemini-2.5-flash','gemini-flash-latest'];
-function aiDiemModel(n){let d=0;
-  if(/flash/i.test(n))d+=10;else if(/pro/i.test(n))d+=6;
-  if(/2\.5/.test(n))d+=4;else if(/2\.0/.test(n))d+=3;else if(/1\.5/.test(n))d+=1;
-  if(/latest/i.test(n))d+=1;if(/lite/i.test(n))d-=2;
-  if(/preview|exp|thinking/i.test(n))d-=5;return d;}
+/* 12/10/2026: Google đã tắt gemini-2.0-flash (06/2026), và từ 18/09/2026 gemini-2.5-flash
+   chỉ còn cấp cho dự án đã dùng từ trước — khóa mới chỉ có đời 3.x. Nên thử alias
+   'gemini-flash-latest' TRƯỚC, và chấm điểm theo SỐ PHIÊN BẢN chứ không ghi cứng 2.5/2.0. */
+const AI_MODEL_THU=['gemini-flash-latest','gemini-2.5-flash','gemini-2.0-flash'];
+function aiDiemModel(n){let d=0;const v=String(n).match(/gemini-(\d+)(?:\.(\d+))?/i);
+  if(v)d+=(Number(v[1])+Number(v[2]||0)/10)*2;
+  if(/flash/i.test(n))d+=10;else if(/pro/i.test(n))d+=3;
+  if(/latest/i.test(n))d+=0.5;if(/lite/i.test(n))d-=1;
+  if(/preview|exp|thinking/i.test(n))d-=1.5;return d;}
 async function aiModelCuaKhoa(key){
   try{
     const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key='+encodeURIComponent(key));
@@ -10477,7 +10483,7 @@ async function aiModelCuaKhoa(key){
     return (d.models||[])
       .filter(m=>(m.supportedGenerationMethods||[]).indexOf('generateContent')>=0)
       .map(m=>String(m.name||'').replace(/^models\//,''))
-      .filter(n=>/gemini/i.test(n)&&!/embed|aqa|tts|audio|image-generation|live|learnlm/i.test(n))
+      .filter(n=>/gemini/i.test(n)&&!/embed|aqa|tts|audio|image|live|learnlm|computer|robot|nano/i.test(n))
       .sort((a,b)=>aiDiemModel(b)-aiDiemModel(a));
   }catch(e){return [];}
 }
@@ -10489,21 +10495,23 @@ async function timModelChay(key,uu){
   const thu=async mm=>{
     try{await geminiGen('Trả lời đúng hai chữ: OK',key,mm);return mm;}
     catch(e){const t=String((e&&e.message)||'');cuoi=t;
-      if(/\b404\b|not found|is not supported/i.test(t)){co404=true;return null;}
+      /* 429 kèm "limit: 0" = model này KHÔNG miễn phí cho khóa đó -> thử model khác. */
+      if(/\b404\b|not found|is not supported|no longer available/i.test(t)
+         ||(/\b429\b/.test(t)&&/limit:\s*0\b/i.test(t))){co404=true;return null;}
       throw e;}
   };
   for(const m of ds){const ok=await thu(m);if(ok)return ok;}
   if(co404){
-    const them=(await aiModelCuaKhoa(key)).filter(x=>ds.indexOf(x)<0).slice(0,3);
+    const them=(await aiModelCuaKhoa(key)).filter(x=>ds.indexOf(x)<0).slice(0,4);
     for(const m of them){const ok=await thu(m);if(ok)return ok;}
   }
   const e=new Error('KHONG_CO_MODEL · '+cuoi.slice(0,120));e.khongCoModel=co404;throw e;
 }
 async function geminiGen(prompt,key,model){
-  const m=model||'gemini-2.0-flash';
+  const m=model||'gemini-flash-latest';
   const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${encodeURIComponent(key)}`,{
     method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})});
-  if(!r.ok)throw new Error('Gemini HTTP '+r.status+' '+(await r.text()).slice(0,150));
+  if(!r.ok)throw new Error('Gemini HTTP '+r.status+' '+(await r.text()).slice(0,600));
   const d=await r.json();const parts=(((d.candidates||[])[0]||{}).content||{}).parts||[];
   return parts.map(p=>p.text||'').join('').trim();
 }
