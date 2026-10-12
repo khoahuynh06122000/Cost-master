@@ -1100,7 +1100,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1210-03';
+const APP_VER='1210-04';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1184,8 +1184,8 @@ Object.assign(TXT.hi,{"Chọn một kho để xem mọi phiếu kho đó chuyể
 Object.assign(TXT.en,{"Ngày":"Date","Ghi chú":"Note","Mỗi dòng có thêm ô Ngày và Ghi chú — điền khi cần, để trống cũng được. Hai ô này không ảnh hưởng số đếm; kế toán xem được khi duyệt phiếu.":"Each line now has a Date and a Note box — fill them in when you need to, leaving them empty is fine. They do not affect the counted figure; accounting can see them when approving the sheet.","Mẫu của bếp có thêm hai cột date và ghi chú ở cuối — điền khi cần, để trống cũng nạp được bình thường.":"The kitchen template has two extra columns, date and note, at the end — fill them in when you need to; leaving them empty still uploads fine.","⚠ Chưa lưu được ngày / ghi chú của từng mã — số kiểm kê vẫn gửi bình thường, tổng vẫn đúng. Báo kế toán để xử lý.":"⚠ The per-item date / note could not be saved — the count itself was sent normally and the totals are correct. Tell accounting to sort it out."});
 Object.assign(TXT.hi,{"Ngày":"तारीख़","Ghi chú":"टिप्पणी","Mỗi dòng có thêm ô Ngày và Ghi chú — điền khi cần, để trống cũng được. Hai ô này không ảnh hưởng số đếm; kế toán xem được khi duyệt phiếu.":"हर पंक्ति में अब तारीख़ और टिप्पणी का खाना है — ज़रूरत हो तो भरें, खाली छोड़ना भी ठीक है। ये गिनती के आँकड़े को नहीं बदलते; पर्ची स्वीकृत करते समय लेखा इन्हें देख सकता है।","Mẫu của bếp có thêm hai cột date và ghi chú ở cuối — điền khi cần, để trống cũng nạp được bình thường.":"रसोई के टेम्पलेट के अंत में दो अतिरिक्त कॉलम हैं, date और ghi chú — ज़रूरत हो तो भरें; खाली छोड़ने पर भी अपलोड ठीक चलता है।","⚠ Chưa lưu được ngày / ghi chú của từng mã — số kiểm kê vẫn gửi bình thường, tổng vẫn đúng. Báo kế toán để xử lý.":"⚠ प्रति-वस्तु तारीख़ / टिप्पणी सहेजी नहीं जा सकी — गिनती सामान्य रूप से भेज दी गई और योग सही हैं। समाधान हेतु लेखा को बताएँ।"});
 /* Bo sung 12/10/2026 — khung tong phieu kiem ke tuan cua moi bep (ke toan/admin). */
-Object.assign(TXT.en,{"Tất cả kho bếp":"All kitchen stores","Phiếu kiểm kê tuần của mọi bếp bạn phụ trách":"Weekly counts of every kitchen you manage","Xem các bếp chưa kiểm tuần này":"Show kitchens not counted this week","Lọc theo tuần":"Filter by week","Tất cả tuần":"All weeks","Bạn chỉ xem được kho này — đếm và lưu số do bếp được gán làm.":"You can only view this store — counting and saving are done by the assigned kitchen.","Chưa có bếp nào lưu phiếu kiểm kê tuần":"No kitchen has saved a weekly count yet","▾ Xem thêm":"▾ Show more"});
-Object.assign(TXT.hi,{"Tất cả kho bếp":"सभी रसोई स्टोर","Phiếu kiểm kê tuần của mọi bếp bạn phụ trách":"आपकी सभी रसोइयों की साप्ताहिक गिनती","Xem các bếp chưa kiểm tuần này":"इस सप्ताह बिना गिनती वाली रसोइयाँ देखें","Lọc theo tuần":"सप्ताह से छाँटें","Tất cả tuần":"सभी सप्ताह","Bạn chỉ xem được kho này — đếm và lưu số do bếp được gán làm.":"आप यह स्टोर केवल देख सकते हैं — गिनती और सहेजना नियुक्त रसोई करती है।","Chưa có bếp nào lưu phiếu kiểm kê tuần":"अभी किसी रसोई ने साप्ताहिक गिनती सहेजी नहीं है","▾ Xem thêm":"▾ और देखें"});
+Object.assign(TXT.en,{"Tất cả kho bếp":"All kitchen stores","Phiếu kiểm kê tuần của mọi bếp bạn phụ trách":"Weekly counts of every kitchen you manage","Xem các bếp chưa kiểm tuần này":"Show kitchens not counted this week","Lọc theo tuần":"Filter by week","Tất cả tuần":"All weeks","Bạn chỉ xem được kiểm kê tuần — đếm và lưu số do bếp làm.":"You can only view weekly counts — counting and saving are done by the kitchen.","Bạn chỉ xem được kho này — đếm và lưu số do bếp được gán làm.":"You can only view this store — counting and saving are done by the assigned kitchen.","Chưa có bếp nào lưu phiếu kiểm kê tuần":"No kitchen has saved a weekly count yet","▾ Xem thêm":"▾ Show more"});
+Object.assign(TXT.hi,{"Tất cả kho bếp":"सभी रसोई स्टोर","Phiếu kiểm kê tuần của mọi bếp bạn phụ trách":"आपकी सभी रसोइयों की साप्ताहिक गिनती","Xem các bếp chưa kiểm tuần này":"इस सप्ताह बिना गिनती वाली रसोइयाँ देखें","Lọc theo tuần":"सप्ताह से छाँटें","Tất cả tuần":"सभी सप्ताह","Bạn chỉ xem được kiểm kê tuần — đếm và lưu số do bếp làm.":"आप साप्ताहिक गिनती केवल देख सकते हैं — गिनती और सहेजना रसोई करती है।","Bạn chỉ xem được kho này — đếm và lưu số do bếp được gán làm.":"आप यह स्टोर केवल देख सकते हैं — गिनती और सहेजना नियुक्त रसोई करती है।","Chưa có bếp nào lưu phiếu kiểm kê tuần":"अभी किसी रसोई ने साप्ताहिक गिनती सहेजी नहीं है","▾ Xem thêm":"▾ और देखें"});
 /* Bo sung 02/10/2026 (dot 34) — khoa AI khong co model doc anh. */
 Object.assign(TXT.en,{"Khóa AI này không dùng được model đọc ảnh nào":"This AI key cannot use any photo-reading model","Khóa AI này không đọc được ảnh. Vào thẻ \"Cài đặt AI quét ảnh\" bấm ⚡ Thử khóa; vẫn báo lỗi thì tạo khóa mới ở aistudio.google.com/apikey rồi lưu lại.":"This AI key cannot read photos. Open the \"AI photo-scan settings\" card and press ⚡ Test key; if it still fails, create a new key at aistudio.google.com/apikey and save it.","Google đang quá tải — chờ một lát rồi quét lại.":"Google is overloaded — wait a moment and scan again.","Thử lại sau ít phút. Vẫn lỗi thì bấm 📋 Sao chép chi tiết lỗi rồi gửi kế toán.":"Try again in a few minutes. If it still fails, press 📋 Copy error details and send it to accounting.","✗ Khóa đúng nhưng không dùng được model đọc ảnh nào. Tạo khóa mới ở aistudio.google.com/apikey rồi lưu lại.":"✗ The key is valid but cannot use any photo-reading model. Create a new key at aistudio.google.com/apikey and save it."});
 Object.assign(TXT.hi,{"Khóa AI này không dùng được model đọc ảnh nào":"यह AI कुंजी किसी भी फ़ोटो-पठन मॉडल का उपयोग नहीं कर सकती","Khóa AI này không đọc được ảnh. Vào thẻ \"Cài đặt AI quét ảnh\" bấm ⚡ Thử khóa; vẫn báo lỗi thì tạo khóa mới ở aistudio.google.com/apikey rồi lưu lại.":"यह AI कुंजी तस्वीरें नहीं पढ़ सकती। \"AI फ़ोटो-स्कैन सेटिंग\" कार्ड खोलकर ⚡ कुंजी जाँचें दबाएँ; फिर भी विफल हो तो aistudio.google.com/apikey पर नई कुंजी बनाकर सहेजें।","Google đang quá tải — chờ một lát rồi quét lại.":"Google पर अत्यधिक भार है — थोड़ी देर रुककर फिर स्कैन करें।","Thử lại sau ít phút. Vẫn lỗi thì bấm 📋 Sao chép chi tiết lỗi rồi gửi kế toán.":"कुछ मिनट बाद फिर प्रयास करें। फिर भी विफल हो तो 📋 त्रुटि विवरण कॉपी करें दबाकर लेखा को भेजें।","✗ Khóa đúng nhưng không dùng được model đọc ảnh nào. Tạo khóa mới ở aistudio.google.com/apikey rồi lưu lại.":"✗ कुंजी सही है पर किसी फ़ोटो-पठन मॉडल का उपयोग नहीं कर सकती। aistudio.google.com/apikey पर नई कुंजी बनाकर सहेजें।"});
@@ -5993,6 +5993,8 @@ const NL=String.fromCharCode(10);   // xuống dòng trong hộp thoại confirm
 /* Lưu một lần kiểm tuần. Mỗi kho mỗi tuần MỘT bản: đếm lại tuần đó thì ghi đè,
    đó là hành vi đúng — bếp đếm sót rồi đếm lại không nên đẻ ra hai bản. */
 async function luuKiemTuan(plant,sloc,week,sach,btn,meta){
+  // Kế toán định lượng chỉ xem kiểm kê tuần (Khoa 12/10/2026) — chặn cả ở hàm ghi.
+  if(isScoped()){toast('Bạn chỉ xem được kiểm kê tuần — đếm và lưu số do bếp làm.');return false;}
   const soMa=Object.keys(sach).length;
   const cu=weeklyCounts.find(x=>x.plant===plant&&x.sloc===sloc&&x.week===week);
   const hoi='LƯU SỐ KIỂM TUẦN'+NL+whName(plant,sloc)+NL+tuanLabel(week)+NL+NL
@@ -6038,6 +6040,7 @@ async function luuKiemTuan(plant,sloc,week,sach,btn,meta){
   renderView();
 }
 async function xoaKiemTuan(b){
+  if(isScoped()){toast('Bạn chỉ xem được kiểm kê tuần — đếm và lưu số do bếp làm.');return;}
   if(!confirm('XÓA BẢN KIỂM TUẦN'+NL+whName(b.plant,b.sloc)+NL+tuanLabel(b.week)+NL+NL
     +b.count+' mã, lưu bởi '+b.by+' lúc '+b.time+'.'+NL+NL+'Xóa rồi thì phải đếm lại tuần này.'))return;
   const r=await dbDel('weekly_counts',{id:b.id});
@@ -6124,7 +6127,9 @@ function renderKiemkeTuan(v){
   if(!wkWeek)wkWeek=tuanNay();
   if(!wkSel||!bep.some(k=>k.plant===wkSel.plant&&k.sloc===wkSel.sloc)){
     const k0=bepCuaMinh[0]||bep[0];wkSel={plant:k0.plant,sloc:k0.sloc};}
-  const chiXem=!bepCuaMinh.some(k=>k.plant===wkSel.plant&&k.sloc===wkSel.sloc);
+  /* Kế toán định lượng CHỈ XEM ở mọi bếp, kể cả bếp được gán (Khoa 12/10/2026) —
+     đếm và lưu số tuần là việc của bếp. */
+  const chiXem=isScoped()||!bepCuaMinh.some(k=>k.plant===wkSel.plant&&k.sloc===wkSel.sloc);
   /* Kế toán / KT định lượng / admin: xem được phiếu của MỌI bếp mình phụ trách ngay
      đầu màn (Khoa 12/10/2026). Trước đây màn chỉ hiện đúng một kho (mặc định kho bếp
      đầu danh sách) nên phiếu của 22 bếp còn lại không lộ ra nếu không đổi kho từng cái. */
