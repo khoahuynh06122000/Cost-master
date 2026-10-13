@@ -193,10 +193,10 @@ function kiemNhung() {
 // Mỗi mẫu là một lỗi THẬT từng gặp. Mẫu còn "mở" = lỗi đã phát hiện, chưa sửa (báo vàng);
 // mẫu đã sửa mà xuất hiện lại = tái phát (báo đỏ).
 const MAU = [
-  { re: /ilike\('reason','%'\+/, mo: true, vi: 'So mã phiếu bằng chuỗi con trên máy chủ — phiếu gốc dính phiếu "-2" (rà soát E1)' },
+  { re: /ilike\('reason','%'\+/, mo: false, vi: 'So mã phiếu bằng chuỗi con trên máy chủ — phiếu gốc dính phiếu "-2" (rà soát E1, sửa 13/10)' },
   { re: /reason[^;\n]{0,40}\.includes\(r\.id\)/, mo: false, vi: 'So mã phiếu bằng includes — phiếu gốc dính phiếu "-2" (sửa 24/09)' },
   { re: /const qty=Number\(raw\);\s*\n\s*if\(!isFinite\(qty\)\)\{badQty\+\+;continue;\}/, mo: false, vi: 'Ô Số lượng trống bị đọc thành 0 (sửa 05/10)', canTruoc: "if(raw===''){boTrong++;continue;}" },
-  { re: /period:periodOfDate\(t\.date\)/, mo: true, vi: 'Ngày dd/mm trong file điều chuyển đưa thẳng vào new Date() — sai kỳ (rà soát B3)' },
+  { re: /String\(r\[ngayCol\]\|\|''\)\.trim\(\)/, mo: false, vi: 'Ngày dd/mm trong file điều chuyển đưa thẳng vào new Date() — sai kỳ (rà soát B3, sửa 13/10)' },
 ];
 function kiemTaiPhat() {
   for (const m of MAU) {
