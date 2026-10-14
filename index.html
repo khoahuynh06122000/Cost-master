@@ -882,6 +882,22 @@
     .item-xtra .xi-date,.item-xtra .xi-note{height:44px}
     .item-xtra .xi-note{flex:1 1 100%}
   }
+  /* Nút mở ô Ngày/Ghi chú (14/10/2026) — nằm ngay trên dòng mã, không làm dòng cao thêm. */
+  .xi-tog{display:inline-flex;align-items:center;border:1px dashed var(--line);background:transparent;
+    color:var(--brand-ink);font:inherit;font-size:11.5px;font-weight:700;padding:4px 9px;border-radius:999px;cursor:pointer;line-height:1.2}
+  .xi-tog.co{border-style:solid;background:var(--t-mint)}
+  @media (pointer:coarse){.xi-tog{min-height:32px;padding:6px 11px}}
+  /* Khối "Lưu ý khi đếm" gấp gọn + thanh "Đang nhập bằng …" */
+  .note-fold{margin:0 0 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2)}
+  .note-fold>summary{cursor:pointer;padding:11px 12px;font-size:12.5px;font-weight:700;color:var(--brand-ink);
+    list-style:none;display:flex;align-items:center;gap:8px}
+  .note-fold>summary::-webkit-details-marker{display:none}
+  .note-fold>.nf-b{padding:0 10px 10px}
+  .card-b.km-bar{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;padding:10px 14px}
+  .km-bar .km-lb{font-size:12.5px;color:var(--muted);flex:none}
+  .km-bar .ctx-chip{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .km-bar .btn{flex:none}
+  @media (max-width:480px){.km-bar .km-lb{display:none}}
 </style>
 <script>try{if(localStorage.getItem('appDark')==='1')document.documentElement.classList.add('dark');}catch(e){}</script>
 </head>
@@ -1103,7 +1119,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1310-01';
+const APP_VER='1410-01';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1186,6 +1202,9 @@ Object.assign(TXT.hi,{"Chọn một kho để xem mọi phiếu kho đó chuyể
 /* Bo sung 01/10/2026 (dot 33) — o Ngay + Ghi chu tung ma cho kho bep. */
 Object.assign(TXT.en,{"Ngày":"Date","Ghi chú":"Note","Mỗi dòng có thêm ô Ngày và Ghi chú — điền khi cần, để trống cũng được. Hai ô này không ảnh hưởng số đếm; kế toán xem được khi duyệt phiếu.":"Each line now has a Date and a Note box — fill them in when you need to, leaving them empty is fine. They do not affect the counted figure; accounting can see them when approving the sheet.","Mẫu của bếp có thêm hai cột date và ghi chú ở cuối — điền khi cần, để trống cũng nạp được bình thường.":"The kitchen template has two extra columns, date and note, at the end — fill them in when you need to; leaving them empty still uploads fine.","⚠ Chưa lưu được ngày / ghi chú của từng mã — số kiểm kê vẫn gửi bình thường, tổng vẫn đúng. Báo kế toán để xử lý.":"⚠ The per-item date / note could not be saved — the count itself was sent normally and the totals are correct. Tell accounting to sort it out."});
 Object.assign(TXT.hi,{"Ngày":"तारीख़","Ghi chú":"टिप्पणी","Mỗi dòng có thêm ô Ngày và Ghi chú — điền khi cần, để trống cũng được. Hai ô này không ảnh hưởng số đếm; kế toán xem được khi duyệt phiếu.":"हर पंक्ति में अब तारीख़ और टिप्पणी का खाना है — ज़रूरत हो तो भरें, खाली छोड़ना भी ठीक है। ये गिनती के आँकड़े को नहीं बदलते; पर्ची स्वीकृत करते समय लेखा इन्हें देख सकता है।","Mẫu của bếp có thêm hai cột date và ghi chú ở cuối — điền khi cần, để trống cũng nạp được bình thường.":"रसोई के टेम्पलेट के अंत में दो अतिरिक्त कॉलम हैं, date और ghi chú — ज़रूरत हो तो भरें; खाली छोड़ने पर भी अपलोड ठीक चलता है।","⚠ Chưa lưu được ngày / ghi chú của từng mã — số kiểm kê vẫn gửi bình thường, tổng vẫn đúng. Báo kế toán để xử lý.":"⚠ प्रति-वस्तु तारीख़ / टिप्पणी सहेजी नहीं जा सकी — गिनती सामान्य रूप से भेज दी गई और योग सही हैं। समाधान हेतु लेखा को बताएँ।"});
+/* Bo sung 14/10/2026 — man dem bep gon lai (nut Ngay/ghi chu, khoi Luu y). */
+Object.assign(TXT.en,{"Đang nhập bằng": "Entering by", "Đổi cách nhập": "Change method", "Lưu ý khi đếm": "Counting notes", "✎ Đã ghi ngày / ghi chú": "✎ Date / note added", "＋ Ngày / ghi chú": "＋ Date / note", "Mỗi dòng có nút \"＋ Ngày / ghi chú\" — bấm khi cần ghi ngày hoặc ghi chú, để trống cũng được. Hai ô này không ảnh hưởng số đếm; kế toán xem được khi duyệt phiếu.": "Each row has a \"＋ Date / note\" button — tap it when you need to record a date or note; leaving it empty is fine. These fields do not affect the count; accounting sees them when approving."});
+Object.assign(TXT.hi,{"Đang nhập bằng": "इस तरीके से दर्ज", "Đổi cách nhập": "तरीका बदलें", "Lưu ý khi đếm": "गिनती के नोट", "✎ Đã ghi ngày / ghi chú": "✎ तारीख / नोट दर्ज", "＋ Ngày / ghi chú": "＋ तारीख / नोट", "Mỗi dòng có nút \"＋ Ngày / ghi chú\" — bấm khi cần ghi ngày hoặc ghi chú, để trống cũng được. Hai ô này không ảnh hưởng số đếm; kế toán xem được khi duyệt phiếu.": "हर पंक्ति में \"＋ तारीख / नोट\" बटन है — तारीख या नोट लिखना हो तो दबाएँ, खाली छोड़ना भी ठीक है। ये गिनती को प्रभावित नहीं करते; मंज़ूरी के समय लेखा विभाग इन्हें देखता है।"});
 /* Bo sung 12/10/2026 — khung tong phieu kiem ke tuan cua moi bep (ke toan/admin). */
 Object.assign(TXT.en,{"Tất cả kho bếp":"All kitchen stores","Phiếu kiểm kê tuần của mọi bếp bạn phụ trách":"Weekly counts of every kitchen you manage","Xem các bếp chưa kiểm tuần này":"Show kitchens not counted this week","Lọc theo tuần":"Filter by week","Tất cả tuần":"All weeks","Bạn chỉ xem được kiểm kê tuần — đếm và lưu số do bếp làm.":"You can only view weekly counts — counting and saving are done by the kitchen.","Bạn chỉ xem được kho này — đếm và lưu số do bếp được gán làm.":"You can only view this store — counting and saving are done by the assigned kitchen.","Chưa có bếp nào lưu phiếu kiểm kê tuần":"No kitchen has saved a weekly count yet","▾ Xem thêm":"▾ Show more"});
 Object.assign(TXT.hi,{"Tất cả kho bếp":"सभी रसोई स्टोर","Phiếu kiểm kê tuần của mọi bếp bạn phụ trách":"आपकी सभी रसोइयों की साप्ताहिक गिनती","Xem các bếp chưa kiểm tuần này":"इस सप्ताह बिना गिनती वाली रसोइयाँ देखें","Lọc theo tuần":"सप्ताह से छाँटें","Tất cả tuần":"सभी सप्ताह","Bạn chỉ xem được kiểm kê tuần — đếm và lưu số do bếp làm.":"आप साप्ताहिक गिनती केवल देख सकते हैं — गिनती और सहेजना रसोई करती है।","Bạn chỉ xem được kho này — đếm và lưu số do bếp được gán làm.":"आप यह स्टोर केवल देख सकते हैं — गिनती और सहेजना नियुक्त रसोई करती है।","Chưa có bếp nào lưu phiếu kiểm kê tuần":"अभी किसी रसोई ने साप्ताहिक गिनती सहेजी नहीं है","▾ Xem thêm":"▾ और देखें"});
@@ -4654,6 +4673,19 @@ function clBang(host){
 let counting=null;
 let kkSel=null;      // kho đang chọn ở màn Kiểm kê {plant,sloc}
 let kkMethod='';     // hình thức kiểm đếm đang chọn: '' | 'excel' | 'direct'
+/* Đã chọn cách nhập rồi thì thẻ chọn (2 ô to ~410px) thu về MỘT dòng — trước đây nó
+   nằm nguyên phía trên nên mã đầu tiên cách đỉnh gần 2 màn hình (Khoa 14/10/2026).
+   onDoi=null -> không có nút đổi (đang đếm bổ sung một phiếu thì không cho rời). */
+function kmThuGon(v,ten,onDoi){
+  const c=el('div','card');c.style.marginTop='14px';
+  const b=el('div','card-b km-bar');
+  const l1=el('span','km-lb');l1.textContent='Đang nhập bằng';
+  const l2=el('span','ctx-chip');l2.textContent=ten;
+  b.appendChild(l1);b.appendChild(l2);
+  if(onDoi){const bd=el('button','btn btn-ghost btn-sm');bd.type='button';bd.textContent='Đổi cách nhập';
+    bd.style.marginLeft='auto';bd.onclick=onDoi;b.appendChild(bd);}
+  c.appendChild(b);v.appendChild(c);
+}
 let countEditId=null; // đang ĐẾM BỔ SUNG cho phiếu nào (null = đếm mới)
 // Phiếu Chờ duyệt của kho+kỳ — mỗi kho mỗi kỳ chỉ được MỘT phiếu, sửa thì sửa trên phiếu đó
 function pendingSub(plant,sloc,period){return submissions.find(x=>x.plant===plant&&x.sloc===sloc&&x.period===period&&x.status==='Chờ duyệt');}
@@ -5959,7 +5991,11 @@ function renderKiemke(v){
   const cD=methodCard(HIC.box,'Kiểm đếm trực tiếp','Gõ số đếm thực tế từng mã ngay trên máy, có đối chiếu tồn đầu kỳ.',kkMethod==='direct');
   cD.onclick=()=>{kkMethod='direct';counting={plant:kkSel.plant,sloc:kkSel.sloc,period:kkPeriod};renderView();setTimeout(()=>{const c=$('#countCard');if(c)c.scrollIntoView({behavior:'smooth',block:'start'});},60);};
   mgrid.appendChild(cD);mb.appendChild(mgrid);mCard.appendChild(mb);
-  if(!_oneWay)v.appendChild(mCard);   // mot cach thi khong hien the chon
+  if(!_oneWay){                        // mot cach thi khong hien the chon
+    if(kkMethod)kmThuGon(v,kkMethod==='excel'?'Up Excel':'Kiểm đếm trực tiếp',
+      countEditId?null:()=>{kkMethod='';counting=null;renderView();});
+    else v.appendChild(mCard);
+  }
   // panel Up Excel (khi chọn); Kiểm đếm trực tiếp do khối 'counting' bên dưới lo
   if(kkMethod==='excel')renderKKUpload(v,{plant:kkSel.plant,sloc:kkSel.sloc,period:kkPeriod});
 
@@ -6186,7 +6222,9 @@ function renderKiemkeTuan(v){
   const cD=the(HIC.box,'Đếm trực tiếp','Gõ số từng mã trên máy, chia khu đếm và lọc mã chưa nhập như kiểm kê tháng.',wkMethod==='direct');
   cD.onclick=()=>{wkMethod='direct';counting={plant:wkSel.plant,sloc:wkSel.sloc,period:thangCuaTuan(wkWeek),tuan:wkWeek};renderView();
     setTimeout(()=>{const x=$('#countCard');if(x)x.scrollIntoView({behavior:'smooth',block:'start'});},60);};
-  g.appendChild(cE);g.appendChild(cD);mb.appendChild(g);mc.appendChild(mb);v.appendChild(mc);
+  g.appendChild(cE);g.appendChild(cD);mb.appendChild(g);mc.appendChild(mb);
+  if(wkMethod)kmThuGon(v,wkMethod==='excel'?'Up Excel':'Đếm trực tiếp',()=>{wkMethod='';counting=null;renderView();});
+  else v.appendChild(mc);
 
   if(wkMethod==='excel')renderKKUpload(v,{plant:wkSel.plant,sloc:wkSel.sloc,period:thangCuaTuan(wkWeek),tuan:wkWeek});
   if(counting&&counting.tuan)renderCountSheet(v);
@@ -6307,7 +6345,15 @@ function renderCountSheet(v){
     _kmi.textContent='Kế toán chưa mở kỳ cho kho này — danh sách dưới đây lấy theo danh mục kho nên có thể khác danh sách kế toán sẽ chốt. App cũng chưa khóa điều chuyển: hàng vẫn ra vào kho được trong lúc đếm. Cần chắc số thì nhờ kế toán mở kỳ trước.';
     _kmk.appendChild(_kmi);nt.appendChild(_kmk);
   }
-  if(!_laTuan)nt.appendChild(procNote());
+  /* Các ghi chú "biết một lần là đủ" gom vào MỘT khối gấp (Khoa 14/10/2026): trước đây
+     5 khối chồng nhau cao ~430px đẩy mã đầu tiên xuống gần 2 màn. Hai thứ vẫn để HIỆN
+     ở trên: đang đếm bổ sung phiếu nào, và kế toán chưa mở kỳ. */
+  const _nf=el('details','note-fold');const _ns=el('summary');
+  const _nsI=el('span');_nsI.textContent='ⓘ';const _nsT=el('span');_nsT.textContent='Lưu ý khi đếm';
+  const _nsN=el('span','badge badge-soft tnum');
+  _ns.appendChild(_nsI);_ns.appendChild(_nsT);_ns.appendChild(_nsN);_nf.appendChild(_ns);
+  const _nb=el('div','nf-b');_nf.appendChild(_nb);nt.appendChild(_nf);
+  if(!_laTuan)_nb.appendChild(procNote());
   const noteTxt = _laTuan
     ? (_tuanTruoc
         ? ('Cột "<b>Tuần trước</b>" là số của <b>'+tuanLabel(_tuanTruoc.week)+'</b>, chỉ để bếp so cho dễ. Số tuần <b>không gửi kế toán</b> và <b>không ảnh hưởng</b> phiếu kiểm kê tháng.')
@@ -6317,7 +6363,7 @@ function renderCountSheet(v){
         ? 'Cột "Đầu kỳ" là số <b>TẠM TÍNH</b>, lấy từ <b>'+_dkKD.nguon+'</b> vì kế toán <b>chưa chốt tồn tháng</b>. Dùng để đối chiếu khi đếm được, nhưng số chính thức có thể còn đổi — <b>cứ đếm theo hàng thật</b>, đừng điền cho khớp cột này.'
         : 'Cột "Đầu kỳ" lấy từ <b>'+_dkKD.nguon+'</b> — dùng để đối chiếu khi đếm. <b>Đếm theo hàng thật</b>, đừng điền cho khớp.')
     : 'Chưa có tồn đầu kỳ cho kho này (kỳ đầu tiên) — đếm mù, chỉ hiển thị tên hàng & đơn vị tính.';
-  nt.appendChild(el('div','note','<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span>'+noteTxt+' Hàng theo Kg/Lít nhập được số lẻ.</span>'));
+  _nb.appendChild(el('div','note','<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span>'+noteTxt+' Hàng theo Kg/Lít nhập được số lẻ.</span>'));
   card.appendChild(nt);
 
   // ----- File bar: tải mẫu + nạp file -----
@@ -6366,14 +6412,16 @@ function renderCountSheet(v){
      báo 0 lỗi (cùng họ với bẫy b2.appendChild / _moved). */
   if(_laBep){
     const _bn=el('div','note');const _bi=el('div');_bi.style.minWidth='0';
-    _bi.textContent='Mỗi dòng có thêm ô Ngày và Ghi chú — điền khi cần, để trống cũng được. Hai ô này không ảnh hưởng số đếm; kế toán xem được khi duyệt phiếu.';
-    _bn.appendChild(_bi);nt.appendChild(_bn);
+    _bi.textContent='Mỗi dòng có nút "＋ Ngày / ghi chú" — bấm khi cần ghi ngày hoặc ghi chú, để trống cũng được. Hai ô này không ảnh hưởng số đếm; kế toán xem được khi duyệt phiếu.';
+    _bn.appendChild(_bi);_nb.appendChild(_bn);
   }
   if(_chiaNhom){
     const _cn=el('div','note');const _ci=el('div');_ci.style.minWidth='0';
     _ci.textContent='Danh sách ưu tiên mã kho này đang dùng. Mã còn lại của điểm bán nằm ở cuối danh sách và vẫn tìm được bằng ô tìm phía trên.';
-    _cn.appendChild(_ci);nt.appendChild(_cn);
+    _cn.appendChild(_ci);_nb.appendChild(_cn);
   }
+  _nsN.textContent=String(_nb.children.length);
+  if(!_nb.children.length)_nf.remove();
   tb.innerHTML=`<div class="search-wrap">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
     <input id="searchBox" placeholder="Tìm theo mã hoặc tên hàng… (${plantMats.length} mã của điểm bán)"></div>
@@ -6671,8 +6719,18 @@ function renderCountSheet(v){
           if(!d&&!g)delete meta[m.code]; else meta[m.code]={d,g};
           autosaved();saveDraftsSoon();
         };
-        iD.onchange=ghiMeta;iD.oninput=ghiMeta;iG.oninput=ghiMeta;
         xt.appendChild(el('span','xi-lb','Ngày'));xt.appendChild(iD);xt.appendChild(iG);
+        /* Hai ô này THU LẠI sau một nút nhỏ trên dòng mã (Khoa 14/10/2026): để mở sẵn
+           thì mỗi dòng cao 236px, một màn chỉ được ~3 mã, bếp 250 mã phải cuộn ~72 màn.
+           Mã đã có ngày/ghi chú thì mở sẵn cho thấy. Dữ liệu, cách lưu giữ nguyên. */
+        const coMeta=()=>!!(meta[m.code]&&(meta[m.code].d||meta[m.code].g));
+        const tog=el('button','xi-tog');tog.type='button';
+        const veTog=()=>{const c=coMeta();tog.classList.toggle('co',c);
+          tog.textContent=L(c?'✎ Đã ghi ngày / ghi chú':'＋ Ngày / ghi chú');};
+        xt.hidden=!coMeta();veTog();
+        tog.onclick=()=>{xt.hidden=!xt.hidden;};
+        iD.onchange=()=>{ghiMeta();veTog();};iD.oninput=iD.onchange;iG.oninput=()=>{ghiMeta();veTog();};
+        const _mt=r.querySelector('.item-meta');if(_mt)_mt.appendChild(tog);
         r.appendChild(xt);
       }
       list.appendChild(r);
