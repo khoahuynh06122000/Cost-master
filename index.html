@@ -897,6 +897,8 @@
   .km-bar .km-lb{font-size:12.5px;color:var(--muted);flex:none}
   .km-bar .ctx-chip{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .km-bar .btn{flex:none}
+  .hub-phu{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .hub-phu .btn{gap:8px}
   @media (max-width:480px){.km-bar .km-lb{display:none}}
 </style>
 <script>try{if(localStorage.getItem('appDark')==='1')document.documentElement.classList.add('dark');}catch(e){}</script>
@@ -1119,7 +1121,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1410-01';
+const APP_VER='1410-02';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1202,6 +1204,9 @@ Object.assign(TXT.hi,{"Chọn một kho để xem mọi phiếu kho đó chuyể
 /* Bo sung 01/10/2026 (dot 33) — o Ngay + Ghi chu tung ma cho kho bep. */
 Object.assign(TXT.en,{"Ngày":"Date","Ghi chú":"Note","Mỗi dòng có thêm ô Ngày và Ghi chú — điền khi cần, để trống cũng được. Hai ô này không ảnh hưởng số đếm; kế toán xem được khi duyệt phiếu.":"Each line now has a Date and a Note box — fill them in when you need to, leaving them empty is fine. They do not affect the counted figure; accounting can see them when approving the sheet.","Mẫu của bếp có thêm hai cột date và ghi chú ở cuối — điền khi cần, để trống cũng nạp được bình thường.":"The kitchen template has two extra columns, date and note, at the end — fill them in when you need to; leaving them empty still uploads fine.","⚠ Chưa lưu được ngày / ghi chú của từng mã — số kiểm kê vẫn gửi bình thường, tổng vẫn đúng. Báo kế toán để xử lý.":"⚠ The per-item date / note could not be saved — the count itself was sent normally and the totals are correct. Tell accounting to sort it out."});
 Object.assign(TXT.hi,{"Ngày":"तारीख़","Ghi chú":"टिप्पणी","Mỗi dòng có thêm ô Ngày và Ghi chú — điền khi cần, để trống cũng được. Hai ô này không ảnh hưởng số đếm; kế toán xem được khi duyệt phiếu.":"हर पंक्ति में अब तारीख़ और टिप्पणी का खाना है — ज़रूरत हो तो भरें, खाली छोड़ना भी ठीक है। ये गिनती के आँकड़े को नहीं बदलते; पर्ची स्वीकृत करते समय लेखा इन्हें देख सकता है।","Mẫu của bếp có thêm hai cột date và ghi chú ở cuối — điền khi cần, để trống cũng nạp được bình thường.":"रसोई के टेम्पलेट के अंत में दो अतिरिक्त कॉलम हैं, date और ghi chú — ज़रूरत हो तो भरें; खाली छोड़ने पर भी अपलोड ठीक चलता है।","⚠ Chưa lưu được ngày / ghi chú của từng mã — số kiểm kê vẫn gửi bình thường, tổng vẫn đúng. Báo kế toán để xử lý.":"⚠ प्रति-वस्तु तारीख़ / टिप्पणी सहेजी नहीं जा सकी — गिनती सामान्य रूप से भेज दी गई और योग सही हैं। समाधान हेतु लेखा को बताएँ।"});
+/* Bo sung 14/10/2026 (2) — Huy / Ton dau ky gon lai. */
+Object.assign(TXT.en,{"Gõ tên hoặc mã hàng cần hủy…": "Type the name or code of the item to write off…", "Gõ tên hoặc mã hàng cần hủy": "Type the name or code of the item to write off", "Ô tìm phía trên lục trong hàng đang có ở kho. Mã đã điền số hủy luôn nằm lại trong danh sách.": "The search box above looks through items currently in this store. Items you have entered a write-off quantity for always stay in the list.", "Tìm theo mã hoặc tên hàng…": "Search by code or item name…", "Không có mã nào khớp": "No matching items"});
+Object.assign(TXT.hi,{"Gõ tên hoặc mã hàng cần hủy…": "नष्ट करने वाली वस्तु का नाम या कोड लिखें…", "Gõ tên hoặc mã hàng cần hủy": "नष्ट करने वाली वस्तु का नाम या कोड लिखें", "Ô tìm phía trên lục trong hàng đang có ở kho. Mã đã điền số hủy luôn nằm lại trong danh sách.": "ऊपर का खोज बॉक्स इस स्टोर में मौजूद वस्तुओं में खोजता है। जिन वस्तुओं की नष्ट मात्रा भरी है, वे सूची में बनी रहती हैं।", "Tìm theo mã hoặc tên hàng…": "कोड या वस्तु के नाम से खोजें…", "Không có mã nào khớp": "कोई मिलती वस्तु नहीं"});
 /* Bo sung 14/10/2026 — man dem bep gon lai (nut Ngay/ghi chu, khoi Luu y). */
 Object.assign(TXT.en,{"Đang nhập bằng": "Entering by", "Đổi cách nhập": "Change method", "Lưu ý khi đếm": "Counting notes", "✎ Đã ghi ngày / ghi chú": "✎ Date / note added", "＋ Ngày / ghi chú": "＋ Date / note", "Mỗi dòng có nút \"＋ Ngày / ghi chú\" — bấm khi cần ghi ngày hoặc ghi chú, để trống cũng được. Hai ô này không ảnh hưởng số đếm; kế toán xem được khi duyệt phiếu.": "Each row has a \"＋ Date / note\" button — tap it when you need to record a date or note; leaving it empty is fine. These fields do not affect the count; accounting sees them when approving."});
 Object.assign(TXT.hi,{"Đang nhập bằng": "इस तरीके से दर्ज", "Đổi cách nhập": "तरीका बदलें", "Lưu ý khi đếm": "गिनती के नोट", "✎ Đã ghi ngày / ghi chú": "✎ तारीख / नोट दर्ज", "＋ Ngày / ghi chú": "＋ तारीख / नोट", "Mỗi dòng có nút \"＋ Ngày / ghi chú\" — bấm khi cần ghi ngày hoặc ghi chú, để trống cũng được. Hai ô này không ảnh hưởng số đếm; kế toán xem được khi duyệt phiếu.": "हर पंक्ति में \"＋ तारीख / नोट\" बटन है — तारीख या नोट लिखना हो तो दबाएँ, खाली छोड़ना भी ठीक है। ये गिनती को प्रभावित नहीं करते; मंज़ूरी के समय लेखा विभाग इन्हें देखता है।"});
@@ -4091,13 +4096,27 @@ function renderHubView(v,tab,acts){
   const cur=list.find(a=>a.k===hubOpen[tab]);
   if(!cur){
     const g=el('div','hub-grid');
-    list.forEach(a=>{
+    /* Việc làm MỘT LẦN (a.phu, VD Cài đặt AI quét ảnh) không đứng ngang hàng việc hằng
+       ngày: vẽ thành một dòng nhỏ dưới lưới (Khoa 14/10/2026). */
+    const phu=list.filter(a=>a.phu);
+    list.filter(a=>!a.phu).forEach(a=>{
       const t=el('button','hub-tile'+(a.warm?' warm':''));t.type='button';
       t.innerHTML=`<div class="hub-ic">${a.ico||HIC.list}</div><div class="hub-t">${a.title}</div><div class="hub-s">${a.sub||''}</div>`+(a.n?`<div class="hub-n">${a.n}</div>`:'');
       t.onclick=()=>{hubOpen[tab]=a.k;renderView();};
       g.appendChild(t);
     });
-    v.appendChild(g);return;
+    v.appendChild(g);
+    if(phu.length){
+      const pr=el('div','hub-phu');
+      phu.forEach(a=>{
+        const b=el('button','btn btn-ghost btn-sm');b.type='button';
+        const t1=el('span');t1.textContent=a.title;b.appendChild(t1);
+        if(a.n){const t2=el('span','badge '+(a.warm?'badge-wait':'badge-soft'));t2.textContent=a.n;b.appendChild(t2);}
+        b.onclick=()=>{hubOpen[tab]=a.k;renderView();};pr.appendChild(b);
+      });
+      v.appendChild(pr);
+    }
+    return;
   }
   const bar=el('div','hub-bar');
   const back=el('button','btn btn-ghost btn-sm','← Chọn việc khác');
@@ -7020,7 +7039,7 @@ function renderDieuchuyen(v){
   acts.push({k:'ai',ico:HIC.warn,title:'Cài đặt AI quét ảnh',
     sub:'Khai khóa AI của riêng bạn để quét ảnh phiếu xuất kho tổng — lưu tại máy bạn',
     n:((getCfg().gemini||'').trim()?'đã có khóa':'chưa khai khóa'),
-    warm:!((getCfg().gemini||'').trim()),render:nkCaiDatAI});
+    warm:!((getCfg().gemini||'').trim()),phu:true,render:nkCaiDatAI});
   // Nạp Excel điều chuyển: chỉ kế toán/admin — các vai còn lại gõ tay trên danh sách có sẵn
   if(isPrivileged())acts.push({k:'xls',ico:HIC.sheet,title:'Nạp Excel điều chuyển',sub:'File SharePoint — ghi nhận việc đã xảy ra, vào thẳng sổ',render:dcNapExcel});
   renderHubView(v,'dieuchuyen',acts);
@@ -7232,8 +7251,17 @@ function dcRequestForm(v,kind){
       chips.innerHTML='';
       const rec=dcRecent().map(k=>k.split('|'))
         .filter(a=>a.length===2&&DATA.warehouses.some(w=>w.plant===a[0]&&w.sloc===a[1])&&!isMine(a[0],a[1]));
+      /* Kho khác CÙNG ĐIỂM BÁN với kho mình (VD Bếp Brasseries xin NH Brasseries) đứng
+         đầu — bếp hay xin nhất từ đây, mà trước đây chưa xin lần nào thì phải lục
+         dropdown 36 điểm bán (Khoa 14/10/2026). Ưu tiên kho không phải bếp, tối đa 2. */
+      const _pl=new Set(myWh.map(w=>w.plant));
+      const _cung=DATA.warehouses.filter(w=>_pl.has(w.plant)&&!isMine(w.plant,w.sloc))
+        .sort((x,y)=>(laKhoBep(x.plant,x.sloc)?1:0)-(laKhoBep(y.plant,y.sloc)?1:0))
+        .slice(0,2).map(w=>[w.plant,w.sloc]);
+      const _gop=[];[..._cung,...rec].forEach(a=>{if(!_gop.some(b=>b[0]===a[0]&&b[1]===a[1]))_gop.push(a);});
+      rec.length=0;rec.push(..._gop);
       if(cur&&!rec.some(a=>a[0]===cur.plant&&a[1]===cur.sloc))rec.unshift([cur.plant,cur.sloc]);
-      rec.slice(0,3).forEach(a=>{
+      rec.slice(0,4).forEach(a=>{
         const on=!!cur&&cur.plant===a[0]&&cur.sloc===a[1];
         const c=el('button','chip'+(on?' active':''),whName(a[0],a[1]));c.type='button';
         c.title=plantName(a[0])+' · sloc '+a[1];
@@ -7311,7 +7339,11 @@ function dcRequestForm(v,kind){
         'var(--accent-600)'));
     }
     const sw=el('div','search-wrap');sw.style.margin='0 0 8px';
-    const si=el('input');si.placeholder=coHang.length
+    /* HỦY / HAO HỤT: mặc định KHÔNG bày cả danh sách hàng đang có (Khoa 14/10/2026) —
+       bếp 250 mã thì màn dài ~40 màn hình, trong khi mỗi lần hủy chỉ vài mã. Dòng vẫn
+       dựng sẵn; ô tìm trống thì chỉ hiện mã ĐÃ gõ số hủy. */
+    const _anMacDinh=kind==='huy';
+    const si=el('input');si.placeholder=_anMacDinh?'Gõ tên hoặc mã hàng cần hủy…':coHang.length
       ?('Tìm trong '+nq(coHang.length,0)+' mã đang có — gõ để lục cả danh mục')
       :'Gõ mã hoặc tên để lục trong danh mục…';sw.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>';
     sw.appendChild(si);listWrap.appendChild(sw);
@@ -7321,6 +7353,10 @@ function dcRequestForm(v,kind){
     let onlyPicked=false;
     fbar.appendChild(bOnly);listWrap.appendChild(fbar);
     const nhac=el('div');nhac.style.cssText='display:none;margin-bottom:10px';listWrap.appendChild(nhac);
+    const goiYHuy=el('div','empty');goiYHuy.hidden=true;
+    const _gy1=el('div','big');_gy1.textContent='Gõ tên hoặc mã hàng cần hủy';
+    const _gy2=el('div');_gy2.textContent='Ô tìm phía trên lục trong hàng đang có ở kho. Mã đã điền số hủy luôn nằm lại trong danh sách.';
+    goiYHuy.appendChild(_gy1);goiYHuy.appendChild(_gy2);
     function capNhatNhac(dangTim,soNoTon,conBo){
       if(!soNoTon&&!conBo){nhac.style.display='none';return;}
       nhac.style.display='';nhac.innerHTML='';
@@ -7367,7 +7403,7 @@ function dcRequestForm(v,kind){
       return tr;
     }
     rows.forEach(r=>tb.appendChild(dungDong(r)));
-    tbl.appendChild(tb);w.appendChild(tbl);listWrap.appendChild(w);
+    tbl.appendChild(tb);w.appendChild(tbl);listWrap.appendChild(w);listWrap.appendChild(goiYHuy);
     /* Mã kho nguồn KHÔNG có chỉ dựng khi người dùng GÕ TÌM — mặc định không hiện.
        Rule Khoa 18/09/2026: xin hàng là xin thứ kho kia ĐANG CÓ. Nạp sẵn cả danh
        mục làm màn hình thành danh mục vật tư toàn công ty (kho chưa nạp tồn đầu kỳ
@@ -7399,11 +7435,14 @@ function dcRequestForm(v,kind){
            có" — đúng cái Khoa bảo bỏ. Mã ĐÃ gõ số (.on) thì luôn giữ, nếu không
            người lập tưởng mã mình chọn bị mất. */
         const hitQ=vnAll(tr.dataset.k||'',qq)
-          &&(dangTim||!tr.dataset.noton||tr.classList.contains('on'));
+          &&(dangTim||(_anMacDinh?tr.classList.contains('on'):(!tr.dataset.noton||tr.classList.contains('on'))));
         const hitP=!onlyPicked||tr.classList.contains('on');
         const ok=hitQ&&hitP;tr.style.display=ok?'':'none';
         if(ok){shown++;if(tr.dataset.noton)shownNoTon++;}});
       capNhatNhac(dangTim,shownNoTon,conBo);
+      // Hủy: chưa gõ tìm, chưa chọn mã nào -> nói rõ phải làm gì thay vì để bảng trống trơn
+      const _trong=_anMacDinh&&!dangTim&&!shown&&coHang.length>0;
+      goiYHuy.hidden=!_trong;w.style.display=_trong?'none':'';
       const nk=Object.keys(picked).length;
       bOnly.textContent=onlyPicked?('◀ Xem lại đủ '+coHang.length+' mã'):('Chỉ xem '+nk+' mã đã chọn');
       bOnly.classList.toggle('active',onlyPicked);
@@ -9514,13 +9553,38 @@ function opXem(v){
       const info=el('div');info.style.cssText='padding:12px 20px;border-bottom:1px solid var(--line);font-size:12.5px;color:var(--muted)';
       info.innerHTML=`Chốt từ biên bản <b>${op.fromId}</b> · duyệt bởi ${op.by} lúc ${op.at} · ${Object.keys(op.items).length} mặt hàng`;
       card.appendChild(info);
+      /* Ô tìm + mỗi lượt 30 dòng (Khoa 14/10/2026): kho bếp 250 mã đổ hết ra một bảng là
+         màn dài ~24 màn hình. Số liệu, thứ tự, nút tải Excel giữ nguyên. */
+      const OP_TRANG=30;let opN=OP_TRANG;
+      const opRows=Object.entries(op.items).map(([code,qty])=>{const m=DATA.materials.find(x=>x.code===code)||{name:'?',uom:''};return {code,qty,name:m.name,uom:m.uom};})
+        .sort((a,b)=>a.name.localeCompare(b.name,'vi'));
+      const sw=el('div','search-wrap');sw.style.margin='12px 20px 4px';
+      sw.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>';
+      const si=el('input');si.placeholder='Tìm theo mã hoặc tên hàng…';sw.appendChild(si);
+      if(opRows.length>OP_TRANG)card.appendChild(sw);
       const w=el('div','tbl-wrap');const tbl=el('table');
       tbl.innerHTML=`<thead><tr><th>Mã hàng</th><th>Tên hàng</th><th>ĐVT</th><th class="num">Tồn đầu kỳ</th></tr></thead>`;
-      const tb=el('tbody');
-      Object.entries(op.items).map(([code,qty])=>{const m=DATA.materials.find(x=>x.code===code)||{name:'?',uom:''};return {code,qty,name:m.name,uom:m.uom};})
-        .sort((a,b)=>a.name.localeCompare(b.name,'vi'))
-        .forEach(r=>{tb.appendChild(el('tr',null,`<td class="tnum">${r.code}</td><td>${r.name}</td><td><span class="badge badge-uom">${r.uom}</span></td><td class="num cell-strong tnum">${r.qty}</td>`));});
-      tbl.appendChild(tb);w.appendChild(tbl);card.appendChild(w);
+      const tb=el('tbody');tbl.appendChild(tb);w.appendChild(tbl);card.appendChild(w);
+      const moreBar=el('div');moreBar.style.cssText='display:flex;align-items:center;justify-content:center;gap:8px;padding:10px 20px';
+      card.appendChild(moreBar);
+      function veOp(){
+        const qq=vnTerms(si.value);
+        const hop=qq.length?opRows.filter(r=>vnAll(vnNorm(r.code)+'|'+vnNorm(r.name),qq)):opRows;
+        tb.innerHTML='';
+        hop.slice(0,opN).forEach(r=>{tb.appendChild(el('tr',null,`<td class="tnum">${r.code}</td><td>${r.name}</td><td><span class="badge badge-uom">${r.uom}</span></td><td class="num cell-strong tnum">${r.qty}</td>`));});
+        if(!hop.length)tb.appendChild(el('tr',null,'<td colspan="4" style="text-align:center;color:var(--muted)">Không có mã nào khớp</td>'));
+        moreBar.innerHTML='';
+        if(hop.length>opN){
+          const bm=el('button','btn btn-ghost btn-sm');bm.type='button';bm.textContent=L('▾ Xem thêm');
+          bm.onclick=()=>{opN+=OP_TRANG;veOp();};
+          const bn=el('span','badge badge-soft tnum');bn.textContent=String(hop.length-opN);
+          moreBar.appendChild(bm);moreBar.appendChild(bn);
+        }
+        moreBar.style.display=moreBar.children.length?'':'none';
+        try{cardifyTables(w.parentNode);}catch(e){}
+      }
+      si.oninput=()=>{opN=OP_TRANG;veOp();};
+      veOp();
       const delBar=el('div');delBar.style.cssText='padding:12px 20px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap';
       const bXls=el('button','btn btn-ghost btn-sm','⬇ Tải Excel tồn đầu kỳ');
       bXls.onclick=()=>exportOpeningXlsx(plantSel.value,slocSel.value);
