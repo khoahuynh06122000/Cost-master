@@ -1121,7 +1121,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1610-01';
+const APP_VER='1610-02';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1848,7 +1848,13 @@ function slocsOf(p){return DATA.warehouses.filter(w=>w.plant===p);}
 function whName(p,s){const w=DATA.warehouses.find(x=>x.plant===p&&x.sloc===s);return w?w.sloc_name:s;}
 function plantName(p){const w=DATA.warehouses.find(x=>x.plant===p);return w?w.plant_name:p;}
 function initials(n){return (n||'?').trim().split(/\s+/).slice(-1)[0][0].toUpperCase();}
-function uid(p){return p+Date.now().toString(36).slice(-5).toUpperCase()+Math.floor(Math.random()*90+10);}
+/* Mã dòng dữ liệu. Bản cũ chỉ lấy 5 ký tự cuối của giờ + số ngẫu nhiên 2 chữ số (90 khả năng):
+   lưu 20 dòng một lượt (quét ảnh nhập kho) thì 89% số lần có 2 dòng trùng mã -> máy chủ báo
+   23505 "receipts_pkey" (16/10/2026). Nay: đủ thời gian + bộ đếm tăng trong phiên + ngẫu nhiên. */
+let _uidSeq=0;
+function uid(p){_uidSeq=(_uidSeq+1)%1296;
+  return p+Date.now().toString(36).toUpperCase()+_uidSeq.toString(36).toUpperCase().padStart(2,'0')
+    +Math.floor(Math.random()*46656).toString(36).toUpperCase().padStart(3,'0');}
 /* ===== QUY ƯỚC MÃ PHIẾU KIỂM KÊ (áp dụng từ 21/08/2026) =====
    KK-<plant>-<sloc>-<YYYYMMDD>      ví dụ: KK-1052-2048-20260821
    - Địa điểm kiểm kê = khóa kép plant + sloc (sloc trùng nhau giữa các plant nên phải có cả hai).
@@ -3390,9 +3396,12 @@ function hideFreshPill(){const b=document.getElementById('freshPill');if(b)b.rem
 // các hàm ghi (đẩy lên Supabase; đồng bộ 45s sẽ cập nhật các thiết bị khác)
 // audit_log/notifications lỗi thì chỉ ghi Console — không dựng hộp lỗi chắn màn vì không ảnh hưởng số liệu nghiệp vụ
 const TBL_QUIET=['audit_log','notifications'];
-async function dbIns(table,row){if(!sb)return;const {error}=await sb.from(table).insert(row);if(error){console.error(table,error);
-  if(TBL_QUIET.indexOf(table)>=0)return;
-  errBox('Không lưu được '+tblVN(table)+' lên máy chủ',['Dữ liệu vừa nhập <b>CHƯA</b> lên máy chủ. Máy khác sẽ không thấy, tải lại trang là mất.','Chụp màn hình này gửi admin, rồi thử lại.'],'Bảng: '+table+'\n'+(error.message||'')+(error.code?'\nMã lỗi: '+error.code:''));}}
+/* Trả {ok} để nơi gọi biết dòng nào KHÔNG lên máy chủ (trước đây trả undefined cả hai đường). */
+async function dbIns(table,row){if(!sb)return {ok:true};const {error}=await sb.from(table).insert(row);if(!error)return {ok:true};
+  {console.error(table,error);
+  if(TBL_QUIET.indexOf(table)>=0)return {ok:false,error};
+  errBox('Không lưu được '+tblVN(table)+' lên máy chủ',['Dữ liệu vừa nhập <b>CHƯA</b> lên máy chủ. Máy khác sẽ không thấy, tải lại trang là mất.','Chụp màn hình này gửi admin, rồi thử lại.'],'Bảng: '+table+'\n'+(error.message||'')+(error.code?'\nMã lỗi: '+error.code:''));
+  return {ok:false,error};}}
 // dbUpd/dbDel dùng .select() để BIẾT thực sự có bao nhiêu dòng đổi trên máy chủ.
 // RLS chặn UPDATE/DELETE thì Supabase KHÔNG trả error, chỉ trả 0 dòng => trước đây app im lặng
 // và vẫn xóa trong RAM (báo thành công giả, F5 là dữ liệu quay lại). Nay trả {ok,count} để nơi gọi kiểm tra.
@@ -8250,7 +8259,9 @@ function dcNhapKho(v){
        log('Thêm mã vào danh mục kho (nhập kho)',chosen.code+' · '+chosen.name+' → '+plantName(pl));}}
     const rec={id:uid('NK'),plant:plantSel.value,sloc:slocSel.value,code:chosen.code,name:chosen.name,uom:chosen.uom,qty:Number(iQty.value),date:iDate.value,period:perSel.value,note:iNote.value||'',by:session.name,time:now()};
     receipts.unshift(rec);learnMaterials([{code:rec.code,name:rec.name,uom:rec.uom}]);
-    dbIns('receipts',{id:rec.id,plant_code:rec.plant,sloc_code:rec.sloc,code:rec.code,name:rec.name,uom:rec.uom,qty:rec.qty,date:rec.date,period:rec.period,note:rec.note,created_by:rec.by});
+    /* Máy chủ từ chối thì GỠ dòng khỏi danh sách trên máy — để lại là BP tưởng đã lưu. */
+    dbIns('receipts',{id:rec.id,plant_code:rec.plant,sloc_code:rec.sloc,code:rec.code,name:rec.name,uom:rec.uom,qty:rec.qty,date:rec.date,period:rec.period,note:rec.note,created_by:rec.by})
+      .then(kq=>{if(kq&&kq.ok===false){receipts=receipts.filter(x=>x!==rec);renderList();}});
     log('Nhận hàng từ kho tổng',`${chosen.name} · ${rec.qty} ${chosen.uom} · ${whName(rec.plant,rec.sloc)} · kỳ ${periodVN(rec.period)}`);
     toast('Đã thêm nhập kho '+chosen.code);iMat.value='';chosen=null;iQty.value='';nkMo={};vePick();updRead();renderList();};
   // ---- Quét biên bản nhập bằng ảnh (Gemini Vision qua /api/ocr) ----
@@ -8372,17 +8383,26 @@ function dcNhapKho(v){
     });
     tbl.appendChild(tb);w.appendChild(tbl);prevWrap.appendChild(w);
     const saveBtn=el('button','btn btn-primary','✓ Thêm tất cả vào nhập kho');saveBtn.style.marginTop='10px';
-    saveBtn.onclick=()=>{
+    saveBtn.onclick=async ()=>{
       const ok=pv.filter(r=>!r.removed&&r.code&&masterByCode[r.code.trim()]&&Number(r.qty)>0);
       const skipped=pv.filter(r=>!r.removed).length-ok.length;
       if(!ok.length){toast('Chưa có dòng nào khớp mã hợp lệ để lưu');return;}
       if(!confirm('Thêm '+ok.length+' dòng vào Nhập kho '+whName(plantSel.value,slocSel.value)+' · tháng '+periodVN(perSel.value)+'?'+(skipped>0?'\n('+skipped+' dòng chưa khớp mã sẽ bị bỏ qua)':'')))return;
-      ok.forEach(r=>{const m=masterByCode[r.code.trim()];
+      /* Ghi TỪNG dòng và chờ máy chủ trả lời rồi mới báo (16/10/2026): trước đây báo
+         "✓ Đã thêm N dòng" ngay, dòng bị máy chủ từ chối vẫn nằm trong danh sách. */
+      saveBtn.disabled=true;cancelBtn.disabled=true;saveBtn.textContent='Đang lưu…';
+      let luu=0,truot=0;const conLai=[];
+      for(const r of ok){const m=masterByCode[r.code.trim()];
         const rec={id:uid('NK'),plant:plantSel.value,sloc:slocSel.value,code:m.code,name:m.name,uom:m.uom,qty:Number(r.qty),date:iDate.value,period:perSel.value,note:((iNote.value||'')+' [quét ảnh]').trim(),by:session.name,time:now()};
-        receipts.unshift(rec);learnMaterials([{code:rec.code,name:rec.name,uom:rec.uom}]);
-        dbIns('receipts',{id:rec.id,plant_code:rec.plant,sloc_code:rec.sloc,code:rec.code,name:rec.name,uom:rec.uom,qty:rec.qty,date:rec.date,period:rec.period,note:rec.note,created_by:rec.by});});
-      log('Nhập kho từ ảnh',ok.length+' dòng · '+whName(plantSel.value,slocSel.value)+' · kỳ '+periodVN(perSel.value));
-      toast('✓ Đã thêm '+ok.length+' dòng nhập kho');
+        const kq=await dbIns('receipts',{id:rec.id,plant_code:rec.plant,sloc_code:rec.sloc,code:rec.code,name:rec.name,uom:rec.uom,qty:rec.qty,date:rec.date,period:rec.period,note:rec.note,created_by:rec.by});
+        if(kq&&kq.ok===false){truot++;conLai.push({code:m.code,name:m.name,uom:m.uom,qty:r.qty});continue;}
+        receipts.unshift(rec);learnMaterials([{code:rec.code,name:rec.name,uom:rec.uom}]);luu++;}
+      if(luu)log('Nhập kho từ ảnh',luu+' dòng · '+whName(plantSel.value,slocSel.value)+' · kỳ '+periodVN(perSel.value));
+      /* Còn dòng trượt: bảng chỉ giữ lại ĐÚNG những dòng chưa lưu — bấm lưu lại không gửi
+         lại dòng đã lên máy chủ (gửi lại là ghi nhập kho hai lần). */
+      if(truot){renderList();renderPreview(conLai);
+        toast('Đã lưu '+luu+' dòng — '+truot+' dòng CHƯA lên máy chủ, còn ở bảng bên dưới để lưu lại');return;}
+      toast('✓ Đã thêm '+luu+' dòng nhập kho');
       ocrPreviewOpen=false;prevWrap.innerHTML='';statusEl.innerHTML='';renderList();
     };
     prevWrap.appendChild(saveBtn);
