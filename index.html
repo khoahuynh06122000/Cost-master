@@ -1121,7 +1121,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1610-07';
+const APP_VER='1610-08';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -10344,8 +10344,25 @@ function openUserDrawer(view,p){
     if(!uq.ok||uq.count===0)return;
     p.role=role;p.status=status;
     const chosen=_ufield(role)?[...box.querySelectorAll('.ukitem input:checked')].map(c=>c.value):[]; // 'plant|sloc'
-    try{await sb.from('user_plants').delete().eq('user_id',p.id);
-      if(chosen.length)await sb.from('user_plants').insert(chosen.map(k=>{const a=k.split('|');return {user_id:p.id,plant_code:a[0],sloc_code:a[1]};}));}catch(e){console.error(e);}
+    /* GHI KHO MỚI TRƯỚC, GỠ KHO BỎ TICK SAU (16/10/2026). Bản cũ xoá hết rồi mới insert và
+       KHÔNG kiểm lỗi insert: máy chủ từ chối (VD điểm bán mới chưa có trong bảng điểm bán)
+       thì người đó MẤT SẠCH quyền mà màn vẫn báo "Đã lưu". */
+    {const khoa=(pl,sl)=>pl+'|'+(sl||'');
+     let cu=[];
+     try{const r0=await sb.from('user_plants').select('plant_code,sloc_code').eq('user_id',p.id);
+       if(r0.error)throw r0.error;cu=r0.data||[];}
+     catch(e){errBox('Chưa lưu được kho cho người này',['Không đọc được quyền hiện tại — <b>chưa đổi gì</b>.','Thử lại sau ít phút.'],'Bảng: user_plants'+NL+((e&&e.message)||''));return;}
+     const coCu=new Set(cu.map(r=>khoa(r.plant_code,r.sloc_code)));
+     const them=chosen.filter(k=>!coCu.has(khoa(...k.split('|'))));
+     if(them.length){const {error}=await sb.from('user_plants').insert(them.map(k=>{const a=k.split('|');return {user_id:p.id,plant_code:a[0],sloc_code:a[1]||null};}));
+       if(error){errBox('Chưa gán được kho cho người này',['Máy chủ từ chối thêm <b>'+them.length+' kho</b>: '+them.map(k=>{const a=k.split('|');return whName(a[0],a[1]);}).join(', ')+'.',
+           'Quyền cũ của người này <b>giữ nguyên</b>, không mất gì. Gửi đoạn chi tiết bên dưới cho Claude để xử lý phía máy chủ.'],
+           'Bảng: user_plants'+NL+(error.message||'')+(error.code?NL+'Mã lỗi: '+error.code:'')+(error.details?NL+error.details:''));return;}}
+     const chonSet=new Set(chosen.map(k=>khoa(...k.split('|'))));
+     for(const r of cu){if(chonSet.has(khoa(r.plant_code,r.sloc_code)))continue;
+       let q=sb.from('user_plants').delete().eq('user_id',p.id).eq('plant_code',r.plant_code);
+       q=r.sloc_code==null?q.is('sloc_code',null):q.eq('sloc_code',r.sloc_code);
+       const {error}=await q;if(error){console.error('user_plants delete',error);}}}
     userWh[p.id]=chosen.map(k=>{const a=k.split('|');return {plant:a[0],sloc:a[1]};});
     userPlants[p.id]=[...new Set(chosen.map(k=>k.split('|')[0]))];
     log('Phân quyền',`${p.email} → ${role||'chưa gán'} / ${status} / ${chosen.length} kho`);
