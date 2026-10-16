@@ -1121,7 +1121,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1410-02';
+const APP_VER='1610-01';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1204,6 +1204,9 @@ Object.assign(TXT.hi,{"Chọn một kho để xem mọi phiếu kho đó chuyể
 /* Bo sung 01/10/2026 (dot 33) — o Ngay + Ghi chu tung ma cho kho bep. */
 Object.assign(TXT.en,{"Ngày":"Date","Ghi chú":"Note","Mỗi dòng có thêm ô Ngày và Ghi chú — điền khi cần, để trống cũng được. Hai ô này không ảnh hưởng số đếm; kế toán xem được khi duyệt phiếu.":"Each line now has a Date and a Note box — fill them in when you need to, leaving them empty is fine. They do not affect the counted figure; accounting can see them when approving the sheet.","Mẫu của bếp có thêm hai cột date và ghi chú ở cuối — điền khi cần, để trống cũng nạp được bình thường.":"The kitchen template has two extra columns, date and note, at the end — fill them in when you need to; leaving them empty still uploads fine.","⚠ Chưa lưu được ngày / ghi chú của từng mã — số kiểm kê vẫn gửi bình thường, tổng vẫn đúng. Báo kế toán để xử lý.":"⚠ The per-item date / note could not be saved — the count itself was sent normally and the totals are correct. Tell accounting to sort it out."});
 Object.assign(TXT.hi,{"Ngày":"तारीख़","Ghi chú":"टिप्पणी","Mỗi dòng có thêm ô Ngày và Ghi chú — điền khi cần, để trống cũng được. Hai ô này không ảnh hưởng số đếm; kế toán xem được khi duyệt phiếu.":"हर पंक्ति में अब तारीख़ और टिप्पणी का खाना है — ज़रूरत हो तो भरें, खाली छोड़ना भी ठीक है। ये गिनती के आँकड़े को नहीं बदलते; पर्ची स्वीकृत करते समय लेखा इन्हें देख सकता है।","Mẫu của bếp có thêm hai cột date và ghi chú ở cuối — điền khi cần, để trống cũng nạp được bình thường.":"रसोई के टेम्पलेट के अंत में दो अतिरिक्त कॉलम हैं, date और ghi chú — ज़रूरत हो तो भरें; खाली छोड़ने पर भी अपलोड ठीक चलता है।","⚠ Chưa lưu được ngày / ghi chú của từng mã — số kiểm kê vẫn gửi bình thường, tổng vẫn đúng. Báo kế toán để xử lý.":"⚠ प्रति-वस्तु तारीख़ / टिप्पणी सहेजी नहीं जा सकी — गिनती सामान्य रूप से भेज दी गई और योग सही हैं। समाधान हेतु लेखा को बताएँ।"});
+/* Bo sung 16/10/2026 — bep nap file giu ma chua co master data. */
+Object.assign(TXT.en,{"Lưu xong, app tự báo kế toán / admin khai báo tên và ĐVT vào Danh mục VT. Khai xong, tên hàng tự hiện trên phiếu.": "After saving, the app notifies accounting / admin to add the name and unit in the Materials catalogue. Once added, item names appear on the sheet automatically.", "chưa có tên": "no name yet", "Mã chưa có trong master data": "Codes not in master data"});
+Object.assign(TXT.hi,{"Lưu xong, app tự báo kế toán / admin khai báo tên và ĐVT vào Danh mục VT. Khai xong, tên hàng tự hiện trên phiếu.": "सहेजने के बाद ऐप लेखा / एडमिन को सामग्री सूची में नाम और इकाई जोड़ने की सूचना देता है। जुड़ते ही पर्ची पर वस्तु का नाम अपने आप दिखेगा।", "chưa có tên": "नाम अभी नहीं", "Mã chưa có trong master data": "मास्टर डेटा में न मिले कोड"});
 /* Bo sung 14/10/2026 (2) — Huy / Ton dau ky gon lai. */
 Object.assign(TXT.en,{"Gõ tên hoặc mã hàng cần hủy…": "Type the name or code of the item to write off…", "Gõ tên hoặc mã hàng cần hủy": "Type the name or code of the item to write off", "Ô tìm phía trên lục trong hàng đang có ở kho. Mã đã điền số hủy luôn nằm lại trong danh sách.": "The search box above looks through items currently in this store. Items you have entered a write-off quantity for always stay in the list.", "Tìm theo mã hoặc tên hàng…": "Search by code or item name…", "Không có mã nào khớp": "No matching items"});
 Object.assign(TXT.hi,{"Gõ tên hoặc mã hàng cần hủy…": "नष्ट करने वाली वस्तु का नाम या कोड लिखें…", "Gõ tên hoặc mã hàng cần hủy": "नष्ट करने वाली वस्तु का नाम या कोड लिखें", "Ô tìm phía trên lục trong hàng đang có ở kho. Mã đã điền số hủy luôn nằm lại trong danh sách.": "ऊपर का खोज बॉक्स इस स्टोर में मौजूद वस्तुओं में खोजता है। जिन वस्तुओं की नष्ट मात्रा भरी है, वे सूची में बनी रहती हैं।", "Tìm theo mã hoặc tên hàng…": "कोड या वस्तु के नाम से खोजें…", "Không có mã nào khớp": "कोई मिलती वस्तु नहीं"});
@@ -1216,7 +1219,7 @@ Object.assign(TXT.hi,{"Tất cả kho bếp":"सभी रसोई स्ट�
 /* Bo sung 02/10/2026 (dot 34) — khoa AI khong co model doc anh. */
 Object.assign(TXT.en,{"Khóa AI này không dùng được model đọc ảnh nào":"This AI key cannot use any photo-reading model","Khóa AI này không đọc được ảnh. Vào thẻ \"Cài đặt AI quét ảnh\" bấm ⚡ Thử khóa; vẫn báo lỗi thì tạo khóa mới ở aistudio.google.com/apikey rồi lưu lại.":"This AI key cannot read photos. Open the \"AI photo-scan settings\" card and press ⚡ Test key; if it still fails, create a new key at aistudio.google.com/apikey and save it.","Google đang quá tải — chờ một lát rồi quét lại.":"Google is overloaded — wait a moment and scan again.","Thử lại sau ít phút. Vẫn lỗi thì bấm 📋 Sao chép chi tiết lỗi rồi gửi kế toán.":"Try again in a few minutes. If it still fails, press 📋 Copy error details and send it to accounting.","✗ Khóa đúng nhưng không dùng được model đọc ảnh nào. Tạo khóa mới ở aistudio.google.com/apikey rồi lưu lại.":"✗ The key is valid but cannot use any photo-reading model. Create a new key at aistudio.google.com/apikey and save it."});
 Object.assign(TXT.hi,{"Khóa AI này không dùng được model đọc ảnh nào":"यह AI कुंजी किसी भी फ़ोटो-पठन मॉडल का उपयोग नहीं कर सकती","Khóa AI này không đọc được ảnh. Vào thẻ \"Cài đặt AI quét ảnh\" bấm ⚡ Thử khóa; vẫn báo lỗi thì tạo khóa mới ở aistudio.google.com/apikey rồi lưu lại.":"यह AI कुंजी तस्वीरें नहीं पढ़ सकती। \"AI फ़ोटो-स्कैन सेटिंग\" कार्ड खोलकर ⚡ कुंजी जाँचें दबाएँ; फिर भी विफल हो तो aistudio.google.com/apikey पर नई कुंजी बनाकर सहेजें।","Google đang quá tải — chờ một lát rồi quét lại.":"Google पर अत्यधिक भार है — थोड़ी देर रुककर फिर स्कैन करें।","Thử lại sau ít phút. Vẫn lỗi thì bấm 📋 Sao chép chi tiết lỗi rồi gửi kế toán.":"कुछ मिनट बाद फिर प्रयास करें। फिर भी विफल हो तो 📋 त्रुटि विवरण कॉपी करें दबाकर लेखा को भेजें।","✗ Khóa đúng nhưng không dùng được model đọc ảnh nào. Tạo khóa mới ở aistudio.google.com/apikey rồi lưu lại.":"✗ कुंजी सही है पर किसी फ़ोटो-पठन मॉडल का उपयोग नहीं कर सकती। aistudio.google.com/apikey पर नई कुंजी बनाकर सहेजें।"});
-const TXT_RE_BS=[{re:new RegExp("^Có ([\\d.,]+) dòng ngày không đọc được \\((.+)\\) — sửa cột Ngày thành dd/mm/yyyy rồi nạp lại$"),en:"$1 rows have an unreadable date ($2) — change the Date column to dd/mm/yyyy and upload again",hi:"$1 पंक्तियों की तारीख पढ़ी नहीं जा सकी ($2) — दिनांक कॉलम को dd/mm/yyyy में बदलें और फिर से अपलोड करें",n:1,en1:"1 row has an unreadable date ($2) — change the Date column to dd/mm/yyyy and upload again",hi1:"1 पंक्ति की तारीख पढ़ी नहीं जा सकी ($2) — दिनांक कॉलम को dd/mm/yyyy में बदलें और फिर से अपलोड करें"},{re:new RegExp("^([\\d.,]+) mã để trống Số lượng — không tính \\(muốn ghi 0 thì gõ số 0\\)\\.$"),en:"$1 items left blank — not counted (type 0 to record zero).",hi:"$1 वस्तुओं की मात्रा खाली — गिनी नहीं गईं (शून्य दर्ज करने हेतु 0 लिखें)।",n:1,en1:"$1 item left blank — not counted (type 0 to record zero).",hi1:"$1 वस्तु की मात्रा खाली — गिनी नहीं गई (शून्य दर्ज करने हेतु 0 लिखें)।"},{re:new RegExp("^([\\d.,]+) dòng sổ cũ không ghi đủ kho đi / kho đến nên không lọt vào bộ lọc — bỏ chọn kho ở ô trên để xem đủ\\.$"),en:"$1 old ledger lines do not record both the source and the destination store, so they fall outside this filter — clear the store above to see them all.",hi:"$1 पुरानी बही पंक्तियों में भेजने और पाने वाला स्टोर दोनों दर्ज नहीं हैं, इसलिए वे इस फ़िल्टर में नहीं आतीं — सब देखने हेतु ऊपर का स्टोर हटाएँ।",n:1,en1:"$1 old ledger line does not record both the source and the destination store, so it falls outside this filter — clear the store above to see them all.",hi1:"$1 पुरानी बही पंक्ति में भेजने और पाने वाला स्टोर दोनों दर्ज नहीं हैं, इसलिए वह इस फ़िल्टर में नहीं आती — सब देखने हेतु ऊपर का स्टोर हटाएँ।"},{re:new RegExp("^([\\d.,]+) mã trong file chưa có trong danh mục tổng — không nạp$"),en:"$1 codes in the file are not in the item catalogue — not uploaded",hi:"फ़ाइल के $1 कोड वस्तु-सूची में नहीं हैं — अपलोड नहीं हुए",n:1,en1:"$1 code in the file is not in the item catalogue — not uploaded",hi1:"फ़ाइल का $1 कोड वस्तु-सूची में नहीं है — अपलोड नहीं हुआ"},{re:new RegExp("^▾ Xem thêm ([\\d.,]+) mã khác của điểm bán$"),en:"▾ Show $1 more items of the outlet",hi:"▾ आउटलेट की $1 और वस्तुएँ दिखाएँ",n:1,en1:"▾ Show $1 more item of the outlet",hi1:"▾ आउटलेट की $1 और वस्तु दिखाएँ"},{re:new RegExp("^▾ Xem thêm ([\\d.,]+) \\(còn ([\\d.,]+)\\)$"),en:"▾ Show $1 more ($2 left)",hi:"▾ $1 और दिखाएँ ($2 शेष)"},{re:new RegExp("^Ca sáng · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"Morning shift · $1 · handed over by $2 · received by $3",hi:"सुबह की शिफ़्ट · $1 · $2 द्वारा सौंपा · $3 द्वारा प्राप्त"},{re:new RegExp("^Ca sáng · ([0-9/-]+) · giao bởi (.+)$"),en:"Morning shift · $1 · handed over by $2",hi:"सुबह की शिफ़्ट · $1 · $2 द्वारा सौंपा"},{re:new RegExp("^Ca chiều · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"Afternoon shift · $1 · handed over by $2 · received by $3",hi:"दोपहर की शिफ़्ट · $1 · $2 द्वारा सौंपा · $3 द्वारा प्राप्त"},{re:new RegExp("^Ca chiều · ([0-9/-]+) · giao bởi (.+)$"),en:"Afternoon shift · $1 · handed over by $2",hi:"दोपहर की शिफ़्ट · $1 · $2 द्वारा सौंपा"},{re:new RegExp("^Ca tối · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"Night shift · $1 · handed over by $2 · received by $3",hi:"रात की शिफ़्ट · $1 · $2 द्वारा सौंपा · $3 द्वारा प्राप्त"},{re:new RegExp("^Ca tối · ([0-9/-]+) · giao bởi (.+)$"),en:"Night shift · $1 · handed over by $2",hi:"रात की शिफ़्ट · $1 · $2 द्वारा सौंपा"},{re:new RegExp("^Chốt tồn tháng (\\d{2}/\\d{4}) \\(kế toán\\)$"),en:"Month-end stock close $1 (accounting)",hi:"माह-अंत स्टॉक समापन $1 (लेखा)"},{re:new RegExp("^Phiếu kiểm kê (.+) \\(kỳ (\\d{2}/\\d{4})\\)$"),en:"Count sheet $1 (period $2)",hi:"गणना पर्ची $1 (अवधि $2)"},{re:new RegExp("^(.+) · Sloc ([0-9]+) · gửi bởi (.+) lúc (.+)$"),en:"$1 · Sloc $2 · submitted by $3 at $4",hi:"$1 · Sloc $2 · $3 द्वारा $4 पर भेजा गया"},{re:new RegExp("^(.+) · Sloc ([0-9]+) · Chốt từ (.*) · (.*) · Người chốt (.*)$"),en:"$1 · Sloc $2 · closed from $3 · $4 · closed by $5",hi:"$1 · Sloc $2 · $3 से बंद · $4 · $5 द्वारा बंद"},{re:new RegExp("^(.+) · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"$1 · $2 · handed over by $3 · received by $4",hi:"$1 · $2 · $3 द्वारा सौंपा · $4 द्वारा प्राप्त"},{re:new RegExp("^(.+) · ([0-9/-]+) · giao bởi (.+)$"),en:"$1 · $2 · handed over by $3",hi:"$1 · $2 · $3 द्वारा सौंपा"},{re:new RegExp("^✏️ Phiếu này đã đếm bổ sung ([\\d.,]+) lần — bấm để xem đã sửa gì$"),en:"✏️ This sheet has been edited $1 times — tap to see what changed",hi:"✏️ यह पर्ची $1 बार संपादित हुई — क्या बदला देखने हेतु टैप करें",n:1,en1:"✏️ This sheet has been edited once — tap to see what changed",hi1:"✏️ यह पर्ची एक बार संपादित हुई — क्या बदला देखने हेतु टैप करें"},{re:new RegExp("^📋 Bảng kiểm đếm thực tế · ([\\d.,]+) mã$"),en:"📋 Actual count table · $1 items",hi:"📋 वास्तविक गणना तालिका · $1 वस्तुएँ",n:1,en1:"📋 Actual count table · $1 item",hi1:"📋 वास्तविक गणना तालिका · $1 वस्तु"},{re:new RegExp("^Tạo bởi (.+) · (.+) · (.+)$"),en:"Created by $1 · $2 · $3",hi:"$1 द्वारा बनाया · $2 · $3"},{re:new RegExp("^([\\d.,]+)/([\\d.,]+) điểm bán$"),en:"$1/$2 outlets",hi:"$1/$2 आउटलेट"},{re:new RegExp("^còn ([\\d.,]+)$"),en:"$1 left",hi:"$1 शेष"},{re:new RegExp("^🔔 Đã tự nhắc ([\\d.,]+) điểm bán$"),en:"🔔 Auto-reminded $1 outlets",hi:"🔔 $1 आउटलेट को स्वतः याद दिलाया"},{re:new RegExp("^📋 Xem bảng xếp hạng chi tiết \\(([\\d.,]+) bộ phận\\)$"),en:"📋 See the full ranking ($1 departments)",hi:"📋 पूरी रैंकिंग देखें ($1 विभाग)"},{re:new RegExp("^🔒 Tháng (\\d{2}/\\d{4}) đã khóa$"),en:"🔒 Month $1 is locked",hi:"🔒 माह $1 बंद है"},{re:new RegExp("^đã được kế toán duyệt cho tháng (\\d{2}/\\d{4})\\. Không thể chỉnh sửa\\. Kỳ mới sẽ mở vào tháng sau\\.$"),en:"has been approved by accounting for month $1. It can no longer be edited. The next period opens next month.",hi:"लेखा द्वारा माह $1 हेतु स्वीकृत। अब संपादित नहीं किया जा सकता। अगली अवधि अगले माह खुलेगी।"},{re:new RegExp("^Đã bỏ từ chối (.+) — phiếu quay lại chờ duyệt$"),en:"Rejection of $1 undone — the request is back to awaiting approval",hi:"$1 की अस्वीकृति रद्द — पर्ची फिर से स्वीकृति की प्रतीक्षा में"},{re:new RegExp("^Phiếu này từng bị từ chối \\(lý do: (.+)\\) và đã được quản trị viên mở lại\\. Xem kỹ trước khi duyệt\\.$"),en:"This request was rejected before (reason: $1) and an administrator reopened it. Check it carefully before approving.",hi:"यह पर्ची पहले अस्वीकृत हुई थी (कारण: $1) और प्रशासक ने इसे फिर खोला। स्वीकृत करने से पहले ध्यान से देखें।"},{re:new RegExp("^(.+) đã duyệt phiếu (.+) · chuyển cho (.+) · ([\\d.,]+) mã · lúc (.+)$"),en:"$1 approved request $2 · sent to $3 · $4 items · at $5",hi:"$1 ने पर्ची $2 स्वीकृत की · $3 को भेजा · $4 वस्तुएँ · $5 बजे",n:4,en1:"$1 approved request $2 · sent to $3 · $4 item · at $5",hi1:"$1 ने पर्ची $2 स्वीकृत की · $3 को भेजा · $4 वस्तु · $5 बजे"},{re:new RegExp("^([\\d.,]+) loại lý do$"),en:"$1 kinds of reason",hi:"$1 प्रकार के कारण",n:1,en1:"$1 kind of reason",hi1:"$1 प्रकार का कारण"},{re:new RegExp("^([\\d.,]+) phiếu$"),en:"$1 requests",hi:"$1 पर्चियाँ",n:1,en1:"$1 request",hi1:"$1 पर्ची"},{re:new RegExp("^([\\d.,]+) dòng$"),en:"$1 lines",hi:"$1 पंक्तियाँ",n:1,en1:"$1 line",hi1:"$1 पंक्ति"}];
+const TXT_RE_BS=[{re:new RegExp("^([\\d.,]+) mã trong file chưa có trong master data — vẫn nạp số, tạm hiện bằng mã$"),en:"$1 codes in the file are not in master data — quantities still loaded, shown by code for now",hi:"फ़ाइल के $1 कोड मास्टर डेटा में नहीं हैं — मात्रा फिर भी दर्ज, अभी कोड से दिखेंगे",n:1,en1:"$1 code in the file is not in master data — quantity still loaded, shown by code for now",hi1:"फ़ाइल का $1 कोड मास्टर डेटा में नहीं है — मात्रा फिर भी दर्ज, अभी कोड से दिखेगा"},{re:new RegExp("^Có ([\\d.,]+) dòng ngày không đọc được \\((.+)\\) — sửa cột Ngày thành dd/mm/yyyy rồi nạp lại$"),en:"$1 rows have an unreadable date ($2) — change the Date column to dd/mm/yyyy and upload again",hi:"$1 पंक्तियों की तारीख पढ़ी नहीं जा सकी ($2) — दिनांक कॉलम को dd/mm/yyyy में बदलें और फिर से अपलोड करें",n:1,en1:"1 row has an unreadable date ($2) — change the Date column to dd/mm/yyyy and upload again",hi1:"1 पंक्ति की तारीख पढ़ी नहीं जा सकी ($2) — दिनांक कॉलम को dd/mm/yyyy में बदलें और फिर से अपलोड करें"},{re:new RegExp("^([\\d.,]+) mã để trống Số lượng — không tính \\(muốn ghi 0 thì gõ số 0\\)\\.$"),en:"$1 items left blank — not counted (type 0 to record zero).",hi:"$1 वस्तुओं की मात्रा खाली — गिनी नहीं गईं (शून्य दर्ज करने हेतु 0 लिखें)।",n:1,en1:"$1 item left blank — not counted (type 0 to record zero).",hi1:"$1 वस्तु की मात्रा खाली — गिनी नहीं गई (शून्य दर्ज करने हेतु 0 लिखें)।"},{re:new RegExp("^([\\d.,]+) dòng sổ cũ không ghi đủ kho đi / kho đến nên không lọt vào bộ lọc — bỏ chọn kho ở ô trên để xem đủ\\.$"),en:"$1 old ledger lines do not record both the source and the destination store, so they fall outside this filter — clear the store above to see them all.",hi:"$1 पुरानी बही पंक्तियों में भेजने और पाने वाला स्टोर दोनों दर्ज नहीं हैं, इसलिए वे इस फ़िल्टर में नहीं आतीं — सब देखने हेतु ऊपर का स्टोर हटाएँ।",n:1,en1:"$1 old ledger line does not record both the source and the destination store, so it falls outside this filter — clear the store above to see them all.",hi1:"$1 पुरानी बही पंक्ति में भेजने और पाने वाला स्टोर दोनों दर्ज नहीं हैं, इसलिए वह इस फ़िल्टर में नहीं आती — सब देखने हेतु ऊपर का स्टोर हटाएँ।"},{re:new RegExp("^([\\d.,]+) mã trong file chưa có trong danh mục tổng — không nạp$"),en:"$1 codes in the file are not in the item catalogue — not uploaded",hi:"फ़ाइल के $1 कोड वस्तु-सूची में नहीं हैं — अपलोड नहीं हुए",n:1,en1:"$1 code in the file is not in the item catalogue — not uploaded",hi1:"फ़ाइल का $1 कोड वस्तु-सूची में नहीं है — अपलोड नहीं हुआ"},{re:new RegExp("^▾ Xem thêm ([\\d.,]+) mã khác của điểm bán$"),en:"▾ Show $1 more items of the outlet",hi:"▾ आउटलेट की $1 और वस्तुएँ दिखाएँ",n:1,en1:"▾ Show $1 more item of the outlet",hi1:"▾ आउटलेट की $1 और वस्तु दिखाएँ"},{re:new RegExp("^▾ Xem thêm ([\\d.,]+) \\(còn ([\\d.,]+)\\)$"),en:"▾ Show $1 more ($2 left)",hi:"▾ $1 और दिखाएँ ($2 शेष)"},{re:new RegExp("^Ca sáng · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"Morning shift · $1 · handed over by $2 · received by $3",hi:"सुबह की शिफ़्ट · $1 · $2 द्वारा सौंपा · $3 द्वारा प्राप्त"},{re:new RegExp("^Ca sáng · ([0-9/-]+) · giao bởi (.+)$"),en:"Morning shift · $1 · handed over by $2",hi:"सुबह की शिफ़्ट · $1 · $2 द्वारा सौंपा"},{re:new RegExp("^Ca chiều · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"Afternoon shift · $1 · handed over by $2 · received by $3",hi:"दोपहर की शिफ़्ट · $1 · $2 द्वारा सौंपा · $3 द्वारा प्राप्त"},{re:new RegExp("^Ca chiều · ([0-9/-]+) · giao bởi (.+)$"),en:"Afternoon shift · $1 · handed over by $2",hi:"दोपहर की शिफ़्ट · $1 · $2 द्वारा सौंपा"},{re:new RegExp("^Ca tối · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"Night shift · $1 · handed over by $2 · received by $3",hi:"रात की शिफ़्ट · $1 · $2 द्वारा सौंपा · $3 द्वारा प्राप्त"},{re:new RegExp("^Ca tối · ([0-9/-]+) · giao bởi (.+)$"),en:"Night shift · $1 · handed over by $2",hi:"रात की शिफ़्ट · $1 · $2 द्वारा सौंपा"},{re:new RegExp("^Chốt tồn tháng (\\d{2}/\\d{4}) \\(kế toán\\)$"),en:"Month-end stock close $1 (accounting)",hi:"माह-अंत स्टॉक समापन $1 (लेखा)"},{re:new RegExp("^Phiếu kiểm kê (.+) \\(kỳ (\\d{2}/\\d{4})\\)$"),en:"Count sheet $1 (period $2)",hi:"गणना पर्ची $1 (अवधि $2)"},{re:new RegExp("^(.+) · Sloc ([0-9]+) · gửi bởi (.+) lúc (.+)$"),en:"$1 · Sloc $2 · submitted by $3 at $4",hi:"$1 · Sloc $2 · $3 द्वारा $4 पर भेजा गया"},{re:new RegExp("^(.+) · Sloc ([0-9]+) · Chốt từ (.*) · (.*) · Người chốt (.*)$"),en:"$1 · Sloc $2 · closed from $3 · $4 · closed by $5",hi:"$1 · Sloc $2 · $3 से बंद · $4 · $5 द्वारा बंद"},{re:new RegExp("^(.+) · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"$1 · $2 · handed over by $3 · received by $4",hi:"$1 · $2 · $3 द्वारा सौंपा · $4 द्वारा प्राप्त"},{re:new RegExp("^(.+) · ([0-9/-]+) · giao bởi (.+)$"),en:"$1 · $2 · handed over by $3",hi:"$1 · $2 · $3 द्वारा सौंपा"},{re:new RegExp("^✏️ Phiếu này đã đếm bổ sung ([\\d.,]+) lần — bấm để xem đã sửa gì$"),en:"✏️ This sheet has been edited $1 times — tap to see what changed",hi:"✏️ यह पर्ची $1 बार संपादित हुई — क्या बदला देखने हेतु टैप करें",n:1,en1:"✏️ This sheet has been edited once — tap to see what changed",hi1:"✏️ यह पर्ची एक बार संपादित हुई — क्या बदला देखने हेतु टैप करें"},{re:new RegExp("^📋 Bảng kiểm đếm thực tế · ([\\d.,]+) mã$"),en:"📋 Actual count table · $1 items",hi:"📋 वास्तविक गणना तालिका · $1 वस्तुएँ",n:1,en1:"📋 Actual count table · $1 item",hi1:"📋 वास्तविक गणना तालिका · $1 वस्तु"},{re:new RegExp("^Tạo bởi (.+) · (.+) · (.+)$"),en:"Created by $1 · $2 · $3",hi:"$1 द्वारा बनाया · $2 · $3"},{re:new RegExp("^([\\d.,]+)/([\\d.,]+) điểm bán$"),en:"$1/$2 outlets",hi:"$1/$2 आउटलेट"},{re:new RegExp("^còn ([\\d.,]+)$"),en:"$1 left",hi:"$1 शेष"},{re:new RegExp("^🔔 Đã tự nhắc ([\\d.,]+) điểm bán$"),en:"🔔 Auto-reminded $1 outlets",hi:"🔔 $1 आउटलेट को स्वतः याद दिलाया"},{re:new RegExp("^📋 Xem bảng xếp hạng chi tiết \\(([\\d.,]+) bộ phận\\)$"),en:"📋 See the full ranking ($1 departments)",hi:"📋 पूरी रैंकिंग देखें ($1 विभाग)"},{re:new RegExp("^🔒 Tháng (\\d{2}/\\d{4}) đã khóa$"),en:"🔒 Month $1 is locked",hi:"🔒 माह $1 बंद है"},{re:new RegExp("^đã được kế toán duyệt cho tháng (\\d{2}/\\d{4})\\. Không thể chỉnh sửa\\. Kỳ mới sẽ mở vào tháng sau\\.$"),en:"has been approved by accounting for month $1. It can no longer be edited. The next period opens next month.",hi:"लेखा द्वारा माह $1 हेतु स्वीकृत। अब संपादित नहीं किया जा सकता। अगली अवधि अगले माह खुलेगी।"},{re:new RegExp("^Đã bỏ từ chối (.+) — phiếu quay lại chờ duyệt$"),en:"Rejection of $1 undone — the request is back to awaiting approval",hi:"$1 की अस्वीकृति रद्द — पर्ची फिर से स्वीकृति की प्रतीक्षा में"},{re:new RegExp("^Phiếu này từng bị từ chối \\(lý do: (.+)\\) và đã được quản trị viên mở lại\\. Xem kỹ trước khi duyệt\\.$"),en:"This request was rejected before (reason: $1) and an administrator reopened it. Check it carefully before approving.",hi:"यह पर्ची पहले अस्वीकृत हुई थी (कारण: $1) और प्रशासक ने इसे फिर खोला। स्वीकृत करने से पहले ध्यान से देखें।"},{re:new RegExp("^(.+) đã duyệt phiếu (.+) · chuyển cho (.+) · ([\\d.,]+) mã · lúc (.+)$"),en:"$1 approved request $2 · sent to $3 · $4 items · at $5",hi:"$1 ने पर्ची $2 स्वीकृत की · $3 को भेजा · $4 वस्तुएँ · $5 बजे",n:4,en1:"$1 approved request $2 · sent to $3 · $4 item · at $5",hi1:"$1 ने पर्ची $2 स्वीकृत की · $3 को भेजा · $4 वस्तु · $5 बजे"},{re:new RegExp("^([\\d.,]+) loại lý do$"),en:"$1 kinds of reason",hi:"$1 प्रकार के कारण",n:1,en1:"$1 kind of reason",hi1:"$1 प्रकार का कारण"},{re:new RegExp("^([\\d.,]+) phiếu$"),en:"$1 requests",hi:"$1 पर्चियाँ",n:1,en1:"$1 request",hi1:"$1 पर्ची"},{re:new RegExp("^([\\d.,]+) dòng$"),en:"$1 lines",hi:"$1 पंक्तियाँ",n:1,en1:"$1 line",hi1:"$1 पंक्ति"}];
 const TXT_RE=[
   {re:new RegExp("^Tháng (\\d{2}/\\d{4}) \\(hiện tại\\)$"),en:"Month $1 (current)",hi:"माह $1 (वर्तमान)"},
   {re:new RegExp("^Tháng (\\d{2}/\\d{4})$"),en:"Month $1",hi:"माह $1"},
@@ -2139,6 +2142,10 @@ function undeclaredCodes(){
   const seen=new Map(); // code -> Set(plant)
   Object.entries(openingStock).forEach(([key,val])=>{const plant=key.split('|')[0];Object.keys(val.items||{}).forEach(c=>{if(!seen.has(c))seen.set(c,new Set());seen.get(c).add(plant);});});
   Object.entries(plantMaterials).forEach(([plant,arr])=>(arr||[]).forEach(c=>{if(!seen.has(c))seen.set(c,new Set());seen.get(c).add(plant);}));
+  /* + mã trong phiếu kiểm kê / kiểm kê tuần mà master data chưa có — bếp nạp file được
+     giữ số những mã này (Khoa 16/10/2026), kế toán khai ở đây. */
+  [...(submissions||[]),...(weeklyCounts||[])].forEach(x=>Object.keys((x&&x.items)||{}).forEach(c=>{
+    if(masterByCode[c])return;if(!seen.has(c))seen.set(c,new Set());seen.get(c).add(x.plant);}));
   // + quét toàn bộ danh mục tổng để bắt cả mã thiếu tên CHƯA gán kho nào (plants rỗng)
   DATA.materials.forEach(m=>{if(m&&m.code!=null){const c=String(m.code);if(!seen.has(c))seen.set(c,new Set());}});
   const bad=[];
@@ -4887,19 +4894,25 @@ function renderKKUpload(v,fixed){
     prev.appendChild(el('div',null,`<div style="font-weight:800;font-size:13px;margin:10px 0 4px">👀 Xem trước ${r.ok} mã · kho ${whName(plantSel.value,slocSel.value)} · ${_tuan?tuanLabel(_tuan):('kỳ tháng '+periodVN(period))} <span style="color:var(--muted);font-weight:500">(${_tuan?'chưa lưu':'chưa tạo phiếu'})</span></div>${warn}`));
     /* MÃ CHƯA CÓ TRONG DANH MỤC TỔNG — đã bị bỏ ra, phải nói rõ và đưa được danh
        sách cho kế toán khai. Im lặng thì BP tưởng đã đếm đủ mà phiếu lại thiếu mã. */
-    const _la=r.maLa||[];
+    const _giu=!!r._giuMaLa;
+    /* Kho bếp: chỉ nói về mã THẬT SỰ được nạp số (mã lạ để trống Số lượng đã tính vào
+       dòng "để trống") — để khớp đúng với thông báo gửi kế toán. */
+    const _nap=new Set((r.preview||[]).filter(x=>x.maLa).map(x=>x.code));
+    const _la=_giu?(r.maLa||[]).filter(x=>_nap.has(x.code)):(r.maLa||[]);
     if(_la.length){
       const box=el('div','note');box.style.cssText='margin:6px 0';
       const in1=el('div');in1.style.minWidth='0';
-      const d1=el('div');d1.style.cssText='color:var(--red);font-weight:700';
-      d1.textContent=L(_la.length+' mã trong file chưa có trong danh mục tổng — không nạp');
+      const d1=el('div');d1.style.cssText='color:'+(_giu?'var(--accent-ink)':'var(--red)')+';font-weight:700';
+      d1.textContent=L(_la.length+(_giu?' mã trong file chưa có trong master data — vẫn nạp số, tạm hiện bằng mã'
+                                          :' mã trong file chưa có trong danh mục tổng — không nạp'));
       const d2=el('div');d2.style.cssText='font-size:12px;color:var(--muted);margin-top:2px';
-      d2.textContent='Nhờ kế toán thêm mã vào Danh mục VT rồi nạp lại file — app không tự tạo mã mới.';
+      d2.textContent=_giu?L('Lưu xong, app tự báo kế toán / admin khai báo tên và ĐVT vào Danh mục VT. Khai xong, tên hàng tự hiện trên phiếu.')
+                         :'Nhờ kế toán thêm mã vào Danh mục VT rồi nạp lại file — app không tự tạo mã mới.';
       const d3=el('div');d3.style.cssText='font-size:12px;margin-top:6px;line-height:1.7';
-      d3.textContent=_la.slice(0,12).map(x=>x.code+(x.name?(' · '+x.name):'')).join(String.fromCharCode(10))
+      d3.textContent=_la.slice(0,12).map(x=>x.code+((!_giu&&x.name)?(' · '+x.name):'')).join(String.fromCharCode(10))
         +(_la.length>12?(String.fromCharCode(10)+'…'):'');
       d3.style.whiteSpace='pre-wrap';
-      const bC=el('button','btn btn-ghost btn-sm','📋 Sao chép danh sách mã cần khai báo');
+      const bC=el('button','btn btn-ghost btn-sm',L('📋 Sao chép danh sách mã cần khai báo'));
       bC.style.marginTop='8px';
       bC.onclick=()=>{
         const t=_la.map(x=>[x.code,x.name||'',x.uom||''].join('\t')).join(String.fromCharCode(10));
@@ -4913,9 +4926,9 @@ function renderKKUpload(v,fixed){
     const _coMeta=!!(r.meta&&Object.keys(r.meta).length);
     tbl.innerHTML=`<thead><tr><th>Mã hàng</th><th>Tên hàng</th><th>ĐVT</th><th class="num">Số lượng</th>${_coMeta?'<th>Ngày</th><th>Ghi chú</th>':''}</tr></thead>`;
     const tb=el('tbody');
-    r.preview.forEach(x=>tb.appendChild(el('tr',null,`<td class="tnum">${x.code}${x.isNew?' <span class="badge badge-soft" style="font-size:9px;padding:1px 5px">mới</span>':''}</td><td>${x.name}</td><td><span class="badge badge-uom">${x.uom}</span></td><td class="num cell-strong tnum">${x.qty}</td>${_coMeta?('<td class="tnum">'+_esc(x.d||'')+'</td><td>'+_esc(x.g||'')+'</td>'):''}`)));
+    r.preview.forEach(x=>tb.appendChild(el('tr',null,`<td class="tnum">${x.code}${x.maLa?' <span class="badge badge-wait" style="font-size:9px;padding:1px 5px">'+L('chưa có tên')+'</span>':''}${x.isNew?' <span class="badge badge-soft" style="font-size:9px;padding:1px 5px">mới</span>':''}</td><td>${x.name}</td><td><span class="badge badge-uom">${x.uom}</span></td><td class="num cell-strong tnum">${x.qty}</td>${_coMeta?('<td class="tnum">'+_esc(x.d||'')+'</td><td>'+_esc(x.g||'')+'</td>'):''}`)));
     tbl.appendChild(tb);w.appendChild(tbl);prev.appendChild(w);
-    const brow=el('div');brow.style.cssText='display:flex;gap:10px;margin-top:12px';
+    const brow=el('div');brow.style.cssText='display:flex;flex-wrap:wrap;gap:10px;margin-top:12px';
     const bOk=el('button','btn btn-primary',_tuan?'💾 Lưu số kiểm tuần':'✓ Tạo phiếu kiểm kê (Chờ duyệt)');
     const bNo=el('button','btn btn-ghost','Hủy');
     bOk.onclick=()=>commitKKUpload(r,period,()=>renderView(),_tuan);
@@ -4923,15 +4936,18 @@ function renderKKUpload(v,fixed){
     brow.appendChild(bOk);brow.appendChild(bNo);prev.appendChild(brow);
   }
   fin.onchange=e=>{const f=e.target.files[0];if(f){
+    /* Kho BẾP: mã chưa có master data vẫn nạp (Khoa 16/10/2026); kho khác giữ chặn như cũ. */
+    const _cheDo=laKhoBep(plantSel.value,slocSel.value)?'giu':true;
+    const _nhan=r=>{if(r)r._giuMaLa=(_cheDo==='giu');renderPrev(r);};
     /* Kiểm kê tuần là số nội bộ: không đụng kỳ khóa, không đụng rule mỗi kho một phiếu. */
-    if(_tuan){importOpeningT6(plantSel.value,slocSel.value,f,renderPrev,true);return;}
+    if(_tuan){importOpeningT6(plantSel.value,slocSel.value,f,_nhan,_cheDo);return;}
     if(periodLocked(plantSel.value,slocSel.value,perSel.value)){toast(lockMsg(plantSel.value,slocSel.value,perSel.value));fin.value='';return;}
     const _dup=pendingSub(plantSel.value,slocSel.value,perSel.value);
     if(_dup){fin.value='';errBox('Kho này đã có phiếu chờ duyệt',[
       'Phiếu <b>'+_dup.id+'</b> ('+_dup.count+' mã, gửi bởi '+_dup.user+') đang chờ duyệt.',
       'Mỗi kho mỗi kỳ <b>chỉ có một phiếu</b> — nạp thêm file sẽ đẻ phiếu thứ 2 và che mất chênh lệch.',
       'Cần sửa số thì mở phiếu đó ra duyệt/từ chối, hoặc để bộ phận bấm <b>Đếm bổ sung</b>.'
-    ],'Kho: '+whName(plantSel.value,slocSel.value)+String.fromCharCode(10)+'Phiếu đang chờ: '+_dup.id);return;}importOpeningT6(plantSel.value,slocSel.value,f,renderPrev,true);}};
+    ],'Kho: '+whName(plantSel.value,slocSel.value)+String.fromCharCode(10)+'Phiếu đang chờ: '+_dup.id);return;}importOpeningT6(plantSel.value,slocSel.value,f,_nhan,_cheDo);}};
   card.appendChild(b);v.appendChild(card);
 }
 // tạo phiếu kiểm kê 'Chờ duyệt' từ dữ liệu đã xem trước
@@ -4950,7 +4966,14 @@ function commitKKUpload(r,period,cb,tuan){
   if(sb&&matArr.length)sb.from('materials').upsert(matArr).then(({error})=>{if(error)console.error('materials',error);afterMat();}); else afterMat();
   /* Kiểm kê tuần: vẫn học mã mới vào danh mục như trên (để lần đếm sau có tên hàng),
      nhưng KHÔNG tạo phiếu — chỉ ghi một bản số tuần. */
-  if(tuan){luuKiemTuan(r.plant,r.sloc,tuan,{...r.items},null,r.meta).then(()=>{cb&&cb();});return;}
+  /* Kho bếp nạp file có mã CHƯA có master data (đã nạp số, tạm hiện bằng mã) -> báo
+     kế toán/admin khai báo, giống luồng tồn đầu kỳ (Khoa 16/10/2026). Chỉ báo khi LƯU ĐƯỢC. */
+  const _maLaNap=(r.preview||[]).filter(x=>x.maLa).map(x=>x.code);
+  const baoMaLa=()=>{if(!_maLaNap.length)return;
+    try{notifyWh(r.plant,r.sloc,whName(r.plant,r.sloc)+' nạp '+(tuan?'kiểm kê tuần':'phiếu kiểm kê')+' có '+_maLaNap.length
+      +' mã chưa có trong master data: '+_maLaNap.slice(0,10).join(', ')+(_maLaNap.length>10?'…':'')
+      +' — cần khai báo tên, ĐVT ở Danh mục VT.','mala','Mã chưa có trong master data',session.name);}catch(e){console.warn('mala',e);}};
+  if(tuan){luuKiemTuan(r.plant,r.sloc,tuan,{...r.items},null,r.meta).then(okT=>{if(okT===true)baoMaLa();cb&&cb();});return;}
   (async()=>{
     const sub={id:await nextKKId(r.plant,r.sloc),plant:r.plant,sloc:r.sloc,user:session.name+' (nhập từ Excel)',role:ROLES[session.role].label,time:now(),period:period,status:'Chờ duyệt',items:{...r.items},itemNotes:metaSach(r.meta,r.items),count:r.ok};
     const okIns=await insSubmissionSafe(sub);
@@ -4958,6 +4981,7 @@ function commitKKUpload(r,period,cb,tuan){
     submissions.unshift(sub);
     log('Nhập phiếu kiểm kê từ Excel',`${sub.id} · ${whName(sub.plant,sub.sloc)} · kỳ ${periodVN(period)} · ${sub.count} mã`);
     toast('✓ Đã tạo phiếu '+sub.id+' ('+sub.count+' mã) — Chờ duyệt');
+    baoMaLa();
     cb&&cb();
   })();
 }
@@ -6091,6 +6115,7 @@ async function luuKiemTuan(plant,sloc,week,sach,btn,meta){
   log('Kiểm kê tuần',whName(plant,sloc)+' · '+tuanLabel(week)+' · '+soMa+' mã');
   toast('✓ Đã lưu '+soMa+' mã cho '+tuanLabel(week).split(' · ')[0].toLowerCase());
   renderView();
+  return true;   // nơi gọi cần biết đã lưu được (báo mã chưa có master data)
 }
 async function xoaKiemTuan(b){
   if(isScoped()){toast('Bạn chỉ xem được kiểm kê tuần — đếm và lưu số do bếp làm.');return;}
@@ -9359,8 +9384,21 @@ function importOpeningT6(plant,sloc,file,cb,chanMaLa){
         const nmF=nameCol>=0?String(rows[i][nameCol]==null?'':rows[i][nameCol]).trim():'';
         const umF=uomCol>=0?String(rows[i][uomCol]==null?'':rows[i][uomCol]).trim():'';
         let name,uom,isNew=false;const cur=masterByCode[code];
-        if(!cur&&chanMaLa){ // dò theo master data: chưa có thì KHÔNG nạp, để kế toán khai
-          maLa.push({code,name:nmF||'',uom:umF||''});continue;
+        if(!cur&&chanMaLa){ // dò theo master data
+          maLa.push({code,name:nmF||'',uom:umF||''});
+          /* chanMaLa==='giu' (kho BẾP, Khoa 16/10/2026): giống luồng tồn đầu kỳ của kế toán —
+             VẪN nạp số, mã tạm hiện bằng chính mã, không tên; KHÔNG tạo mã vào master data,
+             KHÔNG học vào danh mục kho. Lưu xong app báo kế toán/admin khai báo. */
+          if(chanMaLa!=='giu')continue;
+          let rawL=String(rows[i][qtyCol]==null?'':rows[i][qtyCol]).replace(/\s/g,'').replace(/,/g,'');
+          if(rawL===''){boTrong++;continue;}
+          const qL=Number(rawL);if(!isFinite(qL)){badQty++;continue;}
+          let _dL='',_gL='';
+          if(dateCol>=0)_dL=docNgayO(rows[i][dateCol]);
+          if(gcCol>=0)_gL=String(rows[i][gcCol]==null?'':rows[i][gcCol]).trim();
+          if(_dL||_gL)metaF[code]={d:_dL,g:_gL};
+          items[code]=qL;preview.push({code,name:code,uom:'',qty:qL,isNew:false,maLa:true,d:_dL,g:_gL});ok++;
+          continue;
         }
         if(!cur){ // MÃ MỚI HOÀN TOÀN (chưa có trong danh mục tổng)
           name=nmF||code;uom=umF;isNew=true;
@@ -9512,7 +9550,7 @@ function opNhap(v){
       const w=el('div','tbl-wrap');w.style.cssText='max-height:340px;overflow:auto';const tbl=el('table');
       tbl.innerHTML=`<thead><tr><th>Mã hàng</th><th>Tên hàng</th><th>ĐVT</th><th class="num">Tồn đầu kỳ</th></tr></thead>`;
       const tb=el('tbody');
-      r.preview.forEach(x=>tb.appendChild(el('tr',null,`<td class="tnum">${x.code}${x.isNew?' <span class="badge badge-soft" style="font-size:9px;padding:1px 5px">mới</span>':''}</td><td>${x.name}</td><td><span class="badge badge-uom">${x.uom}</span></td><td class="num cell-strong tnum">${x.qty}</td>`)));
+      r.preview.forEach(x=>tb.appendChild(el('tr',null,`<td class="tnum">${x.code}${x.maLa?' <span class="badge badge-wait" style="font-size:9px;padding:1px 5px">'+L('chưa có tên')+'</span>':''}${x.isNew?' <span class="badge badge-soft" style="font-size:9px;padding:1px 5px">mới</span>':''}</td><td>${x.name}</td><td><span class="badge badge-uom">${x.uom}</span></td><td class="num cell-strong tnum">${x.qty}</td>`)));
       tbl.appendChild(tb);w.appendChild(tbl);prev.appendChild(w);
       const brow=el('div');brow.style.cssText='display:flex;gap:10px;margin-top:12px';
       const bOk=el('button','btn btn-primary','✓ Duyệt & Lưu tồn đầu kỳ');
@@ -11178,8 +11216,8 @@ function myNotifs(){
   return arr.slice(0,80);
 }
 function unreadNotifs(){const st=notifReadSet();return myNotifs().filter(x=>!st.has(x.id));}
-const NOTIF_ICO={transfer:'🔄',reject:'⚠️',countlist:'🗂',reconcile:'🔁'};
-const NOTIF_TITLE={transfer:'Phiếu điều chuyển',reject:'Biên bản kiểm kê bị từ chối',
+const NOTIF_ICO={transfer:'🔄',reject:'⚠️',countlist:'🗂',reconcile:'🔁',mala:'🏷'};
+const NOTIF_TITLE={transfer:'Phiếu điều chuyển',reject:'Biên bản kiểm kê bị từ chối',mala:'Mã chưa có trong master data',
   countlist:'Kế toán đã mở kỳ kiểm kê',reconcile:'Kết quả đối chiếu chốt tồn',
   late:'Kho chưa cập nhật kiểm kê'};
 function paintBell(){
@@ -11260,6 +11298,7 @@ function gotoNotif(x){
   }
   if(x.kind==='reject'||x.kind==='countlist'){if(go('kiemke',null))return;}
   if(x.kind==='reconcile'){if(go('opening',null))return;}
+  if(x.kind==='mala'){if(go('catalog','thieu'))return;}   // kế toán/admin: mở thẳng "Mã chưa khai báo tên"
   renderView();
 }
 function markAllNotifRead(){
