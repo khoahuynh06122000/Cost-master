@@ -1121,7 +1121,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1610-03';
+const APP_VER='1610-04';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1204,6 +1204,9 @@ Object.assign(TXT.hi,{"Chọn một kho để xem mọi phiếu kho đó chuyể
 /* Bo sung 01/10/2026 (dot 33) — o Ngay + Ghi chu tung ma cho kho bep. */
 Object.assign(TXT.en,{"Ngày":"Date","Ghi chú":"Note","Mỗi dòng có thêm ô Ngày và Ghi chú — điền khi cần, để trống cũng được. Hai ô này không ảnh hưởng số đếm; kế toán xem được khi duyệt phiếu.":"Each line now has a Date and a Note box — fill them in when you need to, leaving them empty is fine. They do not affect the counted figure; accounting can see them when approving the sheet.","Mẫu của bếp có thêm hai cột date và ghi chú ở cuối — điền khi cần, để trống cũng nạp được bình thường.":"The kitchen template has two extra columns, date and note, at the end — fill them in when you need to; leaving them empty still uploads fine.","⚠ Chưa lưu được ngày / ghi chú của từng mã — số kiểm kê vẫn gửi bình thường, tổng vẫn đúng. Báo kế toán để xử lý.":"⚠ The per-item date / note could not be saved — the count itself was sent normally and the totals are correct. Tell accounting to sort it out."});
 Object.assign(TXT.hi,{"Ngày":"तारीख़","Ghi chú":"टिप्पणी","Mỗi dòng có thêm ô Ngày và Ghi chú — điền khi cần, để trống cũng được. Hai ô này không ảnh hưởng số đếm; kế toán xem được khi duyệt phiếu.":"हर पंक्ति में अब तारीख़ और टिप्पणी का खाना है — ज़रूरत हो तो भरें, खाली छोड़ना भी ठीक है। ये गिनती के आँकड़े को नहीं बदलते; पर्ची स्वीकृत करते समय लेखा इन्हें देख सकता है।","Mẫu của bếp có thêm hai cột date và ghi chú ở cuối — điền khi cần, để trống cũng nạp được bình thường.":"रसोई के टेम्पलेट के अंत में दो अतिरिक्त कॉलम हैं, date और ghi chú — ज़रूरत हो तो भरें; खाली छोड़ने पर भी अपलोड ठीक चलता है।","⚠ Chưa lưu được ngày / ghi chú của từng mã — số kiểm kê vẫn gửi bình thường, tổng vẫn đúng. Báo kế toán để xử lý.":"⚠ प्रति-वस्तु तारीख़ / टिप्पणी सहेजी नहीं जा सकी — गिनती सामान्य रूप से भेज दी गई और योग सही हैं। समाधान हेतु लेखा को बताएँ।"});
+/* Bo sung 16/10/2026 (3) — canh bao kho nguon chua co nguoi duyet. */
+Object.assign(TXT.en,{"Kho này chưa có người duyệt — phiếu sẽ nằm chờ admin": "This store has no approver yet — the request will wait for admin", "Chưa tài khoản nào được gán quản lý kho này. Vẫn gửi phiếu được, nhưng nên báo kế toán / admin gán người duyệt để phiếu không bị treo.": "No account is assigned to manage this store. You can still send the request, but ask accounting / admin to assign an approver so it does not get stuck."});
+Object.assign(TXT.hi,{"Kho này chưa có người duyệt — phiếu sẽ nằm chờ admin": "इस स्टोर का अभी कोई अनुमोदक नहीं — अनुरोध एडमिन के पास रुका रहेगा", "Chưa tài khoản nào được gán quản lý kho này. Vẫn gửi phiếu được, nhưng nên báo kế toán / admin gán người duyệt để phiếu không bị treo.": "इस स्टोर के लिए कोई खाता नियुक्त नहीं है। अनुरोध भेज सकते हैं, पर लेखा / एडमिन से अनुमोदक नियुक्त करवाएँ ताकि अनुरोध अटके नहीं।"});
 /* Bo sung 16/10/2026 (2) — nhap kho tu anh giu ma chua co master data. */
 Object.assign(TXT.en,{"⚠ Mã chưa có trong master data — vẫn lưu số, chờ kế toán khai báo tên": "⚠ Code not in master data — quantity still saved, waiting for accounting to add the name", "⚠ Chưa có mã — gõ mã hàng thì dòng này mới lưu được": "⚠ No code — type the item code to save this row"});
 Object.assign(TXT.hi,{"⚠ Mã chưa có trong master data — vẫn lưu số, chờ kế toán khai báo tên": "⚠ कोड मास्टर डेटा में नहीं — मात्रा फिर भी सहेजी गई, लेखा विभाग नाम जोड़ेगा", "⚠ Chưa có mã — gõ mã hàng thì dòng này mới lưu được": "⚠ कोड नहीं — यह पंक्ति सहेजने के लिए वस्तु कोड लिखें"});
@@ -2060,6 +2063,17 @@ function isMyApproval(r){
   return (session&&session.wh?session.wh:[]).some(w=>w.plant===a[0]&&(!w.sloc||w.sloc===a[1]));
 }
 function pendingForMe(){return trReqs.filter(isMyApproval);}
+/* Kho có ai được gán (để duyệt phiếu xin) không — hỏi hàm SQL `kho_co_nguoi_duyet` (PHẦN 16).
+   Trả true/false; null khi chưa có hàm / mất mạng -> nơi gọi KHÔNG cảnh báo (tránh báo oan). */
+const _coDuyetCache={};let _coDuyetOK=true;
+async function coNguoiDuyet(p,s){
+  if(!sb||!_coDuyetOK||!p||!s)return null;
+  const k=p+'|'+s;if(k in _coDuyetCache)return _coDuyetCache[k];
+  try{const {data,error}=await sb.rpc('kho_co_nguoi_duyet',{p_plant:p,p_sloc:s});
+    if(error){if(/kho_co_nguoi_duyet|function|schema cache|does not exist|PGRST202/i.test(String(error.message||error.code||'')))_coDuyetOK=false;return null;}
+    _coDuyetCache[k]=data===true;return _coDuyetCache[k];
+  }catch(e){return null;}
+}
 function dcKindLabel(k){return k==='xin'?'Xin hàng':k==='day'?'Đẩy hàng':'Hủy / hao hụt';}
 /* ---- Chống phiếu trùng ----
    Trùng = cùng loại + cùng cặp kho + cùng tập (mã : số xin). Hai người cùng lập, hoặc bấm gửi
@@ -7346,6 +7360,20 @@ function dcRequestForm(v,kind){
       listWrap.appendChild(el('div','empty','<div class="big">Chọn kho nguồn trước</div><div>Bấm nút <b>Chọn kho nguồn…</b> phía trên, rồi chọn điểm bán và kho muốn xin. Xin vài lần thì những kho hay xin sẽ thành nút bấm nhanh ở hàng trên.</div>'));
       act.style.display='none';return;}
     act.style.display='';
+    /* Kho nguồn chưa ai được gán thì phiếu xin không có người duyệt, nằm chờ admin
+       (Khoa 16/10/2026). Hỏi máy chủ CÓ/KHÔNG; chưa chạy SQL PHẦN 16 thì bỏ qua. */
+    if(kind==='xin'){
+      const cb=el('div');listWrap.appendChild(cb);
+      coNguoiDuyet(p,s).then(co=>{
+        if(co!==false||src.plant()!==p||src.sloc()!==s||!cb.isConnected)return;
+        const n=el('div','note');n.style.margin='12px 0 0';const ni=el('div');ni.style.minWidth='0';
+        const t1=el('div');t1.style.cssText='font-weight:700;color:var(--accent-ink)';
+        t1.textContent=L('Kho này chưa có người duyệt — phiếu sẽ nằm chờ admin');
+        const t2=el('div');t2.style.cssText='font-size:12px;color:var(--muted);margin-top:2px';
+        t2.textContent=L('Chưa tài khoản nào được gán quản lý kho này. Vẫn gửi phiếu được, nhưng nên báo kế toán / admin gán người duyệt để phiếu không bị treo.');
+        ni.appendChild(t1);ni.appendChild(t2);n.appendChild(ni);cb.appendChild(n);
+      });
+    }
     const per=curPeriod();
     const dkNguon=tonDauKy(p,s,per);   // để nói rõ tồn đầu kỳ lấy từ đâu
     const stock=stockNow(p,s,per);
