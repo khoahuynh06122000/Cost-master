@@ -166,7 +166,10 @@ async function kiemSoLieu() {
 // ------------------------------------------------------------------ 5. dữ liệu nhúng + từ điển
 function kiemNhung() {
   try {
-    const D = JSON.parse(L[1048].replace(/^const DATA\s*=\s*/, '').replace(/;\s*$/, ''));
+    // Tìm dòng theo NỘI DUNG — số dòng trôi mỗi lần thêm code (ghi cứng 1048 đã báo đỏ oan, 16/10/2026)
+    const dongData = L.find(x => /^const DATA\s*=\s*\{/.test(x));
+    if (!dongData) throw new Error('không tìm thấy dòng "const DATA ="');
+    const D = JSON.parse(dongData.replace(/^const DATA\s*=\s*/, '').replace(/;\s*$/, ''));
     const ma = {}; D.materials.forEach(m => { ma[m.code] = (ma[m.code] || 0) + 1; });
     const trung = Object.values(ma).filter(n => n > 1).length;
     const rong = D.materials.filter(m => !String(m.code || '').trim() || !String(m.name || '').trim()).length;
