@@ -1121,7 +1121,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1610-04';
+const APP_VER='1610-05';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1204,6 +1204,9 @@ Object.assign(TXT.hi,{"Chọn một kho để xem mọi phiếu kho đó chuyể
 /* Bo sung 01/10/2026 (dot 33) — o Ngay + Ghi chu tung ma cho kho bep. */
 Object.assign(TXT.en,{"Ngày":"Date","Ghi chú":"Note","Mỗi dòng có thêm ô Ngày và Ghi chú — điền khi cần, để trống cũng được. Hai ô này không ảnh hưởng số đếm; kế toán xem được khi duyệt phiếu.":"Each line now has a Date and a Note box — fill them in when you need to, leaving them empty is fine. They do not affect the counted figure; accounting can see them when approving the sheet.","Mẫu của bếp có thêm hai cột date và ghi chú ở cuối — điền khi cần, để trống cũng nạp được bình thường.":"The kitchen template has two extra columns, date and note, at the end — fill them in when you need to; leaving them empty still uploads fine.","⚠ Chưa lưu được ngày / ghi chú của từng mã — số kiểm kê vẫn gửi bình thường, tổng vẫn đúng. Báo kế toán để xử lý.":"⚠ The per-item date / note could not be saved — the count itself was sent normally and the totals are correct. Tell accounting to sort it out."});
 Object.assign(TXT.hi,{"Ngày":"तारीख़","Ghi chú":"टिप्पणी","Mỗi dòng có thêm ô Ngày và Ghi chú — điền khi cần, để trống cũng được. Hai ô này không ảnh hưởng số đếm; kế toán xem được khi duyệt phiếu.":"हर पंक्ति में अब तारीख़ और टिप्पणी का खाना है — ज़रूरत हो तो भरें, खाली छोड़ना भी ठीक है। ये गिनती के आँकड़े को नहीं बदलते; पर्ची स्वीकृत करते समय लेखा इन्हें देख सकता है।","Mẫu của bếp có thêm hai cột date và ghi chú ở cuối — điền khi cần, để trống cũng nạp được bình thường.":"रसोई के टेम्पलेट के अंत में दो अतिरिक्त कॉलम हैं, date और ghi chú — ज़रूरत हो तो भरें; खाली छोड़ने पर भी अपलोड ठीक चलता है।","⚠ Chưa lưu được ngày / ghi chú của từng mã — số kiểm kê vẫn gửi bình thường, tổng vẫn đúng. Báo kế toán để xử lý.":"⚠ प्रति-वस्तु तारीख़ / टिप्पणी सहेजी नहीं जा सकी — गिनती सामान्य रूप से भेज दी गई और योग सही हैं। समाधान हेतु लेखा को बताएँ।"});
+/* Bo sung 16/10/2026 (4) — nap nhap kho tu Excel. */
+Object.assign(TXT.en,{"📥 Nạp file Excel": "📥 Upload Excel file", "📥 Nạp hàng nhập từ file Excel": "📥 Load received goods from an Excel file", "Cột: Ngày · Số phiếu · Mã hàng · Tên hàng · ĐVT · Số lượng. Nạp lại cùng file không bị nhân đôi; dòng đổi số lượng sẽ hỏi trước khi thay.": "Columns: Date · Slip no. · Item code · Item name · Unit · Quantity. Re-uploading the same file never doubles rows; rows with a changed quantity ask before replacing.", "⬇ Tải file mẫu": "⬇ Download template", "Đã tải file mẫu nhập kho": "Receiving template downloaded", "Không thấy cột Mã hàng / Số lượng — tải file mẫu và điền theo mẫu": "No Item code / Quantity column found — download the template and fill it in", "Không có dòng nào nạp được (thiếu mã hoặc số lượng)": "No rows could be loaded (missing code or quantity)", "đã có": "already loaded", "số cũ": "old qty", "mới": "new", "✓ Lưu nhập kho": "✓ Save receipts", "Không có gì để lưu — các dòng đều đã có": "Nothing to save — all rows are already loaded"});
+Object.assign(TXT.hi,{"📥 Nạp file Excel": "📥 एक्सेल फ़ाइल अपलोड करें", "📥 Nạp hàng nhập từ file Excel": "📥 एक्सेल फ़ाइल से प्राप्त माल दर्ज करें", "Cột: Ngày · Số phiếu · Mã hàng · Tên hàng · ĐVT · Số lượng. Nạp lại cùng file không bị nhân đôi; dòng đổi số lượng sẽ hỏi trước khi thay.": "कॉलम: तारीख · पर्ची संख्या · वस्तु कोड · वस्तु नाम · इकाई · मात्रा। वही फ़ाइल दोबारा अपलोड करने पर पंक्तियाँ दोगुनी नहीं होतीं; बदली मात्रा वाली पंक्तियाँ बदलने से पहले पूछेंगी।", "⬇ Tải file mẫu": "⬇ नमूना फ़ाइल डाउनलोड करें", "Đã tải file mẫu nhập kho": "प्राप्ति नमूना डाउनलोड हुआ", "Không thấy cột Mã hàng / Số lượng — tải file mẫu và điền theo mẫu": "वस्तु कोड / मात्रा कॉलम नहीं मिला — नमूना फ़ाइल डाउनलोड करके भरें", "Không có dòng nào nạp được (thiếu mã hoặc số lượng)": "कोई पंक्ति दर्ज नहीं हो सकी (कोड या मात्रा नहीं)", "đã có": "पहले से दर्ज", "số cũ": "पुरानी मात्रा", "mới": "नया", "✓ Lưu nhập kho": "✓ प्राप्ति सहेजें", "Không có gì để lưu — các dòng đều đã có": "सहेजने को कुछ नहीं — सभी पंक्तियाँ पहले से दर्ज हैं"});
 /* Bo sung 16/10/2026 (3) — canh bao kho nguon chua co nguoi duyet. */
 Object.assign(TXT.en,{"Kho này chưa có người duyệt — phiếu sẽ nằm chờ admin": "This store has no approver yet — the request will wait for admin", "Chưa tài khoản nào được gán quản lý kho này. Vẫn gửi phiếu được, nhưng nên báo kế toán / admin gán người duyệt để phiếu không bị treo.": "No account is assigned to manage this store. You can still send the request, but ask accounting / admin to assign an approver so it does not get stuck."});
 Object.assign(TXT.hi,{"Kho này chưa có người duyệt — phiếu sẽ nằm chờ admin": "इस स्टोर का अभी कोई अनुमोदक नहीं — अनुरोध एडमिन के पास रुका रहेगा", "Chưa tài khoản nào được gán quản lý kho này. Vẫn gửi phiếu được, nhưng nên báo kế toán / admin gán người duyệt để phiếu không bị treo.": "इस स्टोर के लिए कोई खाता नियुक्त नहीं है। अनुरोध भेज सकते हैं, पर लेखा / एडमिन से अनुमोदक नियुक्त करवाएँ ताकि अनुरोध अटके नहीं।"});
@@ -8149,6 +8152,54 @@ async function rejectTransferReq(r){
   log('Từ chối '+dcKindLabel(r.kind),`${r.id}${note?' · '+note:''}`);
   toast('Đã từ chối '+r.id);renderView();
 }
+/* ===== NẠP NHẬP KHO TỪ EXCEL (Khoa 16/10/2026 — phòng khi quét ảnh lỗi) =====
+   Hàm THUẦN (không đụng giao diện) để thử trực tiếp được.
+   CHỐNG NẠP TRÙNG: mã dòng suy từ NỘI DUNG = kho + ngày + số phiếu + mã hàng (KHÔNG có số lượng).
+   Nạp lại y nguyên file -> mọi dòng "đã có", không ghi gì. Sửa số lượng rồi nạp lại -> "số khác",
+   hỏi MỘT lần có thay không. Cùng phiếu + cùng mã lặp trong file -> CỘNG DỒN (phiếu kho tổng hay
+   tách một mã thành nhiều lô) và báo ra. */
+function nkHash(s){let a=0x811c9dc5,b=5381;s=String(s);
+  for(let i=0;i<s.length;i++){const c=s.charCodeAt(i);a^=c;a=Math.imul(a,0x01000193)>>>0;b=((b<<5)+b+c)>>>0;}
+  return a.toString(36)+b.toString(36);}
+function nkIdExcel(plant,sloc,date,soPhieu,code){
+  return 'NKX'+nkHash([plant,sloc,date,String(soPhieu||'').replace(/\s+/g,'').toUpperCase(),code].join('|')).toUpperCase();}
+function nkDocExcel(rows,plant,sloc,ngayMacDinh){
+  const kq={dong:[],boKhongMa:0,boSoLoi:0,gop:0,ngayHong:[],khopTen:0};
+  if(!rows||!rows.length)return kq;
+  let h=-1;for(let i=0;i<Math.min(rows.length,12);i++){if((rows[i]||[]).map(vnNorm).some(c=>c==='mahang'||c==='mavt'||c==='mavattu'||c==='code'||c==='material')){h=i;break;}}
+  if(h<0){kq.loiTieuDe=true;return kq;}
+  const H=rows[h].map(vnNorm);const tim=ks=>H.findIndex(c=>ks.some(k=>c===k||c.indexOf(k)===0));
+  const cMa=tim(['mahang','mavattu','mavt','code','material']),cTen=tim(['tenhang','ten','name','description']),
+        cDvt=H.findIndex(c=>c==='dvt'||c==='donvitinh'||c==='uom'||c==='unit'),   // KHÔNG lấy "Đơn vị" trơn (có file dùng nó cho mã đơn vị)
+        cSl=tim(['soluong','sl','qty','quantity']),cNgay=tim(['ngay','date']),cPhieu=tim(['sophieu','sochungtu','phieu','chungtu']);
+  if(cMa<0||cSl<0){kq.loiTieuDe=true;return kq;}
+  const theoTen={};(DATA.materials||[]).forEach(m=>{if(!m||!m.name)return;const k=vnNorm(m.name);theoTen[k]=theoTen[k]===undefined?m:null;}); // null = tên trùng nhiều mã -> không khớp
+  const gom={};
+  for(let i=h+1;i<rows.length;i++){const r=rows[i];if(!r||!r.some(x=>String(x==null?'':x).trim()!==''))continue;
+    let code=String(r[cMa]==null?'':r[cMa]).trim();if(code.endsWith('.0'))code=code.slice(0,-2);
+    const ten=cTen>=0?String(r[cTen]==null?'':r[cTen]).trim():'';
+    if(!code&&ten){const m=theoTen[vnNorm(ten)];if(m){code=m.code;kq.khopTen++;}}
+    if(!code||!/^[0-9A-Za-z._\-]{2,20}$/.test(code)){kq.boKhongMa++;continue;}
+    const raw=String(r[cSl]==null?'':r[cSl]).replace(/\s/g,'').replace(/,/g,'');  // dấu chấm = thập phân (quy ước app)
+    const qty=Number(raw);if(raw===''||!isFinite(qty)||qty<=0){kq.boSoLoi++;continue;}
+    let date=cNgay>=0?docNgayO(r[cNgay]):'';if(!date)date=ngayMacDinh;
+    if(!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(date)){kq.ngayHong.push(date);continue;}
+    const soPhieu=cPhieu>=0?String(r[cPhieu]==null?'':r[cPhieu]).trim():'';
+    const id=nkIdExcel(plant,sloc,date,soPhieu,code);
+    if(gom[id]){gom[id].qty=Math.round((gom[id].qty+qty)*1000)/1000;kq.gop++;continue;}
+    const m=masterByCode[code];
+    gom[id]={id,date,soPhieu,code,name:m?m.name:code,uom:m?(m.uom||''):(cDvt>=0?String(r[cDvt]==null?'':r[cDvt]).trim():''),qty,maLa:!m,period:periodOfDate(date)};
+    kq.dong.push(gom[id]);
+  }
+  return kq;
+}
+/* Phân 3 nhóm so với nhập kho đã có: moi · daCo (y nguyên) · lech (cùng dòng, khác số lượng). */
+function nkPhanLoai(dong,dsCo){
+  const theoId={};(dsCo||[]).forEach(r=>{if(r&&r.id)theoId[r.id]=r;});
+  const kq={moi:[],daCo:[],lech:[]};
+  dong.forEach(d=>{const c=theoId[d.id];if(!c)kq.moi.push(d);else if(Number(c.qty)===Number(d.qty))kq.daCo.push(d);else kq.lech.push(Object.assign({},d,{qtyCu:Number(c.qty)}));});
+  return kq;
+}
 // ---- Nhận hàng từ kho tổng: gõ tay hoặc quét ảnh — dùng kho/kỳ đã ghim ----
 function dcNhapKho(v){
   const mine=allowedPlants();
@@ -8162,15 +8213,19 @@ function dcNhapKho(v){
   const seg=el('div');seg.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 14px';
   const bTay=el('button','btn btn-brand btn-sm','⌨ Gõ tay từng dòng');
   const bAnh=el('button','btn btn-ghost btn-sm','📷 Quét ảnh phiếu kho tổng');
-  seg.appendChild(bTay);seg.appendChild(bAnh);b.appendChild(seg);
+  const bXls=el('button','btn btn-ghost btn-sm','📥 Nạp file Excel');
+  seg.appendChild(bTay);seg.appendChild(bAnh);seg.appendChild(bXls);b.appendChild(seg);
   const formWrap=el('div');b.appendChild(formWrap);
+  let xlsWrap=null;
   function setMode(m){
     bTay.className='btn btn-sm '+(m==='tay'?'btn-brand':'btn-ghost');
     bAnh.className='btn btn-sm '+(m==='anh'?'btn-brand':'btn-ghost');
+    bXls.className='btn btn-sm '+(m==='xls'?'btn-brand':'btn-ghost');
     formWrap.style.display=m==='tay'?'block':'none';
     scanWrap.style.display=m==='anh'?'block':'none';
+    if(xlsWrap)xlsWrap.style.display=m==='xls'?'block':'none';
   }
-  bTay.onclick=()=>setMode('tay');bAnh.onclick=()=>setMode('anh');
+  bTay.onclick=()=>setMode('tay');bAnh.onclick=()=>setMode('anh');bXls.onclick=()=>setMode('xls');
   // HÀNG 1: ngày (mặc định hôm nay) + số phiếu kho tổng — gọn trên một dòng
   const g=el('div','form-row');
   const fDate=el('label','field f-date','<span>Ngày nhập</span>');const iDate=el('input','input');iDate.type='date';iDate.valueAsDate=new Date();fDate.appendChild(iDate);
@@ -8316,6 +8371,97 @@ function dcNhapKho(v){
   }
   scanWrap.appendChild(pickBtn);scanWrap.appendChild(fileIn);scanWrap.appendChild(statusEl);scanWrap.appendChild(prevWrap);
   b.appendChild(scanWrap);
+  // ---- Nạp nhập kho từ Excel (16/10/2026) ----
+  xlsWrap=el('div');xlsWrap.style.cssText='margin-top:16px;padding:12px;border:1px dashed var(--brand);border-radius:12px;background:var(--surface-2);display:none';
+  {const t=el('div');t.style.cssText='font-weight:800;font-size:13px;margin-bottom:4px';t.textContent=L('📥 Nạp hàng nhập từ file Excel');xlsWrap.appendChild(t);
+   const d=el('div');d.style.cssText='font-size:12px;color:var(--muted);margin-bottom:10px';
+   d.textContent=L('Cột: Ngày · Số phiếu · Mã hàng · Tên hàng · ĐVT · Số lượng. Nạp lại cùng file không bị nhân đôi; dòng đổi số lượng sẽ hỏi trước khi thay.');xlsWrap.appendChild(d);}
+  const xRow=el('div');xRow.style.cssText='display:flex;gap:8px;flex-wrap:wrap;align-items:center';
+  const bMau=el('button','btn btn-ghost btn-sm');bMau.type='button';bMau.textContent=L('⬇ Tải file mẫu');
+  const xIn=el('input');xIn.type='file';xIn.accept='.xlsx,.xls,.csv';xIn.style.cssText='font-size:12.5px';
+  xRow.appendChild(bMau);xRow.appendChild(xIn);xlsWrap.appendChild(xRow);
+  const xPrev=el('div');xPrev.style.marginTop='10px';xlsWrap.appendChild(xPrev);
+  b.appendChild(xlsWrap);
+  bMau.onclick=()=>{try{
+    const hd=['Ngày','Số phiếu','Mã hàng','Tên hàng','ĐVT','Số lượng'];
+    const vd=(DATA.materials||[]).find(m=>m&&m.code&&(plantMaterials[plantSel.value]||[]).includes(m.code))||(DATA.materials||[])[0]||{code:'',name:'',uom:''};
+    const ws=XLSX.utils.aoa_to_sheet([hd,[iDate.value.split('-').reverse().join('/'),'PX-00001',String(vd.code),vd.name,vd.uom||'',1]]);
+    ws['!cols']=hd.map(x=>({wch:/Tên/.test(x)?42:14}));
+    const hg=XLSX.utils.aoa_to_sheet([['HƯỚNG DẪN'],['Điền ở sheet "NhapKho" (sheet đầu tiên) — app chỉ đọc sheet đầu.'],
+      ['Bắt buộc: Mã hàng, Số lượng. Ngày để trống = ngày hôm nay. Số phiếu nên điền để phân biệt các lần nhận.'],
+      ['Số lượng: dấu chấm là thập phân (2.5 = hai rưỡi). Không gõ dấu phân cách nghìn.'],
+      ['Mã chưa có trong danh mục vẫn nạp số, app báo kế toán khai báo tên.'],
+      ['Xoá dòng ví dụ trước khi điền. Không đổi tên các cột.']]);
+    hg['!cols']=[{wch:90}];
+    const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'NhapKho');XLSX.utils.book_append_sheet(wb,hg,'HuongDan');
+    XLSX.writeFile(wb,'Mau_nhap_kho_'+plantSel.value+'_'+slocSel.value+'.xlsx');toast(L('Đã tải file mẫu nhập kho'));
+  }catch(e){console.error(e);toast('Lỗi tạo file mẫu');}};
+  xIn.onchange=()=>{const f=xIn.files[0];if(!f)return;xPrev.innerHTML='';
+    readSheetRows(f,rows=>{
+      const kq=nkDocExcel(rows,plantSel.value,slocSel.value,iDate.value);
+      if(kq.loiTieuDe){toast(L('Không thấy cột Mã hàng / Số lượng — tải file mẫu và điền theo mẫu'));xIn.value='';return;}
+      /* Có dòng ngày không đọc được thì DỪNG cả file — nạp một phần là thiếu dòng mà không ai biết. */
+      if(kq.ngayHong.length){toast('Có '+kq.ngayHong.length+' dòng ngày không đọc được ('+kq.ngayHong.slice(0,3).join(', ')+') — sửa cột Ngày thành dd/mm/yyyy rồi nạp lại');xIn.value='';return;}
+      if(!kq.dong.length){toast(L('Không có dòng nào nạp được (thiếu mã hoặc số lượng)'));xIn.value='';return;}
+      veXemTruocXls(kq);
+    },err=>{toast('Lỗi đọc file: '+err.message);xIn.value='';});
+  };
+  function veXemTruocXls(kq){
+    const pl=nkPhanLoai(kq.dong,receipts);
+    xPrev.innerHTML='';
+    const tom=el('div');tom.style.cssText='font-size:12.5px;line-height:1.7;margin-bottom:8px';
+    const dongs=[pl.moi.length+' dòng mới',pl.daCo.length+' dòng đã nạp trước (bỏ qua)',pl.lech.length+' dòng số lượng khác lần trước'];
+    if(kq.gop)dongs.push(kq.gop+' dòng trùng mã trong cùng phiếu (đã cộng dồn)');
+    if(kq.boKhongMa)dongs.push(kq.boKhongMa+' dòng không có mã (bỏ)');
+    if(kq.boSoLoi)dongs.push(kq.boSoLoi+' dòng số lượng trống/lỗi (bỏ)');
+    const soLa=kq.dong.filter(d=>d.maLa).length;if(soLa)dongs.push(soLa+' dòng mã chưa có trong master data (vẫn nạp số, chờ kế toán khai báo tên)');
+    tom.textContent=dongs.join(' · ');xPrev.appendChild(tom);
+    const w=el('div','tbl-wrap');w.style.cssText='max-height:320px;overflow:auto';const tbl=el('table');
+    tbl.innerHTML='<thead><tr><th>Ngày</th><th>Số phiếu</th><th>Mã</th><th>Tên hàng</th><th class="num">SL</th><th>Trạng thái</th></tr></thead>';
+    const tb=el('tbody');
+    const nhan=d=>pl.daCo.includes(d)?L('đã có'):(pl.lech.find(x=>x.id===d.id)?(L('số cũ')+' '+pl.lech.find(x=>x.id===d.id).qtyCu):L('mới'));
+    kq.dong.forEach(d=>{const tr=el('tr');
+      [d.date.split('-').reverse().join('/'),d.soPhieu||'—',d.code,d.maLa?(d.code):(d.name||d.code),String(d.qty)+' '+(d.uom||''),nhan(d)+(d.maLa?' · '+L('chưa có tên'):'')]
+        .forEach((x,i)=>{const td=el('td',i===4?'num tnum':null);td.textContent=x;tr.appendChild(td);});
+      tb.appendChild(tr);});
+    tbl.appendChild(tb);w.appendChild(tbl);xPrev.appendChild(w);
+    const br=el('div');br.style.cssText='display:flex;gap:10px;flex-wrap:wrap;margin-top:10px';
+    const bLuu=el('button','btn btn-primary');bLuu.type='button';bLuu.textContent=L('✓ Lưu nhập kho');
+    const bHuy=el('button','btn btn-ghost');bHuy.type='button';bHuy.textContent=L('Hủy');
+    bHuy.onclick=()=>{xPrev.innerHTML='';xIn.value='';};
+    br.appendChild(bLuu);br.appendChild(bHuy);xPrev.appendChild(br);
+    if(!pl.moi.length&&!pl.lech.length){bLuu.disabled=true;bLuu.style.opacity='.5';}
+    bLuu.onclick=async()=>{
+      let thay=false;
+      if(pl.lech.length){thay=confirm(pl.lech.length+' dòng đã nạp trước với SỐ LƯỢNG KHÁC:\n'
+        +pl.lech.slice(0,8).map(x=>'· '+x.code+' ('+(x.soPhieu||'không số phiếu')+', '+x.date.split('-').reverse().join('/')+'): '+x.qtyCu+' → '+x.qty).join('\n')
+        +(pl.lech.length>8?'\n…':'')+'\n\nOK = THAY bằng số mới · Cancel = GIỮ số cũ');}
+      if(!pl.moi.length&&!thay){toast(L('Không có gì để lưu — các dòng đều đã có'));return;}
+      bLuu.disabled=true;bHuy.disabled=true;bLuu.textContent=L('Đang lưu…');
+      let moi=0,doi=0,truot=0,trung=0;const maLa=[];
+      for(const d of pl.moi){
+        const rec={id:d.id,plant:plantSel.value,sloc:slocSel.value,code:d.code,name:d.name,uom:d.uom,qty:d.qty,date:d.date,period:d.period,
+          note:((d.soPhieu?d.soPhieu+' ':'')+'[Excel]'+(d.maLa?' [mã chờ khai báo]':'')).trim(),by:session.name,time:now()};
+        let err=null;
+        if(sb){try{const r=await sb.from('receipts').insert({id:rec.id,plant_code:rec.plant,sloc_code:rec.sloc,code:rec.code,name:rec.name,uom:rec.uom,qty:rec.qty,date:rec.date,period:rec.period,note:rec.note,created_by:rec.by});err=r.error;}catch(e){err=e;}}
+        if(err){if(String(err.code)==='23505'){trung++;continue;}   // máy khác vừa nạp đúng dòng này -> coi như đã có
+          console.error('receipts',err);truot++;continue;}
+        receipts.unshift(rec);if(d.maLa)maLa.push(d.code);else learnMaterials([{code:rec.code,name:rec.name,uom:rec.uom}]);moi++;}
+      if(thay)for(const d of pl.lech){const u=await dbUpd('receipts',{id:d.id},{qty:d.qty});
+        if(u.ok&&u.count!==0){const c=receipts.find(x=>x.id===d.id);if(c)c.qty=d.qty;doi++;}else truot++;}
+      if(moi||doi)log('Nhập kho từ Excel',moi+' dòng mới'+(doi?', thay '+doi+' dòng':'')+' · '+whName(plantSel.value,slocSel.value));
+      if(maLa.length){const ds=[...new Set(maLa)];
+        try{notifyWh(plantSel.value,slocSel.value,whName(plantSel.value,slocSel.value)+' nhập kho từ Excel có '+ds.length
+          +' mã chưa có trong master data: '+ds.slice(0,10).join(', ')+(ds.length>10?'…':'')+' — cần khai báo tên, ĐVT ở Danh mục VT.','mala','Mã chưa có trong master data',session.name);}catch(e){}}
+      const bao=['Đã lưu '+moi+' dòng mới'];
+      if(doi)bao.push('thay '+doi+' dòng');
+      if(pl.lech.length&&!thay)bao.push('giữ số cũ '+pl.lech.length+' dòng');
+      if(pl.daCo.length+trung)bao.push('bỏ qua '+(pl.daCo.length+trung)+' dòng đã có');
+      if(truot)bao.push(truot+' dòng CHƯA lên máy chủ — nạp lại file để thử lại');
+      toast((truot?'':'✓ ')+bao.join(' · '));
+      xPrev.innerHTML='';xIn.value='';renderList();
+    };
+  }
   pickBtn.onclick=()=>fileIn.click();
   fileIn.onchange=async ()=>{
     const files=[...fileIn.files];if(!files.length)return;
@@ -9389,6 +9535,16 @@ function renderProgress(v){
    <input type=date> hiện được. ĐỌC KHÔNG RA thì GIỮ NGUYÊN CHỮ — màn đếm sẽ
    để ô đó là chữ cho người ta thấy và sửa, chứ không vứt mất. */
 function docNgayO(v){
+  /* Ngày phải CÓ THẬT trên lịch: '32/13/2026' trước đây thành '2026-13-32' — đúng hình dạng nên
+     lọt qua mọi chỗ kiểm (nạp Excel điều chuyển, nhập kho). Sai thì trả lại chữ gốc để nơi gọi
+     báo "không đọc được" (16/10/2026). */
+  const r=docNgayO_(v);const m=/^([0-9]{4})-([0-9]{2})-([0-9]{2})$/.exec(r);
+  if(!m)return r;
+  const d=new Date(Date.UTC(+m[1],+m[2]-1,+m[3]));
+  if(d.getUTCFullYear()===+m[1]&&d.getUTCMonth()===+m[2]-1&&d.getUTCDate()===+m[3])return r;
+  const g=String(v).trim();return /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(g)?g+' (sai ngày)':g;
+}
+function docNgayO_(v){
   if(v==null)return '';
   const ser=n=>new Date(Date.UTC(1899,11,30)+Math.round(n)*86400000).toISOString().slice(0,10);
   if(typeof v==='number')return (isFinite(v)&&v>20&&v<80000)?ser(v):'';
