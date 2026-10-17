@@ -1121,7 +1121,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1610-09';
+const APP_VER='1710-01';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -8570,11 +8570,14 @@ function dcNhapKho(v){
       const hopLe=c=>/^[0-9A-Za-z._\-]{2,20}$/.test(String(c||'').trim());
       const ok=pv.filter(r=>!r.removed&&hopLe(r.code)&&Number(r.qty)>0);
       const skipped=pv.filter(r=>!r.removed).length-ok.length;
+      /* Tách rõ 2 lý do bỏ (17/10/2026): trước đây dòng SL 0 cũng bị gọi là "chưa có mã". */
+      const sl0=pv.filter(r=>!r.removed&&hopLe(r.code)&&!(Number(r.qty)>0)).length,khongMa=skipped-sl0;
       const soLa=ok.filter(r=>!masterByCode[r.code.trim()]).length;
       if(!ok.length){toast('Chưa có dòng nào có mã hàng để lưu');return;}
       if(!confirm('Thêm '+ok.length+' dòng vào Nhập kho '+whName(plantSel.value,slocSel.value)+' · tháng '+periodVN(perSel.value)+'?'
         +(soLa?'\n('+soLa+' dòng mã chưa có trong master data — vẫn lưu số, chờ kế toán khai báo tên)':'')
-        +(skipped>0?'\n('+skipped+' dòng chưa có mã sẽ bị bỏ qua)':'')))return;
+        +(khongMa>0?'\n('+khongMa+' dòng chưa có mã sẽ bị bỏ qua)':'')
+        +(sl0>0?'\n('+sl0+' dòng số lượng 0 sẽ bị bỏ qua)':'')))return;
       /* Ghi TỪNG dòng và chờ máy chủ trả lời rồi mới báo (16/10/2026): trước đây báo
          "✓ Đã thêm N dòng" ngay, dòng bị máy chủ từ chối vẫn nằm trong danh sách. */
       saveBtn.disabled=true;cancelBtn.disabled=true;saveBtn.textContent='Đang lưu…';
