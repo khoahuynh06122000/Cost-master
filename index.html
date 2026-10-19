@@ -1121,7 +1121,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1910-02';
+const APP_VER='1910-03';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -8617,9 +8617,9 @@ function dcNhapKho(v){
     listWrap.appendChild(el('div',null,`<div style="font-weight:800;font-size:13px;margin:6px 0">📋 Nhập kho ${whName(plantSel.value,slocSel.value)} · tháng ${periodVN(perSel.value)} <span style="color:var(--muted);font-weight:500">(${list.length} dòng)</span></div>`));
     if(!list.length){listWrap.appendChild(el('div','empty',`<div>Chưa có dòng nhập kho cho kho/kỳ này.</div>`));return;}
     const w=el('div','tbl-wrap');const tbl=el('table');
-    tbl.innerHTML=`<thead><tr><th>Ngày</th><th>Mã</th><th>Tên hàng</th><th class="num">SL nhập</th><th>Ghi chú</th><th></th></tr></thead>`;
+    tbl.innerHTML=`<thead><tr><th>Ngày</th><th>Mã</th><th>Tên hàng</th><th class="num">SL nhập</th><th>Ghi chú</th><th>Người nhập</th><th></th></tr></thead>`;
     const tb=el('tbody');
-    list.forEach(r=>{const tr=el('tr',null,`<td class="tnum" style="font-size:12px">${r.date||''}</td><td class="tnum">${r.code}</td><td>${masterByCode[r.code]?(masterByCode[r.code].name||r.name):(r.code+' <span class="badge badge-wait" style="font-size:9px;padding:1px 5px">'+L('chưa có tên')+'</span>')}</td><td class="num cell-strong tnum">${r.qty} ${r.uom||''}</td><td style="font-size:12px">${r.note||''}</td><td><button class="btn btn-ghost btn-sm rmk" style="color:var(--red)">Xóa</button></td>`);
+    list.forEach(r=>{const tr=el('tr',null,`<td class="tnum" style="font-size:12px">${r.date||''}</td><td class="tnum">${r.code}</td><td>${masterByCode[r.code]?(masterByCode[r.code].name||r.name):(r.code+' <span class="badge badge-wait" style="font-size:9px;padding:1px 5px">'+L('chưa có tên')+'</span>')}</td><td class="num cell-strong tnum">${r.qty} ${r.uom||''}</td><td style="font-size:12px">${r.note||''}</td><td style="font-size:12px">${escHtml(r.by||'')}<div class="cell-sub tnum">${escHtml(r.time||'')}</div></td><td><button class="btn btn-ghost btn-sm rmk" style="color:var(--red)">Xóa</button></td>`);
       tr.querySelector('.rmk').onclick=async()=>{if(!confirm('Xóa dòng nhập kho '+r.code+'?'))return;
         const _d=await dbDel('receipts',{id:r.id});if(!_d.ok||_d.count===0)return;
         receipts=receipts.filter(x=>x.id!==r.id);log('Xóa dòng nhập kho',`${r.code} · ${whName(r.plant,r.sloc)}`);renderList();};
