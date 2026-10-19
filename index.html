@@ -1121,7 +1121,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1710-01';
+const APP_VER='1910-01';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -3294,7 +3294,7 @@ async function dbLoadAll(){
       sb.from('transfers').select('*').order('created_at',{ascending:false}),
       sb.from('shifts').select('*').order('created_at',{ascending:false}),
       sb.from('opening_stock').select('*'),
-      sb.from('plant_materials').select('*'),
+      fetchAllRows('plant_materials','plant_code,code'),  // tải đủ — select('*') chỉ trả 1.000 dòng đầu (19/10/2026)
       sb.from('audit_log').select('*').order('at',{ascending:false}).limit(500),
       sb.from('spot_checks').select('*').order('created_at',{ascending:false}),
       fetchAllRows('materials','code,name,uom,name_en'),
@@ -3420,6 +3420,8 @@ function hideFreshPill(){const b=document.getElementById('freshPill');if(b)b.rem
 const TBL_QUIET=['audit_log','notifications'];
 /* Trả {ok} để nơi gọi biết dòng nào KHÔNG lên máy chủ (trước đây trả undefined cả hai đường). */
 async function dbIns(table,row){if(!sb)return {ok:true};const {error}=await sb.from(table).insert(row);if(!error)return {ok:true};
+  /* Mã đã có sẵn trong danh mục kho trên máy chủ = việc cần làm đã xong, không phải lỗi (19/10/2026). */
+  if(table==='plant_materials'&&error.code==='23505')return {ok:true};
   {console.error(table,error);
   if(TBL_QUIET.indexOf(table)>=0)return {ok:false,error};
   errBox('Không lưu được '+tblVN(table)+' lên máy chủ',['Dữ liệu vừa nhập <b>CHƯA</b> lên máy chủ. Máy khác sẽ không thấy, tải lại trang là mất.','Chụp màn hình này gửi admin, rồi thử lại.'],'Bảng: '+table+'\n'+(error.message||'')+(error.code?'\nMã lỗi: '+error.code:''));
@@ -10867,7 +10869,7 @@ function importPlantCatalog(file,plant,cb){
         if(set.has(code)){dup++;continue;}
         set.add(code);plantMaterials[plant].push(code);newCodes.push(code);added++;
       }
-      if(sb&&newCodes.length)sb.from('plant_materials').insert(newCodes.map(c=>({plant_code:plant,code:c}))).then(({error})=>{if(error)console.error(error);});
+      if(sb&&newCodes.length)sb.from('plant_materials').upsert(newCodes.map(c=>({plant_code:plant,code:c})),{ignoreDuplicates:true}).then(({error})=>{if(error)console.error(error);});
       let html=`<div class="imp-res imp-ok"><b>✓ Đã thêm ${added} mã</b> vào ${plantName(plant)}.`;
       if(dup)html+=` <span class="imp-warn">${dup} mã đã có sẵn (bỏ qua).</span>`;
       if(notfound.length)html+=` <span class="imp-warn">${notfound.length} mã không có trong kho tổng: ${notfound.join(', ')}…</span>`;
