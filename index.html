@@ -1121,7 +1121,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1910-01';
+const APP_VER='1910-02';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -3269,15 +3269,17 @@ async function loadNotifsOnly(){
 }
 function syncSig(){try{return [submissions,transfers,receipts,closings,spotChecks,shifts,notifications,trReqs]
   .map(a=>Array.isArray(a)?a.length+':'+JSON.stringify(a).length:'0').join('|')+'|op'+Object.keys(openingStock||{}).length;}catch(e){return '';}}
-async function fetchAllRows(table,cols){
+async function fetchAllRows(table,cols,orderCol){
   const out=[];let from=0;const step=1000;
   for(;;){
-    const {data,error}=await sb.from(table).select(cols).range(from,from+step-1);
+    /* orderCol: sắp mới trước, kèm id để phân trang không trùng/sót dòng cùng giờ (19/10/2026). */
+    let q=sb.from(table).select(cols);if(orderCol)q=q.order(orderCol,{ascending:false}).order('id',{ascending:true});
+    const {data,error}=await q.range(from,from+step-1);
     /* Cột mới (name_en) có thể chưa chạy SQL. Bỏ cột đó ra rồi tải lại, thay vì
        trả về rỗng làm mất sạch danh mục vật tư. */
     if(error&&/name_en|column|schema cache/i.test(error.message||'')&&/,name_en/.test(cols)){
       console.warn('Chưa có cột name_en — tải danh mục không kèm tên tiếng Anh');
-      return fetchAllRows(table,cols.replace(',name_en',''));
+      return fetchAllRows(table,cols.replace(',name_en',''),orderCol);
     }
     if(error){console.error('fetchAll '+table,error);break;}
     out.push(...(data||[]));
@@ -3316,7 +3318,7 @@ async function dbLoadAll(){
     spotChecks=(sc.data||[]).map(r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,by:r.created_by,desc:r.description,amount:Number(r.amount)||0,status:r.status,reviewedBy:r.reviewed_by,reviewedAt:r.reviewed_at?fmt(r.reviewed_at):null,note:r.review_note,time:fmt(r.created_at)}));
     notifications=(nt&&nt.data?nt.data:[]).map(r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,message:r.message,kind:r.kind,by:r.created_by,read:!!r.read_flag,time:fmt(r.created_at)}));
     closings=(rc&&rc.data?rc.data:[]).map(r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,period:r.period,items:r.items||{},recon:r.recon||{},explain:r.explain||{},status:r.status||'Chờ duyệt',by:r.created_by,approvedBy:r.approved_by,approvedAt:r.approved_at?fmt(r.approved_at):null,prevOpening:r.prev_opening||null,time:fmt(r.created_at)}));
-    try{const rp=await sb.from('receipts').select('*').order('created_at',{ascending:false}).limit(2000);receipts=(rp.data||[]).map(r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,code:r.code,name:r.name,uom:r.uom,qty:Number(r.qty)||0,date:r.date,period:r.period||periodOfDate(r.date),note:r.note,by:r.created_by,time:fmt(r.created_at)}));}catch(e){receipts=[];console.warn('Chưa có bảng receipts (nhập kho) — bỏ qua',e&&e.message);}
+    try{const rp=await fetchAllRows('receipts','*','created_at');/* tải đủ — .limit(2000) thực ra chỉ nhận 1.000 dòng (19/10/2026) */receipts=(rp.data||[]).map(r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,code:r.code,name:r.name,uom:r.uom,qty:Number(r.qty)||0,date:r.date,period:r.period||periodOfDate(r.date),note:r.note,by:r.created_by,time:fmt(r.created_at)}));}catch(e){receipts=[];console.warn('Chưa có bảng receipts (nhập kho) — bỏ qua',e&&e.message);}
     try{const tq=await sb.from('transfer_requests').select('*').order('created_at',{ascending:false}).limit(500);
       trReqs=(tq.data||[]).map(r=>({id:r.id,kind:r.kind,fromPlant:r.from_plant,fromSloc:r.from_sloc,toPlant:r.to_plant,toSloc:r.to_sloc,
         items:r.items||{},reason:r.reason||'',status:r.status||'Chờ duyệt',period:r.period||null,idCu:r.id_cu||'',
