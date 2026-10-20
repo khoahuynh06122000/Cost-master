@@ -77,10 +77,22 @@ module.exports = async (req, res) => {
     }
     if (parts.length === 1) { res.status(400).json({ error: 'Ảnh không hợp lệ (cần data:image;base64)' }); return; }
 
-    const reqBody = JSON.stringify({
-      contents: [{ role: 'user', parts }],
-      generationConfig: { responseMimeType: 'application/json', responseSchema: SCHEMA, temperature: 0 },
-    });
+    /* TẮT/GIẢM "suy nghĩ" của model (20/10/2026). Gemini 2.5 và 3.x mặc định tự suy nghĩ trước khi
+       trả lời — đọc một phiếu 50-90 dòng mất 40-90s, vượt hạn 60s của Vercel -> BP thấy lỗi 504.
+       Đọc bảng không cần suy luận. 2.5: thinkingBudget 0 · 3.x: thinkingLevel 'low'.
+       Model nào không nhận tham số này (400) thì gửi lại đúng model đó KHÔNG kèm nó. */
+    function thinkCfg(model) {
+      if (/gemini-3/i.test(model)) return { thinkingLevel: 'low' };
+      if (/gemini-2\.5/i.test(model)) return /pro/i.test(model) ? { thinkingBudget: 128 } : { thinkingBudget: 0 };
+      if (/latest/i.test(model)) return { thinkingLevel: 'low' };
+      return null;
+    }
+    function bodyFor(model, coThink) {
+      const gc = { responseMimeType: 'application/json', responseSchema: SCHEMA, temperature: 0 };
+      const tc = coThink ? thinkCfg(model) : null;
+      if (tc) gc.thinkingConfig = tc;
+      return JSON.stringify({ contents: [{ role: 'user', parts }], generationConfig: gc });
+    }
 
     /* Danh sách thử sẵn. CHỈ là nước đi đầu — tên model của Google đổi theo thời
        gian và không phải khóa nào cũng có đủ; hết danh sách thì đi hỏi Google
@@ -90,7 +102,7 @@ module.exports = async (req, res) => {
     /* Ngân sách thời gian: Gemini đọc ảnh bảng mất 8-20s/lượt, mà vòng thử là
        (số model x số key). Hết ngân sách thì DỪNG và nói rõ, để người dùng nhận
        được câu trả lời thay vì bị Vercel cắt giữa chừng (client chỉ thấy 504). */
-    const T0 = Date.now(), NGAN_SACH = 45000;
+    const T0 = Date.now(), NGAN_SACH = 45000, HAN_CUNG = 54000;  // Vercel cắt ở 60s
 
     // Chấm điểm để lấy model đọc ảnh tốt nhất mà khóa đó thật sự có.
     // Chấm theo SỐ PHIÊN BẢN, không ghi cứng 2.5/2.0 — bản cũ trừ nặng "preview" và
@@ -133,10 +145,28 @@ module.exports = async (req, res) => {
       for (let a = 0; a < attempts.length; a++) {
         const { model, key, ki } = attempts[a];
         if (Date.now() - T0 > NGAN_SACH) return { hetGio: a };
-        const r = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
-          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: reqBody }
-        );
+        /* Mỗi lượt gọi có hạn riêng = phần thời gian còn lại trước mốc 54s, để chính hàm này
+           trả lời được (kèm lý do) thay vì bị Vercel cắt giữa chừng không một lời. */
+        const goi = async (coThink) => {
+          const ac = new AbortController();
+          const tm = setTimeout(() => ac.abort(), Math.max(3000, HAN_CUNG - (Date.now() - T0)));
+          try {
+            return await fetch(
+              `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
+              { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: bodyFor(model, coThink), signal: ac.signal }
+            );
+          } finally { clearTimeout(tm); }
+        };
+        let r;
+        try { r = await goi(true); }
+        catch (e) { lastDetail = `${model}/key#${ki + 1}: qua ${Math.round((Date.now() - T0) / 1000)}s chua tra loi`; return { hetGio: a + 1 }; }
+        if (r.status === 400 && thinkCfg(model)) {
+          const t0 = await r.clone().text().catch(() => '');
+          if (/think/i.test(t0)) {
+            try { r = await goi(false); }
+            catch (e) { lastDetail = `${model}/key#${ki + 1}: qua ${Math.round((Date.now() - T0) / 1000)}s chua tra loi`; return { hetGio: a + 1 }; }
+          }
+        }
         if (r.ok) { j = await r.json(); modelDung = model; return { ok: true }; }
         const t = await r.text().catch(() => '');
         lastStatus = r.status; lastDetail = `${model}/key#${ki + 1}: ${t.slice(0, 300)}`;
