@@ -200,6 +200,9 @@ const MAU = [
   { re: /reason[^;\n]{0,40}\.includes\(r\.id\)/, mo: false, vi: 'So mã phiếu bằng includes — phiếu gốc dính phiếu "-2" (sửa 24/09)' },
   { re: /const qty=Number\(raw\);\s*\n\s*if\(!isFinite\(qty\)\)\{badQty\+\+;continue;\}/, mo: false, vi: 'Ô Số lượng trống bị đọc thành 0 (sửa 05/10)', canTruoc: "if(raw===''){boTrong++;continue;}" },
   { re: /String\(r\[ngayCol\]\|\|''\)\.trim\(\)/, mo: false, vi: 'Ngày dd/mm trong file điều chuyển đưa thẳng vào new Date() — sai kỳ (rà soát B3, sửa 13/10)' },
+  { re: /const today='-'\+kkYmd\(\)/, mo: false, vi: 'Chống phiếu trùng dò ngày YYYYMMDD trong mã phiếu MMDDYY — không bao giờ khớp (sửa 21/10)' },
+  { re: /dbUpd\('transfer_requests',\{id:r\.id\},\{status:'Từ chối'/, mo: false, vi: 'Từ chối phiếu không điều kiện — màn cũ ghi đè phiếu người khác vừa duyệt/nhận (sửa 21/10)' },
+  { re: /bSend\.onclick=\(\)=>submitReq\(\);/, mo: false, vi: 'Nút gửi phiếu điều chuyển không khoá — bấm đúp ra hai phiếu (sửa 21/10)' },
 ];
 function kiemTaiPhat() {
   for (const m of MAU) {
