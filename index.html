@@ -1121,7 +1121,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2010-01';
+const APP_VER='2110-01';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1228,7 +1228,10 @@ Object.assign(TXT.hi,{"Tất cả kho bếp":"सभी रसोई स्ट�
 /* Bo sung 02/10/2026 (dot 34) — khoa AI khong co model doc anh. */
 Object.assign(TXT.en,{"Khóa AI này không dùng được model đọc ảnh nào":"This AI key cannot use any photo-reading model","Khóa AI này không đọc được ảnh. Vào thẻ \"Cài đặt AI quét ảnh\" bấm ⚡ Thử khóa; vẫn báo lỗi thì tạo khóa mới ở aistudio.google.com/apikey rồi lưu lại.":"This AI key cannot read photos. Open the \"AI photo-scan settings\" card and press ⚡ Test key; if it still fails, create a new key at aistudio.google.com/apikey and save it.","Google đang quá tải — chờ một lát rồi quét lại.":"Google is overloaded — wait a moment and scan again.","Thử lại sau ít phút. Vẫn lỗi thì bấm 📋 Sao chép chi tiết lỗi rồi gửi kế toán.":"Try again in a few minutes. If it still fails, press 📋 Copy error details and send it to accounting.","✗ Khóa đúng nhưng không dùng được model đọc ảnh nào. Tạo khóa mới ở aistudio.google.com/apikey rồi lưu lại.":"✗ The key is valid but cannot use any photo-reading model. Create a new key at aistudio.google.com/apikey and save it."});
 Object.assign(TXT.hi,{"Khóa AI này không dùng được model đọc ảnh nào":"यह AI कुंजी किसी भी फ़ोटो-पठन मॉडल का उपयोग नहीं कर सकती","Khóa AI này không đọc được ảnh. Vào thẻ \"Cài đặt AI quét ảnh\" bấm ⚡ Thử khóa; vẫn báo lỗi thì tạo khóa mới ở aistudio.google.com/apikey rồi lưu lại.":"यह AI कुंजी तस्वीरें नहीं पढ़ सकती। \"AI फ़ोटो-स्कैन सेटिंग\" कार्ड खोलकर ⚡ कुंजी जाँचें दबाएँ; फिर भी विफल हो तो aistudio.google.com/apikey पर नई कुंजी बनाकर सहेजें।","Google đang quá tải — chờ một lát rồi quét lại.":"Google पर अत्यधिक भार है — थोड़ी देर रुककर फिर स्कैन करें।","Thử lại sau ít phút. Vẫn lỗi thì bấm 📋 Sao chép chi tiết lỗi rồi gửi kế toán.":"कुछ मिनट बाद फिर प्रयास करें। फिर भी विफल हो तो 📋 त्रुटि विवरण कॉपी करें दबाकर लेखा को भेजें।","✗ Khóa đúng nhưng không dùng được model đọc ảnh nào. Tạo khóa mới ở aistudio.google.com/apikey rồi lưu lại.":"✗ कुंजी सही है पर किसी फ़ोटो-पठन मॉडल का उपयोग नहीं कर सकती। aistudio.google.com/apikey पर नई कुंजी बनाकर सहेजें।"});
-const TXT_RE_BS=[{re:new RegExp("^([\\d.,]+) mã trong file chưa có trong master data — vẫn nạp số, tạm hiện bằng mã$"),en:"$1 codes in the file are not in master data — quantities still loaded, shown by code for now",hi:"फ़ाइल के $1 कोड मास्टर डेटा में नहीं हैं — मात्रा फिर भी दर्ज, अभी कोड से दिखेंगे",n:1,en1:"$1 code in the file is not in master data — quantity still loaded, shown by code for now",hi1:"फ़ाइल का $1 कोड मास्टर डेटा में नहीं है — मात्रा फिर भी दर्ज, अभी कोड से दिखेगा"},{re:new RegExp("^Có ([\\d.,]+) dòng ngày không đọc được \\((.+)\\) — sửa cột Ngày thành dd/mm/yyyy rồi nạp lại$"),en:"$1 rows have an unreadable date ($2) — change the Date column to dd/mm/yyyy and upload again",hi:"$1 पंक्तियों की तारीख पढ़ी नहीं जा सकी ($2) — दिनांक कॉलम को dd/mm/yyyy में बदलें और फिर से अपलोड करें",n:1,en1:"1 row has an unreadable date ($2) — change the Date column to dd/mm/yyyy and upload again",hi1:"1 पंक्ति की तारीख पढ़ी नहीं जा सकी ($2) — दिनांक कॉलम को dd/mm/yyyy में बदलें और फिर से अपलोड करें"},{re:new RegExp("^([\\d.,]+) mã để trống Số lượng — không tính \\(muốn ghi 0 thì gõ số 0\\)\\.$"),en:"$1 items left blank — not counted (type 0 to record zero).",hi:"$1 वस्तुओं की मात्रा खाली — गिनी नहीं गईं (शून्य दर्ज करने हेतु 0 लिखें)।",n:1,en1:"$1 item left blank — not counted (type 0 to record zero).",hi1:"$1 वस्तु की मात्रा खाली — गिनी नहीं गई (शून्य दर्ज करने हेतु 0 लिखें)।"},{re:new RegExp("^([\\d.,]+) dòng sổ cũ không ghi đủ kho đi / kho đến nên không lọt vào bộ lọc — bỏ chọn kho ở ô trên để xem đủ\\.$"),en:"$1 old ledger lines do not record both the source and the destination store, so they fall outside this filter — clear the store above to see them all.",hi:"$1 पुरानी बही पंक्तियों में भेजने और पाने वाला स्टोर दोनों दर्ज नहीं हैं, इसलिए वे इस फ़िल्टर में नहीं आतीं — सब देखने हेतु ऊपर का स्टोर हटाएँ।",n:1,en1:"$1 old ledger line does not record both the source and the destination store, so it falls outside this filter — clear the store above to see them all.",hi1:"$1 पुरानी बही पंक्ति में भेजने और पाने वाला स्टोर दोनों दर्ज नहीं हैं, इसलिए वह इस फ़िल्टर में नहीं आती — सब देखने हेतु ऊपर का स्टोर हटाएँ।"},{re:new RegExp("^([\\d.,]+) mã trong file chưa có trong danh mục tổng — không nạp$"),en:"$1 codes in the file are not in the item catalogue — not uploaded",hi:"फ़ाइल के $1 कोड वस्तु-सूची में नहीं हैं — अपलोड नहीं हुए",n:1,en1:"$1 code in the file is not in the item catalogue — not uploaded",hi1:"फ़ाइल का $1 कोड वस्तु-सूची में नहीं है — अपलोड नहीं हुआ"},{re:new RegExp("^▾ Xem thêm ([\\d.,]+) mã khác của điểm bán$"),en:"▾ Show $1 more items of the outlet",hi:"▾ आउटलेट की $1 और वस्तुएँ दिखाएँ",n:1,en1:"▾ Show $1 more item of the outlet",hi1:"▾ आउटलेट की $1 और वस्तु दिखाएँ"},{re:new RegExp("^▾ Xem thêm ([\\d.,]+) \\(còn ([\\d.,]+)\\)$"),en:"▾ Show $1 more ($2 left)",hi:"▾ $1 और दिखाएँ ($2 शेष)"},{re:new RegExp("^Ca sáng · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"Morning shift · $1 · handed over by $2 · received by $3",hi:"सुबह की शिफ़्ट · $1 · $2 द्वारा सौंपा · $3 द्वारा प्राप्त"},{re:new RegExp("^Ca sáng · ([0-9/-]+) · giao bởi (.+)$"),en:"Morning shift · $1 · handed over by $2",hi:"सुबह की शिफ़्ट · $1 · $2 द्वारा सौंपा"},{re:new RegExp("^Ca chiều · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"Afternoon shift · $1 · handed over by $2 · received by $3",hi:"दोपहर की शिफ़्ट · $1 · $2 द्वारा सौंपा · $3 द्वारा प्राप्त"},{re:new RegExp("^Ca chiều · ([0-9/-]+) · giao bởi (.+)$"),en:"Afternoon shift · $1 · handed over by $2",hi:"दोपहर की शिफ़्ट · $1 · $2 द्वारा सौंपा"},{re:new RegExp("^Ca tối · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"Night shift · $1 · handed over by $2 · received by $3",hi:"रात की शिफ़्ट · $1 · $2 द्वारा सौंपा · $3 द्वारा प्राप्त"},{re:new RegExp("^Ca tối · ([0-9/-]+) · giao bởi (.+)$"),en:"Night shift · $1 · handed over by $2",hi:"रात की शिफ़्ट · $1 · $2 द्वारा सौंपा"},{re:new RegExp("^Chốt tồn tháng (\\d{2}/\\d{4}) \\(kế toán\\)$"),en:"Month-end stock close $1 (accounting)",hi:"माह-अंत स्टॉक समापन $1 (लेखा)"},{re:new RegExp("^Phiếu kiểm kê (.+) \\(kỳ (\\d{2}/\\d{4})\\)$"),en:"Count sheet $1 (period $2)",hi:"गणना पर्ची $1 (अवधि $2)"},{re:new RegExp("^(.+) · Sloc ([0-9]+) · gửi bởi (.+) lúc (.+)$"),en:"$1 · Sloc $2 · submitted by $3 at $4",hi:"$1 · Sloc $2 · $3 द्वारा $4 पर भेजा गया"},{re:new RegExp("^(.+) · Sloc ([0-9]+) · Chốt từ (.*) · (.*) · Người chốt (.*)$"),en:"$1 · Sloc $2 · closed from $3 · $4 · closed by $5",hi:"$1 · Sloc $2 · $3 से बंद · $4 · $5 द्वारा बंद"},{re:new RegExp("^(.+) · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"$1 · $2 · handed over by $3 · received by $4",hi:"$1 · $2 · $3 द्वारा सौंपा · $4 द्वारा प्राप्त"},{re:new RegExp("^(.+) · ([0-9/-]+) · giao bởi (.+)$"),en:"$1 · $2 · handed over by $3",hi:"$1 · $2 · $3 द्वारा सौंपा"},{re:new RegExp("^✏️ Phiếu này đã đếm bổ sung ([\\d.,]+) lần — bấm để xem đã sửa gì$"),en:"✏️ This sheet has been edited $1 times — tap to see what changed",hi:"✏️ यह पर्ची $1 बार संपादित हुई — क्या बदला देखने हेतु टैप करें",n:1,en1:"✏️ This sheet has been edited once — tap to see what changed",hi1:"✏️ यह पर्ची एक बार संपादित हुई — क्या बदला देखने हेतु टैप करें"},{re:new RegExp("^📋 Bảng kiểm đếm thực tế · ([\\d.,]+) mã$"),en:"📋 Actual count table · $1 items",hi:"📋 वास्तविक गणना तालिका · $1 वस्तुएँ",n:1,en1:"📋 Actual count table · $1 item",hi1:"📋 वास्तविक गणना तालिका · $1 वस्तु"},{re:new RegExp("^Tạo bởi (.+) · (.+) · (.+)$"),en:"Created by $1 · $2 · $3",hi:"$1 द्वारा बनाया · $2 · $3"},{re:new RegExp("^([\\d.,]+)/([\\d.,]+) điểm bán$"),en:"$1/$2 outlets",hi:"$1/$2 आउटलेट"},{re:new RegExp("^còn ([\\d.,]+)$"),en:"$1 left",hi:"$1 शेष"},{re:new RegExp("^🔔 Đã tự nhắc ([\\d.,]+) điểm bán$"),en:"🔔 Auto-reminded $1 outlets",hi:"🔔 $1 आउटलेट को स्वतः याद दिलाया"},{re:new RegExp("^📋 Xem bảng xếp hạng chi tiết \\(([\\d.,]+) bộ phận\\)$"),en:"📋 See the full ranking ($1 departments)",hi:"📋 पूरी रैंकिंग देखें ($1 विभाग)"},{re:new RegExp("^🔒 Tháng (\\d{2}/\\d{4}) đã khóa$"),en:"🔒 Month $1 is locked",hi:"🔒 माह $1 बंद है"},{re:new RegExp("^đã được kế toán duyệt cho tháng (\\d{2}/\\d{4})\\. Không thể chỉnh sửa\\. Kỳ mới sẽ mở vào tháng sau\\.$"),en:"has been approved by accounting for month $1. It can no longer be edited. The next period opens next month.",hi:"लेखा द्वारा माह $1 हेतु स्वीकृत। अब संपादित नहीं किया जा सकता। अगली अवधि अगले माह खुलेगी।"},{re:new RegExp("^Đã bỏ từ chối (.+) — phiếu quay lại chờ duyệt$"),en:"Rejection of $1 undone — the request is back to awaiting approval",hi:"$1 की अस्वीकृति रद्द — पर्ची फिर से स्वीकृति की प्रतीक्षा में"},{re:new RegExp("^Phiếu này từng bị từ chối \\(lý do: (.+)\\) và đã được quản trị viên mở lại\\. Xem kỹ trước khi duyệt\\.$"),en:"This request was rejected before (reason: $1) and an administrator reopened it. Check it carefully before approving.",hi:"यह पर्ची पहले अस्वीकृत हुई थी (कारण: $1) और प्रशासक ने इसे फिर खोला। स्वीकृत करने से पहले ध्यान से देखें।"},{re:new RegExp("^(.+) đã duyệt phiếu (.+) · chuyển cho (.+) · ([\\d.,]+) mã · lúc (.+)$"),en:"$1 approved request $2 · sent to $3 · $4 items · at $5",hi:"$1 ने पर्ची $2 स्वीकृत की · $3 को भेजा · $4 वस्तुएँ · $5 बजे",n:4,en1:"$1 approved request $2 · sent to $3 · $4 item · at $5",hi1:"$1 ने पर्ची $2 स्वीकृत की · $3 को भेजा · $4 वस्तु · $5 बजे"},{re:new RegExp("^([\\d.,]+) loại lý do$"),en:"$1 kinds of reason",hi:"$1 प्रकार के कारण",n:1,en1:"$1 kind of reason",hi1:"$1 प्रकार का कारण"},{re:new RegExp("^([\\d.,]+) phiếu$"),en:"$1 requests",hi:"$1 पर्चियाँ",n:1,en1:"$1 request",hi1:"$1 पर्ची"},{re:new RegExp("^([\\d.,]+) dòng$"),en:"$1 lines",hi:"$1 पंक्तियाँ",n:1,en1:"$1 line",hi1:"$1 पंक्ति"}];
+/* Hàng dư cuối ngày (21/10/2026) */
+Object.assign(TXT.en,{"Hàng dư cuối ngày":"End-of-day surplus","Chuyển hàng dư cuối ngày":"Transfer end-of-day surplus","🌙 Chuyển hàng dư cuối ngày":"🌙 Transfer end-of-day surplus","Hàng dư cuối ngày chuyển cho bếp buffet — bếp bấm nhận mới tính":"Leftover stock sent to a buffet kitchen — counted only once the kitchen confirms receipt","Chọn bếp buffet nhận, gõ số hàng dư. Bếp bấm nhận thì hàng mới trừ kho mình và cộng cho bếp, tính vào đúng ngày chuyển.":"Pick the receiving buffet kitchen and enter the surplus quantities. Stock leaves your store and reaches the kitchen only when the kitchen confirms, dated on the transfer day.","Chuyển từ kho":"Send from store","Bếp buffet nhận":"Receiving buffet kitchen","VD: hàng dư ca tối…":"E.g. leftovers from the evening shift…","Gửi phiếu — chờ bếp nhận":"Send — awaiting kitchen receipt","Gõ tên hoặc mã hàng dư…":"Type the name or code of surplus items…","Gõ tên hoặc mã hàng dư":"Type the name or code of surplus items","Ô tìm phía trên lục trong hàng đang có ở kho. Chuyển vài lần thì những mã hay chuyển sẽ hiện sẵn ở đây.":"The search box above looks through stock currently in this store. After a few transfers, the items you usually send will show here automatically.","SL chuyển":"Qty sent","SL thực nhận":"Qty received","SL bếp nhận":"Qty kitchen received","Hàng dư chuyển tới":"Surplus sent to you","✎ Sửa số rồi nhận":"✎ Edit quantities, then receive","✓ Nhận với số đã sửa":"✓ Receive with edited quantities","✕ Không nhận":"✕ Do not receive","Hạ \"SL thực nhận\" theo hàng thật sự nhận được. Ghi 0 là mã đó không nhận (hỏng, không dùng được). Không cho ghi quá số đã chuyển.":"Lower \"Qty received\" to what actually arrived. Enter 0 for items not accepted (spoiled, unusable). It cannot exceed the quantity sent.","Nhận thiếu so với số chuyển thì bấm \"Sửa số rồi nhận\".":"If you received less than was sent, tap \"Edit quantities, then receive\".","✓ Bếp nhận bởi":"✓ Kitchen received by","Bước 3/3 — bếp đã nhận, đã ghi sổ":"Step 3/3 — kitchen received, posted to the ledger","Duyệt / nhận xong hàng mới trừ kho nguồn và cộng kho nhận. Phiếu xin hàng tính theo ngày duyệt, hàng dư cuối ngày tính theo ngày chuyển":"Stock leaves the source and reaches the receiving store only after approval / receipt. Requests are dated on approval; end-of-day surplus is dated on the transfer day","Chưa chọn bếp buffet nhận hàng":"No receiving buffet kitchen selected","Tất cả số thực nhận đang là 0 — nếu không nhận gì thì bấm Không nhận":"All received quantities are 0 — if nothing was received, tap Do not receive","Đang ghi sổ…":"Posting…"});
+Object.assign(TXT.hi,{"Hàng dư cuối ngày":"दिन के अंत का बचा माल","Chuyển hàng dư cuối ngày":"दिन के अंत का बचा माल भेजें","🌙 Chuyển hàng dư cuối ngày":"🌙 दिन के अंत का बचा माल भेजें","Hàng dư cuối ngày chuyển cho bếp buffet — bếp bấm nhận mới tính":"बचा माल बुफ़े रसोई को — रसोई के प्राप्त करने पर ही गिना जाएगा","Chọn bếp buffet nhận, gõ số hàng dư. Bếp bấm nhận thì hàng mới trừ kho mình và cộng cho bếp, tính vào đúng ngày chuyển.":"प्राप्त करने वाली बुफ़े रसोई चुनें और बचे माल की मात्रा लिखें। रसोई के प्राप्त करने पर ही माल आपके स्टोर से घटेगा और रसोई में जुड़ेगा, भेजने वाले दिन की तारीख़ से।","Chuyển từ kho":"इस स्टोर से भेजें","Bếp buffet nhận":"प्राप्त करने वाली बुफ़े रसोई","VD: hàng dư ca tối…":"जैसे: शाम की पाली का बचा माल…","Gửi phiếu — chờ bếp nhận":"भेजें — रसोई की प्राप्ति की प्रतीक्षा","Gõ tên hoặc mã hàng dư…":"बचे माल का नाम या कोड लिखें…","Gõ tên hoặc mã hàng dư":"बचे माल का नाम या कोड लिखें","Ô tìm phía trên lục trong hàng đang có ở kho. Chuyển vài lần thì những mã hay chuyển sẽ hiện sẵn ở đây.":"ऊपर का खोज बॉक्स इस स्टोर में मौजूद माल में खोजता है। कुछ बार भेजने के बाद, अक्सर भेजी जाने वाली वस्तुएँ यहाँ अपने-आप दिखेंगी।","SL chuyển":"भेजी मात्रा","SL thực nhận":"प्राप्त मात्रा","SL bếp nhận":"रसोई द्वारा प्राप्त मात्रा","Hàng dư chuyển tới":"आपको भेजा गया बचा माल","✎ Sửa số rồi nhận":"✎ मात्रा बदलें, फिर प्राप्त करें","✓ Nhận với số đã sửa":"✓ बदली मात्रा के साथ प्राप्त करें","✕ Không nhận":"✕ प्राप्त न करें","Hạ \"SL thực nhận\" theo hàng thật sự nhận được. Ghi 0 là mã đó không nhận (hỏng, không dùng được). Không cho ghi quá số đã chuyển.":"\"प्राप्त मात्रा\" को वास्तव में मिले माल तक घटाएँ। जो वस्तु नहीं ली (ख़राब, उपयोग लायक नहीं) उसके लिए 0 लिखें। भेजी मात्रा से ज़्यादा नहीं लिख सकते।","Nhận thiếu so với số chuyển thì bấm \"Sửa số rồi nhận\".":"भेजी मात्रा से कम मिला हो तो \"मात्रा बदलें, फिर प्राप्त करें\" दबाएँ।","✓ Bếp nhận bởi":"✓ रसोई में प्राप्त किया","Bước 3/3 — bếp đã nhận, đã ghi sổ":"चरण 3/3 — रसोई ने प्राप्त किया, बही में दर्ज","Duyệt / nhận xong hàng mới trừ kho nguồn và cộng kho nhận. Phiếu xin hàng tính theo ngày duyệt, hàng dư cuối ngày tính theo ngày chuyển":"स्वीकृति / प्राप्ति के बाद ही माल स्रोत स्टोर से घटता और प्राप्त करने वाले स्टोर में जुड़ता है। माँग पर्ची स्वीकृति की तारीख़ से, बचा माल भेजने वाले दिन की तारीख़ से गिना जाता है","Chưa chọn bếp buffet nhận hàng":"प्राप्त करने वाली बुफ़े रसोई नहीं चुनी गई","Tất cả số thực nhận đang là 0 — nếu không nhận gì thì bấm Không nhận":"सभी प्राप्त मात्राएँ 0 हैं — कुछ नहीं मिला हो तो प्राप्त न करें दबाएँ","Đang ghi sổ…":"दर्ज हो रहा है…"});
+const TXT_RE_BS=[{re:new RegExp("^✓ Nhận đủ ([\\d.,]+) mã$"),en:"✓ Receive all $1 items",hi:"✓ सभी $1 वस्तुएँ प्राप्त करें",n:1,en1:"✓ Receive this item",hi1:"✓ यह वस्तु प्राप्त करें"},{re:new RegExp("^Bước 2/3 — đang chờ (.+) \\(bếp nhận\\) bấm nhận$"),en:"Step 2/3 — awaiting receipt by $1 (receiving kitchen)",hi:"चरण 2/3 — $1 (प्राप्त करने वाली रसोई) की प्राप्ति की प्रतीक्षा"},{re:new RegExp("^Dừng ở bước 2 — (.+) \\(bếp nhận\\) không nhận$"),en:"Stopped at step 2 — $1 (receiving kitchen) did not accept",hi:"चरण 2 पर रुका — $1 (प्राप्त करने वाली रसोई) ने नहीं लिया"},{re:new RegExp("^Ghi sổ vào ngày chuyển ([\\d/]+) · kỳ tháng ([\\d/]+)$"),en:"Posted on the transfer day $1 · period $2",hi:"भेजने वाले दिन $1 को दर्ज · अवधि $2"},{re:new RegExp("^Đã gửi phiếu (\\S+) — chờ bếp nhận$"),en:"Sent $1 — awaiting kitchen receipt",hi:"$1 भेजा — रसोई की प्राप्ति की प्रतीक्षा"},{re:new RegExp("^✓ Đã nhận (\\S+) — ghi sổ ([\\d.,]+) mã vào ngày ([\\d/]+)$"),en:"✓ Received $1 — posted $2 items on $3",hi:"✓ $1 प्राप्त — $3 को $2 वस्तुएँ दर्ज",n:2,en1:"✓ Received $1 — posted $2 item on $3",hi1:"✓ $1 प्राप्त — $3 को $2 वस्तु दर्ज"},{re:new RegExp("^([\\d.,]+) mã trong file chưa có trong master data — vẫn nạp số, tạm hiện bằng mã$"),en:"$1 codes in the file are not in master data — quantities still loaded, shown by code for now",hi:"फ़ाइल के $1 कोड मास्टर डेटा में नहीं हैं — मात्रा फिर भी दर्ज, अभी कोड से दिखेंगे",n:1,en1:"$1 code in the file is not in master data — quantity still loaded, shown by code for now",hi1:"फ़ाइल का $1 कोड मास्टर डेटा में नहीं है — मात्रा फिर भी दर्ज, अभी कोड से दिखेगा"},{re:new RegExp("^Có ([\\d.,]+) dòng ngày không đọc được \\((.+)\\) — sửa cột Ngày thành dd/mm/yyyy rồi nạp lại$"),en:"$1 rows have an unreadable date ($2) — change the Date column to dd/mm/yyyy and upload again",hi:"$1 पंक्तियों की तारीख पढ़ी नहीं जा सकी ($2) — दिनांक कॉलम को dd/mm/yyyy में बदलें और फिर से अपलोड करें",n:1,en1:"1 row has an unreadable date ($2) — change the Date column to dd/mm/yyyy and upload again",hi1:"1 पंक्ति की तारीख पढ़ी नहीं जा सकी ($2) — दिनांक कॉलम को dd/mm/yyyy में बदलें और फिर से अपलोड करें"},{re:new RegExp("^([\\d.,]+) mã để trống Số lượng — không tính \\(muốn ghi 0 thì gõ số 0\\)\\.$"),en:"$1 items left blank — not counted (type 0 to record zero).",hi:"$1 वस्तुओं की मात्रा खाली — गिनी नहीं गईं (शून्य दर्ज करने हेतु 0 लिखें)।",n:1,en1:"$1 item left blank — not counted (type 0 to record zero).",hi1:"$1 वस्तु की मात्रा खाली — गिनी नहीं गई (शून्य दर्ज करने हेतु 0 लिखें)।"},{re:new RegExp("^([\\d.,]+) dòng sổ cũ không ghi đủ kho đi / kho đến nên không lọt vào bộ lọc — bỏ chọn kho ở ô trên để xem đủ\\.$"),en:"$1 old ledger lines do not record both the source and the destination store, so they fall outside this filter — clear the store above to see them all.",hi:"$1 पुरानी बही पंक्तियों में भेजने और पाने वाला स्टोर दोनों दर्ज नहीं हैं, इसलिए वे इस फ़िल्टर में नहीं आतीं — सब देखने हेतु ऊपर का स्टोर हटाएँ।",n:1,en1:"$1 old ledger line does not record both the source and the destination store, so it falls outside this filter — clear the store above to see them all.",hi1:"$1 पुरानी बही पंक्ति में भेजने और पाने वाला स्टोर दोनों दर्ज नहीं हैं, इसलिए वह इस फ़िल्टर में नहीं आती — सब देखने हेतु ऊपर का स्टोर हटाएँ।"},{re:new RegExp("^([\\d.,]+) mã trong file chưa có trong danh mục tổng — không nạp$"),en:"$1 codes in the file are not in the item catalogue — not uploaded",hi:"फ़ाइल के $1 कोड वस्तु-सूची में नहीं हैं — अपलोड नहीं हुए",n:1,en1:"$1 code in the file is not in the item catalogue — not uploaded",hi1:"फ़ाइल का $1 कोड वस्तु-सूची में नहीं है — अपलोड नहीं हुआ"},{re:new RegExp("^▾ Xem thêm ([\\d.,]+) mã khác của điểm bán$"),en:"▾ Show $1 more items of the outlet",hi:"▾ आउटलेट की $1 और वस्तुएँ दिखाएँ",n:1,en1:"▾ Show $1 more item of the outlet",hi1:"▾ आउटलेट की $1 और वस्तु दिखाएँ"},{re:new RegExp("^▾ Xem thêm ([\\d.,]+) \\(còn ([\\d.,]+)\\)$"),en:"▾ Show $1 more ($2 left)",hi:"▾ $1 और दिखाएँ ($2 शेष)"},{re:new RegExp("^Ca sáng · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"Morning shift · $1 · handed over by $2 · received by $3",hi:"सुबह की शिफ़्ट · $1 · $2 द्वारा सौंपा · $3 द्वारा प्राप्त"},{re:new RegExp("^Ca sáng · ([0-9/-]+) · giao bởi (.+)$"),en:"Morning shift · $1 · handed over by $2",hi:"सुबह की शिफ़्ट · $1 · $2 द्वारा सौंपा"},{re:new RegExp("^Ca chiều · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"Afternoon shift · $1 · handed over by $2 · received by $3",hi:"दोपहर की शिफ़्ट · $1 · $2 द्वारा सौंपा · $3 द्वारा प्राप्त"},{re:new RegExp("^Ca chiều · ([0-9/-]+) · giao bởi (.+)$"),en:"Afternoon shift · $1 · handed over by $2",hi:"दोपहर की शिफ़्ट · $1 · $2 द्वारा सौंपा"},{re:new RegExp("^Ca tối · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"Night shift · $1 · handed over by $2 · received by $3",hi:"रात की शिफ़्ट · $1 · $2 द्वारा सौंपा · $3 द्वारा प्राप्त"},{re:new RegExp("^Ca tối · ([0-9/-]+) · giao bởi (.+)$"),en:"Night shift · $1 · handed over by $2",hi:"रात की शिफ़्ट · $1 · $2 द्वारा सौंपा"},{re:new RegExp("^Chốt tồn tháng (\\d{2}/\\d{4}) \\(kế toán\\)$"),en:"Month-end stock close $1 (accounting)",hi:"माह-अंत स्टॉक समापन $1 (लेखा)"},{re:new RegExp("^Phiếu kiểm kê (.+) \\(kỳ (\\d{2}/\\d{4})\\)$"),en:"Count sheet $1 (period $2)",hi:"गणना पर्ची $1 (अवधि $2)"},{re:new RegExp("^(.+) · Sloc ([0-9]+) · gửi bởi (.+) lúc (.+)$"),en:"$1 · Sloc $2 · submitted by $3 at $4",hi:"$1 · Sloc $2 · $3 द्वारा $4 पर भेजा गया"},{re:new RegExp("^(.+) · Sloc ([0-9]+) · Chốt từ (.*) · (.*) · Người chốt (.*)$"),en:"$1 · Sloc $2 · closed from $3 · $4 · closed by $5",hi:"$1 · Sloc $2 · $3 से बंद · $4 · $5 द्वारा बंद"},{re:new RegExp("^(.+) · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"$1 · $2 · handed over by $3 · received by $4",hi:"$1 · $2 · $3 द्वारा सौंपा · $4 द्वारा प्राप्त"},{re:new RegExp("^(.+) · ([0-9/-]+) · giao bởi (.+)$"),en:"$1 · $2 · handed over by $3",hi:"$1 · $2 · $3 द्वारा सौंपा"},{re:new RegExp("^✏️ Phiếu này đã đếm bổ sung ([\\d.,]+) lần — bấm để xem đã sửa gì$"),en:"✏️ This sheet has been edited $1 times — tap to see what changed",hi:"✏️ यह पर्ची $1 बार संपादित हुई — क्या बदला देखने हेतु टैप करें",n:1,en1:"✏️ This sheet has been edited once — tap to see what changed",hi1:"✏️ यह पर्ची एक बार संपादित हुई — क्या बदला देखने हेतु टैप करें"},{re:new RegExp("^📋 Bảng kiểm đếm thực tế · ([\\d.,]+) mã$"),en:"📋 Actual count table · $1 items",hi:"📋 वास्तविक गणना तालिका · $1 वस्तुएँ",n:1,en1:"📋 Actual count table · $1 item",hi1:"📋 वास्तविक गणना तालिका · $1 वस्तु"},{re:new RegExp("^Tạo bởi (.+) · (.+) · (.+)$"),en:"Created by $1 · $2 · $3",hi:"$1 द्वारा बनाया · $2 · $3"},{re:new RegExp("^([\\d.,]+)/([\\d.,]+) điểm bán$"),en:"$1/$2 outlets",hi:"$1/$2 आउटलेट"},{re:new RegExp("^còn ([\\d.,]+)$"),en:"$1 left",hi:"$1 शेष"},{re:new RegExp("^🔔 Đã tự nhắc ([\\d.,]+) điểm bán$"),en:"🔔 Auto-reminded $1 outlets",hi:"🔔 $1 आउटलेट को स्वतः याद दिलाया"},{re:new RegExp("^📋 Xem bảng xếp hạng chi tiết \\(([\\d.,]+) bộ phận\\)$"),en:"📋 See the full ranking ($1 departments)",hi:"📋 पूरी रैंकिंग देखें ($1 विभाग)"},{re:new RegExp("^🔒 Tháng (\\d{2}/\\d{4}) đã khóa$"),en:"🔒 Month $1 is locked",hi:"🔒 माह $1 बंद है"},{re:new RegExp("^đã được kế toán duyệt cho tháng (\\d{2}/\\d{4})\\. Không thể chỉnh sửa\\. Kỳ mới sẽ mở vào tháng sau\\.$"),en:"has been approved by accounting for month $1. It can no longer be edited. The next period opens next month.",hi:"लेखा द्वारा माह $1 हेतु स्वीकृत। अब संपादित नहीं किया जा सकता। अगली अवधि अगले माह खुलेगी।"},{re:new RegExp("^Đã bỏ từ chối (.+) — phiếu quay lại chờ duyệt$"),en:"Rejection of $1 undone — the request is back to awaiting approval",hi:"$1 की अस्वीकृति रद्द — पर्ची फिर से स्वीकृति की प्रतीक्षा में"},{re:new RegExp("^Phiếu này từng bị từ chối \\(lý do: (.+)\\) và đã được quản trị viên mở lại\\. Xem kỹ trước khi duyệt\\.$"),en:"This request was rejected before (reason: $1) and an administrator reopened it. Check it carefully before approving.",hi:"यह पर्ची पहले अस्वीकृत हुई थी (कारण: $1) और प्रशासक ने इसे फिर खोला। स्वीकृत करने से पहले ध्यान से देखें।"},{re:new RegExp("^(.+) đã duyệt phiếu (.+) · chuyển cho (.+) · ([\\d.,]+) mã · lúc (.+)$"),en:"$1 approved request $2 · sent to $3 · $4 items · at $5",hi:"$1 ने पर्ची $2 स्वीकृत की · $3 को भेजा · $4 वस्तुएँ · $5 बजे",n:4,en1:"$1 approved request $2 · sent to $3 · $4 item · at $5",hi1:"$1 ने पर्ची $2 स्वीकृत की · $3 को भेजा · $4 वस्तु · $5 बजे"},{re:new RegExp("^([\\d.,]+) loại lý do$"),en:"$1 kinds of reason",hi:"$1 प्रकार के कारण",n:1,en1:"$1 kind of reason",hi1:"$1 प्रकार का कारण"},{re:new RegExp("^([\\d.,]+) phiếu$"),en:"$1 requests",hi:"$1 पर्चियाँ",n:1,en1:"$1 request",hi1:"$1 पर्ची"},{re:new RegExp("^([\\d.,]+) dòng$"),en:"$1 lines",hi:"$1 पंक्तियाँ",n:1,en1:"$1 line",hi1:"$1 पंक्ति"}];
 const TXT_RE=[
   {re:new RegExp("^Tháng (\\d{2}/\\d{4}) \\(hiện tại\\)$"),en:"Month $1 (current)",hi:"माह $1 (वर्तमान)"},
   {re:new RegExp("^Tháng (\\d{2}/\\d{4})$"),en:"Month $1",hi:"माह $1"},
@@ -2057,6 +2060,8 @@ function isMyApproval(r){
   if(r.status!=='Chờ duyệt')return false;
   if(session&&session.role==='admin')return true;   // admin toàn quyền xử lý mọi phiếu
   if(r.kind==='huy')return isPrivileged();          // hủy/hao hụt: kế toán duyệt
+  // Hàng dư cuối ngày: BÊN NHẬN (bếp buffet) bấm nhận — ai được gán kho nhận đều nhận được
+  if(r.kind==='du')return (session&&session.wh?session.wh:[]).some(w=>w.plant===r.toPlant&&(!w.sloc||w.sloc===r.toSloc));
   // Chỉ BÊN CHO HÀNG duyệt (kho nguồn) — kho nhận không phải xác nhận gì, được thêm hàng thì
   // không có lý do chặn. Phiếu đẩy vốn ghi sổ ngay lúc lập; chỉ khi ghi sổ trượt nó mới nằm
   // Chờ duyệt, và người xử lý lại vẫn là giám sát kho nguồn (chính người đã lập).
@@ -2077,7 +2082,21 @@ async function coNguoiDuyet(p,s){
     _coDuyetCache[k]=data===true;return _coDuyetCache[k];
   }catch(e){return null;}
 }
-function dcKindLabel(k){return k==='xin'?'Xin hàng':k==='day'?'Đẩy hàng':'Hủy / hao hụt';}
+function dcKindLabel(k){return k==='xin'?'Xin hàng':k==='day'?'Đẩy hàng':k==='du'?'Hàng dư cuối ngày':'Hủy / hao hụt';}
+/* ===== HÀNG DƯ CUỐI NGÀY (Khoa 21/10/2026) =====
+   Cuối ngày điểm bán còn hàng dư thì chuyển cho bếp buffet dùng.
+   Khác "Xin hàng" ở chiều duyệt: BÊN CHO lập phiếu, BÊN NHẬN (bếp buffet) bấm nhận —
+   bếp nhận rồi mới ghi sổ (hàng tươi, số thực nhận hay khác số trên phiếu).
+   Ghi sổ vào NGÀY CHUYỂN (ngày lập phiếu), không phải ngày bấm nhận. Khoa chốt: tính
+   theo từng ngày nên KHÔNG vướng luật khóa kiểm kê. */
+const BEP_BUFFET=['1035|2006','2228|2000','1983|2203','1034|2004','1032|2000'];  // Beer Plaza · Bốn Mùa · Taiga · Bharata · Arapang
+function laBepBuffet(p,s){return BEP_BUFFET.indexOf(p+'|'+s)>=0;}
+/* Ngày chuyển của phiếu, dạng yyyy-mm-dd, đọc từ giờ lập 'HH:MM DD/MM/YYYY'. */
+function ngayChuyenCuaPhieu(r){
+  const m=/(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(String((r&&r.time)||''));
+  if(m)return m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');
+  return _isoNgay(new Date());
+}
 /* ---- Chống phiếu trùng ----
    Trùng = cùng loại + cùng cặp kho + cùng tập (mã : số xin). Hai người cùng lập, hoặc bấm gửi
    hai lần vì lần đầu báo lỗi, đều sinh ra phiếu y hệt — với phiếu đẩy thì thành chuyển hàng 2 lần. */
@@ -2130,12 +2149,18 @@ async function dcCleanDups(){
 // Ai là người phải duyệt phiếu này — để kế toán/admin biết phiếu đang tắc ở đâu
 function dcWhoApproves(r){
   if(r.kind==='huy')return 'Kế toán';
+  if(r.kind==='du')return whName(r.toPlant,r.toSloc)+' (bếp nhận)';
   return 'Giám sát '+whName(r.fromPlant,r.fromSloc)+' (kho cho hàng)';
 }
 // Phiếu đang ở bước nào. Xin/hủy đi 3 bước (lập → duyệt → ghi sổ);
 // đẩy hàng chỉ 2 bước vì bên cho là người lập, ghi sổ ngay.
 function dcStepLine(r){
   const n=r.kind==='day'?2:3;
+  if(r.kind==='du'){
+    if(r.status==='Chờ duyệt')return `<span style="color:var(--accent-600);font-weight:700">Bước 2/3 — đang chờ ${dcWhoApproves(r)} bấm nhận</span>`;
+    if(r.status==='Từ chối')return `<span style="color:var(--red);font-weight:700">Dừng ở bước 2 — ${dcWhoApproves(r)} không nhận</span>`;
+    return `<span style="color:var(--green);font-weight:700">Bước 3/3 — bếp đã nhận, đã ghi sổ</span>`;
+  }
   if(r.status==='Chờ duyệt')return `<span style="color:var(--accent-600);font-weight:700">Bước 2/${n} — đang chờ ${dcWhoApproves(r)} duyệt${r.kind==='day'?' lại (lần ghi sổ trước bị trượt)':''}</span>`;
   if(r.status==='Từ chối')return `<span style="color:var(--red);font-weight:700">Dừng ở bước 2 — ${dcWhoApproves(r)} đã từ chối</span>`;
   return `<span style="color:var(--green);font-weight:700">Bước ${n}/${n} — đã ghi sổ${r.kind==='day'?' (kho nhận không cần xác nhận)':''}</span>`;
@@ -7093,6 +7118,7 @@ function renderDieuchuyen(v){
     {k:'nk',ico:HIC.box,title:'Nhận hàng từ kho tổng',sub:'Kho tổng xuất hàng về điểm bán — gõ tay hoặc quét ảnh phiếu xuất',n:nRc?nRc+' dòng đã nhập kỳ này':'',render:dcNhapKho},
     {k:'xin',ico:HIC.swap,title:'Xin hàng từ kho khác',sub:'Kho mình thiếu — lập yêu cầu, giám sát kho kia duyệt mới trừ hàng',n:nMine?nMine+' phiếu mình đang chờ':'',render:v2=>dcRequestForm(v2,'xin')},
     {k:'huy',ico:HIC.warn,title:'Hủy / hao hụt',sub:'Hàng hỏng, đổ bỏ, mất — kế toán duyệt rồi mới trừ kho',render:v2=>dcRequestForm(v2,'huy')},
+    {k:'du',ico:HIC.swap,title:'Chuyển hàng dư cuối ngày',sub:'Hàng dư cuối ngày chuyển cho bếp buffet — bếp bấm nhận mới tính',render:v2=>dcRequestForm(v2,'du')},
     {k:'duyet',ico:HIC.clock,title:'Chờ tôi duyệt',sub:'Phiếu kho khác gửi tới — duyệt, sửa số thực giao hoặc từ chối',n:nCho?nCho+' phiếu chờ':'',warm:!!nCho,render:dcChoDuyet},
     {k:'ds',ico:HIC.list,title:'Xem lại & xuất file',sub:'Phiếu yêu cầu và sổ điều chuyển đã ghi, xuất CSV',n:nTr?nTr+' dòng sổ kỳ này':'',render:dcXemLai},
   ];
@@ -7270,6 +7296,7 @@ function dcRequestForm(v,kind){
   if(!mine.length){v.appendChild(el('div','card','<div class="card-b"><div class="empty"><div class="big">Chưa được gán kho</div><div>Liên hệ Quản trị viên.</div></div></div>'));return;}
   const card=el('div','card');const b=el('div','card-b');
   const head=kind==='xin'?['🙋 Xin hàng từ kho khác','Chọn kho có hàng, gõ số cần xin. Giám sát kho đó duyệt thì hàng mới trừ của họ và cộng cho kho mình.']
+    :kind==='du'?['🌙 Chuyển hàng dư cuối ngày','Chọn bếp buffet nhận, gõ số hàng dư. Bếp bấm nhận thì hàng mới trừ kho mình và cộng cho bếp, tính vào đúng ngày chuyển.']
     :['🗑 Hủy / hao hụt','Hàng hỏng, đổ bỏ, mất. Kế toán duyệt thì mới trừ khỏi kho — không cộng cho kho nào.'];
   b.innerHTML=`<div class="section-eyebrow">${head[0]}</div><div style="font-size:12px;color:var(--muted);margin:6px 0 12px">${head[1]}</div>`;
 
@@ -7339,13 +7366,40 @@ function dcRequestForm(v,kind){
     wrap.appendChild(chips);wrap.appendChild(more);paint();
     return {wrap,plant:()=>cur?cur.plant:'',sloc:()=>cur?cur.sloc:''};
   }
+  /* --- Bếp buffet nhận hàng dư: đúng 5 kho cố định (BEP_BUFFET), hiện thành chip.
+     Nhớ bếp chọn lần trước trên máy này — mỗi điểm bán thường chuyển về một bếp. */
+  const DU_NHO='kk_dc_du_v1';
+  function whPickBuffet(lbl,getSrc){
+    const wrap=el('div','field',`<span>${lbl}</span>`);
+    const chips=el('div','wh-chips');wrap.appendChild(chips);
+    let cur=null;
+    try{const k=localStorage.getItem(DU_NHO)||'';if(BEP_BUFFET.indexOf(k)>=0){const a=k.split('|');cur={plant:a[0],sloc:a[1]};}}catch(e){}
+    function paint(){
+      chips.innerHTML='';
+      const s0=getSrc?getSrc():null;
+      BEP_BUFFET.forEach(k=>{const a=k.split('|');
+        if(!DATA.warehouses.some(w=>w.plant===a[0]&&w.sloc===a[1]))return;
+        if(s0&&s0.plant===a[0]&&s0.sloc===a[1])return;          // không chuyển cho chính mình
+        const on=!!cur&&cur.plant===a[0]&&cur.sloc===a[1];
+        const c=el('button','chip'+(on?' active':''),whName(a[0],a[1]));c.type='button';
+        c.title=plantName(a[0])+' · sloc '+a[1];
+        c.onclick=()=>{cur={plant:a[0],sloc:a[1]};paint();};
+        chips.appendChild(c);});
+      if(cur&&s0&&cur.plant===s0.plant&&cur.sloc===s0.sloc)cur=null;
+    }
+    paint();
+    return {wrap,plant:()=>cur?cur.plant:null,sloc:()=>cur?cur.sloc:null,paint,
+      nho:()=>{try{if(cur)localStorage.setItem(DU_NHO,cur.plant+'|'+cur.sloc);}catch(e){}}};
+  }
   const listWrap=el('div');
+  let dst=null;
   const src=kind==='xin'?whPickOther('Xin từ kho nào',()=>drawList())
-                        :whPickMine('Kho có hàng hủy',()=>drawList());
-  const dst=kind==='xin'?whPickMine('Xin về kho mình',null):null;
+                        :whPickMine(kind==='du'?'Chuyển từ kho':'Kho có hàng hủy',()=>{if(dst&&dst.paint)dst.paint();drawList();});
+  dst=kind==='xin'?whPickMine('Xin về kho mình',null)
+     :kind==='du'?whPickBuffet('Bếp buffet nhận',()=>({plant:src.plant(),sloc:src.sloc()})):null;
   const g=el('div','grid2');g.appendChild(src.wrap);if(dst)g.appendChild(dst.wrap);b.appendChild(g);
   const fR=el('label','field','<span>Lý do / diễn giải</span>');
-  const iR=el('input','input');iR.placeholder=kind==='huy'?'VD: hàng hết hạn, vỡ trong bảo quản…':'VD: bù hàng bán chạy cuối tuần…';
+  const iR=el('input','input');iR.placeholder=kind==='huy'?'VD: hàng hết hạn, vỡ trong bảo quản…':kind==='du'?'VD: hàng dư ca tối…':'VD: bù hàng bán chạy cuối tuần…';
   fR.appendChild(iR);fR.style.marginTop='10px';b.appendChild(fR);
   b.appendChild(listWrap);
 
@@ -7354,7 +7408,7 @@ function dcRequestForm(v,kind){
      Trước đây nút nằm cuối bảng: kho 200 mã thì gõ số ở dòng 3 phải cuộn hết bảng mới bấm được. */
   const act=el('div','sticky-actions');
   const bar=el('div');bar.style.cssText='display:flex;gap:10px;align-items:center;flex-wrap:wrap';
-  const bSend=el('button','btn btn-primary',kind==='huy'?'Gửi phiếu hủy cho kế toán duyệt':'Gửi phiếu xin — chờ kho cho duyệt');
+  const bSend=el('button','btn btn-primary',kind==='huy'?'Gửi phiếu hủy cho kế toán duyệt':kind==='du'?'Gửi phiếu — chờ bếp nhận':'Gửi phiếu xin — chờ kho cho duyệt');
   const cnt=el('span');cnt.style.cssText='font-size:12.5px;color:var(--muted);font-weight:600';
   bSend.onclick=()=>submitReq();
   bar.appendChild(bSend);bar.appendChild(cnt);act.appendChild(bar);
@@ -7416,8 +7470,13 @@ function dcRequestForm(v,kind){
     /* HỦY / HAO HỤT: mặc định KHÔNG bày cả danh sách hàng đang có (Khoa 14/10/2026) —
        bếp 250 mã thì màn dài ~40 màn hình, trong khi mỗi lần hủy chỉ vài mã. Dòng vẫn
        dựng sẵn; ô tìm trống thì chỉ hiện mã ĐÃ gõ số hủy. */
-    const _anMacDinh=kind==='huy';
-    const si=el('input');si.placeholder=_anMacDinh?'Gõ tên hoặc mã hàng cần hủy…':coHang.length
+    const _anMacDinh=kind==='huy'||kind==='du';
+    /* Hàng dư: mã kho này HAY CHUYỂN (10 phiếu hàng dư gần nhất) hiện sẵn — hàng dư mỗi
+       ngày gần như lặp lại, BP chỉ việc gõ số. Mã khác thì gõ ô tìm. */
+    const _hay=new Set();
+    if(kind==='du')trReqs.filter(x=>x.kind==='du'&&x.fromPlant===p&&x.fromSloc===s).slice(0,10)
+      .forEach(x=>Object.keys(x.items||{}).forEach(c=>_hay.add(c)));
+    const si=el('input');si.placeholder=kind==='du'?'Gõ tên hoặc mã hàng dư…':_anMacDinh?'Gõ tên hoặc mã hàng cần hủy…':coHang.length
       ?('Tìm trong '+nq(coHang.length,0)+' mã đang có — gõ để lục cả danh mục')
       :'Gõ mã hoặc tên để lục trong danh mục…';sw.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>';
     sw.appendChild(si);listWrap.appendChild(sw);
@@ -7428,8 +7487,10 @@ function dcRequestForm(v,kind){
     fbar.appendChild(bOnly);listWrap.appendChild(fbar);
     const nhac=el('div');nhac.style.cssText='display:none;margin-bottom:10px';listWrap.appendChild(nhac);
     const goiYHuy=el('div','empty');goiYHuy.hidden=true;
-    const _gy1=el('div','big');_gy1.textContent='Gõ tên hoặc mã hàng cần hủy';
-    const _gy2=el('div');_gy2.textContent='Ô tìm phía trên lục trong hàng đang có ở kho. Mã đã điền số hủy luôn nằm lại trong danh sách.';
+    const _gy1=el('div','big');_gy1.textContent=kind==='du'?'Gõ tên hoặc mã hàng dư':'Gõ tên hoặc mã hàng cần hủy';
+    const _gy2=el('div');_gy2.textContent=kind==='du'
+      ?'Ô tìm phía trên lục trong hàng đang có ở kho. Chuyển vài lần thì những mã hay chuyển sẽ hiện sẵn ở đây.'
+      :'Ô tìm phía trên lục trong hàng đang có ở kho. Mã đã điền số hủy luôn nằm lại trong danh sách.';
     goiYHuy.appendChild(_gy1);goiYHuy.appendChild(_gy2);
     function capNhatNhac(dangTim,soNoTon,conBo){
       if(!soNoTon&&!conBo){nhac.style.display='none';return;}
@@ -7441,7 +7502,7 @@ function dcRequestForm(v,kind){
         'var(--red)'));
     }
     const w=el('div','tbl-wrap picklist');const tbl=el('table');
-    tbl.innerHTML=`<thead><tr><th>Tên hàng</th><th>ĐVT</th><th class="num">Tồn ước tính</th><th class="num">${kind==='huy'?'SL hủy':'SL xin'}</th></tr></thead>`;
+    tbl.innerHTML=`<thead><tr><th>Tên hàng</th><th>ĐVT</th><th class="num">Tồn ước tính</th><th class="num">${kind==='huy'?'SL hủy':kind==='du'?'SL chuyển':'SL xin'}</th></tr></thead>`;
     const tb=el('tbody');
     const q3=x=>String(Math.round((Number(x)||0)*1000)/1000);
     // Khai TRƯỚC dungDong: dòng đầu tiên dựng ra đã gọi upd() -> applyFilter(),
@@ -7459,6 +7520,7 @@ function dcRequestForm(v,kind){
           <button type="button" class="stepbtn plus" aria-label="Thêm">+</button></div></td>`);
       tr.dataset.k=vnNorm(r.code)+'|'+vnNorm(r.name);   // khoa tim khong dau (viec 4)
       if(!r.coTon)tr.dataset.noton='1';
+      if(_hay.has(r.code))tr.dataset.hay='1';
       const q=tr.querySelector('.q');
       q.value=picked[r.code]?picked[r.code].qty:'';
       const upd=()=>{const val=q.value;
@@ -7509,7 +7571,7 @@ function dcRequestForm(v,kind){
            có" — đúng cái Khoa bảo bỏ. Mã ĐÃ gõ số (.on) thì luôn giữ, nếu không
            người lập tưởng mã mình chọn bị mất. */
         const hitQ=vnAll(tr.dataset.k||'',qq)
-          &&(dangTim||(_anMacDinh?tr.classList.contains('on'):(!tr.dataset.noton||tr.classList.contains('on'))));
+          &&(dangTim||(_anMacDinh?(tr.classList.contains('on')||!!tr.dataset.hay):(!tr.dataset.noton||tr.classList.contains('on'))));
         const hitP=!onlyPicked||tr.classList.contains('on');
         const ok=hitQ&&hitP;tr.style.display=ok?'':'none';
         if(ok){shown++;if(tr.dataset.noton)shownNoTon++;}});
@@ -7533,10 +7595,12 @@ function dcRequestForm(v,kind){
     const fp=src.plant(),fs=src.sloc();
     if(!fp||!fs){toast('Chưa chọn kho nguồn');return;}
     const tp=dst?dst.plant():null,ts=dst?dst.sloc():null;
+    if(kind==='du'&&(!tp||!ts)){toast('Chưa chọn bếp buffet nhận hàng');return;}
     if(dst&&fp===tp&&fs===ts){toast('Kho nguồn và kho nhận đang trùng nhau');return;}
     // RULE: điều chuyển phải xong TRƯỚC khi kế toán mở kỳ kiểm kê. Kho đã mở kỳ (hoặc đã chốt)
     // thì cấm điều chuyển. Chặn ngay lúc LẬP cho MỌI loại phiếu — phiếu đẩy còn ghi sổ ngay.
-    {
+    // NGOẠI LỆ: hàng dư cuối ngày tính theo từng ngày, không vướng luật này (Khoa 21/10/2026).
+    if(kind!=='du'){
       const per0=curPeriod(),bl=dcBlockers(fp,fs,tp,ts,per0);
       if(bl.length){
         errBox('Kho đang kiểm kê — không điều chuyển được',[
@@ -7553,7 +7617,7 @@ function dcRequestForm(v,kind){
       const quaTon=codes.filter(c=>Number(st[c])>0&&picked[c].qty>Number(st[c]));
       if(thieu.length||quaTon.length){
         const X='\n';
-        let t=(kind==='huy'?'HỦY NHIỀU HƠN TỒN':'XIN HÀNG KHO KHÔNG CÓ ĐỦ')+X+X+whName(fp,fs)+':'+X+X;
+        let t=(kind==='huy'?'HỦY NHIỀU HƠN TỒN':kind==='du'?'CHUYỂN NHIỀU HƠN TỒN':'XIN HÀNG KHO KHÔNG CÓ ĐỦ')+X+X+whName(fp,fs)+':'+X+X;
         if(thieu.length)t+='• '+thieu.length+' mã kho này KHÔNG CÓ TỒN:'+X
           +thieu.slice(0,12).map(c=>'   − '+(picked[c].name||c)+' (xin '+picked[c].qty+')').join(X)
           +(thieu.length>12?X+'   … và '+(thieu.length-12)+' mã nữa':'')+X+X;
@@ -7589,13 +7653,19 @@ function dcRequestForm(v,kind){
     log('Lập phiếu '+dcKindLabel(kind),`${id} · ${whName(fp,fs)}${tp?' → '+whName(tp,ts):''} · ${codes.length} mã`);
     Object.keys(picked).forEach(k=>delete picked[k]);
     if(kind==='xin')dcRecentPush(fp,fs);   // lần sau kho này lên chip, bấm 1 lần là xong
+    if(kind==='du'&&dst.nho)dst.nho();     // nhớ bếp nhận cho lần sau
+    if(kind==='du'){
+      // Báo cho BẾP NHẬN — có chữ "Chờ tôi duyệt" để bấm thông báo nhảy thẳng vào màn nhận
+      notifyWh(tp,ts,`Hàng dư cuối ngày: ${whName(fp,fs)} → ${whName(tp,ts)} · ${codes.length} mã · phiếu ${id} do ${session.name} lập. Vào "Chờ tôi duyệt" để nhận hàng.`,
+        'transfer','Có hàng dư chuyển tới — chờ bếp nhận');
+    }
     // XIN / HỦY: báo cho bên phải duyệt
     const who=kind==='xin'?{p:fp,s:fs}:null;
     if(who){
       const msg=`Xin hàng: ${whName(fp,fs)} → ${whName(tp,ts)} · ${codes.length} mã · phiếu ${id} do ${session.name} lập. Vào "Chờ tôi duyệt" để xử lý.`;
       notifyWh(who.p,who.s,msg,'transfer','Có phiếu xin hàng chờ duyệt');
     }
-    toast('Đã gửi phiếu '+id+' — chờ duyệt');
+    toast(kind==='du'?'Đã gửi phiếu '+id+' — chờ bếp nhận':'Đã gửi phiếu '+id+' — chờ duyệt');
     renderView();
   }
   drawList();
@@ -7606,7 +7676,7 @@ function dcRequestForm(v,kind){
 function dcChoDuyet(v){
   const list=pendingForMe();
   const card=el('div','card');
-  card.appendChild(el('div','card-h',`<div><span class="ct">Phiếu chờ tôi duyệt</span><div class="cs">Duyệt xong hàng mới trừ kho nguồn và cộng kho nhận, tính vào kỳ theo NGÀY DUYỆT</div></div><span class="badge ${list.length?'badge-wait':'badge-soft'}">${list.length}</span>`));
+  card.appendChild(el('div','card-h',`<div><span class="ct">Phiếu chờ tôi duyệt</span><div class="cs">Duyệt / nhận xong hàng mới trừ kho nguồn và cộng kho nhận. Phiếu xin hàng tính theo ngày duyệt, hàng dư cuối ngày tính theo ngày chuyển</div></div><span class="badge ${list.length?'badge-wait':'badge-soft'}">${list.length}</span>`));
   const body=el('div');card.appendChild(body);v.appendChild(card);
   if(!list.length){body.appendChild(el('div','empty',`<div class="big">Không có phiếu nào chờ mình</div><div>Khi kho khác xin hàng của kho mình, phiếu sẽ hiện ở đây.</div>`));return;}
   list.forEach(r=>body.appendChild(dcReqCard(r,true)));
@@ -7638,8 +7708,10 @@ function dcReqCard(r,canAct){
   /* Kỳ ghi sổ do người duyệt chọn (mặc định kỳ của hôm nay). Vướng hay không là
      xét theo CHÍNH kỳ đó — chọn sang kỳ sau thì kho vốn đã chốt kỳ này hết vướng. */
   const _kyNay=periodOfDate(_isoNgay(new Date()))||curPeriod();
-  const per=r._kyGhiSo||_kyNay;
-  const lock=dcBlockers(r.fromPlant,r.fromSloc,r.toPlant,r.toSloc,per);
+  const _laDu=r.kind==='du';
+  // Hàng dư: kỳ = kỳ của NGÀY CHUYỂN, không chọn được; không vướng khóa kiểm kê
+  const per=_laDu?periodOfDate(ngayChuyenCuaPhieu(r)):(r._kyGhiSo||_kyNay);
+  const lock=_laDu?[]:dcBlockers(r.fromPlant,r.fromSloc,r.toPlant,r.toSloc,per);
   wrap.appendChild(el('div',null,`<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
     <span class="badge badge-soft">${dcKindLabel(r.kind)}</span>
     <b class="tnum" style="font-size:13.5px">${r.id}</b>
@@ -7667,7 +7739,9 @@ function dcReqCard(r,canAct){
   function buildTable(){
     if(built)return;built=true;
     const w=el('div','tbl-wrap reqtbl');const tbl=el('table');
-    tbl.innerHTML=`<thead><tr><th>Tên hàng</th><th>ĐVT</th><th class="num">SL xin</th>${canAct?'<th class="num">SL thực giao</th>':'<th class="num">SL duyệt</th>'}<th>HSD</th></tr></thead>`;
+    tbl.innerHTML=_laDu
+      ?`<thead><tr><th>Tên hàng</th><th>ĐVT</th><th class="num">SL chuyển</th>${canAct?'<th class="num">SL thực nhận</th>':'<th class="num">SL bếp nhận</th>'}<th>HSD</th></tr></thead>`
+      :`<thead><tr><th>Tên hàng</th><th>ĐVT</th><th class="num">SL xin</th>${canAct?'<th class="num">SL thực giao</th>':'<th class="num">SL duyệt</th>'}<th>HSD</th></tr></thead>`;
     const tb=el('tbody');
     codes.forEach(c=>{const it=r.items[c];
       const tr=el('tr',null,`<td class="c-name"><div class="cell-strong">${it.name||c}</div>
@@ -7679,7 +7753,7 @@ function dcReqCard(r,canAct){
       if(canAct){const q=tr.querySelector('.q');q.value=(it.qtyOk!=null?it.qtyOk:it.qtyReq);inputs[c]=q;
         // Cho được nhiều nhất bằng số đã xin — chỉ được hạ xuống theo thực tế, không được vống lên
         const cap=Number(it.qtyReq)||0;
-        q.oninput=()=>{if(Number(q.value)>cap){q.value=cap;q.style.color='var(--red)';toast('Không cho quá số đã xin ('+cap+' '+(it.uom||'')+')');}else q.style.color='';};}
+        q.oninput=()=>{if(Number(q.value)>cap){q.value=cap;q.style.color='var(--red)';toast((_laDu?'Không cho quá số đã chuyển (':'Không cho quá số đã xin (')+cap+' '+(it.uom||'')+')');}else q.style.color='';};}
       tb.appendChild(tr);});
     tbl.appendChild(tb);w.appendChild(tbl);tblHost.appendChild(w);
   }
@@ -7693,7 +7767,7 @@ function dcReqCard(r,canAct){
   const xemHost=el('div');if(canAct)wrap.appendChild(xemHost);
   function dungXem(){
     const box=el('div','dcq');
-    box.appendChild(el('div','dcq-h','Hàng xin điều chuyển'));
+    box.appendChild(el('div','dcq-h',_laDu?'Hàng dư chuyển tới':'Hàng xin điều chuyển'));
     codes.forEach(c=>{
       const it=r.items[c];
       const row=el('div','dcp-i');
@@ -7736,7 +7810,11 @@ function dcReqCard(r,canAct){
        sổ cho khớp, chỉ mình admin đủ thẩm quyền quyết cái đó. */
     /* Ô CHỌN KỲ GHI SỔ — mở cho MỌI VAI (Khoa chốt 24/09/2026).
        Dùng khi hàng rời kho sau lúc đã đếm: ghi vào kỳ sau cho khỏi lệch mốc. */
-    {
+    if(_laDu){
+      const kf=el('div');kf.style.cssText='flex-basis:100%;font-size:12.5px;color:var(--muted)';
+      kf.textContent='Ghi sổ vào ngày chuyển '+ngayChuyenCuaPhieu(r).split('-').reverse().join('/')+' · kỳ tháng '+periodVN(per);
+      bar.appendChild(kf);
+    }else{
       const kf=el('div');kf.style.cssText='display:flex;gap:9px;align-items:center;flex-wrap:wrap;flex-basis:100%;font-size:12.5px;color:var(--muted)';
       kf.appendChild(el('span',null,'Ghi sổ vào kỳ'));
       const ks=el('select','input');ks.style.cssText='max-width:200px;height:38px;padding:6px 10px';
@@ -7767,21 +7845,25 @@ function dcReqCard(r,canAct){
       }
       // Trường hợp phổ biến nhất: giao đúng số đã xin -> MỘT chạm, không phải cuộn bảng
       const nOk=codes.length;
-      const bFull=el('button','btn btn-primary','✓ Duyệt đủ '+nOk+' mã');
-      const bEdit=el('button','btn btn-ghost','✎ Sửa số rồi duyệt');
-      const bOk=el('button','btn btn-primary','✓ Duyệt với số đã sửa');bOk.hidden=true;
-      const bNo=el('button','btn btn-ghost','✕ Từ chối');bNo.style.color='var(--red)';
+      const bFull=el('button','btn btn-primary',_laDu?'✓ Nhận đủ '+nOk+' mã':'✓ Duyệt đủ '+nOk+' mã');
+      const bEdit=el('button','btn btn-ghost',_laDu?'✎ Sửa số rồi nhận':'✎ Sửa số rồi duyệt');
+      const bOk=el('button','btn btn-primary',_laDu?'✓ Nhận với số đã sửa':'✓ Duyệt với số đã sửa');bOk.hidden=true;
+      const bNo=el('button','btn btn-ghost',_laDu?'✕ Không nhận':'✕ Từ chối');bNo.style.color='var(--red)';
       bFull.onclick=()=>{
         const where=r.toPlant?whName(r.toPlant,r.toSloc):'hủy / hao hụt';
+        if(_laDu){
+          if(!confirm('Nhận hàng dư phiếu '+r.id+'?\n\nNhận ĐỦ số đã chuyển cho '+nOk+' mã từ '+whName(r.fromPlant,r.fromSloc)+'.\nHàng được cộng vào '+where+', tính vào ngày chuyển '+ngayChuyenCuaPhieu(r).split('-').reverse().join('/')+'.'))return;
+        }else
         if(!confirm('Duyệt phiếu '+r.id+'?\n\nGiao ĐỦ số đã xin cho '+nOk+' mã → '+where+'.\nHàng sẽ bị trừ khỏi '+whName(r.fromPlant,r.fromSloc)+' ngay khi duyệt.'))return;
         const qs={};codes.forEach(c=>qs[c]=Number(r.items[c].qtyReq)||0);
         bFull.disabled=true;bEdit.disabled=true;bNo.disabled=true;
-        const cu=bFull.textContent;bFull.textContent='Đang ghi sổ…';
+        const cu=bFull.textContent;bFull.textContent=L('Đang ghi sổ…');
         approveTransferReq(r,qs).finally(()=>{bFull.disabled=false;bEdit.disabled=false;
           bNo.disabled=false;bFull.textContent=cu;});
       };
       bEdit.onclick=()=>{showTable();xemHost.hidden=true;bEdit.hidden=true;bFull.hidden=true;bOk.hidden=false;
-        hint.textContent='Hạ "SL thực giao" theo hàng có thật. Ghi 0 là mã đó không giao. Không cho ghi quá số đã xin.';};
+        hint.textContent=_laDu?L('Hạ "SL thực nhận" theo hàng thật sự nhận được. Ghi 0 là mã đó không nhận (hỏng, không dùng được). Không cho ghi quá số đã chuyển.')
+          :L('Hạ "SL thực giao" theo hàng có thật. Ghi 0 là mã đó không giao. Không cho ghi quá số đã xin.');};
       bOk.onclick=()=>{
         const qs={};Object.keys(inputs).forEach(c=>qs[c]=Number(inputs[c].value||0));
         bOk.disabled=true;bNo.disabled=true;
@@ -7791,7 +7873,7 @@ function dcReqCard(r,canAct){
       bNo.onclick=()=>rejectTransferReq(r);
       bar.appendChild(bFull);bar.appendChild(bEdit);bar.appendChild(bOk);bar.appendChild(bNo);
       const hint=el('span');hint.style.cssText='font-size:12px;color:var(--muted);flex-basis:100%';
-      hint.textContent='Giao thiếu so với số xin thì bấm "Sửa số rồi duyệt".';
+      hint.textContent=_laDu?'Nhận thiếu so với số chuyển thì bấm "Sửa số rồi nhận".':'Giao thiếu so với số xin thì bấm "Sửa số rồi duyệt".';
       bar.appendChild(hint);
     }
     wrap.appendChild(bar);
@@ -7801,7 +7883,7 @@ function dcReqCard(r,canAct){
     // Đối chiếu phiếu với sổ: cột reason của mỗi dòng sổ có mang mã phiếu nên đếm được
     const nBook=dcDongSoCua(r.id).length;
     const nItems=Object.keys(r.items||{}).filter(c=>Number(r.items[c].qtyOk!=null?r.items[c].qtyOk:r.items[c].qtyReq)>0).length;
-    wrap.appendChild(el('div','note',`<span>✓ Duyệt bởi <b>${r.approvedBy||'—'}</b> ${r.approvedAt||''} · kỳ tháng ${periodVN(r.period||'')} · sổ có <b>${nBook}</b>/${nItems} dòng</span>`));
+    wrap.appendChild(el('div','note',`<span>✓ ${_laDu?'Bếp nhận bởi':'Duyệt bởi'} <b>${r.approvedBy||'—'}</b> ${r.approvedAt||''} · kỳ tháng ${periodVN(r.period||'')} · sổ có <b>${nBook}</b>/${nItems} dòng</span>`));
     if(nBook<nItems)wrap.appendChild(el('div','note',`<span style="color:var(--red)">⚠ Phiếu đã duyệt nhưng sổ điều chuyển <b>thiếu ${nItems-nBook} dòng</b> — hàng chưa bị trừ kho. Admin mở lại phiếu rồi duyệt lại sau khi đã cấp quyền ghi sổ.</span>`));
   }
   // Hàng nút riêng của admin — hiện với MỌI trạng thái phiếu
@@ -7927,8 +8009,12 @@ async function _approveTransferReq(r,qtys){
   /* Người duyệt chọn kỳ ghi sổ khác kỳ hôm nay -> lấy kỳ đó, và dời ngày ghi sổ
      vào trong kỳ đó luôn cho `date` và `period` khớp nhau. */
   if(r._kyGhiSo&&r._kyGhiSo!==per){per=r._kyGhiSo;dateStr=ngayGhiSoChoKy(per);}
+  /* Hàng dư cuối ngày: ghi sổ vào NGÀY CHUYỂN (ngày lập phiếu) — hàng rời điểm bán từ tối
+     hôm đó, bếp sáng hôm sau mới bấm nhận thì vẫn tính đúng ngày. Không vướng khóa kiểm kê. */
+  const _laDu=r.kind==='du';
+  if(_laDu){dateStr=ngayChuyenCuaPhieu(r);per=periodOfDate(dateStr);}
   // Chặn kỳ đã khóa ở CẢ HAI đầu — kiểm lại ngay lúc bấm, phòng phiếu mở lâu trên màn
-  const lock=dcBlockers(r.fromPlant,r.fromSloc,r.toPlant,r.toSloc,per);
+  const lock=_laDu?[]:dcBlockers(r.fromPlant,r.fromSloc,r.toPlant,r.toSloc,per);
   const _adminVuot=!!(session&&session.role==='admin');
   if(lock.length&&!_adminVuot){errBox('Kho đang kiểm kê — không duyệt được',[
     lock.map(x=>'<b>'+x+'</b>').join('<br>'),
@@ -7940,12 +8026,12 @@ async function _approveTransferReq(r,qtys){
   // Không cho duyệt nhiều hơn số đã xin — chặn cả ở đây, không chỉ dựa vào ô input
   const over=Object.keys(r.items||{}).filter(c=>Number(qtys[c]||0)>Number(r.items[c].qtyReq||0));
   if(over.length){
-    errBox('Số cho vượt số đã xin',[
-      'Chỉ được cho <b>tối đa bằng số đã xin</b>, hạ xuống theo thực tế thì được.',
+    errBox(_laDu?'Số nhận vượt số đã chuyển':'Số cho vượt số đã xin',[
+      _laDu?'Chỉ được nhận <b>tối đa bằng số đã chuyển</b>, hạ xuống theo thực tế thì được.':'Chỉ được cho <b>tối đa bằng số đã xin</b>, hạ xuống theo thực tế thì được.',
       over.map(c=>`<b>${r.items[c].name||c}</b>: xin ${r.items[c].qtyReq} → đang định cho ${qtys[c]}`).join('<br>')
     ],'Phiếu: '+r.id+'\nMã vượt: '+over.join(', '));return;}
   const codes=Object.keys(r.items||{}).filter(c=>Number(qtys[c]||0)>0);
-  if(!codes.length){toast('Tất cả số thực giao đang là 0 — nếu không giao gì thì bấm Từ chối');return;}
+  if(!codes.length){toast(_laDu?'Tất cả số thực nhận đang là 0 — nếu không nhận gì thì bấm Không nhận':'Tất cả số thực giao đang là 0 — nếu không giao gì thì bấm Từ chối');return;}
   const items={...r.items};
   Object.keys(items).forEach(c=>{items[c]={...items[c],qtyOk:Number(qtys[c]||0)};});
   // Ghi sổ: mỗi mã 1 dòng transfers. Hủy/hao hụt thì đầu đến là 'HUY' (hàng ra khỏi hệ thống).
@@ -8013,6 +8099,19 @@ async function _approveTransferReq(r,qtys){
     renderView();return;
   }
   r.status='Đã duyệt';r.items=items;r.period=per;r.approvedBy=session.name;r.approvedAt=now();
+  if(_laDu){
+    /* Hàng dư: người bấm là BẾP NHẬN, nên chỉ báo ngược về điểm bán đã chuyển — kèm các mã
+       bếp nhận ít hơn số chuyển, để điểm bán biết ngay chỗ lệch. */
+    const thieu=Object.keys(r.items||{}).filter(c=>Number(items[c].qtyOk||0)<Number(items[c].qtyReq||0))
+      .map(c=>(items[c].name||c)+' '+Number(items[c].qtyOk||0)+'/'+Number(items[c].qtyReq||0));
+    notifyWh(r.fromPlant,r.fromSloc,
+      `${session.name} (${toNm}) đã nhận hàng dư phiếu ${r.id} · ${codes.length} mã · ghi sổ ngày ${dateStr.split('-').reverse().join('/')}`
+        +(thieu.length?' · nhận ít hơn số chuyển: '+thieu.slice(0,8).join(', ')+(thieu.length>8?'…':''):''),
+      'transfer','Bếp đã nhận hàng dư',session.name);
+    log('Nhận hàng dư cuối ngày',`${r.id} · ${fromNm} → ${toNm} · ${codes.length} mã · ngày ${dateStr}`);
+    toast('✓ Đã nhận '+r.id+' — ghi sổ '+codes.length+' mã vào ngày '+dateStr.split('-').reverse().join('/'));
+    renderView();return;
+  }
   // Báo cho KHO NHẬN (cả xin lẫn đẩy): với xin là "yêu cầu của bạn đã được cho", với đẩy là
   // "có hàng vừa chuyển tới, đã cộng vào kho" — chỉ để biết, không phải làm gì.
   const back=r.toPlant?{p:r.toPlant,s:r.toSloc}:null;
@@ -8111,7 +8210,8 @@ async function boTuChoiTransferReq(r){
       +(r.rejectNote?' · lý do từ chối cũ: '+r.rejectNote:''));
   /* Báo cho kho CHO hàng: phiếu vừa quay lại hàng chờ của họ, không thì nó nằm im
      ở "Chờ tôi duyệt" mà không ai biết là có việc mới. */
-  notifyWh(r.fromPlant,r.fromSloc,
+  // Hàng dư: người xử lý là BẾP NHẬN, các loại khác là kho cho hàng
+  notifyWh(r.kind==='du'?r.toPlant:r.fromPlant,r.kind==='du'?r.toSloc:r.fromSloc,
     session.name+' đã bỏ từ chối phiếu '+r.id+' · phiếu quay lại chờ kho bạn duyệt · '+codes.length+' mã',
     'transfer','Phiếu điều chuyển quay lại chờ duyệt',session.name);
   toast('Đã bỏ từ chối '+r.id+' — phiếu quay lại chờ duyệt');
@@ -8145,8 +8245,10 @@ async function deleteTransferReq(r){
   toast('Đã xóa phiếu '+r.id+(cleaned?' & '+cleaned+' dòng sổ':''));renderView();
 }
 async function rejectTransferReq(r){
-  const note=prompt('Lý do từ chối (người lập sẽ thấy):')||'';
-  if(!confirm('Từ chối phiếu '+r.id+'?\n\nPhiếu được GIỮ LẠI với trạng thái Từ chối kèm lý do — không xóa, không ghi vào sổ kho.'))return;
+  const _laDu=r.kind==='du';
+  const note=prompt(_laDu?'Lý do không nhận (điểm bán chuyển sẽ thấy):':'Lý do từ chối (người lập sẽ thấy):')||'';
+  if(!confirm(_laDu?'Không nhận hàng dư phiếu '+r.id+'?\n\nPhiếu được GIỮ LẠI với trạng thái Từ chối kèm lý do — hàng không bị trừ khỏi điểm bán, không cộng cho bếp.'
+    :'Từ chối phiếu '+r.id+'?\n\nPhiếu được GIỮ LẠI với trạng thái Từ chối kèm lý do — không xóa, không ghi vào sổ kho.'))return;
   const upd=await dbUpd('transfer_requests',{id:r.id},{status:'Từ chối',reject_note:note,approved_by:session.name,approved_at:new Date().toISOString()});
   if(!upd.ok||upd.count===0)return;
   r.status='Từ chối';r.rejectNote=note;r.approvedBy=session.name;r.approvedAt=now();
