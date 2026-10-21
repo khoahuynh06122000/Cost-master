@@ -203,6 +203,11 @@ const MAU = [
   { re: /const today='-'\+kkYmd\(\)/, mo: false, vi: 'Chống phiếu trùng dò ngày YYYYMMDD trong mã phiếu MMDDYY — không bao giờ khớp (sửa 21/10)' },
   { re: /dbUpd\('transfer_requests',\{id:r\.id\},\{status:'Từ chối'/, mo: false, vi: 'Từ chối phiếu không điều kiện — màn cũ ghi đè phiếu người khác vừa duyệt/nhận (sửa 21/10)' },
   { re: /bSend\.onclick=\(\)=>submitReq\(\);/, mo: false, vi: 'Nút gửi phiếu điều chuyển không khoá — bấm đúp ra hai phiếu (sửa 21/10)' },
+  { re: /if\(!confirm\(msg\)\)return;\s*\n\s*\(async\(\)=>\{\s*\n\s*if\(editing\)/, mo: false, vi: 'Nút Gửi phiếu kiểm kê không khoá — bấm lại lúc mạng chậm ra phiếu -2 (sửa 21/10, bản 2110-03)' },
+  { re: /bOk\.onclick=\(\)=>commitKKUpload\(/, mo: false, vi: 'Nút Tạo phiếu (Up Excel) không khoá — chạm đúp ra hai phiếu kiểm kê (sửa 21/10, bản 2110-03)' },
+  { re: /if\(counting\)\{\s*\n\s*if\(periodLocked\(counting\.plant/, mo: false, canTruoc: 'if(counting&&counting.tuan){_demTuanCat=counting;counting=null;}', vi: 'Màn Kiểm kê tháng vẽ luôn bộ đếm TUẦN khi đổi tab — số tháng thành số tuần (sửa 21/10, bản 2110-03)' },
+  { re: /x\.name\.toLowerCase\(\)\.includes\(nm\)/, mo: false, vi: 'Quét ảnh khớp mờ tên hàng — mã mới bị thay bằng mã cũ có tên gần giống (sửa 21/10, bản 2110-03)' },
+  { re: /valueAsDate=new Date\(\)/, mo: false, vi: 'Ô ngày mặc định theo giờ UTC — trước 7h sáng ra ngày hôm qua (sửa 21/10, bản 2110-03)' },
 ];
 function kiemTaiPhat() {
   for (const m of MAU) {
