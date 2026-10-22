@@ -212,6 +212,9 @@ const MAU = [
   { re: /update\(patch\)\.eq\('id',editing\.id\)/, mo: false, vi: 'Đếm bổ sung kho có tiểu kho: máy chủ từ chối (0 dòng) vẫn báo thành công, xoá nháp (sửa 22/10, bản 2210-01)' },
   { re: /items\[code\]=qty;preview\.push\(\{code,name,uom,qty,isNew/, mo: false, canTruoc: 'if(gopDong(code,qty,_d,_g))continue;', vi: 'Excel kiểm kê có 2 dòng cùng mã: dòng sau đè dòng trước (sửa 22/10, bản 2210-01)' },
   { re: /\n\s+submissions=\(su\.data\|\|\[\]\)\.map/, mo: false, vi: 'Tải dữ liệu lỗi mạng ghi đè danh sách trên máy thành rỗng (sửa 22/10, bản 2210-01)' },
+  { re: /dbIns\('receipts',\{id:rec\.id/, mo: false, vi: 'Nhập kho gõ tay / quét ảnh lúc mất mạng không cất vào máy — bắt nhập lại (sửa 22/10, bản 2210-02)' },
+  { re: /sb\.from\('receipts'\)\.insert\(\{id:rec\.id/, mo: false, vi: 'Nạp Excel nhập kho lúc mất mạng báo "nạp lại file" thay vì cất vào máy (sửa 22/10, bản 2210-02)' },
+  { re: /if\(!kqIns\.ok\)return;\s*\/\/[^\n]*\n\s*id=row\.id;/, mo: false, vi: 'Lập phiếu điều chuyển lúc mất mạng không cất vào máy — bắt lập lại (sửa 22/10, bản 2210-02)' },
 ];
 function kiemTaiPhat() {
   for (const m of MAU) {
