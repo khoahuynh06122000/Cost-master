@@ -208,6 +208,10 @@ const MAU = [
   { re: /if\(counting\)\{\s*\n\s*if\(periodLocked\(counting\.plant/, mo: false, canTruoc: 'if(counting&&counting.tuan){_demTuanCat=counting;counting=null;}', vi: 'Màn Kiểm kê tháng vẽ luôn bộ đếm TUẦN khi đổi tab — số tháng thành số tuần (sửa 21/10, bản 2110-03)' },
   { re: /x\.name\.toLowerCase\(\)\.includes\(nm\)/, mo: false, vi: 'Quét ảnh khớp mờ tên hàng — mã mới bị thay bằng mã cũ có tên gần giống (sửa 21/10, bản 2110-03)' },
   { re: /valueAsDate=new Date\(\)/, mo: false, vi: 'Ô ngày mặc định theo giờ UTC — trước 7h sáng ra ngày hôm qua (sửa 21/10, bản 2110-03)' },
+  { re: /dbUpd\('submissions',\{id:editing\.id\},patch\)/, mo: false, vi: 'Đếm bổ sung lưu không điều kiện — kế toán vừa duyệt vẫn bị sửa số (sửa 22/10, bản 2210-01)' },
+  { re: /update\(patch\)\.eq\('id',editing\.id\)/, mo: false, vi: 'Đếm bổ sung kho có tiểu kho: máy chủ từ chối (0 dòng) vẫn báo thành công, xoá nháp (sửa 22/10, bản 2210-01)' },
+  { re: /items\[code\]=qty;preview\.push\(\{code,name,uom,qty,isNew/, mo: false, canTruoc: 'if(gopDong(code,qty,_d,_g))continue;', vi: 'Excel kiểm kê có 2 dòng cùng mã: dòng sau đè dòng trước (sửa 22/10, bản 2210-01)' },
+  { re: /\n\s+submissions=\(su\.data\|\|\[\]\)\.map/, mo: false, vi: 'Tải dữ liệu lỗi mạng ghi đè danh sách trên máy thành rỗng (sửa 22/10, bản 2210-01)' },
 ];
 function kiemTaiPhat() {
   for (const m of MAU) {
