@@ -219,6 +219,9 @@ const MAU = [
   { re: /if\(isPrivileged\(\)\)\{\s*\n\s*const bDel=el\('button','btn btn-ghost btn-sm','🗑 Xóa tồn đầu kỳ'\)/, mo: false, vi: 'Nút Xoá tồn đầu kỳ hiện cho kế toán — Khoa chốt chỉ admin (sửa 23/10, bản 2310-01)' },
   { re: /if\(!diff\.length\)\{toast\('Chưa thay đổi gì so với phiếu/, mo: false, canTruoc: "kieu:'ghichu',tu:vg(a)", vi: 'Đếm bổ sung chỉ sửa ngày/ghi chú bị báo "chưa thay đổi" (sửa 23/10, bản 2310-01)' },
   { re: /if\(!date\)date=ngayMacDinh;/, mo: false, vi: 'Excel nhập kho để trống ngày: lặng lẽ lấy ngày trên màn, nạp lại hôm sau nhân đôi (sửa 23/10, bản 2310-01)' },
+  { re: /outbox=outbox\.filter\(x=>xong\.indexOf\(x\.id\)<0/, mo: false, vi: 'Hàng đợi dọn theo id: bản mới lưu trong lúc tự gửi bị xoá mất (sửa 23/10, bản 2310-03)' },
+  { re: /outboxThem\(\{loai:'dc',id,row,base/, mo: false, vi: 'Phiếu ĐC lập lúc mất mạng không giữ giờ lập — hàng dư ghi sổ sang kỳ sau (sửa 23/10, bản 2310-03)' },
+  { re: /if\(!c&&d\.khongNgay&&d\.soPhieu&&plant\)/, mo: false, vi: 'Nạp lại Excel nhập kho sau khi điền ngày thật bị tính hai lần (sửa 23/10, bản 2310-03)' },
 ];
 function kiemTaiPhat() {
   for (const m of MAU) {

@@ -1121,7 +1121,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2310-02';
+const APP_VER='2310-03';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1250,6 +1250,8 @@ Object.assign(TXT.hi,{"Dữ liệu chưa được đưa lên hệ thống do m�
 /* Bản 2310-01 */
 Object.assign(TXT.en,{"Chỉ admin mới xóa được tồn đầu kỳ":"Only admin can delete the opening stock","Chỉ admin mới xóa được tồn đầu kỳ — cần nạp lại thì báo admin.":"Only admin can delete the opening stock — ask admin if it needs re-uploading.","Kho này chưa có tồn đầu kỳ để xóa":"This store has no opening stock to delete","file trống":"blank in file"});
 Object.assign(TXT.hi,{"Chỉ admin mới xóa được tồn đầu kỳ":"केवल एडमिन ही प्रारंभिक स्टॉक हटा सकता है","Chỉ admin mới xóa được tồn đầu kỳ — cần nạp lại thì báo admin.":"केवल एडमिन ही प्रारंभिक स्टॉक हटा सकता है — दोबारा अपलोड करना हो तो एडमिन को बताएँ।","Kho này chưa có tồn đầu kỳ để xóa":"इस स्टोर में हटाने के लिए कोई प्रारंभिक स्टॉक नहीं है","file trống":"फ़ाइल में खाली"});
+/* Bản 2310-03 */
+Object.assign(TXT.en,{"ngày cũ":"old date"});Object.assign(TXT.hi,{"ngày cũ":"पुरानी तारीख"});
 /* Bản 2310-02 */
 Object.assign(TXT.en,{"Chọn":"Select","🗑 Xóa bản chốt tồn kế toán vừa duyệt":"🗑 Delete the stock closing the accountant just approved"});
 Object.assign(TXT.hi,{"Chọn":"चुनें","🗑 Xóa bản chốt tồn kế toán vừa duyệt":"🗑 लेखाकार द्वारा अभी स्वीकृत स्टॉक क्लोजिंग हटाएँ"});
@@ -1583,6 +1585,12 @@ function outboxThem(it){
   outbox.push(Object.assign({at:Date.now(),lanThu:0,loi:''},it));
   outboxSave();try{veChipMang();}catch(e){}
 }
+/* Lưu TRỰC TIẾP phải chờ vòng tự gửi đang chạy xong: nếu không, bản CŨ trong hàng đợi có thể lên
+   máy chủ SAU bản mới và đè mất nó (rà soát 23/10/2026). Trả false nếu sau ~15 giây vẫn đang gửi
+   -> nơi gọi cho vào hàng đợi thay vì ghi thẳng. */
+async function choFlushXong(){for(let i=0;i<150&&_dangFlush;i++)await new Promise(r=>setTimeout(r,100));return !_dangFlush;}
+/* Ghi thẳng thành công thì bỏ bản cũ cùng chỗ đang nằm chờ — để lần gửi sau không đè ngược. */
+function boHangDoi(f){const n=outbox.length;outbox=outbox.filter(x=>!f(x));if(outbox.length!==n){outboxSave();try{veChipMang();}catch(e){}}}
 /* Số mục người dùng cần biết (bỏ mục nội bộ: học danh mục kho, thông báo kèm theo) */
 function outboxHienCount(){return outbox.filter(x=>x.loai!=='pm'&&x.loai!=='bao').length;}
 function nhanHangDoi(it){
@@ -1611,6 +1619,9 @@ async function outboxFlush(){
   if(typeof navigator!=='undefined'&&navigator.onLine===false)return;
   _dangFlush=true;
   const xong=[],daCoSan=[],bo=[],nhan=[];   // bo: bỏ khỏi hàng đợi nhưng KHÔNG phải gửi được
+  /* Dọn theo ĐÚNG MỤC đã gửi, không theo id: trong lúc vòng này chạy, người dùng có thể lưu bản
+     mới cùng id (thay mục cũ bằng mục mới) — lọc theo id là xoá luôn bản mới chưa gửi (23/10/2026). */
+  const daGuiO=new Set();
   try{
     const baoKet=it=>{
       /* Thử 3 lần vẫn trượt là kẹt thật. Im lặng thì số nằm đó mãi mà không ai hay —
@@ -1630,7 +1641,7 @@ async function outboxFlush(){
           const r=await sb.from('receipts').insert(it.row);
           // 23505 = dòng đã lên từ lần gửi trước (chỉ chưa kịp dọn hàng đợi) -> coi như xong
           if(r.error&&String(r.error.code)!=='23505'){if(laLoiMang(r.error))throw r.error;it.lanThu++;it.loi=r.error.message||'Máy chủ từ chối';baoKet(it);continue;}
-          xong.push(it.id);nhan.push(nhanHangDoi(it));
+          (daGuiO.add(it),xong.push(it.id));nhan.push(nhanHangDoi(it));
           const x=(receipts||[]).find(y=>y.id===it.id);if(x)delete x._choGui;
           continue;
         }
@@ -1638,14 +1649,14 @@ async function outboxFlush(){
           const r=await sb.from('receipts').update(it.patch).match({id:it.rid}).select();
           if(r.error){if(laLoiMang(r.error))throw r.error;it.lanThu++;it.loi=r.error.message||'Máy chủ từ chối';baoKet(it);continue;}
           if(!Array.isArray(r.data)||!r.data.length){it.lanThu++;it.loi='Máy chủ không đổi dòng nào';baoKet(it);continue;}
-          xong.push(it.id);nhan.push(nhanHangDoi(it));continue;
+          (daGuiO.add(it),xong.push(it.id));nhan.push(nhanHangDoi(it));continue;
         }
         if(it.loai==='pm'){
           const r=await sb.from('plant_materials').insert(it.row);
           if(r.error&&String(r.error.code)!=='23505'){if(laLoiMang(r.error))throw r.error;console.warn('plant_materials (hàng đợi)',r.error);}
-          bo.push(it.id);continue;            // học danh mục kho: không báo riêng
+          (daGuiO.add(it),bo.push(it.id));continue;            // học danh mục kho: không báo riêng
         }
-        if(it.loai==='bao'){baoHo(it.bao);bo.push(it.id);continue;}
+        if(it.loai==='bao'){baoHo(it.bao);(daGuiO.add(it),bo.push(it.id));continue;}
         if(it.loai==='dc'){
           /* Gửi xong mà máy tắt trước khi kịp dọn hàng đợi -> lần sau gửi lại thì ra phiếu
              -2 y hệt. Hỏi máy chủ trước: đã có phiếu cùng mã, cùng nội dung thì chỉ dọn. */
@@ -1661,7 +1672,7 @@ async function outboxFlush(){
           const loc=(trReqs||[]).find(x=>x.id===it.id);if(loc){loc.id=idMoi;delete loc._choGui;}
           (it.bao||[]).forEach(b=>baoHo(Object.assign({},b,{msg:String(b.msg).split('§ID§').join(idMoi)})));
           log('Lập phiếu '+dcKindLabel(it.row.kind)+' (sau khi có mạng)',idMoi);
-          xong.push(it.id);nhan.push(dcKindLabel(it.row.kind)+' '+idMoi);continue;
+          (daGuiO.add(it),xong.push(it.id));nhan.push(dcKindLabel(it.row.kind)+' '+idMoi);continue;
         }
         if(it.loai==='sua'){
           const up=()=>sb.from('submissions').update(it.patch).match({id:it.subId,status:'Chờ duyệt'}).select();
@@ -1670,7 +1681,7 @@ async function outboxFlush(){
           if(r.error&&isMissingNoteCol(r.error)&&it.patch.item_notes!==undefined){noteColOK=false;delete it.patch.item_notes;r=await up();}
           if(r.error){if(laLoiMang(r.error))throw r.error;it.lanThu++;it.loi=r.error.message||'Máy chủ từ chối';baoKet(it);continue;}
           if(Array.isArray(r.data)&&r.data.length){
-            xong.push(it.id);nhan.push(nhanHangDoi(it));
+            (daGuiO.add(it),xong.push(it.id));nhan.push(nhanHangDoi(it));
             const s=submissions.find(x=>x.id===it.subId);if(s)delete s._choGuiSua;
             log('Đếm bổ sung phiếu kiểm kê (sau khi có mạng)',it.subId+' · '+whName(it.plant,it.sloc));
             continue;}
@@ -1682,7 +1693,7 @@ async function outboxFlush(){
                sửa về nháp cho khỏi mất, rồi báo người dùng. */
             const k=it.plant+'|'+it.sloc;
             if(!drafts[k]){drafts[k]={items:{...it.patch.items},zones:zonesToDraft(it.patch.zones),meta:metaToDraft(it.patch.item_notes)};saveDrafts();}
-            bo.push(it.id);const s=submissions.find(x=>x.id===it.subId);if(s)delete s._choGuiSua;
+            (daGuiO.add(it),bo.push(it.id));const s=submissions.find(x=>x.id===it.subId);if(s)delete s._choGuiSua;
             const t='⚠ Phần bổ sung chưa được ghi',b='Phiếu '+it.subId+' đã được kế toán xử lý ('+st.status+') trước khi máy có mạng. Số sửa vẫn giữ trong máy — báo kế toán.';
             if(typeof document!=='undefined'&&document.visibilityState==='visible')toast(t+' — '+it.subId);else{try{pushLocal(t,b,'kk-outbox-loi');}catch(e){}}
             continue;}
@@ -1692,19 +1703,19 @@ async function outboxFlush(){
           let r=await sb.from('weekly_counts').upsert(it.row,{onConflict:'id'});
           if(r&&r.error&&isMissingNoteCol(r.error)&&it.row.item_notes!==undefined){noteColOK=false;delete it.row.item_notes;r=await sb.from('weekly_counts').upsert(it.row,{onConflict:'id'});}
           if(r&&r.error){if(laLoiMang(r.error))throw r.error;it.lanThu++;it.loi=r.error.message||'Máy chủ từ chối';baoKet(it);continue;}
-          xong.push(it.id);nhan.push(nhanHangDoi(it));
+          (daGuiO.add(it),xong.push(it.id));nhan.push(nhanHangDoi(it));
           const w=(weeklyCounts||[]).find(x=>x.id===it.id);if(w)delete w._choGui;
           log('Kiểm kê tuần (sau khi có mạng)',whName(it.ban.plant,it.ban.sloc)+' · '+tuanLabel(it.ban.week));
           baoHo(it.bao);continue;
         }
         if(await daLenMayChu(it.sub.id)){      // gửi được từ lần trước, chỉ chưa kịp dọn
-          xong.push(it.id);daCoSan.push(it.id);nhan.push(it.sub.id);
+          (daGuiO.add(it),xong.push(it.id));daCoSan.push(it.id);nhan.push(it.sub.id);
           const s1=submissions.find(x=>x.id===it.id);if(s1)delete s1._choGui;
           continue;
         }
         const ok=await insSubmissionSafe(it.sub,true);   // true = im lặng, không dựng hộp lỗi
         if(ok){
-          xong.push(it.id);nhan.push(it.sub.id);
+          (daGuiO.add(it),xong.push(it.id));nhan.push(it.sub.id);
           const s0=submissions.find(x=>x.id===it.id);if(s0)delete s0._choGui;
           log('Gửi phiếu kiểm kê (sau khi có mạng)',it.sub.id+' · '+whName(it.sub.plant,it.sub.sloc));
           baoHo(it.bao);
@@ -1719,9 +1730,9 @@ async function outboxFlush(){
       }
     }
   }finally{_dangFlush=false;}
-  if(bo.length&&!xong.length){outbox=outbox.filter(x=>bo.indexOf(x.id)<0);outboxSave();try{veChipMang();}catch(e){}}
+  if(bo.length&&!xong.length){outbox=outbox.filter(x=>!daGuiO.has(x));outboxSave();try{veChipMang();}catch(e){}}
   if(xong.length){
-    outbox=outbox.filter(x=>xong.indexOf(x.id)<0&&bo.indexOf(x.id)<0);outboxSave();
+    outbox=outbox.filter(x=>!daGuiO.has(x));outboxSave();
     datMang(true);
     const mot=xong.length===1;
     const chiPhieu=xong.every(id=>/^KK-/.test(id));
@@ -6471,6 +6482,9 @@ function renderKiemke(v){
    · Mất mạng thì cất vào hàng đợi trong máy, có mạng tự gửi.
    Trả 'ok' | 'hangdoi' | 'loi' (đã dựng hộp lỗi — nơi gọi giữ nháp). */
 async function guiSuaPhieu(editing,patch){
+  /* Vòng tự gửi đang chạy thì chờ nó xong: sửa chen vào lúc nó đang gửi phiếu / bản sửa cũ thì
+     bản cũ lên sau và đè mất bản mới (rà soát 23/10/2026). Chờ quá lâu thì xếp hàng đợi. */
+  if(sb&&!await choFlushXong()){outboxThemSua(editing,patch);return 'hangdoi';}
   /* Phiếu còn trong hàng đợi (chưa lên máy chủ): sửa thẳng bản trong hàng đợi. */
   if(editing._choGui){const it=outbox.find(x=>!x.loai&&x.id===editing.id);
     if(it){Object.assign(it.sub,{items:{...patch.items},count:patch.count,edits:patch.edits});
@@ -6494,7 +6508,7 @@ async function guiSuaPhieu(editing,patch){
       ],'Bảng: submissions'+NL+'Phiếu: '+editing.id+NL+(er.message||'')+(er.code?' (mã '+er.code+')':''));
       return 'loi';
     }
-    if(Array.isArray(r.data)&&r.data.length)return 'ok';
+    if(Array.isArray(r.data)&&r.data.length){boHangDoi(x=>x.loai==='sua'&&x.subId===editing.id);return 'ok';}
     /* 0 dòng: phiếu không còn Chờ duyệt, hoặc tài khoản chưa được phép — hỏi máy chủ cho rõ */
     let st=null;try{const q=await sb.from('submissions').select('status,approved_by').eq('id',editing.id).limit(1);st=q&&q.data&&q.data[0];}catch(e){}
     if(st&&st.status&&st.status!=='Chờ duyệt'){
@@ -6551,6 +6565,7 @@ async function luuKiemTuan(plant,sloc,week,sach,btn,meta,bao){
   if(noteColOK&&_gc)_row.item_notes=_gc;
   /* Mất mạng: cất vào máy, có mạng tự gửi — không bắt bếp đếm lại (Khoa 22/10/2026). */
   if(sb&&(!mangOK||(typeof navigator!=='undefined'&&navigator.onLine===false)))hangDoi=true;
+  else if(sb&&!await choFlushXong())hangDoi=true;   // vòng tự gửi còn chạy: xếp sau, không ghi chen
   else if(sb){
     try{
       let r=await sb.from('weekly_counts').upsert(_row,{onConflict:'id'});
@@ -6584,6 +6599,7 @@ async function luuKiemTuan(plant,sloc,week,sach,btn,meta,bao){
     return;
   }
   weeklyCounts=[ban].concat(weeklyCounts.filter(x=>x.id!==id));
+  boHangDoi(x=>x.loai==='tuan'&&x.id===id);   // bản cũ còn chờ gửi không được đè lại bản này
   delete drafts[plant+'|'+sloc+'|'+week];saveDrafts();
   counting=null;
   log('Kiểm kê tuần',whName(plant,sloc)+' · '+tuanLabel(week)+' · '+soMa+' mã');
@@ -8102,7 +8118,9 @@ function dcRequestForm(v,kind){
       msg:`Xin hàng: ${whName(fp,fs)} → ${whName(tp,ts)} · ${codes.length} mã · phiếu ${id} do ${session.name} lập. Vào "Chờ tôi duyệt" để xử lý.`});
     if(hangDoi){
       /* mã phiếu có thể đổi (-2) lúc gửi thật -> để chỗ trống, điền mã thật khi gửi được */
-      outboxThem({loai:'dc',id,row,base:_base,rec:Object.assign({},rec),bao:tb.map(x=>Object.assign({},x,{msg:x.msg.split(id).join('§ID§')}))});
+      /* Gửi kèm GIỜ LẬP thật: không có thì máy chủ lấy giờ gửi được, phiếu hàng dư lập tối 31/10
+         mà sáng 01/11 mới có mạng sẽ ghi sổ sang kỳ 11 (rà soát 23/10/2026). */
+      outboxThem({loai:'dc',id,row:Object.assign({},row,{created_at:rec.createdAt}),base:_base,rec:Object.assign({},rec),bao:tb.map(x=>Object.assign({},x,{msg:x.msg.split(id).join('§ID§')}))});
       log('Lập phiếu '+dcKindLabel(kind)+' khi mất mạng',id+' — chờ gửi');
       baoChoMang(['Phiếu <b>'+id+'</b> · '+codes.length+' mã · '+whName(fp,fs)+(tp?' → '+whName(tp,ts):'')],'Phiếu chờ gửi: '+id,true);
     }else{
@@ -8797,13 +8815,17 @@ function nkPhanLoai(dong,dsCo,plant,sloc){
      ngày (23/10/2026). Số phiếu nằm đầu ghi chú dòng nhập Excel: "<số phiếu> [Excel]". */
   const soCua=n=>{const t=String(n||'');const i=t.indexOf('[Excel]');return i>0?t.slice(0,i).replace(/\s+/g,'').toUpperCase():'';};
   const kq={moi:[],daCo:[],lech:[]};
-  dong.forEach(d=>{let c=theoId[d.id],dl=d;
-    if(!c&&d.khongNgay&&d.soPhieu&&plant){const sp=String(d.soPhieu).replace(/\s+/g,'').toUpperCase();
+  /* Dòng CÓ ngày cũng dò theo số phiếu + mã: lần trước file để trống ngày (đã ghi theo ngày trên
+     màn), lần này điền ngày thật rồi nạp lại -> trước đây thành dòng mới, hàng tính hai lần
+     (rà soát 23/10/2026). Khớp được mà khác ngày = "lệch", thay thì sửa luôn ngày cho đúng. */
+  dong.forEach(d=>{let c=theoId[d.id],dl=d,ngayCu=null;
+    if(!c&&d.soPhieu&&plant){const sp=String(d.soPhieu).replace(/\s+/g,'').toUpperCase();
       c=(dsCo||[]).find(r=>r&&r.plant===plant&&r.sloc===sloc&&r.code===d.code&&soCua(r.note)===sp);
-      if(c)dl=Object.assign({},d,{id:c.id,date:c.date,period:c.period||d.period});}
+      if(c&&d.khongNgay){dl=Object.assign({},d,{id:c.id,date:c.date,period:c.period||d.period});d._ngayLuu=c.date;}
+      else if(c){dl=Object.assign({},d,{id:c.id});if(c.date!==d.date)ngayCu=c.date;}}
     if(!c){d._tt='moi';kq.moi.push(d);}
-    else if(Number(c.qty)===Number(d.qty)){d._tt='daCo';kq.daCo.push(d);}
-    else{d._tt='lech';d._qtyCu=Number(c.qty);kq.lech.push(Object.assign({},dl,{qtyCu:Number(c.qty)}));}});
+    else if(Number(c.qty)===Number(d.qty)&&!ngayCu){d._tt='daCo';kq.daCo.push(d);}
+    else{d._tt='lech';d._qtyCu=Number(c.qty);d._ngayCu=ngayCu;kq.lech.push(Object.assign({},dl,{qtyCu:Number(c.qty),ngayCu}));}});
   return kq;
 }
 // ---- Nhận hàng từ kho tổng: gõ tay hoặc quét ảnh — dùng kho/kỳ đã ghim ----
@@ -9030,19 +9052,20 @@ function dcNhapKho(v){
     const pl=nkPhanLoai(kq.dong,receipts,plantSel.value,slocSel.value);
     xPrev.innerHTML='';
     const tom=el('div');tom.style.cssText='font-size:12.5px;line-height:1.7;margin-bottom:8px';
-    const dongs=[pl.moi.length+' dòng mới',pl.daCo.length+' dòng đã nạp trước (bỏ qua)',pl.lech.length+' dòng số lượng khác lần trước'];
+    const dongs=[pl.moi.length+' dòng mới',pl.daCo.length+' dòng đã nạp trước (bỏ qua)',pl.lech.length+' dòng khác lần trước (số lượng / ngày)'];
     if(kq.gop)dongs.push(kq.gop+' dòng trùng mã trong cùng phiếu (đã cộng dồn)');
     if(kq.boKhongMa)dongs.push(kq.boKhongMa+' dòng không có mã (bỏ)');
     if(kq.boSoLoi)dongs.push(kq.boSoLoi+' dòng số lượng trống/lỗi (bỏ)');
     const soLa=kq.dong.filter(d=>d.maLa).length;if(soLa)dongs.push(soLa+' dòng mã chưa có trong master data (vẫn nạp số, chờ kế toán khai báo tên)');
-    {const kn=kq.dong.filter(d=>d.khongNgay);if(kn.length)dongs.push(kn.length+' dòng file để trống ngày — sẽ ghi ngày '+kn[0].date.split('-').reverse().join('/')+' (ô Ngày nhập)');}
+    {const kn=pl.moi.filter(d=>d.khongNgay);if(kn.length)dongs.push(kn.length+' dòng file để trống ngày — sẽ ghi ngày '+kn[0].date.split('-').reverse().join('/')+' (ô Ngày nhập)');}
+    {const dn=pl.lech.filter(d=>d.ngayCu).length;if(dn)dongs.push(dn+' dòng đã nạp trước với NGÀY khác (thay thì sửa ngày theo file)');}
     tom.textContent=dongs.join(' · ');xPrev.appendChild(tom);
     const w=el('div','tbl-wrap');w.style.cssText='max-height:320px;overflow:auto';const tbl=el('table');
     tbl.innerHTML='<thead><tr><th>Ngày</th><th>Số phiếu</th><th>Mã</th><th>Tên hàng</th><th class="num">SL</th><th>Trạng thái</th></tr></thead>';
     const tb=el('tbody');
-    const nhan=d=>d._tt==='daCo'?L('đã có'):(d._tt==='lech'?(L('số cũ')+' '+d._qtyCu):L('mới'));
+    const nhan=d=>d._tt==='daCo'?L('đã có'):(d._tt==='lech'?(L('số cũ')+' '+d._qtyCu+(d._ngayCu?' · '+L('ngày cũ')+' '+d._ngayCu.split('-').reverse().join('/'):'')):L('mới'));
     kq.dong.forEach(d=>{const tr=el('tr');
-      [d.date.split('-').reverse().join('/')+(d.khongNgay?' ('+L('file trống')+')':''),d.soPhieu||'—',d.code,d.maLa?(d.code):(d.name||d.code),String(d.qty)+' '+(d.uom||''),nhan(d)+(d.maLa?' · '+L('chưa có tên'):'')]
+      [(d._ngayLuu||d.date).split('-').reverse().join('/')+(d.khongNgay&&!d._ngayLuu?' ('+L('file trống')+')':''),d.soPhieu||'—',d.code,d.maLa?(d.code):(d.name||d.code),String(d.qty)+' '+(d.uom||''),nhan(d)+(d.maLa?' · '+L('chưa có tên'):'')]
         .forEach((x,i)=>{const td=el('td',i===4?'num tnum':null);td.textContent=x;tr.appendChild(td);});
       tb.appendChild(tr);});
     tbl.appendChild(tb);w.appendChild(tbl);xPrev.appendChild(w);
@@ -9060,9 +9083,9 @@ function dcNhapKho(v){
            +(khongSo?'\n\n⚠ '+khongSo+' dòng trong đó không có cả số phiếu — nạp lại file này vào hôm khác sẽ bị tính là hàng mới. Nên điền Ngày hoặc Số phiếu trong file.':'')
            +'\n\nOK = ghi vào ngày '+ng+' · Cancel = dừng lại (sửa file, hoặc đổi ô Ngày nhập rồi nạp lại file)'))return;}}
       let thay=false;
-      if(pl.lech.length){thay=confirm(pl.lech.length+' dòng đã nạp trước với SỐ LƯỢNG KHÁC:\n'
-        +pl.lech.slice(0,8).map(x=>'· '+x.code+' ('+(x.soPhieu||'không số phiếu')+', '+x.date.split('-').reverse().join('/')+'): '+x.qtyCu+' → '+x.qty).join('\n')
-        +(pl.lech.length>8?'\n…':'')+'\n\nOK = THAY bằng số mới · Cancel = GIỮ số cũ');}
+      if(pl.lech.length){thay=confirm(pl.lech.length+' dòng đã nạp trước với SỐ LƯỢNG'+(pl.lech.some(x=>x.ngayCu)?' / NGÀY':'')+' KHÁC:\n'
+        +pl.lech.slice(0,8).map(x=>'· '+x.code+' ('+(x.soPhieu||'không số phiếu')+', '+(x.ngayCu?x.ngayCu.split('-').reverse().join('/')+' → ':'')+x.date.split('-').reverse().join('/')+'): '+x.qtyCu+' → '+x.qty).join('\n')
+        +(pl.lech.length>8?'\n…':'')+'\n\nOK = THAY bằng số mới (và ngày mới nếu khác) · Cancel = GIỮ số cũ');}
       if(!pl.moi.length&&!thay){toast(L('Không có gì để lưu — các dòng đều đã có'));return;}
       bLuu.disabled=true;bHuy.disabled=true;bLuu.textContent=L('Đang lưu…');
       let moi=0,doi=0,truot=0,trung=0,cho=0;const maLa=[],maLaCho=[];
@@ -9082,10 +9105,17 @@ function dcNhapKho(v){
           console.error('receipts',err);truot++;continue;}
         receipts.unshift(rec);if(d.maLa)maLa.push(d.code);else learnMaterials([{code:rec.code,name:rec.name,uom:rec.uom}]);moi++;}
       if(thay)for(const d of pl.lech){
-        if(sb&&(!mangOK||(typeof navigator!=='undefined'&&navigator.onLine===false))){outboxThem({loai:'nhapdoi',id:'ND|'+d.id,rid:d.id,code:d.code,patch:{qty:d.qty}});
-          const c=receipts.find(x=>x.id===d.id);if(c)c.qty=d.qty;cho++;continue;}
-        const u=await dbUpd('receipts',{id:d.id},{qty:d.qty});
-        if(u.ok&&u.count!==0){const c=receipts.find(x=>x.id===d.id);if(c)c.qty=d.qty;doi++;}else truot++;}
+        const _p={qty:d.qty};if(d.ngayCu){_p.date=d.date;_p.period=d.period;}
+        const _dat=()=>{const c=receipts.find(x=>x.id===d.id);if(c)Object.assign(c,_p);};
+        /* Dòng cũ còn chờ gửi (chưa lên máy chủ): sửa thẳng bản trong hàng đợi. */
+        {const _q=outbox.find(x=>x.loai==='nhap'&&x.id===d.id);if(_q){await choFlushXong();}}
+        {const _q=outbox.find(x=>x.loai==='nhap'&&x.id===d.id);if(_q){Object.assign(_q.row,_p);if(_q.rec)Object.assign(_q.rec,_p);outboxSave();_dat();cho++;continue;}}
+        if(sb&&(!mangOK||(typeof navigator!=='undefined'&&navigator.onLine===false))){outboxThem({loai:'nhapdoi',id:'ND|'+d.id,rid:d.id,code:d.code,patch:_p});
+          _dat();cho++;continue;}
+        if(!await choFlushXong()){outboxThem({loai:'nhapdoi',id:'ND|'+d.id,rid:d.id,code:d.code,patch:_p});_dat();cho++;continue;}
+        boHangDoi(x=>x.loai==='nhapdoi'&&x.rid===d.id);
+        const u=await dbUpd('receipts',{id:d.id},_p);
+        if(u.ok&&u.count!==0){_dat();doi++;}else truot++;}
       if(moi||doi)log('Nhập kho từ Excel',moi+' dòng mới'+(doi?', thay '+doi+' dòng':'')+' · '+whName(plantSel.value,slocSel.value));
       if(maLa.length){const ds=[...new Set(maLa)];
         try{notifyWh(plantSel.value,slocSel.value,whName(plantSel.value,slocSel.value)+' nhập kho từ Excel có '+ds.length
