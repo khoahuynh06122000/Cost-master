@@ -1121,7 +1121,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2310-03';
+const APP_VER='2310-04';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1250,6 +1250,8 @@ Object.assign(TXT.hi,{"Dữ liệu chưa được đưa lên hệ thống do m�
 /* Bản 2310-01 */
 Object.assign(TXT.en,{"Chỉ admin mới xóa được tồn đầu kỳ":"Only admin can delete the opening stock","Chỉ admin mới xóa được tồn đầu kỳ — cần nạp lại thì báo admin.":"Only admin can delete the opening stock — ask admin if it needs re-uploading.","Kho này chưa có tồn đầu kỳ để xóa":"This store has no opening stock to delete","file trống":"blank in file"});
 Object.assign(TXT.hi,{"Chỉ admin mới xóa được tồn đầu kỳ":"केवल एडमिन ही प्रारंभिक स्टॉक हटा सकता है","Chỉ admin mới xóa được tồn đầu kỳ — cần nạp lại thì báo admin.":"केवल एडमिन ही प्रारंभिक स्टॉक हटा सकता है — दोबारा अपलोड करना हो तो एडमिन को बताएँ।","Kho này chưa có tồn đầu kỳ để xóa":"इस स्टोर में हटाने के लिए कोई प्रारंभिक स्टॉक नहीं है","file trống":"फ़ाइल में खाली"});
+/* Bản 2310-04 */
+Object.assign(TXT.en,{"Cần có mạng để xóa bản kiểm tuần — di chuyển sang chỗ có mạng rồi bấm lại":"Deleting a weekly count needs a connection — move to a spot with signal and tap again","App đang gửi dữ liệu lên — thử xóa lại sau ít giây":"The app is still sending data — try deleting again in a few seconds","Không xóa được bản kiểm tuần":"Could not delete the weekly count"});Object.assign(TXT.hi,{"Cần có mạng để xóa bản kiểm tuần — di chuyển sang chỗ có mạng rồi bấm lại":"साप्ताहिक गिनती हटाने के लिए नेटवर्क चाहिए — नेटवर्क वाली जगह जाकर फिर दबाएँ","App đang gửi dữ liệu lên — thử xóa lại sau ít giây":"ऐप अभी डेटा भेज रहा है — कुछ सेकंड बाद फिर हटाएँ","Không xóa được bản kiểm tuần":"साप्ताहिक गिनती हटाई नहीं जा सकी"});
 /* Bản 2310-03 */
 Object.assign(TXT.en,{"ngày cũ":"old date"});Object.assign(TXT.hi,{"ngày cũ":"पुरानी तारीख"});
 /* Bản 2310-02 */
@@ -3707,7 +3709,10 @@ function dbSubscribe(){
        đó thử MỘT lần gửi hàng đợi — nếu lọt thì coi như có mạng lại. */
     if(!mangOK||(typeof navigator!=='undefined'&&navigator.onLine===false)){
       if(typeof navigator!=='undefined'&&navigator.onLine!==false&&outboxCount())await outboxFlush();
-      else if(typeof navigator!=='undefined'&&navigator.onLine!==false){
+      /* Gửi hàng đợi mà KHÔNG mục nào lọt (máy chủ từ chối hẳn mọi mục — vẫn là có mạng) thì trước
+         đây app kẹt ở "Mất mạng" mãi: không tải dữ liệu mới, không duyệt được phiếu (rà soát 23/10/2026).
+         Còn mất mạng sau khi gửi -> vẫn dò một yêu cầu nhẹ như khi hàng đợi rỗng. */
+      if(!mangOK&&typeof navigator!=='undefined'&&navigator.onLine!==false){
         /* Dò một yêu cầu nhẹ rồi mới coi là có mạng lại — đoán bừa thì dòng báo mạng trên
            màn đếm cứ 45 giây tắt rồi bật lại (22/10/2026). */
         try{const q=await sb.from('notifications').select('id').limit(1);if(!q.error)datMang(true);}catch(e){}
@@ -5079,6 +5084,11 @@ let _demTuanCat=null;
 /* Kho + kỳ đang gửi phiếu kiểm kê (nút Gửi của màn đếm và nút Tạo phiếu của Up Excel dùng
    chung). Mạng chậm mà bấm lần nữa thì trước đây ra phiếu thứ hai mang mã -2 (21/10/2026). */
 let _dangGuiKK={};
+/* Màn Nhận hàng từ kho tổng: nhớ cách nhập + Ngày nhập + Số phiếu đang gõ qua mọi lần vẽ lại màn.
+   Mạng đổi trạng thái làm vẽ lại -> trước đây ngày về hôm nay, số phiếu trống, các dòng gõ tiếp mang
+   ngày sai (rà soát 23/10/2026). Chỉ giữ trong phiên và trong NGÀY — sang hôm sau là về mặc định. */
+let _nkGo={};
+function nkGoNay(){const h=_isoNgay(new Date());if(_nkGo.hom!==h)_nkGo={hom:h};return _nkGo;}
 /* Tiểu kho đang đếm của từng bản nháp — giữ qua mọi lần vẽ lại màn (mạng chập chờn, làm mới
    dữ liệu…). Trước đây lần nào vẽ lại cũng về khu đầu, số gõ tiếp vào nhầm khu (23/10/2026). */
 let _khuDaChon={};
@@ -6611,8 +6621,25 @@ async function xoaKiemTuan(b){
   if(isScoped()){toast('Bạn chỉ xem được kiểm kê tuần — đếm và lưu số do bếp làm.');return;}
   if(!confirm('XÓA BẢN KIỂM TUẦN'+NL+whName(b.plant,b.sloc)+NL+tuanLabel(b.week)+NL+NL
     +b.count+' mã, lưu bởi '+b.by+' lúc '+b.time+'.'+NL+NL+'Xóa rồi thì phải đếm lại tuần này.'))return;
-  const r=await dbDel('weekly_counts',{id:b.id});
-  if(!r.ok||r.count===0)return;   // dbDel đã dựng hộp lỗi
+  /* Bản còn CHỜ GỬI trong hàng đợi: trước đây chỉ xoá trên máy chủ nên có mạng là app gửi lên lại,
+     bản đã xoá quay về; chưa từng lên máy chủ thì còn báo lỗi sai lý do (rà soát 23/10/2026). */
+  const laCho=x=>x.loai==='tuan'&&x.id===b.id;
+  if(sb&&outbox.some(laCho)){
+    if(!mangOK||(typeof navigator!=='undefined'&&navigator.onLine===false)){toast('Cần có mạng để xóa bản kiểm tuần — di chuyển sang chỗ có mạng rồi bấm lại');return;}
+    if(!await choFlushXong()){toast('App đang gửi dữ liệu lên — thử xóa lại sau ít giây');return;}
+  }
+  const cho=outbox.filter(laCho);
+  if(cho.length){
+    boHangDoi(laCho);   // bỏ trước để vòng tự gửi không đưa nó lên lại trong lúc đang xoá
+    if(sb){let r;try{r=await sb.from('weekly_counts').delete().eq('id',b.id).select();}catch(e){r={error:e};}
+      if(r&&r.error){outbox=outbox.concat(cho);outboxSave();try{veChipMang();}catch(e){}
+        if(laLoiMang(r.error)){datMang(false);toast('Cần có mạng để xóa bản kiểm tuần — di chuyển sang chỗ có mạng rồi bấm lại');return;}
+        errBox('Không xóa được bản kiểm tuần',['Bản <b>'+tuanLabel(b.week).split(' · ')[0]+'</b> vẫn còn.','Thử lại sau ít phút; vẫn lỗi thì chụp màn hình gửi kế toán.'],'Bảng: weekly_counts'+NL+b.id+NL+(r.error.message||''));return;}}
+    /* 0 dòng là bình thường ở đây: bản chờ gửi có thể chưa từng lên máy chủ. */
+  }else{
+    const r=await dbDel('weekly_counts',{id:b.id});
+    if(!r.ok||r.count===0)return;   // dbDel đã dựng hộp lỗi
+  }
   weeklyCounts=weeklyCounts.filter(x=>x.id!==b.id);
   log('Xóa kiểm kê tuần',b.id);toast('Đã xóa bản '+tuanLabel(b.week).split(' · ')[0].toLowerCase());renderView();
 }
@@ -8847,6 +8874,7 @@ function dcNhapKho(v){
   const formWrap=el('div');b.appendChild(formWrap);
   let xlsWrap=null;
   function setMode(m){
+    nkGoNay().mode=m;
     bTay.className='btn btn-sm '+(m==='tay'?'btn-brand':'btn-ghost');
     bAnh.className='btn btn-sm '+(m==='anh'?'btn-brand':'btn-ghost');
     bXls.className='btn btn-sm '+(m==='xls'?'btn-brand':'btn-ghost');
@@ -8860,6 +8888,9 @@ function dcNhapKho(v){
   const fDate=el('label','field f-date','<span>Ngày nhập</span>');const iDate=el('input','input');iDate.type='date';iDate.value=_isoNgay(new Date());fDate.appendChild(iDate);   // theo giờ máy — valueAsDate lấy giờ UTC nên trước 7h sáng ra ngày hôm qua (21/10/2026)
   const fNote=el('label','field f-grow','<span>Số phiếu xuất kho tổng / Ghi chú</span>');const iNote=el('input','input');iNote.placeholder='VD: PX-12345 — số phiếu kho tổng xuất';fNote.appendChild(iNote);
   g.appendChild(fDate);g.appendChild(fNote);formWrap.appendChild(g);
+  {const G=nkGoNay();if(G.ngay)iDate.value=G.ngay;if(G.phieu!=null)iNote.value=G.phieu;
+   const nho=()=>{const G2=nkGoNay();G2.ngay=iDate.value;G2.phieu=iNote.value;};
+   iDate.addEventListener('input',nho);iDate.addEventListener('change',nho);iNote.addEventListener('input',nho);}
   /* ===== CHỌN MÃ HÀNG — LIST SẴN, CHỈ ĐƯỢC CHỌN TỪ MASTER DATA =====
      Rule Khoa 18/09/2026:
        1. Vào màn là thấy sẵn danh sách (>=10 mã), không bắt gõ mới hiện. Trước đây
@@ -9308,7 +9339,7 @@ function dcNhapKho(v){
       tb.appendChild(tr);});
     tbl.appendChild(tb);w.appendChild(tbl);listWrap.appendChild(w);
   }
-  renderList();updRead();vePick();setMode('tay');
+  renderList();updRead();vePick();setMode(nkGoNay().mode||'tay');
   card.appendChild(b);v.appendChild(card);
 }
 function renderTransList(){

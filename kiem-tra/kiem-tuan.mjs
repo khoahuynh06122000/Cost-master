@@ -222,6 +222,9 @@ const MAU = [
   { re: /outbox=outbox\.filter\(x=>xong\.indexOf\(x\.id\)<0/, mo: false, vi: 'Hàng đợi dọn theo id: bản mới lưu trong lúc tự gửi bị xoá mất (sửa 23/10, bản 2310-03)' },
   { re: /outboxThem\(\{loai:'dc',id,row,base/, mo: false, vi: 'Phiếu ĐC lập lúc mất mạng không giữ giờ lập — hàng dư ghi sổ sang kỳ sau (sửa 23/10, bản 2310-03)' },
   { re: /if\(!c&&d\.khongNgay&&d\.soPhieu&&plant\)/, mo: false, vi: 'Nạp lại Excel nhập kho sau khi điền ngày thật bị tính hai lần (sửa 23/10, bản 2310-03)' },
+  { re: /outboxCount\(\)\)await outboxFlush\(\);\s*\n\s*else if\(typeof navigator/, mo: false, vi: 'Hàng đợi chỉ còn mục bị từ chối làm app kẹt \"Mất mạng\" (sửa 23/10, bản 2310-04)' },
+  { re: /renderList\(\);updRead\(\);vePick\(\);setMode\('tay'\);/, mo: false, vi: 'Nhận hàng: mạng đổi trạng thái xoá ô Ngày / Số phiếu đang gõ (sửa 23/10, bản 2310-04)' },
+  { re: /phải đếm lại tuần này\.'\)\)return;\s*\n\s*const r=await dbDel\('weekly_counts'/, mo: false, vi: 'Xoá bản kiểm tuần đang chờ gửi thì nó quay lại (sửa 23/10, bản 2310-04)' },
 ];
 function kiemTaiPhat() {
   for (const m of MAU) {
