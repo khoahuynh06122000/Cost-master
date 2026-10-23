@@ -215,6 +215,10 @@ const MAU = [
   { re: /dbIns\('receipts',\{id:rec\.id/, mo: false, vi: 'Nhập kho gõ tay / quét ảnh lúc mất mạng không cất vào máy — bắt nhập lại (sửa 22/10, bản 2210-02)' },
   { re: /sb\.from\('receipts'\)\.insert\(\{id:rec\.id/, mo: false, vi: 'Nạp Excel nhập kho lúc mất mạng báo "nạp lại file" thay vì cất vào máy (sửa 22/10, bản 2210-02)' },
   { re: /if\(!kqIns\.ok\)return;\s*\/\/[^\n]*\n\s*id=row\.id;/, mo: false, vi: 'Lập phiếu điều chuyển lúc mất mạng không cất vào máy — bắt lập lại (sửa 22/10, bản 2210-02)' },
+  { re: /tb\.querySelectorAll\('\.chip'\)\.forEach\(c=>c\.onclick=\(\)=>\{[^}]*curFilter=/, mo: false, vi: 'Nút lọc đè lên nút chọn tiểu kho — bấm khu khác mà số vẫn vào khu đầu (sửa 23/10, bản 2310-01)' },
+  { re: /if\(isPrivileged\(\)\)\{\s*\n\s*const bDel=el\('button','btn btn-ghost btn-sm','🗑 Xóa tồn đầu kỳ'\)/, mo: false, vi: 'Nút Xoá tồn đầu kỳ hiện cho kế toán — Khoa chốt chỉ admin (sửa 23/10, bản 2310-01)' },
+  { re: /if\(!diff\.length\)\{toast\('Chưa thay đổi gì so với phiếu/, mo: false, canTruoc: "kieu:'ghichu',tu:vg(a)", vi: 'Đếm bổ sung chỉ sửa ngày/ghi chú bị báo "chưa thay đổi" (sửa 23/10, bản 2310-01)' },
+  { re: /if\(!date\)date=ngayMacDinh;/, mo: false, vi: 'Excel nhập kho để trống ngày: lặng lẽ lấy ngày trên màn, nạp lại hôm sau nhân đôi (sửa 23/10, bản 2310-01)' },
 ];
 function kiemTaiPhat() {
   for (const m of MAU) {
