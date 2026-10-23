@@ -226,6 +226,12 @@ const MAU = [
   { re: /renderList\(\);updRead\(\);vePick\(\);setMode\('tay'\);/, mo: false, vi: 'Nhận hàng: mạng đổi trạng thái xoá ô Ngày / Số phiếu đang gõ (sửa 23/10, bản 2310-04)' },
   { re: /phải đếm lại tuần này\.'\)\)return;\s*\n\s*const r=await dbDel\('weekly_counts'/, mo: false, vi: 'Xoá bản kiểm tuần đang chờ gửi thì nó quay lại (sửa 23/10, bản 2310-04)' },
   { re: /r\.code===d\.code&&soCua\(r\.note\)===sp\);/, mo: false, vi: 'Excel nhập kho: dòng có ngày khớp nhầm dòng cũ cùng số phiếu ngày khác -> dời ngày, mất hàng (sửa 23/10, bản 2310-05)' },
+  { re: /Date\.UTC\(1899,11,30\)\+Math\.round\(n\)\*86400000/, mo: false, vi: 'Ngày Excel có giờ chiều bị nhảy sang hôm sau (sửa 23/10, bản 2310-06)' },
+  { re: /\/Math\.max\(1,total\)\)\*100\*8\)/, mo: false, vi: 'Thanh tiến độ đếm báo đầy khi mới đếm 1/8 số mã (sửa 23/10, bản 2310-06)' },
+  { re: /sb\.from\('submissions'\)\.delete\(\)\.eq\('id',s\.id\)\.then\(/, mo: false, vi: 'Từ chối biên bản báo bếp trước khi máy chủ xoá xong (sửa 23/10, bản 2310-06)' },
+  { re: /ctxBar\(b,ctx,\{period:true,plants:mine\},\(\)=>\{chosen=null;nkMo=\{\};vePick\(\);renderList\(\);updRead\(\);\}\);/, mo: false, vi: 'Đổi kho khi đang xem trước Excel / ảnh: bảng vẫn còn, lưu sang kho mới (sửa 23/10, bản 2310-06)' },
+  { re: /some\(c=>c\.includes\('mã'\)\|\|c\.includes\('mahang'\)/, mo: false, vi: 'Không nhận tiêu đề \"Mã vật tư\" / \"Mã VT\" -> lấy nhầm cột tên làm mã (sửa 23/10, bản 2310-06)' },
+  { re: /RegExp\(\"\^Gộp \(\[\\d/, mo: false, vi: 'Mẫu dịch \"Gộp N dòng trùng mã\" mất dấu \\ nên không bao giờ khớp (sửa 23/10, bản 2310-06)' },
 ];
 function kiemTaiPhat() {
   for (const m of MAU) {

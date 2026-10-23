@@ -1121,7 +1121,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2310-05';
+const APP_VER='2310-06';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1250,6 +1250,9 @@ Object.assign(TXT.hi,{"Dữ liệu chưa được đưa lên hệ thống do m�
 /* Bản 2310-01 */
 Object.assign(TXT.en,{"Chỉ admin mới xóa được tồn đầu kỳ":"Only admin can delete the opening stock","Chỉ admin mới xóa được tồn đầu kỳ — cần nạp lại thì báo admin.":"Only admin can delete the opening stock — ask admin if it needs re-uploading.","Kho này chưa có tồn đầu kỳ để xóa":"This store has no opening stock to delete","file trống":"blank in file"});
 Object.assign(TXT.hi,{"Chỉ admin mới xóa được tồn đầu kỳ":"केवल एडमिन ही प्रारंभिक स्टॉक हटा सकता है","Chỉ admin mới xóa được tồn đầu kỳ — cần nạp lại thì báo admin.":"केवल एडमिन ही प्रारंभिक स्टॉक हटा सकता है — दोबारा अपलोड करना हो तो एडमिन को बताएँ।","Kho này chưa có tồn đầu kỳ để xóa":"इस स्टोर में हटाने के लिए कोई प्रारंभिक स्टॉक नहीं है","file trống":"फ़ाइल में खाली"});
+/* Bản 2310-06 — việc 18 */
+Object.assign(TXT.en,{"✚ phát sinh trong kỳ": "✚ new this period", "(chưa tạo phiếu)": "(sheet not created yet)", "(chưa lưu)": "(not saved yet)", "✓ Tạo phiếu kiểm kê (Chờ duyệt)": "✓ Create count sheet (Pending)", "💾 Lưu số kiểm tuần": "💾 Save weekly count", "Đọc được": "Read", "Mã hệ thống": "System code", "✓ Thêm tất cả vào nhập kho": "✓ Add all to receipts", "Gõ mã đúng…": "Type the correct code…", "Đang chọn": "Selected", "Mã này đã nhập trong kỳ:": "Already received this period:", "→ sau khi lưu": "→ after saving", "Chưa khai khóa AI": "No AI key set up", "Khóa AI sai hoặc đã bị xóa": "The AI key is wrong or was deleted", "Khóa AI đã hết lượt hôm nay": "The AI key has used up today's quota", "Vào thẻ \"Cài đặt AI quét ảnh\" ở màn này, dán khóa rồi bấm Lưu khóa.": "Open the \"Image-scan AI settings\" card on this screen, paste the key and tap Save key.", "Tạo khóa mới ở aistudio.google.com/apikey rồi dán vào thẻ \"Cài đặt AI quét ảnh\" và bấm Lưu khóa.": "Create a new key at aistudio.google.com/apikey, paste it into the \"Image-scan AI settings\" card and tap Save key.", "Quét lại vào ngày mai, hoặc khai một khóa khác ở thẻ \"Cài đặt AI quét ảnh\". Trong lúc chờ có thể nạp file Excel hoặc gõ tay.": "Scan again tomorrow, or enter another key in the \"Image-scan AI settings\" card. Meanwhile you can upload an Excel file or type the rows.", "Ảnh gửi đi chưa đúng — chọn lại ảnh rồi quét.": "The photo was not sent correctly — pick the photo again and scan.", "Đã đổi kho / kỳ — nạp lại file cho kho đang chọn": "Store / period changed — upload the file again for the selected store", "Hàng về sau ngày chốt thì ghi vào tháng sau (đổi ô Ngày nhập / kỳ). Cần ghi bù vào tháng đã chốt thì báo kế toán.": "Goods that arrived after the closing go into next month (change the receipt date / period). To add to the closed month, ask accounting.", "Khai khóa AI của riêng bạn để quét ảnh phiếu xuất kho tổng — khóa đi theo tài khoản": "Enter your own AI key to scan main-store issue slips — the key follows your account", "Khóa API theo tài khoản · link Teams lưu tại máy": "API key follows your account · Teams link saved on this device"});
+Object.assign(TXT.hi,{"✚ phát sinh trong kỳ": "✚ इस अवधि में नया", "(chưa tạo phiếu)": "(पर्ची अभी नहीं बनी)", "(chưa lưu)": "(अभी सहेजा नहीं)", "✓ Tạo phiếu kiểm kê (Chờ duyệt)": "✓ गिनती पर्ची बनाएँ (लंबित)", "💾 Lưu số kiểm tuần": "💾 साप्ताहिक गिनती सहेजें", "Đọc được": "पढ़ा गया", "Mã hệ thống": "सिस्टम कोड", "✓ Thêm tất cả vào nhập kho": "✓ सभी को प्राप्ति में जोड़ें", "Gõ mã đúng…": "सही कोड लिखें…", "Đang chọn": "चयनित", "Mã này đã nhập trong kỳ:": "इस अवधि में पहले से प्राप्त:", "→ sau khi lưu": "→ सहेजने के बाद", "Chưa khai khóa AI": "AI कुंजी सेट नहीं है", "Khóa AI sai hoặc đã bị xóa": "AI कुंजी गलत है या हटा दी गई है", "Khóa AI đã hết lượt hôm nay": "AI कुंजी का आज का कोटा खत्म हो गया", "Vào thẻ \"Cài đặt AI quét ảnh\" ở màn này, dán khóa rồi bấm Lưu khóa.": "इस स्क्रीन पर \"छवि-स्कैन AI सेटिंग\" कार्ड खोलें, कुंजी चिपकाएँ और कुंजी सहेजें दबाएँ।", "Tạo khóa mới ở aistudio.google.com/apikey rồi dán vào thẻ \"Cài đặt AI quét ảnh\" và bấm Lưu khóa.": "aistudio.google.com/apikey पर नई कुंजी बनाएँ, \"छवि-स्कैन AI सेटिंग\" कार्ड में चिपकाएँ और कुंजी सहेजें दबाएँ।", "Quét lại vào ngày mai, hoặc khai một khóa khác ở thẻ \"Cài đặt AI quét ảnh\". Trong lúc chờ có thể nạp file Excel hoặc gõ tay.": "कल फिर स्कैन करें, या \"छवि-स्कैन AI सेटिंग\" कार्ड में दूसरी कुंजी डालें। तब तक Excel फ़ाइल अपलोड करें या हाथ से लिखें।", "Ảnh gửi đi chưa đúng — chọn lại ảnh rồi quét.": "फ़ोटो सही नहीं भेजी गई — फ़ोटो फिर चुनें और स्कैन करें।", "Đã đổi kho / kỳ — nạp lại file cho kho đang chọn": "स्टोर / अवधि बदली — चुने गए स्टोर के लिए फ़ाइल फिर अपलोड करें", "Hàng về sau ngày chốt thì ghi vào tháng sau (đổi ô Ngày nhập / kỳ). Cần ghi bù vào tháng đã chốt thì báo kế toán.": "बंद होने के बाद आया माल अगले माह में दर्ज करें (प्राप्ति तिथि / अवधि बदलें)। बंद माह में जोड़ना हो तो लेखा विभाग को बताएँ।", "Khai khóa AI của riêng bạn để quét ảnh phiếu xuất kho tổng — khóa đi theo tài khoản": "मुख्य स्टोर की निर्गम पर्ची स्कैन करने के लिए अपनी AI कुंजी डालें — कुंजी आपके खाते के साथ रहती है", "Khóa API theo tài khoản · link Teams lưu tại máy": "API कुंजी आपके खाते के साथ · Teams लिंक इसी डिवाइस पर"});
 /* Bản 2310-05 */
 Object.assign(TXT.en,{"Máy chủ từ chối xóa bản kiểm tuần":"The server refused to delete the weekly count"});Object.assign(TXT.hi,{"Máy chủ từ chối xóa bản kiểm tuần":"सर्वर ने साप्ताहिक गिनती हटाने से मना किया"});
 /* Bản 2310-04 */
@@ -1259,7 +1262,7 @@ Object.assign(TXT.en,{"ngày cũ":"old date"});Object.assign(TXT.hi,{"ngày cũ"
 /* Bản 2310-02 */
 Object.assign(TXT.en,{"Chọn":"Select","🗑 Xóa bản chốt tồn kế toán vừa duyệt":"🗑 Delete the stock closing the accountant just approved"});
 Object.assign(TXT.hi,{"Chọn":"चुनें","🗑 Xóa bản chốt tồn kế toán vừa duyệt":"🗑 लेखाकार द्वारा अभी स्वीकृत स्टॉक क्लोजिंग हटाएँ"});
-const TXT_RE_BS=[{re:new RegExp("^Gộp ([\d.,]+) dòng trùng mã — đã cộng dồn số lượng$"),en:"Merged $1 duplicate-code rows — quantities added up",hi:"$1 दोहराई कोड पंक्तियाँ मिलाई गईं — मात्राएँ जोड़ दी गईं",n:1,en1:"Merged 1 duplicate-code row — quantity added up",hi1:"1 दोहराई कोड पंक्ति मिलाई गई — मात्रा जोड़ दी गई"},{re:new RegExp("^· (.+) · xin ([\\d.,]+)$"),en:"· $1 · requested $2",hi:"· $1 · माँगा $2"},{re:new RegExp("^· (.+) · chuyển ([\\d.,]+)$"),en:"· $1 · sent $2",hi:"· $1 · भेजा $2"},{re:new RegExp("^· ngày ghi sổ ([\\d/]+)$"),en:"· posting date $1",hi:"· दर्ज करने की तारीख़ $1"},{re:new RegExp("^(\\d{2}:\\d{2} \\d{2}/\\d{2}/\\d{4}) · Lý do: (.*)$"),en:"$1 · Reason: $2",hi:"$1 · कारण: $2"},{re:new RegExp("^✓ Nhận đủ ([\\d.,]+) mã$"),en:"✓ Receive all $1 items",hi:"✓ सभी $1 वस्तुएँ प्राप्त करें",n:1,en1:"✓ Receive this item",hi1:"✓ यह वस्तु प्राप्त करें"},{re:new RegExp("^Bước 2/3 — đang chờ (.+) \\(bếp nhận\\) bấm nhận$"),en:"Step 2/3 — awaiting receipt by $1 (receiving kitchen)",hi:"चरण 2/3 — $1 (प्राप्त करने वाली रसोई) की प्राप्ति की प्रतीक्षा"},{re:new RegExp("^Dừng ở bước 2 — (.+) \\(bếp nhận\\) không nhận$"),en:"Stopped at step 2 — $1 (receiving kitchen) did not accept",hi:"चरण 2 पर रुका — $1 (प्राप्त करने वाली रसोई) ने नहीं लिया"},{re:new RegExp("^Ghi sổ vào ngày chuyển ([\\d/]+) · kỳ tháng ([\\d/]+)$"),en:"Posted on the transfer day $1 · period $2",hi:"भेजने वाले दिन $1 को दर्ज · अवधि $2"},{re:new RegExp("^Đã gửi phiếu (\\S+) — chờ bếp nhận$"),en:"Sent $1 — awaiting kitchen receipt",hi:"$1 भेजा — रसोई की प्राप्ति की प्रतीक्षा"},{re:new RegExp("^✓ Đã nhận (\\S+) — ghi sổ ([\\d.,]+) mã vào ngày ([\\d/]+)$"),en:"✓ Received $1 — posted $2 items on $3",hi:"✓ $1 प्राप्त — $3 को $2 वस्तुएँ दर्ज",n:2,en1:"✓ Received $1 — posted $2 item on $3",hi1:"✓ $1 प्राप्त — $3 को $2 वस्तु दर्ज"},{re:new RegExp("^([\\d.,]+) mã trong file chưa có trong master data — vẫn nạp số, tạm hiện bằng mã$"),en:"$1 codes in the file are not in master data — quantities still loaded, shown by code for now",hi:"फ़ाइल के $1 कोड मास्टर डेटा में नहीं हैं — मात्रा फिर भी दर्ज, अभी कोड से दिखेंगे",n:1,en1:"$1 code in the file is not in master data — quantity still loaded, shown by code for now",hi1:"फ़ाइल का $1 कोड मास्टर डेटा में नहीं है — मात्रा फिर भी दर्ज, अभी कोड से दिखेगा"},{re:new RegExp("^Có ([\\d.,]+) dòng ngày không đọc được \\((.+)\\) — sửa cột Ngày thành dd/mm/yyyy rồi nạp lại$"),en:"$1 rows have an unreadable date ($2) — change the Date column to dd/mm/yyyy and upload again",hi:"$1 पंक्तियों की तारीख पढ़ी नहीं जा सकी ($2) — दिनांक कॉलम को dd/mm/yyyy में बदलें और फिर से अपलोड करें",n:1,en1:"1 row has an unreadable date ($2) — change the Date column to dd/mm/yyyy and upload again",hi1:"1 पंक्ति की तारीख पढ़ी नहीं जा सकी ($2) — दिनांक कॉलम को dd/mm/yyyy में बदलें और फिर से अपलोड करें"},{re:new RegExp("^([\\d.,]+) mã để trống Số lượng — không tính \\(muốn ghi 0 thì gõ số 0\\)\\.$"),en:"$1 items left blank — not counted (type 0 to record zero).",hi:"$1 वस्तुओं की मात्रा खाली — गिनी नहीं गईं (शून्य दर्ज करने हेतु 0 लिखें)।",n:1,en1:"$1 item left blank — not counted (type 0 to record zero).",hi1:"$1 वस्तु की मात्रा खाली — गिनी नहीं गई (शून्य दर्ज करने हेतु 0 लिखें)।"},{re:new RegExp("^([\\d.,]+) dòng sổ cũ không ghi đủ kho đi / kho đến nên không lọt vào bộ lọc — bỏ chọn kho ở ô trên để xem đủ\\.$"),en:"$1 old ledger lines do not record both the source and the destination store, so they fall outside this filter — clear the store above to see them all.",hi:"$1 पुरानी बही पंक्तियों में भेजने और पाने वाला स्टोर दोनों दर्ज नहीं हैं, इसलिए वे इस फ़िल्टर में नहीं आतीं — सब देखने हेतु ऊपर का स्टोर हटाएँ।",n:1,en1:"$1 old ledger line does not record both the source and the destination store, so it falls outside this filter — clear the store above to see them all.",hi1:"$1 पुरानी बही पंक्ति में भेजने और पाने वाला स्टोर दोनों दर्ज नहीं हैं, इसलिए वह इस फ़िल्टर में नहीं आती — सब देखने हेतु ऊपर का स्टोर हटाएँ।"},{re:new RegExp("^([\\d.,]+) mã trong file chưa có trong danh mục tổng — không nạp$"),en:"$1 codes in the file are not in the item catalogue — not uploaded",hi:"फ़ाइल के $1 कोड वस्तु-सूची में नहीं हैं — अपलोड नहीं हुए",n:1,en1:"$1 code in the file is not in the item catalogue — not uploaded",hi1:"फ़ाइल का $1 कोड वस्तु-सूची में नहीं है — अपलोड नहीं हुआ"},{re:new RegExp("^▾ Xem thêm ([\\d.,]+) mã khác của điểm bán$"),en:"▾ Show $1 more items of the outlet",hi:"▾ आउटलेट की $1 और वस्तुएँ दिखाएँ",n:1,en1:"▾ Show $1 more item of the outlet",hi1:"▾ आउटलेट की $1 और वस्तु दिखाएँ"},{re:new RegExp("^▾ Xem thêm ([\\d.,]+) \\(còn ([\\d.,]+)\\)$"),en:"▾ Show $1 more ($2 left)",hi:"▾ $1 और दिखाएँ ($2 शेष)"},{re:new RegExp("^Ca sáng · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"Morning shift · $1 · handed over by $2 · received by $3",hi:"सुबह की शिफ़्ट · $1 · $2 द्वारा सौंपा · $3 द्वारा प्राप्त"},{re:new RegExp("^Ca sáng · ([0-9/-]+) · giao bởi (.+)$"),en:"Morning shift · $1 · handed over by $2",hi:"सुबह की शिफ़्ट · $1 · $2 द्वारा सौंपा"},{re:new RegExp("^Ca chiều · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"Afternoon shift · $1 · handed over by $2 · received by $3",hi:"दोपहर की शिफ़्ट · $1 · $2 द्वारा सौंपा · $3 द्वारा प्राप्त"},{re:new RegExp("^Ca chiều · ([0-9/-]+) · giao bởi (.+)$"),en:"Afternoon shift · $1 · handed over by $2",hi:"दोपहर की शिफ़्ट · $1 · $2 द्वारा सौंपा"},{re:new RegExp("^Ca tối · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"Night shift · $1 · handed over by $2 · received by $3",hi:"रात की शिफ़्ट · $1 · $2 द्वारा सौंपा · $3 द्वारा प्राप्त"},{re:new RegExp("^Ca tối · ([0-9/-]+) · giao bởi (.+)$"),en:"Night shift · $1 · handed over by $2",hi:"रात की शिफ़्ट · $1 · $2 द्वारा सौंपा"},{re:new RegExp("^Chốt tồn tháng (\\d{2}/\\d{4}) \\(kế toán\\)$"),en:"Month-end stock close $1 (accounting)",hi:"माह-अंत स्टॉक समापन $1 (लेखा)"},{re:new RegExp("^Phiếu kiểm kê (.+) \\(kỳ (\\d{2}/\\d{4})\\)$"),en:"Count sheet $1 (period $2)",hi:"गणना पर्ची $1 (अवधि $2)"},{re:new RegExp("^(.+) · Sloc ([0-9]+) · gửi bởi (.+) lúc (.+)$"),en:"$1 · Sloc $2 · submitted by $3 at $4",hi:"$1 · Sloc $2 · $3 द्वारा $4 पर भेजा गया"},{re:new RegExp("^(.+) · Sloc ([0-9]+) · Chốt từ (.*) · (.*) · Người chốt (.*)$"),en:"$1 · Sloc $2 · closed from $3 · $4 · closed by $5",hi:"$1 · Sloc $2 · $3 से बंद · $4 · $5 द्वारा बंद"},{re:new RegExp("^(.+) · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"$1 · $2 · handed over by $3 · received by $4",hi:"$1 · $2 · $3 द्वारा सौंपा · $4 द्वारा प्राप्त"},{re:new RegExp("^(.+) · ([0-9/-]+) · giao bởi (.+)$"),en:"$1 · $2 · handed over by $3",hi:"$1 · $2 · $3 द्वारा सौंपा"},{re:new RegExp("^✏️ Phiếu này đã đếm bổ sung ([\\d.,]+) lần — bấm để xem đã sửa gì$"),en:"✏️ This sheet has been edited $1 times — tap to see what changed",hi:"✏️ यह पर्ची $1 बार संपादित हुई — क्या बदला देखने हेतु टैप करें",n:1,en1:"✏️ This sheet has been edited once — tap to see what changed",hi1:"✏️ यह पर्ची एक बार संपादित हुई — क्या बदला देखने हेतु टैप करें"},{re:new RegExp("^📋 Bảng kiểm đếm thực tế · ([\\d.,]+) mã$"),en:"📋 Actual count table · $1 items",hi:"📋 वास्तविक गणना तालिका · $1 वस्तुएँ",n:1,en1:"📋 Actual count table · $1 item",hi1:"📋 वास्तविक गणना तालिका · $1 वस्तु"},{re:new RegExp("^Tạo bởi (.+) · (.+) · (.+)$"),en:"Created by $1 · $2 · $3",hi:"$1 द्वारा बनाया · $2 · $3"},{re:new RegExp("^([\\d.,]+)/([\\d.,]+) điểm bán$"),en:"$1/$2 outlets",hi:"$1/$2 आउटलेट"},{re:new RegExp("^còn ([\\d.,]+)$"),en:"$1 left",hi:"$1 शेष"},{re:new RegExp("^🔔 Đã tự nhắc ([\\d.,]+) điểm bán$"),en:"🔔 Auto-reminded $1 outlets",hi:"🔔 $1 आउटलेट को स्वतः याद दिलाया"},{re:new RegExp("^📋 Xem bảng xếp hạng chi tiết \\(([\\d.,]+) bộ phận\\)$"),en:"📋 See the full ranking ($1 departments)",hi:"📋 पूरी रैंकिंग देखें ($1 विभाग)"},{re:new RegExp("^🔒 Tháng (\\d{2}/\\d{4}) đã khóa$"),en:"🔒 Month $1 is locked",hi:"🔒 माह $1 बंद है"},{re:new RegExp("^đã được kế toán duyệt cho tháng (\\d{2}/\\d{4})\\. Không thể chỉnh sửa\\. Kỳ mới sẽ mở vào tháng sau\\.$"),en:"has been approved by accounting for month $1. It can no longer be edited. The next period opens next month.",hi:"लेखा द्वारा माह $1 हेतु स्वीकृत। अब संपादित नहीं किया जा सकता। अगली अवधि अगले माह खुलेगी।"},{re:new RegExp("^Đã bỏ từ chối (.+) — phiếu quay lại chờ duyệt$"),en:"Rejection of $1 undone — the request is back to awaiting approval",hi:"$1 की अस्वीकृति रद्द — पर्ची फिर से स्वीकृति की प्रतीक्षा में"},{re:new RegExp("^Phiếu này từng bị từ chối \\(lý do: (.+)\\) và đã được quản trị viên mở lại\\. Xem kỹ trước khi duyệt\\.$"),en:"This request was rejected before (reason: $1) and an administrator reopened it. Check it carefully before approving.",hi:"यह पर्ची पहले अस्वीकृत हुई थी (कारण: $1) और प्रशासक ने इसे फिर खोला। स्वीकृत करने से पहले ध्यान से देखें।"},{re:new RegExp("^(.+) đã duyệt phiếu (.+) · chuyển cho (.+) · ([\\d.,]+) mã · lúc (.+)$"),en:"$1 approved request $2 · sent to $3 · $4 items · at $5",hi:"$1 ने पर्ची $2 स्वीकृत की · $3 को भेजा · $4 वस्तुएँ · $5 बजे",n:4,en1:"$1 approved request $2 · sent to $3 · $4 item · at $5",hi1:"$1 ने पर्ची $2 स्वीकृत की · $3 को भेजा · $4 वस्तु · $5 बजे"},{re:new RegExp("^([\\d.,]+) loại lý do$"),en:"$1 kinds of reason",hi:"$1 प्रकार के कारण",n:1,en1:"$1 kind of reason",hi1:"$1 प्रकार का कारण"},{re:new RegExp("^([\\d.,]+) phiếu$"),en:"$1 requests",hi:"$1 पर्चियाँ",n:1,en1:"$1 request",hi1:"$1 पर्ची"},{re:new RegExp("^([\\d.,]+) dòng$"),en:"$1 lines",hi:"$1 पंक्तियाँ",n:1,en1:"$1 line",hi1:"$1 पंक्ति"}];
+const TXT_RE_BS=[{re:new RegExp("^Kho (.+) · kỳ tháng (\\d{2}/\\d{4})$"),en:"Store $1 · month $2",hi:"स्टोर $1 · माह $2"},{re:new RegExp("^👀 Xem trước (\\d+) mã · kho (.+) · kỳ tháng (\\d{2}/\\d{4})$"),en:"👀 Preview of $1 items · store $2 · month $3",hi:"👀 $1 वस्तुओं का पूर्वावलोकन · स्टोर $2 · माह $3",n:1,en1:"👀 Preview of 1 item · store $2 · month $3",hi1:"👀 1 वस्तु का पूर्वावलोकन · स्टोर $2 · माह $3"},{re:new RegExp("^👀 Xem trước (\\d+) mã · kho (.+) · Tuần (\\d+) · (.+)$"),en:"👀 Preview of $1 items · store $2 · Week $3 · $4",hi:"👀 $1 वस्तुओं का पूर्वावलोकन · स्टोर $2 · सप्ताह $3 · $4",n:1,en1:"👀 Preview of 1 item · store $2 · Week $3 · $4",hi1:"👀 1 वस्तु का पूर्वावलोकन · स्टोर $2 · सप्ताह $3 · $4"},{re:new RegExp("^([\\d.,]+) mã để trống Số lượng — không tính \\(muốn ghi 0 thì gõ số 0\\)\\.$"),en:"$1 items left blank in Quantity — not counted (type 0 to record zero).",hi:"$1 वस्तुओं की मात्रा खाली — गिनी नहीं गई (शून्य दर्ज करना हो तो 0 लिखें)।",n:1,en1:"1 item left blank in Quantity — not counted (type 0 to record zero).",hi1:"1 वस्तु की मात्रा खाली — गिनी नहीं गई (शून्य दर्ज करना हो तो 0 लिखें)।"},{re:new RegExp("^([\\d.,]+) dòng có ô mã không phải mã vật tư \\(VD \"(.+)\"\\) — không nạp\\. Kiểm tra cột Mã hàng\\.$"),en:"$1 rows have a code cell that is not a material code (e.g. \"$2\") — not loaded. Check the Item code column.",hi:"$1 पंक्तियों में कोड वाला खाना सामग्री कोड नहीं है (जैसे \"$2\") — लोड नहीं किया। आइटम कोड कॉलम जाँचें।",n:1,en1:"1 row has a code cell that is not a material code (e.g. \"$2\") — not loaded. Check the Item code column.",hi1:"1 पंक्ति में कोड वाला खाना सामग्री कोड नहीं है (जैसे \"$2\") — लोड नहीं किया। आइटम कोड कॉलम जाँचें।"},{re:new RegExp("^([\\d.,]+) dòng mới$"),en:"$1 new rows",hi:"$1 नई पंक्तियाँ",n:1,en1:"1 new row",hi1:"1 नई पंक्ति"},{re:new RegExp("^([\\d.,]+) dòng đã nạp trước \\(bỏ qua\\)$"),en:"$1 rows loaded before (skipped)",hi:"$1 पंक्तियाँ पहले लोड हो चुकी (छोड़ी गईं)",n:1,en1:"1 row loaded before (skipped)",hi1:"1 पंक्ति पहले लोड हो चुकी (छोड़ी गई)"},{re:new RegExp("^([\\d.,]+) dòng khác lần trước \\(số lượng / ngày\\)$"),en:"$1 rows differ from last time (quantity / date)",hi:"$1 पंक्तियाँ पिछली बार से अलग (मात्रा / तिथि)",n:1,en1:"1 row differs from last time (quantity / date)",hi1:"1 पंक्ति पिछली बार से अलग (मात्रा / तिथि)"},{re:new RegExp("^([\\d.,]+) dòng trùng mã trong cùng phiếu \\(đã cộng dồn\\)$"),en:"$1 duplicate-code rows on the same slip (added up)",hi:"एक ही पर्ची में $1 दोहराई कोड पंक्तियाँ (जोड़ दी गईं)",n:1,en1:"1 duplicate-code row on the same slip (added up)",hi1:"एक ही पर्ची में 1 दोहराई कोड पंक्ति (जोड़ दी गई)"},{re:new RegExp("^([\\d.,]+) dòng không có mã \\(bỏ\\)$"),en:"$1 rows without a code (dropped)",hi:"$1 पंक्तियाँ बिना कोड (हटाई गईं)",n:1,en1:"1 row without a code (dropped)",hi1:"1 पंक्ति बिना कोड (हटाई गई)"},{re:new RegExp("^([\\d.,]+) dòng số lượng trống/lỗi \\(bỏ\\)$"),en:"$1 rows with blank/invalid quantity (dropped)",hi:"$1 पंक्तियों की मात्रा खाली/गलत (हटाई गईं)",n:1,en1:"1 row with blank/invalid quantity (dropped)",hi1:"1 पंक्ति की मात्रा खाली/गलत (हटाई गई)"},{re:new RegExp("^([\\d.,]+) dòng mã chưa có trong master data \\(vẫn nạp số, chờ kế toán khai báo tên\\)$"),en:"$1 rows with codes not yet in master data (quantities still loaded; accounting will add the names)",hi:"$1 पंक्तियों के कोड मास्टर डेटा में नहीं (मात्रा फिर भी लोड; नाम लेखा विभाग जोड़ेगा)",n:1,en1:"1 row with a code not yet in master data (quantity still loaded; accounting will add the name)",hi1:"1 पंक्ति का कोड मास्टर डेटा में नहीं (मात्रा फिर भी लोड; नाम लेखा विभाग जोड़ेगा)"},{re:new RegExp("^([\\d.,]+) dòng file để trống ngày — sẽ ghi ngày (\\d{2}/\\d{2}/\\d{4}) \\(ô Ngày nhập\\)$"),en:"$1 rows have no date in the file — will be recorded on $2 (Receipt date box)",hi:"$1 पंक्तियों में फ़ाइल में तिथि खाली — $2 पर दर्ज होंगी (प्राप्ति तिथि खाना)",n:1,en1:"1 row has no date in the file — will be recorded on $2 (Receipt date box)",hi1:"1 पंक्ति में फ़ाइल में तिथि खाली — $2 पर दर्ज होगी (प्राप्ति तिथि खाना)"},{re:new RegExp("^([\\d.,]+) dòng đã nạp trước với NGÀY khác \\(thay thì sửa ngày theo file\\)$"),en:"$1 rows loaded before with a DIFFERENT date (replacing fixes the date from the file)",hi:"$1 पंक्तियाँ पहले अलग तिथि से लोड (बदलने पर तिथि फ़ाइल के अनुसार ठीक होगी)",n:1,en1:"1 row loaded before with a DIFFERENT date (replacing fixes the date from the file)",hi1:"1 पंक्ति पहले अलग तिथि से लोड (बदलने पर तिथि फ़ाइल के अनुसार ठीक होगी)"},{re:new RegExp("^Hay nhập ở kho này · ([\\d.,]+) mã$"),en:"Often received at this store · $1 items",hi:"इस स्टोर में अक्सर प्राप्त · $1 वस्तुएँ",n:1,en1:"Often received at this store · 1 item",hi1:"इस स्टोर में अक्सर प्राप्त · 1 वस्तु"},{re:new RegExp("^Mã khác của điểm bán · ([\\d.,]+) mã$"),en:"Other items of this outlet · $1 items",hi:"इस आउटलेट की अन्य वस्तुएँ · $1",n:1,en1:"Other items of this outlet · 1 item",hi1:"इस आउटलेट की अन्य वस्तुएँ · 1"},{re:new RegExp("^Master data — kho này chưa có mã · ([\\d.,]+) mã$"),en:"Master data — not yet in this store · $1 items",hi:"मास्टर डेटा — इस स्टोर में अभी नहीं · $1 वस्तुएँ",n:1,en1:"Master data — not yet in this store · 1 item",hi1:"मास्टर डेटा — इस स्टोर में अभी नहीं · 1 वस्तु"},{re:new RegExp("^▾ Xem thêm ([\\d.,]+) mã \\(còn ([\\d.,]+)\\)$"),en:"▾ Show $1 more ($2 left)",hi:"▾ $1 और दिखाएँ ($2 बाकी)"},{re:new RegExp("^✓ Đọc được (\\d+) dòng — kiểm tra mã & số lượng rồi bấm lưu\\.$"),en:"✓ Read $1 rows — check codes & quantities, then save.",hi:"✓ $1 पंक्तियाँ पढ़ी गईं — कोड और मात्रा जाँचें, फिर सहेजें।",n:1,en1:"✓ Read 1 row — check the code & quantity, then save.",hi1:"✓ 1 पंक्ति पढ़ी गई — कोड और मात्रा जाँचें, फिर सहेजें।"},{re:new RegExp("^Tháng (\\d{2}/\\d{4}) đã chốt — không nhập kho vào tháng này$"),en:"Month $1 is closed — no receipts into this month",hi:"माह $1 बंद है — इस माह में प्राप्ति दर्ज नहीं"},{re:new RegExp("^Kế toán đã duyệt kiểm kê tháng (\\d{2}/\\d{4}) của kho (.+)\\.$"),en:"Accounting has approved the stock count for month $1 of store $2.",hi:"लेखा विभाग ने स्टोर $2 की माह $1 की गिनती स्वीकृत कर दी है।"},{re:new RegExp("^Gộp ([\\d.,]+) dòng trùng mã — đã cộng dồn số lượng$"),en:"Merged $1 duplicate-code rows — quantities added up",hi:"$1 दोहराई कोड पंक्तियाँ मिलाई गईं — मात्राएँ जोड़ दी गईं",n:1,en1:"Merged 1 duplicate-code row — quantity added up",hi1:"1 दोहराई कोड पंक्ति मिलाई गई — मात्रा जोड़ दी गई"},{re:new RegExp("^· (.+) · xin ([\\d.,]+)$"),en:"· $1 · requested $2",hi:"· $1 · माँगा $2"},{re:new RegExp("^· (.+) · chuyển ([\\d.,]+)$"),en:"· $1 · sent $2",hi:"· $1 · भेजा $2"},{re:new RegExp("^· ngày ghi sổ ([\\d/]+)$"),en:"· posting date $1",hi:"· दर्ज करने की तारीख़ $1"},{re:new RegExp("^(\\d{2}:\\d{2} \\d{2}/\\d{2}/\\d{4}) · Lý do: (.*)$"),en:"$1 · Reason: $2",hi:"$1 · कारण: $2"},{re:new RegExp("^✓ Nhận đủ ([\\d.,]+) mã$"),en:"✓ Receive all $1 items",hi:"✓ सभी $1 वस्तुएँ प्राप्त करें",n:1,en1:"✓ Receive this item",hi1:"✓ यह वस्तु प्राप्त करें"},{re:new RegExp("^Bước 2/3 — đang chờ (.+) \\(bếp nhận\\) bấm nhận$"),en:"Step 2/3 — awaiting receipt by $1 (receiving kitchen)",hi:"चरण 2/3 — $1 (प्राप्त करने वाली रसोई) की प्राप्ति की प्रतीक्षा"},{re:new RegExp("^Dừng ở bước 2 — (.+) \\(bếp nhận\\) không nhận$"),en:"Stopped at step 2 — $1 (receiving kitchen) did not accept",hi:"चरण 2 पर रुका — $1 (प्राप्त करने वाली रसोई) ने नहीं लिया"},{re:new RegExp("^Ghi sổ vào ngày chuyển ([\\d/]+) · kỳ tháng ([\\d/]+)$"),en:"Posted on the transfer day $1 · period $2",hi:"भेजने वाले दिन $1 को दर्ज · अवधि $2"},{re:new RegExp("^Đã gửi phiếu (\\S+) — chờ bếp nhận$"),en:"Sent $1 — awaiting kitchen receipt",hi:"$1 भेजा — रसोई की प्राप्ति की प्रतीक्षा"},{re:new RegExp("^✓ Đã nhận (\\S+) — ghi sổ ([\\d.,]+) mã vào ngày ([\\d/]+)$"),en:"✓ Received $1 — posted $2 items on $3",hi:"✓ $1 प्राप्त — $3 को $2 वस्तुएँ दर्ज",n:2,en1:"✓ Received $1 — posted $2 item on $3",hi1:"✓ $1 प्राप्त — $3 को $2 वस्तु दर्ज"},{re:new RegExp("^([\\d.,]+) mã trong file chưa có trong master data — vẫn nạp số, tạm hiện bằng mã$"),en:"$1 codes in the file are not in master data — quantities still loaded, shown by code for now",hi:"फ़ाइल के $1 कोड मास्टर डेटा में नहीं हैं — मात्रा फिर भी दर्ज, अभी कोड से दिखेंगे",n:1,en1:"$1 code in the file is not in master data — quantity still loaded, shown by code for now",hi1:"फ़ाइल का $1 कोड मास्टर डेटा में नहीं है — मात्रा फिर भी दर्ज, अभी कोड से दिखेगा"},{re:new RegExp("^Có ([\\d.,]+) dòng ngày không đọc được \\((.+)\\) — sửa cột Ngày thành dd/mm/yyyy rồi nạp lại$"),en:"$1 rows have an unreadable date ($2) — change the Date column to dd/mm/yyyy and upload again",hi:"$1 पंक्तियों की तारीख पढ़ी नहीं जा सकी ($2) — दिनांक कॉलम को dd/mm/yyyy में बदलें और फिर से अपलोड करें",n:1,en1:"1 row has an unreadable date ($2) — change the Date column to dd/mm/yyyy and upload again",hi1:"1 पंक्ति की तारीख पढ़ी नहीं जा सकी ($2) — दिनांक कॉलम को dd/mm/yyyy में बदलें और फिर से अपलोड करें"},{re:new RegExp("^([\\d.,]+) mã để trống Số lượng — không tính \\(muốn ghi 0 thì gõ số 0\\)\\.$"),en:"$1 items left blank — not counted (type 0 to record zero).",hi:"$1 वस्तुओं की मात्रा खाली — गिनी नहीं गईं (शून्य दर्ज करने हेतु 0 लिखें)।",n:1,en1:"$1 item left blank — not counted (type 0 to record zero).",hi1:"$1 वस्तु की मात्रा खाली — गिनी नहीं गई (शून्य दर्ज करने हेतु 0 लिखें)।"},{re:new RegExp("^([\\d.,]+) dòng sổ cũ không ghi đủ kho đi / kho đến nên không lọt vào bộ lọc — bỏ chọn kho ở ô trên để xem đủ\\.$"),en:"$1 old ledger lines do not record both the source and the destination store, so they fall outside this filter — clear the store above to see them all.",hi:"$1 पुरानी बही पंक्तियों में भेजने और पाने वाला स्टोर दोनों दर्ज नहीं हैं, इसलिए वे इस फ़िल्टर में नहीं आतीं — सब देखने हेतु ऊपर का स्टोर हटाएँ।",n:1,en1:"$1 old ledger line does not record both the source and the destination store, so it falls outside this filter — clear the store above to see them all.",hi1:"$1 पुरानी बही पंक्ति में भेजने और पाने वाला स्टोर दोनों दर्ज नहीं हैं, इसलिए वह इस फ़िल्टर में नहीं आती — सब देखने हेतु ऊपर का स्टोर हटाएँ।"},{re:new RegExp("^([\\d.,]+) mã trong file chưa có trong danh mục tổng — không nạp$"),en:"$1 codes in the file are not in the item catalogue — not uploaded",hi:"फ़ाइल के $1 कोड वस्तु-सूची में नहीं हैं — अपलोड नहीं हुए",n:1,en1:"$1 code in the file is not in the item catalogue — not uploaded",hi1:"फ़ाइल का $1 कोड वस्तु-सूची में नहीं है — अपलोड नहीं हुआ"},{re:new RegExp("^▾ Xem thêm ([\\d.,]+) mã khác của điểm bán$"),en:"▾ Show $1 more items of the outlet",hi:"▾ आउटलेट की $1 और वस्तुएँ दिखाएँ",n:1,en1:"▾ Show $1 more item of the outlet",hi1:"▾ आउटलेट की $1 और वस्तु दिखाएँ"},{re:new RegExp("^▾ Xem thêm ([\\d.,]+) \\(còn ([\\d.,]+)\\)$"),en:"▾ Show $1 more ($2 left)",hi:"▾ $1 और दिखाएँ ($2 शेष)"},{re:new RegExp("^Ca sáng · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"Morning shift · $1 · handed over by $2 · received by $3",hi:"सुबह की शिफ़्ट · $1 · $2 द्वारा सौंपा · $3 द्वारा प्राप्त"},{re:new RegExp("^Ca sáng · ([0-9/-]+) · giao bởi (.+)$"),en:"Morning shift · $1 · handed over by $2",hi:"सुबह की शिफ़्ट · $1 · $2 द्वारा सौंपा"},{re:new RegExp("^Ca chiều · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"Afternoon shift · $1 · handed over by $2 · received by $3",hi:"दोपहर की शिफ़्ट · $1 · $2 द्वारा सौंपा · $3 द्वारा प्राप्त"},{re:new RegExp("^Ca chiều · ([0-9/-]+) · giao bởi (.+)$"),en:"Afternoon shift · $1 · handed over by $2",hi:"दोपहर की शिफ़्ट · $1 · $2 द्वारा सौंपा"},{re:new RegExp("^Ca tối · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"Night shift · $1 · handed over by $2 · received by $3",hi:"रात की शिफ़्ट · $1 · $2 द्वारा सौंपा · $3 द्वारा प्राप्त"},{re:new RegExp("^Ca tối · ([0-9/-]+) · giao bởi (.+)$"),en:"Night shift · $1 · handed over by $2",hi:"रात की शिफ़्ट · $1 · $2 द्वारा सौंपा"},{re:new RegExp("^Chốt tồn tháng (\\d{2}/\\d{4}) \\(kế toán\\)$"),en:"Month-end stock close $1 (accounting)",hi:"माह-अंत स्टॉक समापन $1 (लेखा)"},{re:new RegExp("^Phiếu kiểm kê (.+) \\(kỳ (\\d{2}/\\d{4})\\)$"),en:"Count sheet $1 (period $2)",hi:"गणना पर्ची $1 (अवधि $2)"},{re:new RegExp("^(.+) · Sloc ([0-9]+) · gửi bởi (.+) lúc (.+)$"),en:"$1 · Sloc $2 · submitted by $3 at $4",hi:"$1 · Sloc $2 · $3 द्वारा $4 पर भेजा गया"},{re:new RegExp("^(.+) · Sloc ([0-9]+) · Chốt từ (.*) · (.*) · Người chốt (.*)$"),en:"$1 · Sloc $2 · closed from $3 · $4 · closed by $5",hi:"$1 · Sloc $2 · $3 से बंद · $4 · $5 द्वारा बंद"},{re:new RegExp("^(.+) · ([0-9/-]+) · giao bởi (.+) · nhận bởi (.+)$"),en:"$1 · $2 · handed over by $3 · received by $4",hi:"$1 · $2 · $3 द्वारा सौंपा · $4 द्वारा प्राप्त"},{re:new RegExp("^(.+) · ([0-9/-]+) · giao bởi (.+)$"),en:"$1 · $2 · handed over by $3",hi:"$1 · $2 · $3 द्वारा सौंपा"},{re:new RegExp("^✏️ Phiếu này đã đếm bổ sung ([\\d.,]+) lần — bấm để xem đã sửa gì$"),en:"✏️ This sheet has been edited $1 times — tap to see what changed",hi:"✏️ यह पर्ची $1 बार संपादित हुई — क्या बदला देखने हेतु टैप करें",n:1,en1:"✏️ This sheet has been edited once — tap to see what changed",hi1:"✏️ यह पर्ची एक बार संपादित हुई — क्या बदला देखने हेतु टैप करें"},{re:new RegExp("^📋 Bảng kiểm đếm thực tế · ([\\d.,]+) mã$"),en:"📋 Actual count table · $1 items",hi:"📋 वास्तविक गणना तालिका · $1 वस्तुएँ",n:1,en1:"📋 Actual count table · $1 item",hi1:"📋 वास्तविक गणना तालिका · $1 वस्तु"},{re:new RegExp("^Tạo bởi (.+) · (.+) · (.+)$"),en:"Created by $1 · $2 · $3",hi:"$1 द्वारा बनाया · $2 · $3"},{re:new RegExp("^([\\d.,]+)/([\\d.,]+) điểm bán$"),en:"$1/$2 outlets",hi:"$1/$2 आउटलेट"},{re:new RegExp("^còn ([\\d.,]+)$"),en:"$1 left",hi:"$1 शेष"},{re:new RegExp("^🔔 Đã tự nhắc ([\\d.,]+) điểm bán$"),en:"🔔 Auto-reminded $1 outlets",hi:"🔔 $1 आउटलेट को स्वतः याद दिलाया"},{re:new RegExp("^📋 Xem bảng xếp hạng chi tiết \\(([\\d.,]+) bộ phận\\)$"),en:"📋 See the full ranking ($1 departments)",hi:"📋 पूरी रैंकिंग देखें ($1 विभाग)"},{re:new RegExp("^🔒 Tháng (\\d{2}/\\d{4}) đã khóa$"),en:"🔒 Month $1 is locked",hi:"🔒 माह $1 बंद है"},{re:new RegExp("^đã được kế toán duyệt cho tháng (\\d{2}/\\d{4})\\. Không thể chỉnh sửa\\. Kỳ mới sẽ mở vào tháng sau\\.$"),en:"has been approved by accounting for month $1. It can no longer be edited. The next period opens next month.",hi:"लेखा द्वारा माह $1 हेतु स्वीकृत। अब संपादित नहीं किया जा सकता। अगली अवधि अगले माह खुलेगी।"},{re:new RegExp("^Đã bỏ từ chối (.+) — phiếu quay lại chờ duyệt$"),en:"Rejection of $1 undone — the request is back to awaiting approval",hi:"$1 की अस्वीकृति रद्द — पर्ची फिर से स्वीकृति की प्रतीक्षा में"},{re:new RegExp("^Phiếu này từng bị từ chối \\(lý do: (.+)\\) và đã được quản trị viên mở lại\\. Xem kỹ trước khi duyệt\\.$"),en:"This request was rejected before (reason: $1) and an administrator reopened it. Check it carefully before approving.",hi:"यह पर्ची पहले अस्वीकृत हुई थी (कारण: $1) और प्रशासक ने इसे फिर खोला। स्वीकृत करने से पहले ध्यान से देखें।"},{re:new RegExp("^(.+) đã duyệt phiếu (.+) · chuyển cho (.+) · ([\\d.,]+) mã · lúc (.+)$"),en:"$1 approved request $2 · sent to $3 · $4 items · at $5",hi:"$1 ने पर्ची $2 स्वीकृत की · $3 को भेजा · $4 वस्तुएँ · $5 बजे",n:4,en1:"$1 approved request $2 · sent to $3 · $4 item · at $5",hi1:"$1 ने पर्ची $2 स्वीकृत की · $3 को भेजा · $4 वस्तु · $5 बजे"},{re:new RegExp("^([\\d.,]+) loại lý do$"),en:"$1 kinds of reason",hi:"$1 प्रकार के कारण",n:1,en1:"$1 kind of reason",hi1:"$1 प्रकार का कारण"},{re:new RegExp("^([\\d.,]+) phiếu$"),en:"$1 requests",hi:"$1 पर्चियाँ",n:1,en1:"$1 request",hi1:"$1 पर्ची"},{re:new RegExp("^([\\d.,]+) dòng$"),en:"$1 lines",hi:"$1 पंक्तियाँ",n:1,en1:"$1 line",hi1:"$1 पंक्ति"}];
 const TXT_RE=[
   {re:new RegExp("^Tháng (\\d{2}/\\d{4}) \\(hiện tại\\)$"),en:"Month $1 (current)",hi:"माह $1 (वर्तमान)"},
   {re:new RegExp("^Tháng (\\d{2}/\\d{4})$"),en:"Month $1",hi:"माह $1"},
@@ -1647,6 +1650,13 @@ async function outboxFlush(){
       Object.keys(r.items||{}).sort().map(c=>c+':'+(Number((r.items[c]||{}).qtyReq)||0)).join(',')].join('|');
     for(const it of outbox.slice()){
       try{
+        /* Tháng đã được kế toán chốt trong lúc dòng còn chờ gửi: KHÔNG đưa vào (đổi số Xuất của tháng đã
+           chốt). Giữ trong máy, báo một lần — người dùng xoá dòng rồi nhập lại vào tháng sau (23/10/2026). */
+        if((it.loai==='nhap'||it.loai==='nhapdoi')&&typeof periodLocked==='function'){
+          const _r=it.loai==='nhap'?it.row:((receipts||[]).find(y=>y.id===it.rid)||{});
+          const _pl=_r.plant_code||_r.plant,_sl=_r.sloc_code||_r.sloc;
+          const _pe=(it.patch&&it.patch.period)||_r.period||(_r.date?periodOfDate(_r.date):'');
+          if(_pl&&_pe&&periodLocked(_pl,_sl,_pe)){it.lanThu++;it.loi='Tháng '+periodVN(_pe)+' đã được kế toán chốt';baoKet(it);continue;}}
         if(it.loai==='nhap'){
           const r=await sb.from('receipts').insert(it.row);
           // 23505 = dòng đã lên từ lần gửi trước (chỉ chưa kịp dọn hàng đợi) -> coi như xong
@@ -2040,6 +2050,7 @@ function errBox(title,lines,detail){
       <button class="btn btn-primary btn-sm" id="errClose">Đã đọc — Đóng</button>
     </div>`;
   document.body.appendChild(scrim);document.body.appendChild(box);
+  try{dichMan(box);}catch(e){}   // hộp lỗi vẽ ngoài #view nên chưa từng được dịch (23/10/2026)
   const plain=[title||'',...(lines||[]),...ctx,detail||''].join('\n').replace(/<[^>]*>/g,'');
   box.querySelector('#errCopy').onclick=()=>{
     const b=box.querySelector('#errCopy');
@@ -2707,6 +2718,36 @@ function movementsOf(plant,sloc,period){
    kiểm kê. Phiếu T8 treo chờ duyệt thì suốt thời gian đó tồn đầu T9 = 0, màn xin
    hàng của kho đó ra RỖNG, và mọi kho khác nhìn tồn kho này cũng bằng 0 — trong
    khi số đã có trong hệ thống rồi, chỉ chưa ai duyệt. */
+/* Cộng nhập + ĐC đến − ĐC đi của các tháng GIỮA mốc (tuKy) và kỳ đang xem (denKy), không tính hai đầu.
+   Dùng chung cho tonDauKy (phiếu chờ duyệt) và dkCuaPhieu (phiếu đã duyệt) để hai lúc ra CÙNG một số. */
+function congThangGiua(items,tuKy,denKy,plant,sloc){
+  const giua=[];if(!tuKy||!denKy)return {items,giua};
+  for(let k=kySau(tuKy),i=0;k&&k<denKy&&i<36;k=kySau(k),i++)giua.push(k);
+  if(!giua.length)return {items,giua};
+  const it={...items};
+  giua.forEach(k=>{const mv=movementsOf(plant,sloc,k);
+    Object.keys(mv.buy).forEach(c=>{it[c]=Number(it[c]||0)+Number(mv.buy[c]||0);});
+    Object.keys(mv.tin).forEach(c=>{it[c]=Number(it[c]||0)+Number(mv.tin[c]||0);});
+    Object.keys(mv.tout).forEach(c=>{it[c]=Number(it[c]||0)-Number(mv.tout[c]||0);});});
+  Object.keys(it).forEach(c=>{it[c]=Math.round(Number(it[c])*1000)/1000;});
+  return {items:it,giua};
+}
+/* Mốc tồn đầu kỳ (fromId) thuộc tháng nào: bản chốt tồn -> tháng ghi trong tên; phiếu kiểm kê -> kỳ của
+   phiếu (không tải được thì suy từ ngày trong mã KK-…-YYYYMMDD). Không biết thì '' (không cộng tháng giữa). */
+function kyCuaMoc(fromId){
+  const f=String(fromId||'');
+  const m=/CHỐT TỒN THÁNG ([0-9]{2})\/([0-9]{4})/.exec(f);if(m)return m[2]+'-'+m[1];
+  const x=(submissions||[]).find(z=>z.id===f);if(x&&x.period)return x.period;
+  const d=/^KK-.*-([0-9]{4})([0-9]{2})[0-9]{2}(?:-[0-9]+)?$/.exec(f);if(d)return d[1]+'-'+d[2];
+  return '';
+}
+function kySau(per){
+  const a=String(per||'').split('-');
+  if(a.length<2)return '';
+  let y=Number(a[0]),m=Number(a[1])+1;
+  if(m>12){m=1;y++;}
+  return y+'-'+String(m).padStart(2,'0');
+}
 function kyTruoc(per){
   const a=String(per||'').split('-');
   if(a.length<2)return '';
@@ -2732,6 +2773,11 @@ function tonDauKy(plant,sloc,period){
      bản ĐÃ DUYỆT thắng bản chờ duyệt. */
   moc.sort((a,b)=>String(b.per).localeCompare(String(a.per))||(b.uu-a.uu)||((a.tam?1:0)-(b.tam?1:0)));
   if(moc.length){const m=moc[0];
+    /* Mốc gần nhất là tháng M mà kỳ đang xem là P > M+1 (kho bỏ kiểm kê một tháng): phải cộng nhập
+       + ĐC đến − ĐC đi của các tháng GIỮA (M+1 … P−1). Trước đây bỏ sót hẳn, tồn đầu kỳ thiếu/thừa
+       đúng bằng phát sinh các tháng đó (Khoa duyệt 23/10/2026). */
+    const g=congThangGiua(m.items,m.per,per,plant,sloc);
+    if(g.giua.length)return {items:g.items,nguon:m.nguon+' + nhập/điều chuyển '+g.giua.length+' tháng sau đó',chotBoiKeToan:m.uu===2,chuaDuyet:m.tam,tamTinh:m.tam,thangGiua:g.giua};
     /* tamTinh = alias của chuaDuyet. Có CẢ HAI tên vì mỗi nơi trong app đọc một tên;
        lệch tên thì trường ra undefined và nhãn TẠM TÍNH im lặng không hiện — đúng lỗi
        đã mắc 18/09, cú pháp sạch nên không bắt được. */
@@ -2772,8 +2818,11 @@ function nhanTamTinh(dk,daiDong){
    T9, cột "Xuất (tính)" của T8 sai hoàn toàn. */
 function dkCuaPhieu(s){
   const pv=s&&s.prevOpening;
-  if(s&&s.status==='Đã duyệt'&&pv&&pv.items&&Object.keys(pv.items).length)
-    return {items:pv.items,nguon:pv.fromId||'tồn đầu kỳ lúc duyệt',tamTinh:false};
+  if(s&&s.status==='Đã duyệt'&&pv&&pv.items&&Object.keys(pv.items).length){
+    /* Mốc lưu lúc duyệt là tháng M; phiếu kỳ P > M+1 thì cộng các tháng giữa như lúc còn chờ duyệt —
+       nếu không, Xuất (tính) nhảy đúng lúc kế toán bấm duyệt (rà soát 23/10/2026). */
+    const per=s.period||curPeriod(),g=congThangGiua(pv.items,kyCuaMoc(pv.fromId),per,s.plant,s.sloc);
+    return {items:g.items,nguon:(pv.fromId||'tồn đầu kỳ lúc duyệt')+(g.giua.length?' + nhập/điều chuyển '+g.giua.length+' tháng sau đó':''),tamTinh:false};}
   const r=tonDauKy(s.plant,s.sloc,s.period||curPeriod());
   return {items:r.items,nguon:r.nguon,tamTinh:!!r.chuaDuyet};
 }
@@ -3551,6 +3600,20 @@ function lastDayVN(p){const a=p.split('-').map(Number);const d=new Date(a[0],a[1
 // lockedSub trả về chính phiếu đang khóa để thông báo cho người dùng biết phải xử lý phiếu nào.
 function lockedSub(plant,sloc,period){return submissions.find(s=>s.plant===plant&&s.sloc===sloc&&s.period===period&&s.status==='Đã duyệt');}
 function periodLocked(plant,sloc,period){return !!lockedSub(plant,sloc,period);}
+/* KHÓA NHẬP KHO THEO KỲ (Khoa 23/10/2026): kỳ kế toán đã duyệt kiểm kê thì không nhập kho vào kỳ đó
+   nữa — nhập thêm là đổi số Xuất của kỳ đã chốt. Giống luật điều chuyển: admin vẫn làm được nhưng
+   phải xác nhận. Trả true = được ghi. */
+function nhapKhoDuocKy(plant,sloc,period,soDong){
+  if(!period||!periodLocked(plant,sloc,period))return true;
+  const N=String.fromCharCode(10);
+  if(session&&session.role==='admin')
+    return confirm(lockMsg(plant,sloc,period)+N+N+'Bạn là admin: vẫn ghi '+(soDong||1)+' dòng nhập kho vào tháng '+periodVN(period)+'? Số Xuất (tính) của tháng đã chốt sẽ đổi theo.');
+  errBox('Tháng '+periodVN(period)+' đã chốt — không nhập kho vào tháng này',[
+    'Kế toán đã duyệt kiểm kê tháng '+periodVN(period)+' của kho '+whName(plant,sloc)+'.',
+    'Hàng về sau ngày chốt thì ghi vào tháng sau (đổi ô Ngày nhập / kỳ). Cần ghi bù vào tháng đã chốt thì báo kế toán.'
+  ],'Kho: '+plant+'/'+sloc+N+'Kỳ: '+period);
+  return false;
+}
 /* Kho đã MỞ KỲ kiểm kê thì cấm điều chuyển (rule BLĐ: điều chuyển phải xong TRƯỚC khi mở kỳ).
    Mở kỳ = kế toán đã chốt danh sách cần đếm; chuyển hàng sau đó là làm lệch số đang đếm. */
 function countOpened(plant,sloc,period){return !!countLists[plant+'|'+sloc+'|'+(period||curPeriod())];}
@@ -5284,7 +5347,11 @@ function renderKKUpload(v,fixed){
     toast('Đã tải mẫu '+rows.length+' mã — điền cột Số lượng rồi nạp lại lên');
   };
   tplRow.appendChild(bTpl);tplRow.appendChild(tplHint);b.appendChild(tplRow);
-  const _origPO=plantSel.onchange;plantSel.onchange=()=>{if(_origPO)_origPO();updTplHint();};slocSel.onchange=updTplHint;perSel.onchange=updTplHint;
+  /* Đổi kho / kỳ khi đang xem trước file thì BỎ màn xem trước, bắt nạp lại — trước đây bảng vẫn còn
+     mà nhìn như của kho mới chọn (23/10/2026). */
+  function boXemTruocUp(){const pv=document.getElementById('kkUpPrev');if(pv&&pv.innerHTML){pv.innerHTML='';toast(L('Đã đổi kho / kỳ — nạp lại file cho kho đang chọn'));}fin.value='';}
+  const _origPO=plantSel.onchange;plantSel.onchange=()=>{if(_origPO)_origPO();updTplHint();boXemTruocUp();};
+  slocSel.onchange=()=>{updTplHint();boXemTruocUp();};perSel.onchange=()=>{updTplHint();boXemTruocUp();};
   updTplHint();
   const fin=el('input');fin.type='file';fin.accept='.xlsx,.xls,.csv';fin.style.cssText='font-size:12.5px;margin-top:12px';b.appendChild(fin);
   const prev=el('div');prev.id='kkUpPrev';prev.style.marginTop='10px';b.appendChild(prev);
@@ -5296,6 +5363,7 @@ function renderKKUpload(v,fixed){
     if(r.newCodesForPlant.length)warn+=`<div style="font-size:12px;color:var(--muted);margin:4px 0">📋 ${r.newCodesForPlant.length} mã bổ sung vào danh mục kho.</div>`;
     if(r.badQty)warn+=`<div style="font-size:12px;color:var(--muted);margin:4px 0">${r.badQty} dòng số lượng lỗi bị bỏ.</div>`;
     if(r.boTrong)warn+=`<div style="font-size:12px;color:var(--muted);margin:4px 0">${r.boTrong} mã để trống Số lượng — không tính (muốn ghi 0 thì gõ số 0).</div>`;
+    if(r.maSai&&r.maSai.length)warn+=`<div class="note" style="margin:6px 0"><div>${r.maSai.length} dòng có ô mã không phải mã vật tư (VD "${escHtml(String(r.maSai[0]).slice(0,40))}") — không nạp. Kiểm tra cột Mã hàng.</div></div>`;
     if(r.gop)warn+=`<div style="font-size:12px;color:var(--accent-ink);font-weight:700;margin:4px 0">${L('Gộp '+r.gop+' dòng trùng mã — đã cộng dồn số lượng')}</div>`;
     prev.appendChild(el('div',null,`<div style="font-weight:800;font-size:13px;margin:10px 0 4px">👀 Xem trước ${r.ok} mã · kho ${whName(plantSel.value,slocSel.value)} · ${_tuan?tuanLabel(_tuan):('kỳ tháng '+periodVN(period))} <span style="color:var(--muted);font-weight:500">(${_tuan?'chưa lưu':'chưa tạo phiếu'})</span></div>${warn}`));
     /* MÃ CHƯA CÓ TRONG DANH MỤC TỔNG — đã bị bỏ ra, phải nói rõ và đưa được danh
@@ -5338,10 +5406,13 @@ function renderKKUpload(v,fixed){
     const bOk=el('button','btn btn-primary',_tuan?'💾 Lưu số kiểm tuần':'✓ Tạo phiếu kiểm kê (Chờ duyệt)');
     const bNo=el('button','btn btn-ghost','Hủy');
     /* Khoá nút trong lúc tạo phiếu: chạm 2 lần lúc mạng chậm trước đây ra 2 phiếu (21/10/2026). */
-    bOk.onclick=async()=>{if(bOk.disabled)return;bOk.disabled=true;bNo.disabled=true;
+    bOk.onclick=async()=>{if(bOk.disabled)return;
+      if(r.plant!==plantSel.value||r.sloc!==slocSel.value||(!_tuan&&period!==perSel.value)){
+        prev.innerHTML='';fin.value='';toast(L('Đã đổi kho / kỳ — nạp lại file cho kho đang chọn'));return;}
+      bOk.disabled=true;bNo.disabled=true;
       try{await commitKKUpload(r,period,()=>renderView(),_tuan);}finally{bOk.disabled=false;bNo.disabled=false;}};
     bNo.onclick=()=>{prev.innerHTML='';fin.value='';};
-    brow.appendChild(bOk);brow.appendChild(bNo);prev.appendChild(brow);
+    brow.appendChild(bOk);brow.appendChild(bNo);prev.appendChild(brow);try{dichMan(prev);}catch(e){}
   }
   fin.onchange=e=>{const f=e.target.files[0];if(f){
     /* Kho BẾP: mã chưa có master data vẫn nạp (Khoa 16/10/2026); kho khác giữ chặn như cũ. */
@@ -5374,6 +5445,14 @@ function commitKKUpload(r,period,cb,tuan){
       'Cần sửa số thì bấm <b>✎ Sửa số / đếm bổ sung phiếu này</b> ở màn Kiểm kê.'
     ],'Kho: '+whName(r.plant,r.sloc)+String.fromCharCode(10)+'Phiếu đang chờ: '+_dup.id);return Promise.resolve();}
   }
+  /* Tuần: còn nháp đếm tay của tuần đó thì HỎI — lưu từ file sẽ bỏ phần đếm tay (23/10/2026). */
+  if(tuan){const _nh=drafts[r.plant+'|'+r.sloc+'|'+tuan];
+    const _soNh=_nh&&_nh.items?Object.values(_nh.items).filter(v=>v!==''&&v!=null).length:0;
+    if(_soNh&&!confirm('Tuần này còn '+_soNh+' mã đang đếm tay chưa lưu trên máy này.'+NL+NL
+      +'Lưu từ file sẽ dùng số trong file và BỎ phần đếm tay đó.'+NL+NL+'OK = dùng số trong file · Cancel = dừng, giữ phần đếm tay'))return Promise.resolve();}
+  /* Học mã vào danh mục CHỈ SAU KHI lưu được (23/10/2026) — trước đây học ngay lúc bấm, lưu trượt
+     hoặc bấm Hủy ở hộp xác nhận thì danh mục kho vẫn bị thêm mã. Mất mạng thì xếp hàng đợi. */
+  const hocDanhMuc=()=>{
   // áp mã mới / sửa tên / bổ sung danh mục kho + lưu Supabase (tái dùng logic tồn đầu kỳ)
   r.newMats.forEach(m=>{if(!masterByCode[m.code]){masterByCode[m.code]=m;DATA.materials.push(m);}});
   r.fixedMats.forEach(f=>{const c=masterByCode[f.code];if(c){c.name=f.name;if(f.uom&&!c.uom)c.uom=f.uom;}});
@@ -5385,7 +5464,10 @@ function commitKKUpload(r,period,cb,tuan){
   r.newCodesForPlant.forEach(c=>{if(!matMap[c]){const m=masterByCode[c];matMap[c]={code:c,name:(m&&m.name)||c,uom:(m&&m.uom)||''};}});
   const matArr=Object.values(matMap);
   const afterMat=()=>{if(sb&&r.newCodesForPlant.length)sb.from('plant_materials').upsert(r.newCodesForPlant.map(c=>({plant_code:r.plant,code:c}))).then(({error})=>{if(error)console.error('plant_materials',error);});};
+  if(sb&&(!mangOK||(typeof navigator!=='undefined'&&navigator.onLine===false))){
+    r.newCodesForPlant.forEach(c=>outboxThem({loai:'pm',id:'PM|'+r.plant+'|'+c,row:{plant_code:r.plant,code:c}}));return;}
   if(sb&&matArr.length)sb.from('materials').upsert(matArr).then(({error})=>{if(error)console.error('materials',error);afterMat();}); else afterMat();
+  };
   /* Kiểm kê tuần: vẫn học mã mới vào danh mục như trên (để lần đếm sau có tên hàng),
      nhưng KHÔNG tạo phiếu — chỉ ghi một bản số tuần. */
   /* Kho bếp nạp file có mã CHƯA có master data (đã nạp số, tạm hiện bằng mã) -> báo
@@ -5399,13 +5481,15 @@ function commitKKUpload(r,period,cb,tuan){
       +' — cần khai báo tên, ĐVT ở Danh mục VT.'}:null;
   const baoMaLa=()=>{if(!_bao)return;
     try{notifyWh(_bao.plant,_bao.sloc,_bao.msg,_bao.kind,_bao.title,session.name);}catch(e){console.warn('mala',e);}};
-  if(tuan){return luuKiemTuan(r.plant,r.sloc,tuan,{...r.items},null,r.meta,_bao).then(okT=>{if(okT===true)baoMaLa();cb&&cb();});}
+  /* Lưu trượt hoặc bấm Hủy ở hộp xác nhận thì GIỮ màn xem trước (không gọi cb vẽ lại). */
+  if(tuan){return luuKiemTuan(r.plant,r.sloc,tuan,{...r.items},null,r.meta,_bao).then(okT=>{
+    if(okT===true||okT==='hangdoi'){hocDanhMuc();if(okT===true)baoMaLa();cb&&cb();}});}
   /* Mất mạng: báo rõ, giữ màn xem trước để bấm lại khi có sóng. Trước đây lỗi văng ra không ai
      bắt — nút như không ăn, BP bấm lại nhiều lần (21/10/2026). */
   /* MẤT MẠNG: cất phiếu vào hàng đợi trong máy, có mạng tự gửi — không bắt nạp lại file
      (Khoa 22/10/2026). Phiếu chờ gửi vẫn nằm trong danh sách nên luật mỗi kho một phiếu vẫn chặn. */
   const choHangDoi=sub=>{
-    outboxAdd(sub,_bao);
+    outboxAdd(sub,_bao);hocDanhMuc();
     log('Nhập phiếu kiểm kê từ Excel khi mất mạng',sub.id+' · '+whName(sub.plant,sub.sloc)+' · kỳ '+periodVN(period)+' · '+sub.count+' mã — chờ gửi');
     baoChoMang(['Phiếu <b>'+sub.id+'</b> · '+sub.count+' mã · '+whName(sub.plant,sub.sloc)],'Phiếu chờ gửi: '+sub.id);
     cb&&cb();
@@ -5418,7 +5502,7 @@ function commitKKUpload(r,period,cb,tuan){
     try{okIns=await insSubmissionSafe(sub);}
     catch(e){if(laLoiMang(e)){choHangDoi(sub);return;}throw e;}
     if(!okIns)return; // insSubmissionSafe đã dựng hộp lỗi chi tiết, không hiện thêm để khỏi che
-    submissions.unshift(sub);
+    submissions.unshift(sub);hocDanhMuc();
     log('Nhập phiếu kiểm kê từ Excel',`${sub.id} · ${whName(sub.plant,sub.sloc)} · kỳ ${periodVN(period)} · ${sub.count} mã`);
     toast('✓ Đã tạo phiếu '+sub.id+' ('+sub.count+' mã) — Chờ duyệt');
     baoMaLa();
@@ -5618,7 +5702,7 @@ function renderOpenCountCard(v){
       const bNo=el('button','btn btn-ghost','Hủy');
       bOk.onclick=()=>commitCountList(plantSel.value,slocSel.value,perSel.value,res.items,()=>{refresh();renderView();});
       bNo.onclick=()=>{prev.innerHTML='';fin.value='';};
-      brow.appendChild(bOk);brow.appendChild(bNo);prev.appendChild(brow);
+      brow.appendChild(bOk);brow.appendChild(bNo);prev.appendChild(brow);try{dichMan(prev);}catch(e){}
     });
   };
   card.appendChild(b);v.appendChild(card);
@@ -6398,7 +6482,25 @@ function coTheSuaPhieuKK(s){
   return (session&&session.wh?session.wh:[]).some(w=>w.plant===s.plant&&(!w.sloc||w.sloc===s.sloc));
 }
 function moSuaPhieuKK(s){
-  drafts[s.plant+'|'+s.sloc]={items:{...(s.items||{})},zones:zonesToDraft(s.zones),meta:metaToDraft(s.itemNotes)};saveDrafts();
+  /* Còn phần đang sửa dở (nháp khác số trên phiếu) thì HỎI trước — trước đây nạp đè luôn, mất phần
+     đã gõ (23/10/2026). Mặc định (OK) là mở tiếp phần sửa dở; bỏ phải xác nhận thêm một lần. */
+  const _k=s.plant+'|'+s.sloc,_cu=drafts[_k];
+  const _soKhac=_cu&&_cu.items?(()=>{const a=_cu.items,b=s.items||{};let n=0;
+    new Set([...Object.keys(a),...Object.keys(b)]).forEach(c=>{const x=a[c],y=b[c];
+      if(String(x==null?'':x)!==String(y==null?'':y))n++;});return n;})():0;
+  let _giu=false;
+  /* Nháp tháng khoá theo kho (không theo kỳ) nên có thể là số đếm dở của LẦN ĐẾM KHÁC (vd tháng sau).
+     Chỉ coi là phần sửa dở của phiếu này khi nháp mang đúng mã phiếu (suaPhieu). */
+  if(_soKhac&&_cu.suaPhieu===s.id){
+    if(confirm('Phiếu '+s.id+' còn phần đang sửa dở trên máy này ('+_soKhac+' mã khác số trên phiếu).'+NL+NL
+      +'OK = mở tiếp phần đang sửa dở'+NL+'Cancel = bỏ phần sửa dở, nạp lại số trên phiếu'))_giu=true;
+    else if(!confirm('Bỏ phần đang sửa dở của phiếu '+s.id+'? Số đã gõ mà chưa lưu sẽ mất.'))return;
+  }else if(_soKhac&&Object.values(_cu.items||{}).some(v=>v!==''&&v!=null)){
+    if(!confirm('Kho này còn số đang đếm dở (lần đếm khác, chưa gửi) trên máy này.'+NL+NL
+      +'Mở sửa phiếu '+s.id+' sẽ THAY số đếm dở đó bằng số trên phiếu.'+NL+NL
+      +'OK = vẫn mở sửa phiếu · Cancel = dừng, giữ số đếm dở'))return;
+  }
+  if(!_giu){drafts[_k]={items:{...(s.items||{})},zones:zonesToDraft(s.zones),meta:metaToDraft(s.itemNotes),suaPhieu:s.id};saveDrafts();}
   kkSel={plant:s.plant,sloc:s.sloc};kkPeriod=s.period||curPeriod();
   countEditId=s.id;kkMethod='direct';
   counting={plant:s.plant,sloc:s.sloc,period:s.period||curPeriod()};
@@ -6588,6 +6690,9 @@ async function luuKiemTuan(plant,sloc,week,sach,btn,meta,bao){
   const _row={id:id,plant_code:plant,sloc_code:sloc,week:week,
     items:sach,count:soMa,created_by:session.name};
   if(noteColOK&&_gc)_row.item_notes=_gc;
+  /* Đếm lại cùng tuần là ghi ĐÈ (upsert) — created_at phải là lần lưu MỚI NHẤT, nếu không "lưu lúc"
+     vẫn hiện giờ lần đầu (23/10/2026). Lưu lúc mất mạng thì giữ giờ đếm thật. */
+  _row.created_at=new Date().toISOString();
   /* Mất mạng: cất vào máy, có mạng tự gửi — không bắt bếp đếm lại (Khoa 22/10/2026). */
   if(sb&&(!mangOK||(typeof navigator!=='undefined'&&navigator.onLine===false)))hangDoi=true;
   else if(sb&&!await choFlushXong())hangDoi=true;   // vòng tự gửi còn chạy: xếp sau, không ghi chen
@@ -6839,10 +6944,15 @@ function renderKiemkeTuan(v){
   v.appendChild(lc);
 }
 function xuatKiemTuan(b){
-  const rows=[['Mã hàng','Tên hàng','ĐVT','Số lượng']];
+  /* Cùng 7 cột với file mẫu của bếp (có ngày + ghi chú) để tải về sửa rồi nạp lại được ngay —
+     trước đây chỉ 4 cột, mất ngày / ghi chú đã đếm (23/10/2026). */
+  const gc=b.itemNotes||{};
+  const rows=[['stt','Mã hàng','Tên hàng','ĐVT','Số lượng','date','ghi chú']];
   Object.keys(b.items||{}).sort((x,y)=>{
     const a1=(masterByCode[x]||{}).name||x,b1=(masterByCode[y]||{}).name||y;return a1.localeCompare(b1,'vi');})
-    .forEach(c=>{const m=masterByCode[c]||{name:c,uom:''};rows.push([c,m.name||c,m.uom||'',b.items[c]]);});
+    .forEach((c,i)=>{const m=masterByCode[c]||{name:c,uom:''};const g=gc[c]||{};
+      const d=/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(String(g.d||''))?String(g.d).split('-').reverse().join('/'):(g.d||'');
+      rows.push([i+1,c,m.name||c,m.uom||'',b.items[c],d,g.g||'']);});
   const ws=XLSX.utils.aoa_to_sheet(rows),wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'Kiem ke tuan');
   XLSX.writeFile(wb,'Kiem_ke_tuan_'+b.plant+'_'+b.sloc+'_'+b.week+'.xlsx');
@@ -7209,7 +7319,7 @@ function renderCountSheet(v){
   }
   const unlocked=new Set();   // mã đang mở khóa để sửa (dòng đã nhập mặc định bị khóa)
   function filled(){return Object.values(items).filter(x=>x!==''&&x!=null).length;}
-  function updateCnt(){const n=filled();$('#cntNum').textContent=n;$('#cntFill').style.width=Math.min(100,(n/Math.max(1,total))*100*8)+'%';}
+  function updateCnt(){const n=filled();$('#cntNum').textContent=n;$('#cntFill').style.width=Math.min(100,(n/Math.max(1,total))*100)+'%';}
   function autosaved(){const l=$('#autosaveLbl');if(l)l.textContent='✓ Đã tự lưu '+new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
   function hasVal(c){return items[c]!=null&&items[c]!=='';}
   function devHigh(m){ // lệch lớn so tồn đầu kỳ (>50%)
@@ -7374,7 +7484,7 @@ function renderCountSheet(v){
   bXls.onclick=()=>{
     const n=filled();if(n===0){toast('Chưa nhập mã nào để xuất');return;}
     const clean={};Object.entries(items).forEach(([c,val])=>{if(val!==''&&val!=null)clean[c]=Number(val);});
-    exportBBKK({id:kkIdBase(counting.plant,counting.sloc),plant:counting.plant,sloc:counting.sloc,user:session.name,role:ROLES[session.role].label,time:now(),period:counting.period||curPeriod(),items:clean});
+    exportBBKK({id:kkIdBase(counting.plant,counting.sloc),plant:counting.plant,sloc:counting.sloc,user:session.name,role:ROLES[session.role].label,time:now(),period:counting.period||curPeriod(),items:clean,itemNotes:metaSach(meta,clean)});
   };
   bDone.onclick=()=>{
     const n=filled();if(n===0){toast('Chưa nhập mã nào');return;}
@@ -7614,7 +7724,7 @@ function renderDieuchuyen(v){
     {k:'ds',ico:HIC.list,title:'Xem lại & xuất file',sub:'Phiếu yêu cầu và sổ điều chuyển đã ghi, xuất CSV',n:nTr?nTr+' dòng sổ kỳ này':'',render:dcXemLai},
   ];
   acts.push({k:'ai',ico:HIC.warn,title:'Cài đặt AI quét ảnh',
-    sub:'Khai khóa AI của riêng bạn để quét ảnh phiếu xuất kho tổng — lưu tại máy bạn',
+    sub:'Khai khóa AI của riêng bạn để quét ảnh phiếu xuất kho tổng — khóa đi theo tài khoản',
     n:((getCfg().gemini||'').trim()?'đã có khóa':'chưa khai khóa'),
     warm:!((getCfg().gemini||'').trim()),phu:true,render:nkCaiDatAI});
   // Nạp Excel điều chuyển: chỉ kế toán/admin — các vai còn lại gõ tay trên danh sách có sẵn
@@ -7762,7 +7872,7 @@ function dcNapExcel(v){
       const bNo=el('button','btn btn-ghost','Hủy');
       bOk.onclick=()=>commitTransfers(list,()=>renderView());
       bNo.onclick=()=>{prev.innerHTML='';fin.value='';};
-      brow.appendChild(bOk);brow.appendChild(bNo);prev.appendChild(brow);
+      brow.appendChild(bOk);brow.appendChild(bNo);prev.appendChild(brow);try{dichMan(prev);}catch(e){}
     }
     fin.onchange=e=>{const f=e.target.files[0];if(f)importTransferFile(f,renderTPrev);};
     ib.appendChild(fin);ib.appendChild(prev);impCard.appendChild(ib);v.appendChild(impCard);
@@ -8846,12 +8956,18 @@ function nkDocExcel(rows,plant,sloc,ngayMacDinh){
     const raw=String(r[cSl]==null?'':r[cSl]).replace(/\s/g,'').replace(/,/g,'');  // dấu chấm = thập phân (quy ước app)
     const qty=Number(raw);if(raw===''||!isFinite(qty)||qty<=0){kq.boSoLoi++;continue;}
     let date=cNgay>=0?docNgayO(r[cNgay]):'';let khongNgay=false;if(!date){date=ngayMacDinh;khongNgay=true;}
+    /* Trước bản 2310-06 ô ngày Excel có giờ từ 12h trở đi bị làm tròn sang hôm sau, mã dòng tính theo
+       ngày đó. Nhớ ngày cũ để nạp lại file cũ vẫn nhận ra "đã có", không nhân đôi. */
+    let ngayLamTron='';{const v0=cNgay>=0?r[cNgay]:null;
+      if(typeof v0==='number'&&isFinite(v0)&&v0>20&&v0<80000&&(v0%1)>=0.5)
+        ngayLamTron=new Date(Date.UTC(1899,11,30)+Math.round(v0)*86400000).toISOString().slice(0,10);}
     if(!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(date)){kq.ngayHong.push(date);continue;}
     const soPhieu=cPhieu>=0?String(r[cPhieu]==null?'':r[cPhieu]).trim():'';
     const id=nkIdExcel(plant,sloc,date,soPhieu,code);
     if(gom[id]){gom[id].qty=Math.round((gom[id].qty+qty)*1000)/1000;kq.gop++;continue;}
     const m=masterByCode[code];
-    gom[id]={id,date,soPhieu,code,name:m?m.name:code,uom:m?(m.uom||''):(cDvt>=0?String(r[cDvt]==null?'':r[cDvt]).trim():''),qty,maLa:!m,period:periodOfDate(date),khongNgay};
+    gom[id]={id,date,soPhieu,code,name:m?m.name:code,uom:m?(m.uom||''):(cDvt>=0?String(r[cDvt]==null?'':r[cDvt]).trim():''),qty,maLa:!m,period:periodOfDate(date),khongNgay,
+      idCu:ngayLamTron?nkIdExcel(plant,sloc,ngayLamTron,soPhieu,code):''};
     kq.dong.push(gom[id]);
   }
   return kq;
@@ -8875,6 +8991,8 @@ function nkPhanLoai(dong,dsCo,plant,sloc){
   const trongNgay=n=>String(n||'').indexOf('[trống ngày]')>=0,daSuaNgay=n=>String(n||'').indexOf('[đã sửa ngày]')>=0;
   const daKhop=new Set();dong.forEach(d=>{if(theoId[d.id])daKhop.add(d.id);});
   dong.forEach(d=>{let c=theoId[d.id],dl=d,ngayCu=null,noteMoi=null;
+    if(!c&&d.idCu&&theoId[d.idCu]&&!daKhop.has(d.idCu)){c=theoId[d.idCu];daKhop.add(c.id);   // dòng cũ lưu sai ngày (làm tròn giờ)
+      dl=Object.assign({},d,{id:c.id});if(c.date!==d.date)ngayCu=c.date;}
     if(!c&&d.soPhieu&&plant){const sp=String(d.soPhieu).replace(/\s+/g,'').toUpperCase();
       c=(dsCo||[]).find(r=>r&&!daKhop.has(r.id)&&r.plant===plant&&r.sloc===sloc&&r.code===d.code&&soCua(r.note)===sp&&(d.khongNgay||trongNgay(r.note)||(daSuaNgay(r.note)&&r.date===d.date)));
       if(c){daKhop.add(c.id);
@@ -8893,7 +9011,13 @@ function dcNhapKho(v){
   b.innerHTML=`<div class="section-eyebrow">📦 Nhận hàng từ kho tổng — cộng vào tồn trong kỳ</div><div style="font-size:12px;color:var(--muted);margin:6px 0 10px">Kho tổng xuất hàng về điểm bán: ghi số <b>thực nhận</b> vào đây. Số này tự cộng vào phần <b>Nhập</b> khi kiểm kê để tính <b>Xuất kho</b>. <b>Không dùng</b> cho hàng xin từ điểm bán khác.</div>`;
   if(!mine.length){b.appendChild(el('div','empty',`<div>Bạn chưa được gán điểm bán nào.</div>`));card.appendChild(b);v.appendChild(card);return;}
   const ctx=ensureNkCtx();
-  ctxBar(b,ctx,{period:true,plants:mine},()=>{chosen=null;nkMo={};vePick();renderList();updRead();});
+  ctxBar(b,ctx,{period:true,plants:mine},()=>{chosen=null;nkMo={};vePick();renderList();updRead();
+    /* Đổi kho / kỳ khi đang xem trước file Excel hoặc ảnh quét: bỏ màn xem trước, bắt nạp lại —
+       trước đây bảng vẫn còn và bấm Lưu là ghi sang kho vừa đổi (23/10/2026). */
+    let _bo=false;
+    if(xPrev.innerHTML){xPrev.innerHTML='';xIn.value='';_bo=true;}
+    if(prevWrap.innerHTML){ocrPreviewOpen=false;prevWrap.innerHTML='';statusEl.innerHTML='';fileIn.value='';_bo=true;}
+    if(_bo)toast(L('Đã đổi kho / kỳ — nạp lại file cho kho đang chọn'));});
   b.appendChild(ghiChuMang());
   const plantSel={get value(){return ctx.plant;}},slocSel={get value(){return ctx.sloc;}},perSel={get value(){return ctx.period;}};
   // chọn cách nhập: gõ tay hoặc quét ảnh phiếu
@@ -9001,6 +9125,7 @@ function dcNhapKho(v){
         +'Không được tự thêm mã ở đây. Gửi <b>mã SAP + tên + ĐVT</b> cho kế toán khai vào '
         +'<b>Danh mục vật tư</b> trước, rồi vào nhập lại.</div>'));
     }
+    try{dichMan(pick);}catch(e){}   // danh sách vẽ lại mỗi lần gõ tìm / xem thêm — sau lượt dịch màn
   }
   iMat.oninput=()=>{nkMo={};vePick();};
   // HÀNG 2: mã hàng (rộng) + số lượng (hẹp) + nút thêm — nhập xong một dòng là bấm luôn
@@ -9011,7 +9136,7 @@ function dcNhapKho(v){
   function updRead(){
     if(typeof thanhSo!=='undefined'&&thanhSo)thanhSo.hidden=!chosen;
     const ut=fQty.querySelector('#nkUom');
-    if(!chosen){if(ut)ut.textContent='';ro.innerHTML='<span style="color:var(--muted)">Bấm một mã trong danh sách trên để chọn</span>';return;}
+    if(!chosen){if(ut)ut.textContent='';ro.innerHTML='<span style="color:var(--muted)">Bấm một mã trong danh sách trên để chọn</span>';try{dichMan(ro);}catch(e){}return;}
     if(ut)ut.textContent='· '+(chosen.uom||'');
     const cur=receipts.filter(r=>r.plant===ctx.plant&&r.sloc===ctx.sloc&&((r.period||periodOfDate(r.date))===ctx.period)&&r.code===chosen.code)
       .reduce((s,r)=>s+(Number(r.qty)||0),0);
@@ -9019,6 +9144,7 @@ function dcNhapKho(v){
     ro.innerHTML='Đang chọn <b class="tnum">'+chosen.code+'</b> — '+chosen.name
       +'<br>Mã này đã nhập trong kỳ: <b>'+q3(cur)+' '+(chosen.uom||'')+'</b>'
       +(add>0?' → sau khi lưu <span class="ok">'+q3(cur+add)+' '+(chosen.uom||'')+'</span>':'');
+    try{dichMan(ro);}catch(e){}
   }
   iQty.oninput=updRead;
   const addBtn=el('button','btn btn-primary f-btn','+ Thêm dòng');
@@ -9035,6 +9161,7 @@ function dcNhapKho(v){
     if(!masterByCode[chosen.code]){errBox('Mã không có trong master data',['Mã <b>'+chosen.code+'</b> không còn trong danh mục tổng — không ghi được.','Tải lại trang rồi chọn lại mã.'],'Mã: '+chosen.code);return;}
     /* Mã lấy từ master data mà kho chưa có: thêm vào DANH MỤC KHO (plant_materials).
        Chỉ mở rộng danh mục của kho, KHÔNG tạo mã mới trong master data. */
+    if(!nhapKhoDuocKy(plantSel.value,slocSel.value,perSel.value))return;
     {const pl=plantSel.value;plantMaterials[pl]=plantMaterials[pl]||[];
      if(!plantMaterials[pl].includes(chosen.code)){plantMaterials[pl].push(chosen.code);
        const _pmRow={plant_code:pl,code:chosen.code};
@@ -9115,6 +9242,7 @@ function dcNhapKho(v){
   };
   function veXemTruocXls(kq){
     const pl=nkPhanLoai(kq.dong,receipts,plantSel.value,slocSel.value);
+    const _khoXT=plantSel.value+'|'+slocSel.value;
     xPrev.innerHTML='';
     const tom=el('div');tom.style.cssText='font-size:12.5px;line-height:1.7;margin-bottom:8px';
     const dongs=[pl.moi.length+' dòng mới',pl.daCo.length+' dòng đã nạp trước (bỏ qua)',pl.lech.length+' dòng khác lần trước (số lượng / ngày)'];
@@ -9124,7 +9252,7 @@ function dcNhapKho(v){
     const soLa=kq.dong.filter(d=>d.maLa).length;if(soLa)dongs.push(soLa+' dòng mã chưa có trong master data (vẫn nạp số, chờ kế toán khai báo tên)');
     {const kn=pl.moi.filter(d=>d.khongNgay);if(kn.length)dongs.push(kn.length+' dòng file để trống ngày — sẽ ghi ngày '+kn[0].date.split('-').reverse().join('/')+' (ô Ngày nhập)');}
     {const dn=pl.lech.filter(d=>d.ngayCu).length;if(dn)dongs.push(dn+' dòng đã nạp trước với NGÀY khác (thay thì sửa ngày theo file)');}
-    tom.textContent=dongs.join(' · ');xPrev.appendChild(tom);
+    tom.textContent=dongs.map(x=>L(x)).join(' · ');xPrev.appendChild(tom);
     const w=el('div','tbl-wrap');w.style.cssText='max-height:320px;overflow:auto';const tbl=el('table');
     tbl.innerHTML='<thead><tr><th>Ngày</th><th>Số phiếu</th><th>Mã</th><th>Tên hàng</th><th class="num">SL</th><th>Trạng thái</th></tr></thead>';
     const tb=el('tbody');
@@ -9138,9 +9266,10 @@ function dcNhapKho(v){
     const bLuu=el('button','btn btn-primary');bLuu.type='button';bLuu.textContent=L('✓ Lưu nhập kho');
     const bHuy=el('button','btn btn-ghost');bHuy.type='button';bHuy.textContent=L('Hủy');
     bHuy.onclick=()=>{xPrev.innerHTML='';xIn.value='';};
-    br.appendChild(bLuu);br.appendChild(bHuy);xPrev.appendChild(br);
+    br.appendChild(bLuu);br.appendChild(bHuy);xPrev.appendChild(br);try{dichMan(xPrev);}catch(e){}
     if(!pl.moi.length&&!pl.lech.length){bLuu.disabled=true;bLuu.style.opacity='.5';}
     bLuu.onclick=async()=>{
+      if(_khoXT!==plantSel.value+'|'+slocSel.value){xPrev.innerHTML='';xIn.value='';toast(L('Đã đổi kho / kỳ — nạp lại file cho kho đang chọn'));return;}
       /* File để trống ngày: HỎI trước khi lưu, nói rõ sẽ ghi vào ngày nào (23/10/2026). */
       {const kn=pl.moi.filter(d=>d.khongNgay);
        if(kn.length){const ng=kn[0].date.split('-').reverse().join('/');const khongSo=kn.filter(d=>!d.soPhieu).length;
@@ -9151,6 +9280,11 @@ function dcNhapKho(v){
       if(pl.lech.length){thay=confirm(pl.lech.length+' dòng đã nạp trước với SỐ LƯỢNG'+(pl.lech.some(x=>x.ngayCu)?' / NGÀY':'')+' KHÁC:\n'
         +pl.lech.slice(0,8).map(x=>'· '+x.code+' ('+(x.soPhieu||'không số phiếu')+', '+(x.ngayCu?x.ngayCu.split('-').reverse().join('/')+' → ':'')+x.date.split('-').reverse().join('/')+'): '+x.qtyCu+' → '+x.qty).join('\n')
         +(pl.lech.length>8?'\n…':'')+'\n\nOK = THAY bằng số mới (và ngày mới nếu khác) · Cancel = GIỮ số cũ');}
+      /* Tháng đã chốt kiểm kê thì không nhập kho vào nữa (việc 20): xét tháng của dòng MỚI, và — chỉ khi
+         chọn THAY — tháng mới lẫn tháng cũ của dòng đổi số / đổi ngày. Giữ số cũ thì không ghi gì ở đó. */
+      {const _ky=new Set();pl.moi.forEach(d=>_ky.add(d.period));
+       if(thay)pl.lech.forEach(d=>{_ky.add(d.period);if(d.ngayCu)_ky.add(periodOfDate(d.ngayCu));});
+       for(const k of _ky){if(k&&!nhapKhoDuocKy(plantSel.value,slocSel.value,k))return;}}
       if(!pl.moi.length&&!thay){toast(L('Không có gì để lưu — các dòng đều đã có'));return;}
       bLuu.disabled=true;bHuy.disabled=true;bLuu.textContent=L('Đang lưu…');
       let moi=0,doi=0,truot=0,trung=0,cho=0;const maLa=[],maLaCho=[];
@@ -9205,6 +9339,8 @@ function dcNhapKho(v){
   pickBtn.onclick=()=>fileIn.click();
   fileIn.onchange=async ()=>{
     const files=[...fileIn.files];if(!files.length)return;
+    /* Kho / kỳ lúc BẤM quét — đọc ảnh mất 10-75 giây, đổi kho giữa chừng thì bỏ kết quả. */
+    const _khoQuet=plantSel.value+'|'+slocSel.value+'|'+perSel.value;
     prevWrap.innerHTML='';statusEl.innerHTML='<span style="color:var(--brand-ink)">⏳ Đang nén ảnh & đọc biên bản… (vài giây)</span>';
     /* Vì sao phải có nút sao chép: từ 18/09 `detail` chỉ đi vào Console cho đỡ rối
        màn. Nhưng BP quét ảnh bằng ĐIỆN THOẠI — không có Console. Thành ra mỗi lần
@@ -9213,10 +9349,11 @@ function dcNhapKho(v){
     const _t0=Date.now();let _ctx={};
     const _loi=(cau,goiY)=>{
       const wrap=el('div');
-      const d1=el('div');d1.style.color='var(--red)';d1.textContent='✗ '+cau;wrap.appendChild(d1);
+      /* Vẽ SAU lượt dịch màn -> phải tự gọi L() (bếp trưởng dùng EN/HI). */
+      const d1=el('div');d1.style.color='var(--red)';d1.textContent='✗ '+L(cau);wrap.appendChild(d1);
       if(goiY){const d2=el('div');d2.style.cssText='font-size:12px;color:var(--muted);margin-top:4px';
-        d2.textContent=goiY;wrap.appendChild(d2);}
-      const bC=el('button','btn btn-ghost btn-sm','📋 Sao chép chi tiết lỗi');
+        d2.textContent=L(goiY);wrap.appendChild(d2);}
+      const bC=el('button','btn btn-ghost btn-sm',L('📋 Sao chép chi tiết lỗi'));
       bC.style.marginTop='8px';
       bC.onclick=()=>{
         const t=Object.keys(_ctx).map(k=>k+': '+_ctx[k]).join(String.fromCharCode(10));
@@ -9249,7 +9386,14 @@ function dcNhapKho(v){
         if(data.detail)console.error('ocr',data.detail);
         _ctx['Mã lỗi']=resp.status;_ctx['Máy chủ nói']=String(data.error||'(không có)');
         _ctx['Chi tiết']=String(data.detail||'(không có)').slice(0,300);_ctx['Mất']=_giay+' giây';
-        const hetLuot=resp.status===429||/quota|RESOURCE_EXHAUSTED|hết lượt/i.test(String(data.error||''));
+        const _dt=String(data.detail||'');
+        const hetLuot=resp.status===429||/Gemini lỗi 429|quota|RESOURCE_EXHAUSTED|hết lượt/i.test(String(data.error||'')+' '+_dt);
+        /* Khóa sai: máy chủ trả 502 "Gemini lỗi 400/401/403" — trước đây rơi vào câu chung "thử lại
+           sau ít phút", BP thử mãi không được (23/10/2026). */
+        /* 400 trơn của Google còn là ảnh hỏng / quá nặng — chỉ coi là khóa sai khi chi tiết nói rõ. */
+        const _khoaSai=/Gemini lỗi 40[13]/.test(String(data.error||''))||/API key not valid|API_KEY_INVALID|PERMISSION_DENIED/i.test(_dt);
+        const _anhLoi=!_khoaSai&&/Gemini lỗi 400/.test(String(data.error||''));
+        const _chuaKhoa=/Chưa có khóa AI/i.test(String(data.error||''));
         /* Gợi ý phải khớp với lỗi THẬT. Trước đây mọi lỗi 502 đều bị gán câu
            "máy chủ đọc ảnh quá lâu" — nên màn hiện "Gemini lỗi 404" mà bên dưới
            lại khuyên chụp ít ảnh hơn, hai câu đá nhau. */
@@ -9257,9 +9401,14 @@ function dcNhapKho(v){
         const _khongModel=/không dùng được model|\b404\b/i.test(_e);
         const _quaTai=resp.status===503||/quá tải/i.test(_e);
         const _quaLau=resp.status===504||/quá lâu/i.test(_e);
-        _loi(_e||('Lỗi '+resp.status),
-          _khongModel?'Khóa AI này không đọc được ảnh. Vào thẻ "Cài đặt AI quét ảnh" bấm ⚡ Thử khóa; vẫn báo lỗi thì tạo khóa mới ở aistudio.google.com/apikey rồi lưu lại.'
-          :(hetLuot||resp.status===400)?'Khóa AI chưa có hoặc đã hết lượt. Vào thẻ "Cài đặt AI quét ảnh" ở màn này để khai khóa riêng của bạn.'
+        _loi(_chuaKhoa?'Chưa khai khóa AI':_khongModel?(_e||'Khóa AI này không dùng được model đọc ảnh nào'):_khoaSai?'Khóa AI sai hoặc đã bị xóa'
+          :hetLuot?'Khóa AI đã hết lượt hôm nay':_anhLoi?'Google không đọc được ảnh này':(_e||('Lỗi '+resp.status)),
+          _chuaKhoa?'Vào thẻ "Cài đặt AI quét ảnh" ở màn này, dán khóa rồi bấm Lưu khóa.'
+          :_khongModel?'Khóa AI này không đọc được ảnh. Vào thẻ "Cài đặt AI quét ảnh" bấm ⚡ Thử khóa; vẫn báo lỗi thì tạo khóa mới ở aistudio.google.com/apikey rồi lưu lại.'
+          :_khoaSai?'Tạo khóa mới ở aistudio.google.com/apikey rồi dán vào thẻ "Cài đặt AI quét ảnh" và bấm Lưu khóa.'
+          :hetLuot?'Quét lại vào ngày mai, hoặc khai một khóa khác ở thẻ "Cài đặt AI quét ảnh". Trong lúc chờ có thể nạp file Excel hoặc gõ tay.'
+          :_anhLoi?'Ảnh có thể quá nặng hoặc không rõ — chụp lại rõ hơn, 1–2 tấm, rồi quét lại.'
+          :resp.status===400?'Ảnh gửi đi chưa đúng — chọn lại ảnh rồi quét.'
           :_quaTai?'Google đang quá tải — chờ một lát rồi quét lại.'
           :_quaLau?'Máy chủ đọc ảnh quá lâu. Thử chụp ít ảnh hơn (1–2 tấm) rồi quét lại.'
           :'Thử lại sau ít phút. Vẫn lỗi thì bấm 📋 Sao chép chi tiết lỗi rồi gửi kế toán.');
@@ -9269,7 +9418,9 @@ function dcNhapKho(v){
       _ctx['Mất']=_giay+' giây';_ctx['Số dòng đọc được']=(data.rows||[]).length;
       const rows=data.rows||[];
       if(!rows.length){_loi('Không đọc được dòng hàng nào.','Thử chụp rõ, thẳng, đủ sáng hơn.');return;}
-      statusEl.innerHTML='<span style="color:#16a34a">✓ Đọc được '+rows.length+' dòng — kiểm tra mã & số lượng rồi bấm lưu.</span>';
+      statusEl.innerHTML='<span style="color:#16a34a">✓ Đọc được '+rows.length+' dòng — kiểm tra mã & số lượng rồi bấm lưu.</span>';try{dichMan(statusEl);}catch(e){}
+      if(_khoQuet!==plantSel.value+'|'+slocSel.value+'|'+perSel.value){statusEl.innerHTML='';fileIn.value='';
+        toast(L('Đã đổi kho / kỳ — nạp lại file cho kho đang chọn'));return;}
       renderPreview(rows);
     }catch(e){
       /* Cắt vì quá giờ thì trình duyệt ném AbortError — nói theo nghiệp vụ, đừng in
@@ -9284,6 +9435,7 @@ function dcNhapKho(v){
   };
   function renderPreview(rows){
     prevWrap.innerHTML='';
+    const _khoXT=plantSel.value+'|'+slocSel.value+'|'+perSel.value;
     ocrPreviewOpen=true; // đang xem preview chưa lưu -> chặn polling tự vẽ lại xóa mất
     const pv=rows.map(r=>{const m=findMat(r);return{code:m?m.code:((r.code||'').trim()),name:m?m.name:r.name,ocrName:r.name,ocrCode:(r.code||'').trim(),uom:m?m.uom:(r.uom||''),qty:r.qty,removed:false};});
     const w=el('div','tbl-wrap');const tbl=el('table');
@@ -9318,6 +9470,8 @@ function dcNhapKho(v){
       const sl0=pv.filter(r=>!r.removed&&hopLe(r.code)&&!(Number(r.qty)>0)).length,khongMa=skipped-sl0;
       const soLa=ok.filter(r=>!masterByCode[r.code.trim()]).length;
       if(!ok.length){toast('Chưa có dòng nào có mã hàng để lưu');return;}
+      if(_khoXT!==plantSel.value+'|'+slocSel.value+'|'+perSel.value){ocrPreviewOpen=false;prevWrap.innerHTML='';statusEl.innerHTML='';toast(L('Đã đổi kho / kỳ — nạp lại file cho kho đang chọn'));return;}
+      if(!nhapKhoDuocKy(plantSel.value,slocSel.value,perSel.value,ok.length))return;
       if(!confirm('Thêm '+ok.length+' dòng vào Nhập kho '+whName(plantSel.value,slocSel.value)+' · tháng '+periodVN(perSel.value)+'?'
         +(soLa?'\n('+soLa+' dòng mã chưa có trong master data — vẫn lưu số, chờ kế toán khai báo tên)':'')
         +(khongMa>0?'\n('+khongMa+' dòng chưa có mã sẽ bị bỏ qua)':'')
@@ -9355,7 +9509,7 @@ function dcNhapKho(v){
     prevWrap.appendChild(saveBtn);
     const cancelBtn=el('button','btn btn-ghost','Hủy');cancelBtn.style.cssText='margin-top:10px;margin-left:8px';
     cancelBtn.onclick=()=>{ocrPreviewOpen=false;prevWrap.innerHTML='';statusEl.innerHTML='';};
-    prevWrap.appendChild(cancelBtn);
+    prevWrap.appendChild(cancelBtn);try{dichMan(prevWrap);}catch(e){}
   }
   const listWrap=el('div');listWrap.style.marginTop='14px';b.appendChild(listWrap);
   function renderList(){
@@ -9367,7 +9521,9 @@ function dcNhapKho(v){
     tbl.innerHTML=`<thead><tr><th>Ngày</th><th>Mã</th><th>Tên hàng</th><th class="num">SL nhập</th><th>Ghi chú</th><th>Người nhập</th><th></th></tr></thead>`;
     const tb=el('tbody');
     list.forEach(r=>{const tr=el('tr',null,`<td class="tnum" style="font-size:12px">${r.date||''}</td><td class="tnum">${r.code}</td><td>${masterByCode[r.code]?(masterByCode[r.code].name||r.name):(r.code+' <span class="badge badge-wait" style="font-size:9px;padding:1px 5px">'+L('chưa có tên')+'</span>')}</td><td class="num cell-strong tnum">${r.qty} ${r.uom||''}</td><td style="font-size:12px">${r.note||''}</td><td style="font-size:12px">${escHtml(r.by||'')}<div class="cell-sub tnum">${escHtml(r.time||'')}${r._choGui?' · <b>'+L('chờ gửi')+'</b>':''}</div></td><td><button class="btn btn-ghost btn-sm rmk" style="color:var(--red)">Xóa</button></td>`);
-      tr.querySelector('.rmk').onclick=async()=>{if(!confirm('Xóa dòng nhập kho '+r.code+'?'))return;
+      tr.querySelector('.rmk').onclick=async()=>{
+        if(!r._choGui&&!nhapKhoDuocKy(r.plant,r.sloc,r.period||periodOfDate(r.date)))return;
+        if(!confirm('Xóa dòng nhập kho '+r.code+'?'))return;
         /* Dòng còn trong hàng đợi (chưa lên máy chủ): chỉ bỏ khỏi hàng đợi trên máy */
         if(r._choGui){outbox=outbox.filter(x=>!(x.loai==='nhap'&&x.id===r.id));outboxSave();try{veChipMang();}catch(e){}
           receipts=receipts.filter(x=>x.id!==r.id);log('Xóa dòng nhập kho (chưa gửi)',`${r.code} · ${whName(r.plant,r.sloc)}`);renderList();return;}
@@ -9696,7 +9852,10 @@ function exportBBKK(s,byZone){
      đổ thẳng vào đó — đúng cột, không thêm cột nào vào biểu mẫu công ty.
      Ngày thì biểu mẫu không có cột, nên không in ra. */
   const _gcB=s.itemNotes||null;
-  const gcOf=code=>{const g=_gcB?(_gcB[code]||{}):null;return g?String(g.g||''):'';};
+  /* Biểu mẫu không có cột ngày -> ngày (bếp ghi) đưa vào đầu ô Ghi chú (23/10/2026). */
+  const gcOf=code=>{const g=_gcB?(_gcB[code]||{}):null;if(!g)return '';
+    const d=/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(String(g.d||''))?String(g.d).split('-').reverse().join('/'):String(g.d||'');
+    return [d,String(g.g||'')].filter(Boolean).join(' · ');};
   let body='';
   rows.forEach((r,i)=>{
     const zc=zList.map(z=>`<td ${Cc}>${zQty(z,r.code)}</td>`).join('');
@@ -9784,18 +9943,37 @@ async function approveSubmission(s){
   try{exportBBKK(s);}catch(e){console.error(e);}
   showDetail(s);
 }
-function rejectSubmission(s){
-  const reason=prompt('Lý do từ chối (giám sát sẽ thấy, có thể bỏ trống):')||'';
+/* Chờ MÁY CHỦ xoá xong rồi mới báo bếp (23/10/2026). Trước đây xoá trên máy rồi báo ngay "đã xoá,
+   kiểm kê lại" mà không xem máy chủ có xoá không — máy chủ từ chối thì phiếu vẫn nằm đó, bếp đếm lại
+   và gửi không được (mỗi kho mỗi kỳ một phiếu). Chỉ xoá khi phiếu VẪN Chờ duyệt. Bấm Hủy ở ô lý do = dừng. */
+let _dangTuChoiKK={};
+async function rejectSubmission(s){
+  if(_dangTuChoiKK[s.id])return;
+  const reason=prompt('Lý do từ chối (giám sát sẽ thấy, có thể bỏ trống):');
+  if(reason===null)return;
   if(!confirm('Từ chối biên bản '+s.id+' ('+whName(s.plant,s.sloc)+')?\n\nSỐ LIỆU ĐÃ GỬI SẼ BỊ XÓA. Giám sát sẽ nhận thông báo và phải kiểm kê lại.'))return;
-  // xóa phiếu
-  submissions=submissions.filter(x=>x.id!==s.id);
-  if(sb)sb.from('submissions').delete().eq('id',s.id).then(({error})=>{if(error)console.error('xóa sub',error);});
-  // thông báo cho giám sát của kho
-  const msg=`Biên bản kiểm kê ${whName(s.plant,s.sloc)} (kỳ tháng ${periodVN(s.period||curPeriod())}) đã bị Kế toán TỪ CHỐI. Số liệu đã gửi đã bị xóa, vui lòng kiểm kê lại.${reason?' Lý do: '+reason:''}`;
-  notifyWh(s.plant,s.sloc,msg,'reject');
-  log('Từ chối biên bản',`${s.id} · ${whName(s.plant,s.sloc)}${reason?' · '+reason:''}`);
-  toast('Đã từ chối & xóa '+s.id+' · đã báo giám sát');
-  renderView();
+  if(sb&&(!mangOK||(typeof navigator!=='undefined'&&navigator.onLine===false))){toast('Cần có mạng để từ chối biên bản');return;}
+  _dangTuChoiKK[s.id]=true;
+  try{
+    if(sb){let r;try{r=await sb.from('submissions').delete().match({id:s.id,status:'Chờ duyệt'}).select();}catch(e){r={error:e};}
+      if(r&&r.error){console.error('xóa sub',r.error);
+        if(laLoiMang(r.error)){datMang(false);toast('Cần có mạng để từ chối biên bản');return;}
+        errBox('Chưa từ chối được biên bản',['Phiếu <b>'+s.id+'</b> <b>vẫn còn</b>, chưa báo bếp.','Thử lại sau ít phút.'],'Bảng: submissions'+NL+s.id+NL+(r.error.message||''));return;}
+      if(!r||!Array.isArray(r.data)||!r.data.length){
+        let st=null,qLoi=null;try{const q=await sb.from('submissions').select('status').eq('id',s.id).limit(1);if(q&&q.error)qLoi=q.error;else st=q&&q.data&&q.data[0];}catch(e){qLoi=e;}
+        if(qLoi){errBox('Chưa từ chối được biên bản',['Không kiểm được phiếu <b>'+s.id+'</b> trên máy chủ — chưa báo bếp.','Thử lại sau ít phút.'],'Phiếu: '+s.id+NL+String((qLoi&&qLoi.message)||qLoi));return;}
+        if(st&&st.status&&st.status!=='Chờ duyệt'){errBox('Phiếu đã được xử lý — không từ chối được',['Phiếu <b>'+s.id+'</b> đang ở trạng thái <b>'+st.status+'</b>.'],'Phiếu: '+s.id+NL+'Trạng thái: '+st.status);return;}
+        if(st){errBox('Máy chủ từ chối xóa biên bản',['Phiếu <b>'+s.id+'</b> <b>vẫn còn</b> — tài khoản này chưa được phép xóa.','Chưa báo bếp. Chụp màn hình này gửi admin.'],'Phiếu: '+s.id+NL+'Số dòng xoá: 0');return;}
+        /* Không còn trên máy chủ (máy khác vừa xoá) -> coi như đã từ chối */
+      }
+    }
+    submissions=submissions.filter(x=>x.id!==s.id);
+    const msg=`Biên bản kiểm kê ${whName(s.plant,s.sloc)} (kỳ tháng ${periodVN(s.period||curPeriod())}) đã bị Kế toán TỪ CHỐI. Số liệu đã gửi đã bị xóa, vui lòng kiểm kê lại.${reason?' Lý do: '+reason:''}`;
+    notifyWh(s.plant,s.sloc,msg,'reject');
+    log('Từ chối biên bản',`${s.id} · ${whName(s.plant,s.sloc)}${reason?' · '+reason:''}`);
+    toast('Đã từ chối & xóa '+s.id+' · đã báo giám sát');
+    renderView();
+  }finally{delete _dangTuChoiKK[s.id];}
 }
 // ---- Liệt kê MỌI thứ bị ảnh hưởng khi xóa 1 phiếu kiểm kê, để admin xác nhận trước ----
 function subDeleteImpact(s){
@@ -10085,7 +10263,7 @@ function renderShiftEntry(v){
   const MATS=shMats;const total=MATS.length;let cf='all';
   const hasVal=c=>items[c]!=null&&items[c]!=='';
   const filled=()=>Object.values(items).filter(x=>x!==''&&x!=null).length;
-  function upd(){const n=filled();$('#shNum').textContent=n;$('#shFill').style.width=Math.min(100,(n/Math.max(1,total))*100*8)+'%';}
+  function upd(){const n=filled();$('#shNum').textContent=n;$('#shFill').style.width=Math.min(100,(n/Math.max(1,total))*100)+'%';}
   function saved(){const l=$('#shSave');if(l)l.textContent='✓ Đã tự lưu '+new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
   function dev(m){if(!opening)return false;const o=Number(opening[m.code]),q=Number(items[m.code]);if(!hasVal(m.code)||isNaN(o)||o<=0||isNaN(q))return false;return Math.abs(q-o)/o>0.5;}
   function draw(q){
@@ -10305,9 +10483,12 @@ function docNgayO(v){
 }
 function docNgayO_(v){
   if(v==null)return '';
-  const ser=n=>new Date(Date.UTC(1899,11,30)+Math.round(n)*86400000).toISOString().slice(0,10);
+  /* Phần lẻ của số sê-ri là GIỜ trong ngày: làm tròn thì 14h chiều thành ngày hôm sau (23/10/2026). */
+  const ser=n=>new Date(Date.UTC(1899,11,30)+Math.floor(n)*86400000).toISOString().slice(0,10);
   if(typeof v==='number')return (isFinite(v)&&v>20&&v<80000)?ser(v):'';
   let t=String(v).trim();if(!t)return '';
+  /* Ô ngày gõ kèm giờ ('20/10/2026 14:30', '2026-10-20T14:30:00') -> chỉ lấy phần ngày như được ghi. */
+  t=t.replace(/[ T]+[0-9]{1,2}:[0-9]{2}(?::[0-9]{2}(?:[.][0-9]+)?)?(?:Z|[+-][0-9]{2}:?[0-9]{2})?(?:\s*(?:AM|PM|SA|CH))?\s*$/i,'');
   if(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(t))return t;
   let m=t.match(/^([0-9]{1,2})[\/\-.]([0-9]{1,2})[\/\-.]([0-9]{2,4})$/);
   if(m){let y=Number(m[3]);if(y<100)y+=2000;
@@ -10352,9 +10533,12 @@ function importOpeningT6(plant,sloc,file,cb,chanMaLa){
       }
       if(!rows||!rows.length)throw new Error('File rỗng');
       // tìm dòng tiêu đề (chứa cột mã hàng)
-      let hIdx=0;for(let i=0;i<Math.min(rows.length,10);i++){if(rows[i].map(vnNorm).some(c=>c.includes('mã')||c.includes('mahang')||c.includes('code')||c.includes('material'))){hIdx=i;break;}}
+      /* Nhận cả tiêu đề "Mã vật tư" / "Mã VT" — trước đây không nhận, rơi về cột đầu (thường là Tên hàng)
+         nên tồn đầu kỳ Quầy rượu B10 lưu theo TÊN thay vì mã (23/10/2026). */
+      const laCotMa=c=>c.includes('mahang')||c.includes('mavattu')||c==='mavt'||c.startsWith('mavt')||c==='ma'||c.includes('code')||c.includes('material');
+      let hIdx=0;for(let i=0;i<Math.min(rows.length,10);i++){if(rows[i].map(vnNorm).some(laCotMa)){hIdx=i;break;}}
       const header=rows[hIdx].map(vnNorm);
-      let codeCol=header.findIndex(c=>c.includes('mãhàng')||c.includes('mahang')||c==='mã'||c==='ma'||c.includes('code')||c.includes('material'));
+      let codeCol=header.findIndex(laCotMa);
       if(codeCol<0)codeCol=0;
       let qtyCol=header.findIndex(c=>c.includes('sốlượng')||c.includes('soluong')||c==='sl'||c.includes('tồn')||c.includes('ton')||c.includes('đầukỳ')||c.includes('dauky')||c.includes('qty')||c.includes('quantity'));
       if(qtyCol<0)qtyCol=(codeCol===0?1:0); // không thấy -> lấy cột còn lại
@@ -10368,7 +10552,7 @@ function importOpeningT6(plant,sloc,file,cb,chanMaLa){
       const metaF={};
       // danh mục MÃ hiện có của KHO đang chọn (để biết mã nào cần bổ sung vào danh mục kho)
       const allow=new Set(plantMaterials[plant]||[]);
-      const items={};const preview=[];let ok=0,skipNoCode=0,badQty=0,boTrong=0;const newMats=[],fixedMats=[],newCodesForPlant=[];
+      const items={};const preview=[];let ok=0,skipNoCode=0,badQty=0,boTrong=0;const newMats=[],fixedMats=[],newCodesForPlant=[];const maSai=[];
       const maLa=[];
       /* MÃ LẶP DÒNG (Khoa 22/10/2026): kiểm kê bếp hay ghi 2 lô cùng mã khác hạn dùng. Trước
          đây dòng sau ĐÈ dòng trước -> mất số của lô đầu. Giờ CỘNG DỒN và báo số dòng đã gộp.
@@ -10383,6 +10567,8 @@ function importOpeningT6(plant,sloc,file,cb,chanMaLa){
       for(let i=hIdx+1;i<rows.length;i++){
         let code=String(rows[i][codeCol]==null?'':rows[i][codeCol]).trim();if(code.endsWith('.0'))code=code.slice(0,-2);
         if(!code){skipNoCode++;continue;}
+        /* Mã vật tư không có khoảng trắng / dài cả câu. Ô như vậy là TÊN hàng nằm nhầm cột mã. */
+        if(!/^[0-9A-Za-z._\-\/]{2,30}$/.test(code)){if(maSai.length<200)maSai.push(code);continue;}
         const nmF=nameCol>=0?String(rows[i][nameCol]==null?'':rows[i][nameCol]).trim():'';
         const umF=uomCol>=0?String(rows[i][uomCol]==null?'':rows[i][uomCol]).trim():'';
         let name,uom,isNew=false;const cur=masterByCode[code];
@@ -10429,7 +10615,13 @@ function importOpeningT6(plant,sloc,file,cb,chanMaLa){
       }
       /* Cả file toàn mã lạ -> KHÔNG báo "không đọc được dòng nào" (sai nguyên nhân,
          người dùng đi sửa cột trong khi lỗi là mã chưa khai). Trả về để màn nói đúng. */
-      if(!ok&&maLa.length){cb&&cb({plant,sloc,items,preview,newMats,fixedMats,newCodesForPlant,maLa,meta:metaF,badQty,boTrong,ok,gop});return;}
+      if(!ok&&maSai.length&&!maLa.length){
+        const e3=new Error('Cột "Mã hàng" trong file không phải mã vật tư (VD: "'+String(maSai[0]).slice(0,40)+'"). Đặt tiêu đề cột mã là "Mã hàng" rồi nạp lại.');
+        e3.chanDoan={header:rows[hIdx]||[],hIdx,soDong:rows.length,codeCol,qtyCol,skipNoCode,badQty,mau:rows.slice(hIdx+1,hIdx+4),
+          lyDo:'Cột app lấy làm Mã hàng chứa <b>tên hàng</b>, không phải mã vật tư (VD "'+escHtml(String(maSai[0]).slice(0,40))+'") — file không có cột mã, hoặc tiêu đề cột mã lạ.'};
+        throw e3;}
+      if(maSai.length)toast(maSai.length+' dòng có mã không hợp lệ (VD "'+String(maSai[0]).slice(0,30)+'") — không nạp');
+      if(!ok&&maLa.length){cb&&cb({plant,sloc,items,preview,newMats,fixedMats,newCodesForPlant,maLa,meta:metaF,badQty,boTrong,ok,gop,maSai});return;}
       if(!ok){
         const e2=new Error('Không đọc được dòng hợp lệ nào (kiểm tra cột Mã hàng / Số lượng).');
         e2.chanDoan={header:rows[hIdx]||[],hIdx,soDong:rows.length,codeCol,qtyCol,
@@ -10438,7 +10630,7 @@ function importOpeningT6(plant,sloc,file,cb,chanMaLa){
       }
       preview.sort((a,b)=>a.name.localeCompare(b.name,'vi'));
       // CHỈ trả kết quả để XEM TRƯỚC — chưa ghi gì lên máy chủ (chờ bấm Duyệt)
-      cb&&cb({plant,sloc,items,preview,newMats,fixedMats,newCodesForPlant,maLa,meta:metaF,badQty,boTrong,ok,gop});
+      cb&&cb({plant,sloc,items,preview,newMats,fixedMats,newCodesForPlant,maLa,meta:metaF,badQty,boTrong,ok,gop,maSai});
     }catch(err){
       const cd=err&&err.chanDoan;
       let ct='File: '+file.name+' ('+Math.round(file.size/1024)+' KB)';
@@ -10450,7 +10642,7 @@ function importOpeningT6(plant,sloc,file,cb,chanMaLa){
         (cd.mau||[]).forEach((r2,i)=>{ct+='\nDòng mẫu '+(i+1)+': '+(Array.isArray(r2)?r2.join(' | '):'');});
       }
       const goiY=cd
-        ? ['App đọc được file nhưng <b>không nhận ra cột Mã hàng / Số lượng</b>.',
+        ? [cd.lyDo||'App đọc được file nhưng <b>không nhận ra cột Mã hàng / Số lượng</b>.',
            'Dòng tiêu đề app tìm thấy: <b>'+((cd.header||[]).join(' · ')||'(trống)')+'</b>',
            'Sửa tiêu đề cột trong file thành <b>Mã hàng</b> và <b>Số lượng</b> (hoặc Tồn, Đầu kỳ, Qty) rồi nạp lại.']
         : ['Máy không mở được nội dung file: <b>'+((err&&err.message)||'')+'</b>',
@@ -10595,7 +10787,7 @@ function opNhap(v){
       const bNo=el('button','btn btn-ghost','Hủy');
       bOk.onclick=()=>commitOpeningT6(r,()=>draw());
       bNo.onclick=()=>{prev.innerHTML='';fin.value='';};
-      brow.appendChild(bOk);brow.appendChild(bNo);prev.appendChild(brow);
+      brow.appendChild(bOk);brow.appendChild(bNo);prev.appendChild(brow);try{dichMan(prev);}catch(e){}
     }
     fin.onchange=e=>{const f=e.target.files[0];if(f)importOpeningT6(ctx.plant,ctx.sloc,f,renderPreview);};
     host.appendChild(fin);host.appendChild(fmsg);host.appendChild(prev);
@@ -11686,9 +11878,12 @@ function importPlantCatalog(file,plant,cb){
       const wb=isCsv?XLSX.read(e.target.result,{type:'string'}):XLSX.read(new Uint8Array(e.target.result),{type:'array'});
       const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
       if(!rows.length)throw new Error('File rỗng');
-      let hIdx=0;for(let i=0;i<Math.min(rows.length,10);i++){if(rows[i].map(vnNorm).some(c=>c.includes('mã')||c.includes('mahang')||c.includes('code')||c.includes('material'))){hIdx=i;break;}}
+      /* Nhận cả tiêu đề "Mã vật tư" / "Mã VT" — trước đây không nhận, rơi về cột đầu (thường là Tên hàng)
+         nên tồn đầu kỳ Quầy rượu B10 lưu theo TÊN thay vì mã (23/10/2026). */
+      const laCotMa=c=>c.includes('mahang')||c.includes('mavattu')||c==='mavt'||c.startsWith('mavt')||c==='ma'||c.includes('code')||c.includes('material');
+      let hIdx=0;for(let i=0;i<Math.min(rows.length,10);i++){if(rows[i].map(vnNorm).some(laCotMa)){hIdx=i;break;}}
       const header=rows[hIdx].map(vnNorm);
-      let codeCol=header.findIndex(c=>c.includes('mãhàng')||c.includes('mahang')||c==='mã'||c==='ma'||c.includes('code')||c.includes('material'));
+      let codeCol=header.findIndex(laCotMa);
       if(codeCol<0)codeCol=0;
       if(!plantMaterials[plant])plantMaterials[plant]=[];
       const set=new Set(plantMaterials[plant]);
@@ -11910,7 +12105,7 @@ function renderBaocao(v){
   renderHubView(v,'baocao',[
     {k:'tao',ico:HIC.sheet,title:'Tạo báo cáo bằng AI',sub:'Chọn loại báo cáo, xem bản nháp rồi gửi Teams',render:bcTao},
     {k:'ds',ico:HIC.list,title:'Báo cáo đã lưu',sub:'Đọc lại các báo cáo đã tạo',n:reports.length?reports.length+' báo cáo':'',render:bcList},
-    {k:'cfg',ico:HIC.warn,title:'Cài đặt AI & Teams',sub:'Khóa API và link Teams — lưu tại máy bạn',render:bcCfg},
+    {k:'cfg',ico:HIC.warn,title:'Cài đặt AI & Teams',sub:'Khóa API theo tài khoản · link Teams lưu tại máy',render:bcCfg},
   ]);
 }
 function bcCfg(v){
@@ -12433,6 +12628,12 @@ async function ensurePushSub(){
                   updated_at:new Date().toISOString()}));
       if(!rows.length)rows.push({endpoint:sub.endpoint,p256dh:j.keys.p256dh,auth:j.keys.auth,
         plant_code:'',sloc_code:'',user_name:session.name,updated_at:new Date().toISOString()});
+      /* Kế toán / admin: thêm kênh '*' để nhận báo việc của kế toán (mã chưa có master data…) —
+         họ không được gán kho nên trước đây push theo kho không bao giờ tới máy họ (23/10/2026). */
+      if(isPrivileged()&&!isScoped())rows.push({endpoint:sub.endpoint,p256dh:j.keys.p256dh,auth:j.keys.auth,
+        plant_code:'*',sloc_code:'*',user_name:session.name,updated_at:new Date().toISOString()});
+      /* Máy dùng chung / người đã đổi vai: gỡ kênh '*' cũ để khỏi nhận báo việc của kế toán. */
+      else{try{await sb.from('push_subs').delete().eq('endpoint',sub.endpoint).eq('plant_code','*');}catch(e){}}
       const {error}=await sb.from('push_subs').upsert(rows,{onConflict:'endpoint,plant_code,sloc_code'});
       if(error){console.error('push_subs',error);return {ok:false,why:'Không lưu được lên máy chủ: '+(error.message||'')};}
     }
@@ -12479,6 +12680,7 @@ function notifyWh(plant,sloc,msg,kind,title,truUser){
   dbIns('notifications',{id:nt.id,plant_code:plant,sloc_code:sloc,message:msg,kind:nt.kind,
     created_by:nt.by,read_flag:false});
   pushToWh(plant,sloc,title||NOTIF_TITLE[nt.kind]||'Kiểm kê F&B',msg,nt.kind,truUser);
+  if(nt.kind==='mala')pushToWh('*','*',title||NOTIF_TITLE[nt.kind]||'Kiểm kê F&B',msg,nt.kind,truUser);   // việc của kế toán
   return nt;
 }
 /* ============ TỰ ĐỘNG NHẮC KHO TRỄ CẬP NHẬT ============
