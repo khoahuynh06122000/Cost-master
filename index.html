@@ -1121,7 +1121,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2310-04';
+const APP_VER='2310-05';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1250,6 +1250,8 @@ Object.assign(TXT.hi,{"Dữ liệu chưa được đưa lên hệ thống do m�
 /* Bản 2310-01 */
 Object.assign(TXT.en,{"Chỉ admin mới xóa được tồn đầu kỳ":"Only admin can delete the opening stock","Chỉ admin mới xóa được tồn đầu kỳ — cần nạp lại thì báo admin.":"Only admin can delete the opening stock — ask admin if it needs re-uploading.","Kho này chưa có tồn đầu kỳ để xóa":"This store has no opening stock to delete","file trống":"blank in file"});
 Object.assign(TXT.hi,{"Chỉ admin mới xóa được tồn đầu kỳ":"केवल एडमिन ही प्रारंभिक स्टॉक हटा सकता है","Chỉ admin mới xóa được tồn đầu kỳ — cần nạp lại thì báo admin.":"केवल एडमिन ही प्रारंभिक स्टॉक हटा सकता है — दोबारा अपलोड करना हो तो एडमिन को बताएँ।","Kho này chưa có tồn đầu kỳ để xóa":"इस स्टोर में हटाने के लिए कोई प्रारंभिक स्टॉक नहीं है","file trống":"फ़ाइल में खाली"});
+/* Bản 2310-05 */
+Object.assign(TXT.en,{"Máy chủ từ chối xóa bản kiểm tuần":"The server refused to delete the weekly count"});Object.assign(TXT.hi,{"Máy chủ từ chối xóa bản kiểm tuần":"सर्वर ने साप्ताहिक गिनती हटाने से मना किया"});
 /* Bản 2310-04 */
 Object.assign(TXT.en,{"Cần có mạng để xóa bản kiểm tuần — di chuyển sang chỗ có mạng rồi bấm lại":"Deleting a weekly count needs a connection — move to a spot with signal and tap again","App đang gửi dữ liệu lên — thử xóa lại sau ít giây":"The app is still sending data — try deleting again in a few seconds","Không xóa được bản kiểm tuần":"Could not delete the weekly count"});Object.assign(TXT.hi,{"Cần có mạng để xóa bản kiểm tuần — di chuyển sang chỗ có mạng rồi bấm lại":"साप्ताहिक गिनती हटाने के लिए नेटवर्क चाहिए — नेटवर्क वाली जगह जाकर फिर दबाएँ","App đang gửi dữ liệu lên — thử xóa lại sau ít giây":"ऐप अभी डेटा भेज रहा है — कुछ सेकंड बाद फिर हटाएँ","Không xóa được bản kiểm tuần":"साप्ताहिक गिनती हटाई नहीं जा सकी"});
 /* Bản 2310-03 */
@@ -1481,6 +1483,7 @@ let mangOK = (typeof navigator!=='undefined' && navigator.onLine===false) ? fals
 const OUTBOX_LS='kk_outbox_v1';
 let outbox=[];          // [{id, sub, at, lanThu, loi}]
 let _dangFlush=false;
+let _flushMatMang=false;   // lượt gửi gần nhất dừng vì lỗi mạng
 
 /* Lỗi MẠNG (gửi không tới nơi) khác hẳn lỗi MÁY CHỦ TỪ CHỐI (tới nơi nhưng bị
    chặn quyền / trùng mã). Lỗi mạng thì xếp hàng gửi lại; máy chủ từ chối thì
@@ -1561,7 +1564,7 @@ function outboxGan(){
       return;}
     if(it.loai==='tuan'){weeklyCounts=[Object.assign({},it.ban,{_choGui:true})].concat((weeklyCounts||[]).filter(x=>x.id!==it.id));return;}
     if(it.loai==='nhap'){if(it.rec&&!(receipts||[]).some(x=>x.id===it.id))receipts.unshift(Object.assign({},it.rec,{_choGui:true}));return;}
-    if(it.loai==='nhapdoi'){const x=(receipts||[]).find(y=>y.id===it.rid);if(x)x.qty=it.patch.qty;return;}
+    if(it.loai==='nhapdoi'){const x=(receipts||[]).find(y=>y.id===it.rid);if(x)Object.assign(x,it.patch);return;}
     if(it.loai==='dc'){if(it.rec&&!(trReqs||[]).some(x=>x.id===it.id))trReqs.unshift(Object.assign({},it.rec,{_choGui:true}));return;}
     if(it.loai==='pm'){const a=(plantMaterials[it.row.plant_code]=plantMaterials[it.row.plant_code]||[]);if(a.indexOf(it.row.code)<0)a.push(it.row.code);return;}
     if(it.loai==='bao')return;
@@ -1592,6 +1595,11 @@ function outboxThem(it){
    -> nơi gọi cho vào hàng đợi thay vì ghi thẳng. */
 async function choFlushXong(){for(let i=0;i<150&&_dangFlush;i++)await new Promise(r=>setTimeout(r,100));return !_dangFlush;}
 /* Ghi thẳng thành công thì bỏ bản cũ cùng chỗ đang nằm chờ — để lần gửi sau không đè ngược. */
+/* Lấy bản cũ ra khỏi hàng đợi TRƯỚC khi ghi thẳng (vòng tự gửi chen vào cũng không đưa nó lên đè),
+   ghi trượt thì trả lại — chỉ trả khi chưa có bản mới hơn cùng id. */
+function layKhoiHangDoi(f){const ra=outbox.filter(f);if(ra.length){outbox=outbox.filter(x=>!f(x));outboxSave();try{veChipMang();}catch(e){}}return ra;}
+function traLaiHangDoi(ds){if(!ds||!ds.length)return;const co=new Set(outbox.map(x=>x.id));const them=ds.filter(x=>!co.has(x.id));
+  if(them.length){outbox=outbox.concat(them);outboxSave();try{veChipMang();}catch(e){}}}
 function boHangDoi(f){const n=outbox.length;outbox=outbox.filter(x=>!f(x));if(outbox.length!==n){outboxSave();try{veChipMang();}catch(e){}}}
 /* Số mục người dùng cần biết (bỏ mục nội bộ: học danh mục kho, thông báo kèm theo) */
 function outboxHienCount(){return outbox.filter(x=>x.loai!=='pm'&&x.loai!=='bao').length;}
@@ -1727,7 +1735,7 @@ async function outboxFlush(){
         }
       }catch(e){
         it.lanThu++;
-        if(laLoiMang(e)){datMang(false);break;}      // vẫn chưa có mạng, dừng vòng
+        if(laLoiMang(e)){datMang(false);_flushMatMang=true;break;}      // vẫn chưa có mạng, dừng vòng
         it.loi=(e&&e.message)||'Lỗi không rõ';
       }
     }
@@ -2429,7 +2437,8 @@ async function xoaMaChuaKhai(codes){
     op:Object.keys(openingStock).filter(k=>coMa(openingStock[k].items)),
     pm:Object.keys(plantMaterials).filter(p=>(plantMaterials[p]||[]).some(c=>C.has(String(c)))),
     mat:codes.filter(c=>masterByCode[c])};
-  if(kh.rc.some(r=>r._choGui)||kh.subCho.some(s=>s._choGui||s._choGuiSua)||kh.tuan.some(w=>w._choGui)){
+  if(kh.rc.some(r=>r._choGui)||kh.subCho.some(s=>s._choGui||s._choGuiSua)||kh.tuan.some(w=>w._choGui)
+    ||outbox.some(x=>((x.loai==='pm'||x.loai==='nhap')&&x.row&&C.has(String(x.row.code)))||(x.loai==='nhapdoi'&&C.has(String(x.code))))){
     toast('Có dữ liệu mang mã này đang chờ gửi lên máy chủ — đợi gửi xong rồi xóa');return false;}
   const N=String.fromCharCode(10);
   let t='XÓA '+codes.length+' MÃ khỏi mọi nơi:'+N+codes.slice(0,10).join(', ')+(codes.length>10?' … (+'+(codes.length-10)+' mã)':'')+N+N;
@@ -3708,11 +3717,12 @@ function dbSubscribe(){
     /* MẤT MẠNG: đừng nã Supabase mỗi 45 giây cho tốn pin và đầy console. Thay vào
        đó thử MỘT lần gửi hàng đợi — nếu lọt thì coi như có mạng lại. */
     if(!mangOK||(typeof navigator!=='undefined'&&navigator.onLine===false)){
+      _flushMatMang=false;
       if(typeof navigator!=='undefined'&&navigator.onLine!==false&&outboxCount())await outboxFlush();
       /* Gửi hàng đợi mà KHÔNG mục nào lọt (máy chủ từ chối hẳn mọi mục — vẫn là có mạng) thì trước
          đây app kẹt ở "Mất mạng" mãi: không tải dữ liệu mới, không duyệt được phiếu (rà soát 23/10/2026).
          Còn mất mạng sau khi gửi -> vẫn dò một yêu cầu nhẹ như khi hàng đợi rỗng. */
-      if(!mangOK&&typeof navigator!=='undefined'&&navigator.onLine!==false){
+      if(!mangOK&&!_flushMatMang&&typeof navigator!=='undefined'&&navigator.onLine!==false){
         /* Dò một yêu cầu nhẹ rồi mới coi là có mạng lại — đoán bừa thì dòng báo mạng trên
            màn đếm cứ 45 giây tắt rồi bật lại (22/10/2026). */
         try{const q=await sb.from('notifications').select('id').limit(1);if(!q.error)datMang(true);}catch(e){}
@@ -6499,9 +6509,13 @@ async function guiSuaPhieu(editing,patch){
   if(editing._choGui){const it=outbox.find(x=>!x.loai&&x.id===editing.id);
     if(it){Object.assign(it.sub,{items:{...patch.items},count:patch.count,edits:patch.edits});
       if(patch.zones)it.sub.zones=patch.zones;if(patch.item_notes!==undefined)it.sub.itemNotes=patch.item_notes;
-      outboxSave();return 'ok';}}
+      outboxSave();
+      boHangDoi(x=>x.loai==='sua'&&x.subId===editing.id);   // phiếu đã mang số mới nhất — bản sửa cũ chờ gửi sẽ đè ngược
+      return 'ok';}}
   if(!sb)return 'ok';
   if(!mangOK||(typeof navigator!=='undefined'&&navigator.onLine===false)){outboxThemSua(editing,patch);return 'hangdoi';}
+  const _cu=layKhoiHangDoi(x=>x.loai==='sua'&&x.subId===editing.id);let _kq='loi';
+  try{_kq=await (async()=>{
   for(let lan=0;lan<4;lan++){
     let r;
     try{r=await sb.from('submissions').update(patch).match({id:editing.id,status:'Chờ duyệt'}).select();}
@@ -6535,6 +6549,7 @@ async function guiSuaPhieu(editing,patch){
     return 'loi';
   }
   return 'loi';
+  })();return _kq;}finally{if(_kq==='loi')traLaiHangDoi(_cu);}
 }
 function draftKey(){return counting.plant+'|'+counting.sloc+(counting.tuan?'|'+counting.tuan:'');}
 // Quy trình bắt buộc do BLĐ ban hành — hiện ở cả màn kiểm kê lẫn màn điều chuyển
@@ -6569,7 +6584,7 @@ async function luuKiemTuan(plant,sloc,week,sach,btn,meta,bao){
   const _gc=metaSach(meta,sach);
   const ban={id:id,plant:plant,sloc:sloc,week:week,items:sach,itemNotes:_gc,count:soMa,by:session.name,time:now()};
   if(btn){btn.disabled=true;var _c=btn.textContent;btn.textContent='Đang lưu…';}
-  let ok=true,vi='',hangDoi=false;
+  let ok=true,vi='',hangDoi=false,_cuT=[];
   const _row={id:id,plant_code:plant,sloc_code:sloc,week:week,
     items:sach,count:soMa,created_by:session.name};
   if(noteColOK&&_gc)_row.item_notes=_gc;
@@ -6577,6 +6592,7 @@ async function luuKiemTuan(plant,sloc,week,sach,btn,meta,bao){
   if(sb&&(!mangOK||(typeof navigator!=='undefined'&&navigator.onLine===false)))hangDoi=true;
   else if(sb&&!await choFlushXong())hangDoi=true;   // vòng tự gửi còn chạy: xếp sau, không ghi chen
   else if(sb){
+    _cuT=layKhoiHangDoi(x=>x.loai==='tuan'&&x.id===id);
     try{
       let r=await sb.from('weekly_counts').upsert(_row,{onConflict:'id'});
       /* Cột ngày/ghi chú có thể chưa tạo -> bỏ cột rồi lưu lại ngay, số tuần
@@ -6588,6 +6604,7 @@ async function luuKiemTuan(plant,sloc,week,sach,btn,meta,bao){
       if(r&&r.error){if(laLoiMang(r.error)){hangDoi=true;datMang(false);}else{ok=false;vi=r.error.message||'';}}
     }catch(e){if(laLoiMang(e)){hangDoi=true;datMang(false);}else{ok=false;vi=(e&&e.message)||'';}}
   }
+  if(!ok)traLaiHangDoi(_cuT);   // máy chủ từ chối: bản chờ gửi cũ (nếu có) vẫn giữ như trước
   if(btn){btn.disabled=false;btn.textContent=_c;}
   if(hangDoi){
     outboxThemTuan(_row,ban,bao);
@@ -6632,10 +6649,15 @@ async function xoaKiemTuan(b){
   if(cho.length){
     boHangDoi(laCho);   // bỏ trước để vòng tự gửi không đưa nó lên lại trong lúc đang xoá
     if(sb){let r;try{r=await sb.from('weekly_counts').delete().eq('id',b.id).select();}catch(e){r={error:e};}
-      if(r&&r.error){outbox=outbox.concat(cho);outboxSave();try{veChipMang();}catch(e){}
+      if(r&&r.error){traLaiHangDoi(cho);
         if(laLoiMang(r.error)){datMang(false);toast('Cần có mạng để xóa bản kiểm tuần — di chuyển sang chỗ có mạng rồi bấm lại');return;}
-        errBox('Không xóa được bản kiểm tuần',['Bản <b>'+tuanLabel(b.week).split(' · ')[0]+'</b> vẫn còn.','Thử lại sau ít phút; vẫn lỗi thì chụp màn hình gửi kế toán.'],'Bảng: weekly_counts'+NL+b.id+NL+(r.error.message||''));return;}}
-    /* 0 dòng là bình thường ở đây: bản chờ gửi có thể chưa từng lên máy chủ. */
+        errBox('Không xóa được bản kiểm tuần',['Bản <b>'+tuanLabel(b.week).split(' · ')[0]+'</b> vẫn còn.','Thử lại sau ít phút; vẫn lỗi thì chụp màn hình gửi kế toán.'],'Bảng: weekly_counts'+NL+b.id+NL+(r.error.message||''));return;}
+    /* 0 dòng là bình thường khi bản chờ gửi chưa từng lên máy chủ — nhưng nếu máy chủ VẪN CÒN bản đó
+       thì là bị chặn quyền xoá: trả bản chờ gửi lại, báo rõ, không báo "đã xoá". */
+      if(r&&!r.error&&Array.isArray(r.data)&&!r.data.length){let q=null;
+        try{q=await sb.from('weekly_counts').select('id').eq('id',b.id).limit(1);}catch(e){}
+        if(q&&!q.error&&Array.isArray(q.data)&&q.data.length){traLaiHangDoi(cho);
+          errBox('Máy chủ từ chối xóa bản kiểm tuần',['Bản <b>'+tuanLabel(b.week).split(' · ')[0]+'</b> vẫn còn trên hệ thống — tài khoản này chưa được phép xóa.','Chụp màn hình này gửi kế toán.'],'Bảng: weekly_counts'+NL+b.id+NL+'Số dòng xoá: 0');return;}}}
   }else{
     const r=await dbDel('weekly_counts',{id:b.id});
     if(!r.ok||r.count===0)return;   // dbDel đã dựng hộp lỗi
@@ -8842,17 +8864,26 @@ function nkPhanLoai(dong,dsCo,plant,sloc){
      ngày (23/10/2026). Số phiếu nằm đầu ghi chú dòng nhập Excel: "<số phiếu> [Excel]". */
   const soCua=n=>{const t=String(n||'');const i=t.indexOf('[Excel]');return i>0?t.slice(0,i).replace(/\s+/g,'').toUpperCase():'';};
   const kq={moi:[],daCo:[],lech:[]};
-  /* Dòng CÓ ngày cũng dò theo số phiếu + mã: lần trước file để trống ngày (đã ghi theo ngày trên
-     màn), lần này điền ngày thật rồi nạp lại -> trước đây thành dòng mới, hàng tính hai lần
-     (rà soát 23/10/2026). Khớp được mà khác ngày = "lệch", thay thì sửa luôn ngày cho đúng. */
-  dong.forEach(d=>{let c=theoId[d.id],dl=d,ngayCu=null;
+  /* Dò theo SỐ PHIẾU + MÃ (siết lại 23/10/2026, bản 2310-05):
+     · dòng file TRỐNG NGÀY: khớp dòng Excel cũ cùng số phiếu + mã (nạp lại cùng file vào hôm khác);
+     · dòng file CÓ NGÀY: CHỈ khớp dòng cũ nạp từ file trống ngày (ghi chú "[trống ngày]") — lần trước
+       để trống, lần này điền ngày thật; sửa ngày xong dấu đổi thành "[đã sửa ngày]" và từ đó chỉ khớp
+       đúng ngày thật của nó (mã dòng vẫn tính theo ngày cũ nên không khớp theo mã được nữa). Bản
+       2310-03 khớp MỌI dòng cũ nên một số phiếu ghi lặp ở hai ngày (BP ghi số PO, chữ "Kho tổng"…)
+       bị dời ngày một dòng đúng -> mất hàng của ngày đó;
+     · mỗi dòng cũ chỉ được khớp MỘT lần, và không trùng dòng đã khớp đúng mã dòng. */
+  const trongNgay=n=>String(n||'').indexOf('[trống ngày]')>=0,daSuaNgay=n=>String(n||'').indexOf('[đã sửa ngày]')>=0;
+  const daKhop=new Set();dong.forEach(d=>{if(theoId[d.id])daKhop.add(d.id);});
+  dong.forEach(d=>{let c=theoId[d.id],dl=d,ngayCu=null,noteMoi=null;
     if(!c&&d.soPhieu&&plant){const sp=String(d.soPhieu).replace(/\s+/g,'').toUpperCase();
-      c=(dsCo||[]).find(r=>r&&r.plant===plant&&r.sloc===sloc&&r.code===d.code&&soCua(r.note)===sp);
-      if(c&&d.khongNgay){dl=Object.assign({},d,{id:c.id,date:c.date,period:c.period||d.period});d._ngayLuu=c.date;}
-      else if(c){dl=Object.assign({},d,{id:c.id});if(c.date!==d.date)ngayCu=c.date;}}
+      c=(dsCo||[]).find(r=>r&&!daKhop.has(r.id)&&r.plant===plant&&r.sloc===sloc&&r.code===d.code&&soCua(r.note)===sp&&(d.khongNgay||trongNgay(r.note)||(daSuaNgay(r.note)&&r.date===d.date)));
+      if(c){daKhop.add(c.id);
+        if(d.khongNgay){dl=Object.assign({},d,{id:c.id,date:c.date,period:c.period||d.period});d._ngayLuu=c.date;}
+        else{dl=Object.assign({},d,{id:c.id});
+          if(c.date!==d.date){ngayCu=c.date;noteMoi=String(c.note||'').replace('[trống ngày]','[đã sửa ngày]');}}}}
     if(!c){d._tt='moi';kq.moi.push(d);}
     else if(Number(c.qty)===Number(d.qty)&&!ngayCu){d._tt='daCo';kq.daCo.push(d);}
-    else{d._tt='lech';d._qtyCu=Number(c.qty);d._ngayCu=ngayCu;kq.lech.push(Object.assign({},dl,{qtyCu:Number(c.qty),ngayCu}));}});
+    else{d._tt='lech';d._qtyCu=Number(c.qty);d._ngayCu=ngayCu;kq.lech.push(Object.assign({},dl,{qtyCu:Number(c.qty),ngayCu,noteMoi}));}});
   return kq;
 }
 // ---- Nhận hàng từ kho tổng: gõ tay hoặc quét ảnh — dùng kho/kỳ đã ghim ----
@@ -8889,8 +8920,11 @@ function dcNhapKho(v){
   const fNote=el('label','field f-grow','<span>Số phiếu xuất kho tổng / Ghi chú</span>');const iNote=el('input','input');iNote.placeholder='VD: PX-12345 — số phiếu kho tổng xuất';fNote.appendChild(iNote);
   g.appendChild(fDate);g.appendChild(fNote);formWrap.appendChild(g);
   {const G=nkGoNay();if(G.ngay)iDate.value=G.ngay;if(G.phieu!=null)iNote.value=G.phieu;
-   const nho=()=>{const G2=nkGoNay();G2.ngay=iDate.value;G2.phieu=iNote.value;};
-   iDate.addEventListener('input',nho);iDate.addEventListener('change',nho);iNote.addEventListener('input',nho);}
+   /* Ngày chỉ nhớ khi người dùng ĐỔI ngày — gõ số phiếu mà cũng ghi ngày thì màn để mở qua đêm sẽ
+      ghim ngày hôm qua cho cả hôm nay (rà soát 23/10/2026). */
+   const nhoNgay=()=>{nkGoNay().ngay=iDate.value;};
+   iDate.addEventListener('input',nhoNgay);iDate.addEventListener('change',nhoNgay);
+   iNote.addEventListener('input',()=>{nkGoNay().phieu=iNote.value;});}
   /* ===== CHỌN MÃ HÀNG — LIST SẴN, CHỈ ĐƯỢC CHỌN TỪ MASTER DATA =====
      Rule Khoa 18/09/2026:
        1. Vào màn là thấy sẵn danh sách (>=10 mã), không bắt gõ mới hiện. Trước đây
@@ -9122,7 +9156,7 @@ function dcNhapKho(v){
       let moi=0,doi=0,truot=0,trung=0,cho=0;const maLa=[],maLaCho=[];
       for(const d of pl.moi){
         const rec={id:d.id,plant:plantSel.value,sloc:slocSel.value,code:d.code,name:d.name,uom:d.uom,qty:d.qty,date:d.date,period:d.period,
-          note:((d.soPhieu?d.soPhieu+' ':'')+'[Excel]'+(d.maLa?' [mã chờ khai báo]':'')).trim(),by:session.name,time:now()};
+          note:((d.soPhieu?d.soPhieu+' ':'')+'[Excel]'+(d.khongNgay?' [trống ngày]':'')+(d.maLa?' [mã chờ khai báo]':'')).trim(),by:session.name,time:now()};
         let err=null,_cho=false;
         const _rRow={id:rec.id,plant_code:rec.plant,sloc_code:rec.sloc,code:rec.code,name:rec.name,uom:rec.uom,qty:rec.qty,date:rec.date,period:rec.period,note:rec.note,created_by:rec.by};
         if(sb){if((!mangOK||(typeof navigator!=='undefined'&&navigator.onLine===false)))_cho=true;
@@ -9136,17 +9170,20 @@ function dcNhapKho(v){
           console.error('receipts',err);truot++;continue;}
         receipts.unshift(rec);if(d.maLa)maLa.push(d.code);else learnMaterials([{code:rec.code,name:rec.name,uom:rec.uom}]);moi++;}
       if(thay)for(const d of pl.lech){
-        const _p={qty:d.qty};if(d.ngayCu){_p.date=d.date;_p.period=d.period;}
+        const _p={qty:d.qty};if(d.ngayCu){_p.date=d.date;_p.period=d.period;}if(d.noteMoi!=null)_p.note=d.noteMoi;
         const _dat=()=>{const c=receipts.find(x=>x.id===d.id);if(c)Object.assign(c,_p);};
-        /* Dòng cũ còn chờ gửi (chưa lên máy chủ): sửa thẳng bản trong hàng đợi. */
-        {const _q=outbox.find(x=>x.loai==='nhap'&&x.id===d.id);if(_q){await choFlushXong();}}
-        {const _q=outbox.find(x=>x.loai==='nhap'&&x.id===d.id);if(_q){Object.assign(_q.row,_p);if(_q.rec)Object.assign(_q.rec,_p);outboxSave();_dat();cho++;continue;}}
-        if(sb&&(!mangOK||(typeof navigator!=='undefined'&&navigator.onLine===false))){outboxThem({loai:'nhapdoi',id:'ND|'+d.id,rid:d.id,code:d.code,patch:_p});
-          _dat();cho++;continue;}
-        if(!await choFlushXong()){outboxThem({loai:'nhapdoi',id:'ND|'+d.id,rid:d.id,code:d.code,patch:_p});_dat();cho++;continue;}
-        boHangDoi(x=>x.loai==='nhapdoi'&&x.rid===d.id);
+        const _xep=()=>{outboxThem({loai:'nhapdoi',id:'ND|'+d.id,rid:d.id,code:d.code,patch:_p});_dat();cho++;};
+        /* Dòng cũ còn chờ gửi (chưa lên máy chủ): chờ vòng tự gửi xong rồi sửa thẳng bản trong hàng
+           đợi; vẫn bận thì xếp một lệnh sửa — đừng sửa vào dòng đang được gửi dở. */
+        if(outbox.some(x=>x.loai==='nhap'&&x.id===d.id)){
+          if(!await choFlushXong()){_xep();continue;}
+          const _q=outbox.find(x=>x.loai==='nhap'&&x.id===d.id);
+          if(_q){Object.assign(_q.row,_p);if(_q.rec)Object.assign(_q.rec,_p);outboxSave();_dat();cho++;continue;}}
+        if(sb&&(!mangOK||(typeof navigator!=='undefined'&&navigator.onLine===false))){_xep();continue;}
+        if(!await choFlushXong()){_xep();continue;}
+        const _cu=layKhoiHangDoi(x=>x.loai==='nhapdoi'&&x.rid===d.id);
         const u=await dbUpd('receipts',{id:d.id},_p);
-        if(u.ok&&u.count!==0){_dat();doi++;}else truot++;}
+        if(u.ok&&u.count!==0){_dat();doi++;}else{traLaiHangDoi(_cu);truot++;}}
       if(moi||doi)log('Nhập kho từ Excel',moi+' dòng mới'+(doi?', thay '+doi+' dòng':'')+' · '+whName(plantSel.value,slocSel.value));
       if(maLa.length){const ds=[...new Set(maLa)];
         try{notifyWh(plantSel.value,slocSel.value,whName(plantSel.value,slocSel.value)+' nhập kho từ Excel có '+ds.length

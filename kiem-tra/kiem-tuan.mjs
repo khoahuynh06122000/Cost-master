@@ -225,6 +225,7 @@ const MAU = [
   { re: /outboxCount\(\)\)await outboxFlush\(\);\s*\n\s*else if\(typeof navigator/, mo: false, vi: 'Hàng đợi chỉ còn mục bị từ chối làm app kẹt \"Mất mạng\" (sửa 23/10, bản 2310-04)' },
   { re: /renderList\(\);updRead\(\);vePick\(\);setMode\('tay'\);/, mo: false, vi: 'Nhận hàng: mạng đổi trạng thái xoá ô Ngày / Số phiếu đang gõ (sửa 23/10, bản 2310-04)' },
   { re: /phải đếm lại tuần này\.'\)\)return;\s*\n\s*const r=await dbDel\('weekly_counts'/, mo: false, vi: 'Xoá bản kiểm tuần đang chờ gửi thì nó quay lại (sửa 23/10, bản 2310-04)' },
+  { re: /r\.code===d\.code&&soCua\(r\.note\)===sp\);/, mo: false, vi: 'Excel nhập kho: dòng có ngày khớp nhầm dòng cũ cùng số phiếu ngày khác -> dời ngày, mất hàng (sửa 23/10, bản 2310-05)' },
 ];
 function kiemTaiPhat() {
   for (const m of MAU) {
