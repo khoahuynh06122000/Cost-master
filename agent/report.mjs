@@ -33,9 +33,31 @@ function khoTrongApp() {
     const dong = html.split('\n').find(l => /^const DATA\s*=\s*\{/.test(l));
     const data = JSON.parse(dong.replace(/^const DATA\s*=\s*/, '').replace(/;\s*$/, ''));
     const m = {};
-    (data.warehouses || []).forEach(w => { m[w.plant + '|' + w.sloc] = w.sloc_name; });
+    (data.warehouses || []).forEach(w => { m[w.plant + '|' + w.sloc] = w.sloc_name; diemApp[w.plant] = w.plant_name; });
     return m;
   } catch (e) { console.warn('Không đọc được danh sách kho trong index.html:', e.message); return {}; }
+}
+const diemApp = {};   // tên điểm bán trong app, dự phòng khi bảng plants thiếu điểm mới
+
+// Tuần ISO 'YYYY-Www' — y hệt tuanCua() của app để khớp cột weekly_counts.week.
+// Nhận một Date mà các trường UTC mang giờ VIỆT NAM (gioVN()).
+function tuanCua(d) {
+  const t = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  t.setUTCDate(t.getUTCDate() - ((t.getUTCDay() + 6) % 7) + 3);
+  const nam = t.getUTCFullYear();
+  const t1 = new Date(Date.UTC(nam, 0, 4));
+  t1.setUTCDate(t1.getUTCDate() - ((t1.getUTCDay() + 6) % 7) + 3);
+  return nam + '-W' + String(1 + Math.round((t - t1) / 604800000)).padStart(2, '0');
+}
+const gioVN = () => new Date(Date.now() + 7 * 3600e3);   // máy GitHub chạy giờ UTC
+// 'YYYY-Www' -> 'dd/mm – dd/mm/yyyy' (thứ Hai – Chủ nhật)
+function khoangTuan(W) {
+  const [nam, w] = [+W.slice(0, 4), +W.slice(-2)];
+  const t1 = new Date(Date.UTC(nam, 0, 4));
+  const thu2 = new Date(t1.getTime() - ((t1.getUTCDay() + 6) % 7) * 864e5 + (w - 1) * 7 * 864e5);
+  const cn = new Date(thu2.getTime() + 6 * 864e5);
+  const f = d => String(d.getUTCDate()).padStart(2, '0') + '/' + String(d.getUTCMonth() + 1).padStart(2, '0');
+  return `${f(thu2)} – ${f(cn)}/${cn.getUTCFullYear()}`;
 }
 
 async function postTeams(url, text) {
@@ -108,19 +130,25 @@ try {
     q('submissions?select=plant_code,sloc_code,status,period&limit=5000'),
     q('slocs?select=plant_code,sloc_code,sloc_name').catch(() => []), // tên kho (nếu có bảng)
   ]);
-  const pname = c => (plants.find(p => p.plant_code === c) || {}).plant_name || c;
   const snameMap = {};
   (Array.isArray(slocs) ? slocs : []).forEach(s => { snameMap[s.plant_code + '|' + s.sloc_code] = s.sloc_name; });
   const khoApp = khoTrongApp();
   const sname = (p, s) => khoApp[p + '|' + s] || snameMap[p + '|' + s] || ('kho ' + s);
   const laBep = (p, s) => vnNorm(khoApp[p + '|' + s] || snameMap[p + '|' + s] || '').includes('bep');
+  const pname = c => (plants.find(p => p.plant_code === c) || {}).plant_name || diemApp[c] || c;
   const whLabel = (p, s) => `${pname(p)} · ${sname(p, s)}`;
+  // Mọi kho bếp (cùng danh sách app dùng ở màn Kiểm kê tuần của kế toán)
+  const dsKhoBep = () => {
+    const nguon = Object.keys(khoApp).length ? khoApp : snameMap;
+    return Object.keys(nguon).filter(k => vnNorm(nguon[k]).includes('bep'))
+      .map(k => { const [p, s] = k.split('|'); return { p, s }; });
+  };
 
-  // Chưa mở kỳ nào => không báo.
-  if (!opened.length) { console.log('✅ Chưa có kỳ kiểm kê nào được mở — không gửi tin.'); process.exit(0); }
+  // Chưa mở kỳ nào => phần kỳ tháng im lặng (phần kiểm kê TUẦN của bếp vẫn báo).
+  if (!opened.length) console.log('Chưa có kỳ kiểm kê tháng nào được mở.');
 
   // Kỳ đang theo dõi = kỳ mới nhất đã được mở.
-  const activePeriod = [...new Set(opened.map(o => o.period))].sort().pop();
+  const activePeriod = [...new Set(opened.map(o => o.period))].sort().pop() || '';
   const openUnits = opened.filter(o => o.period === activePeriod);
 
   // Trạng thái từng kho đã mở: 'done' (đã duyệt) | 'wait' (đã nhập, chờ duyệt) | 'none' (chưa nhập).
@@ -152,14 +180,40 @@ try {
     return msg;
   }
 
+  // ===== KIỂM KÊ TUẦN CỦA BẾP (24/10/2026) =====
+  // Mỗi kho bếp mỗi tuần ISO một bản (weekly_counts). Báo tuần này bếp nào đã/chưa kiểm.
+  // Bếp nào cũng đã kiểm tuần này => phần tuần im lặng.
+  async function phanTuan() {
+    const W = tuanCua(gioVN()), W0 = tuanCua(new Date(gioVN().getTime() - 7 * 864e5));
+    let ban;
+    try { ban = await q(`weekly_counts?select=plant_code,sloc_code,week,count,created_by,created_at&week=in.(${W},${W0})`); }
+    catch (e) { console.warn('Không đọc được kiểm kê tuần:', e.message); return `🍳 KIỂM KÊ TUẦN — ${W}\n⚠ Không đọc được số kiểm tuần lần này (xem log GitHub).`; }
+    const tatCaBep = dsKhoBep();
+    if (!tatCaBep.length) return null;
+    const cua = (u, w) => ban.filter(b => b.plant_code === u.p && b.sloc_code === u.s && b.week === w)
+      .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))[0];
+    const da = tatCaBep.filter(u => cua(u, W)), chua = tatCaBep.filter(u => !cua(u, W));
+    if (!chua.length) { console.log(`✅ Kiểm tuần ${W}: mọi bếp đã kiểm.`); return null; }
+    const daTuanTruoc = tatCaBep.filter(u => cua(u, W0)).length;
+    const gioLuu = t => new Date(t).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
+    let m = `🍳 KIỂM KÊ TUẦN — Tuần ${W.slice(-2)} (${khoangTuan(W)})\nĐã kiểm: ${da.length}/${tatCaBep.length} bếp\n`;
+    m += `\n🔴 CHƯA KIỂM TUẦN NÀY (${chua.length} bếp):\n` +
+      chua.map(u => `${line(u)}${cua(u, W0) ? '' : ' — tuần trước cũng chưa kiểm'}`).join('\n') + '\n';
+    if (da.length) m += `\n🟢 ĐÃ KIỂM (${da.length} bếp):\n` +
+      da.map(u => { const b = cua(u, W); return `${line(u)} — ${b.count || 0} mã${b.created_by ? ' · ' + b.created_by : ''} · ${gioLuu(b.created_at)}`; }).join('\n') + '\n';
+    m += `\nTuần trước (tuần ${W0.slice(-2)}): ${daTuanTruoc}/${tatCaBep.length} bếp đã kiểm.`;
+    return m;
+  }
+
   // Bếp chỉ báo bếp, NH chỉ báo NH — mỗi nhóm một link Teams.
+  const tuanBep = await phanTuan();
   const nhom = [
-    { ten: 'BẾP',      url: FLOW_BEP, ds: units.filter(u =>  laBep(u.p, u.s)) },
+    { ten: 'BẾP',      url: FLOW_BEP, ds: units.filter(u =>  laBep(u.p, u.s)), them: tuanBep },
     { ten: 'NHÀ HÀNG', url: FLOW,     ds: units.filter(u => !laBep(u.p, u.s)) },
   ];
   for (const g of nhom) {
-    const msg = dungTin(g.ten, g.ds);
-    if (!msg) { console.log(`✅ ${g.ten}: không có kho mở kỳ hoặc đã duyệt hết — không gửi tin.`); continue; }
+    const msg = [dungTin(g.ten, g.ds), g.them].filter(Boolean).join('\n\n━━━━━━━━━━━━\n\n');
+    if (!msg) { console.log(`✅ ${g.ten}: không có gì cần báo — không gửi tin.`); continue; }
     if (!g.url) { console.warn(`⚠ ${g.ten}: chưa đặt TEAMS_FLOW_URL_BEP — bỏ qua phần này.`); console.log(msg); continue; }
     await withRetry(`Gửi cảnh báo ${g.ten} về Teams`, async () => {
       const r = await postTeams(g.url, msg);
