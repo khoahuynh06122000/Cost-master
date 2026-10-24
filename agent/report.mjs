@@ -1,12 +1,17 @@
 // agent/report.mjs — THEO DÕI KIỂM KÊ THEO KỲ ĐÃ MỞ + AUTO-HEALING (AI chẩn đoán)
 // - Chỉ báo khi kế toán ĐÃ MỞ KỲ (count_lists). Phân 3 nhóm: chưa nhập / chờ duyệt / đã duyệt.
-//   Tất cả kho đã mở đều được duyệt = im lặng. Chưa mở kỳ = im lặng.  -> gửi NHÓM (TEAMS_FLOW_URL).
+//   Tất cả kho đã mở đều được duyệt = im lặng. Chưa mở kỳ = im lặng.
+// - TÁCH 2 TIN (24/10/2026): kho BẾP -> TEAMS_FLOW_URL_BEP, kho NHÀ HÀNG -> TEAMS_FLOW_URL.
+//   Bếp chỉ báo bếp, NH chỉ báo NH; mỗi bên tự xét luật im lặng riêng.
+//   Kho bếp = tên kho có chữ "Bếp" — đọc đúng danh sách kho trong index.html như app (laKhoBep).
 // - Lỗi kỹ thuật           -> tự thử lại 3 lần; vẫn lỗi thì gọi AI chẩn đoán rồi gửi RIÊNG Khoa (TEAMS_PERSONAL_URL).
 // Bí mật lấy từ GitHub Secrets — KHÔNG nhúng key vào code.
+import { readFileSync } from 'node:fs';
 
 const SB_URL   = process.env.SUPABASE_URL;
 const SB_KEY   = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY;
-const FLOW     = process.env.TEAMS_FLOW_URL;                 // nhóm
+const FLOW     = process.env.TEAMS_FLOW_URL;                 // nhóm NHÀ HÀNG
+const FLOW_BEP = process.env.TEAMS_FLOW_URL_BEP || '';       // nhóm BẾP (chưa đặt thì không gửi phần bếp)
 const PERSONAL = process.env.TEAMS_PERSONAL_URL || FLOW;     // chat riêng Khoa (thiếu thì tạm về nhóm)
 const AI_KEY   = process.env.AI_API_KEY || '';               // khóa AI để chẩn đoán (Gemini)
 const AI_MODEL = process.env.AI_MODEL || 'gemini-2.5-flash'; // đổi model tại đây (hoặc set secret AI_MODEL)
@@ -17,6 +22,21 @@ if (!SB_URL || !SB_KEY || !FLOW) { console.error('Thiếu SUPABASE_URL / SUPABAS
 const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` };
 const dstr = t => new Date(t).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+const vnNorm = s => String(s == null ? '' : s).normalize('NFD').toLowerCase()
+  .replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/\s+/g, '');
+
+// Tên kho lấy từ DATA.warehouses trong index.html — CÙNG nguồn với laKhoBep() của app,
+// để bot và app luôn nhận cùng một tập kho bếp. Đọc hỏng thì rơi về bảng slocs.
+function khoTrongApp() {
+  try {
+    const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+    const dong = html.split('\n').find(l => /^const DATA\s*=\s*\{/.test(l));
+    const data = JSON.parse(dong.replace(/^const DATA\s*=\s*/, '').replace(/;\s*$/, ''));
+    const m = {};
+    (data.warehouses || []).forEach(w => { m[w.plant + '|' + w.sloc] = w.sloc_name; });
+    return m;
+  } catch (e) { console.warn('Không đọc được danh sách kho trong index.html:', e.message); return {}; }
+}
 
 async function postTeams(url, text) {
   return fetch(url, { method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'}, body: text });
@@ -91,7 +111,9 @@ try {
   const pname = c => (plants.find(p => p.plant_code === c) || {}).plant_name || c;
   const snameMap = {};
   (Array.isArray(slocs) ? slocs : []).forEach(s => { snameMap[s.plant_code + '|' + s.sloc_code] = s.sloc_name; });
-  const sname = (p, s) => snameMap[p + '|' + s] || ('kho ' + s);
+  const khoApp = khoTrongApp();
+  const sname = (p, s) => khoApp[p + '|' + s] || snameMap[p + '|' + s] || ('kho ' + s);
+  const laBep = (p, s) => vnNorm(khoApp[p + '|' + s] || snameMap[p + '|' + s] || '').includes('bep');
   const whLabel = (p, s) => `${pname(p)} · ${sname(p, s)}`;
 
   // Chưa mở kỳ nào => không báo.
@@ -110,30 +132,41 @@ try {
     return { p: o.plant_code, s: o.sloc_code, st, days };
   });
 
-  const none = units.filter(u => u.st === 'none');
-  const wait = units.filter(u => u.st === 'wait');
-  const done = units.filter(u => u.st === 'done');
-
-  // Tất cả đã duyệt => dừng thông báo.
-  if (!none.length && !wait.length) { console.log('✅ Tất cả kho đã mở đều được duyệt — không gửi tin.'); process.exit(0); }
-
   const perVN = (activePeriod || '').split('-').reverse().join('/'); // YYYY-MM -> MM/YYYY
   const line = u => `- ${whLabel(u.p, u.s)}`;
-  let msg = `📋 THEO DÕI KIỂM KÊ — KỲ THÁNG ${perVN} (đã mở kỳ)\nThời điểm: ${new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })}\n`;
-  if (none.length) msg += `\n🔴 CHƯA NHẬP (${none.length} kho):\n` +
-    none.sort((a,b) => b.days - a.days).map(u => `${line(u)}${u.days >= 1 ? ` — mở kỳ ${u.days} ngày trước` : ''}`).join('\n') + '\n';
-  if (wait.length) msg += `\n🟡 ĐÃ NHẬP · CHỜ KẾ TOÁN DUYỆT (${wait.length} kho):\n` +
-    wait.map(line).join('\n') + '\n';
-  if (done.length) msg += `\n🟢 ĐÃ DUYỆT (${done.length} kho):\n` +
-    done.map(line).join('\n') + '\n';
-  msg += `\nTiến độ: ${done.length}/${units.length} kho đã duyệt.`;
 
-  // gửi cảnh báo vào NHÓM (có retry)
-  await withRetry('Gửi cảnh báo về nhóm Teams', async () => {
-    const r = await postTeams(FLOW, msg);
-    if (!r.ok && r.status !== 0) throw new Error(`Teams HTTP ${r.status}`);
-  });
-  console.log('Đã gửi cảnh báo về nhóm.'); console.log(msg);
+  // Dựng 1 tin cho 1 nhóm kho. Trả null khi nhóm đó không có kho mở kỳ hoặc đã duyệt hết (im lặng).
+  function dungTin(ten, ds) {
+    const none = ds.filter(u => u.st === 'none');
+    const wait = ds.filter(u => u.st === 'wait');
+    const done = ds.filter(u => u.st === 'done');
+    if (!none.length && !wait.length) return null;
+    let msg = `📋 THEO DÕI KIỂM KÊ ${ten} — KỲ THÁNG ${perVN} (đã mở kỳ)\nThời điểm: ${new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })}\n`;
+    if (none.length) msg += `\n🔴 CHƯA NHẬP (${none.length} kho):\n` +
+      none.sort((a,b) => b.days - a.days).map(u => `${line(u)}${u.days >= 1 ? ` — mở kỳ ${u.days} ngày trước` : ''}`).join('\n') + '\n';
+    if (wait.length) msg += `\n🟡 ĐÃ NHẬP · CHỜ KẾ TOÁN DUYỆT (${wait.length} kho):\n` +
+      wait.map(line).join('\n') + '\n';
+    if (done.length) msg += `\n🟢 ĐÃ DUYỆT (${done.length} kho):\n` +
+      done.map(line).join('\n') + '\n';
+    msg += `\nTiến độ: ${done.length}/${ds.length} kho đã duyệt.`;
+    return msg;
+  }
+
+  // Bếp chỉ báo bếp, NH chỉ báo NH — mỗi nhóm một link Teams.
+  const nhom = [
+    { ten: 'BẾP',      url: FLOW_BEP, ds: units.filter(u =>  laBep(u.p, u.s)) },
+    { ten: 'NHÀ HÀNG', url: FLOW,     ds: units.filter(u => !laBep(u.p, u.s)) },
+  ];
+  for (const g of nhom) {
+    const msg = dungTin(g.ten, g.ds);
+    if (!msg) { console.log(`✅ ${g.ten}: không có kho mở kỳ hoặc đã duyệt hết — không gửi tin.`); continue; }
+    if (!g.url) { console.warn(`⚠ ${g.ten}: chưa đặt TEAMS_FLOW_URL_BEP — bỏ qua phần này.`); console.log(msg); continue; }
+    await withRetry(`Gửi cảnh báo ${g.ten} về Teams`, async () => {
+      const r = await postTeams(g.url, msg);
+      if (!r.ok && r.status !== 0) throw new Error(`Teams HTTP ${r.status}`);
+    });
+    console.log(`Đã gửi cảnh báo ${g.ten}.`); console.log(msg);
+  }
 
 } catch (e) {
   // ===== AUTO-HEALING: đã thử lại nhưng vẫn lỗi -> AI chẩn đoán -> báo RIÊNG Khoa =====
