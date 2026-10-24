@@ -1121,7 +1121,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2410-02';
+const APP_VER='2410-03';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -2432,6 +2432,26 @@ function learnMaterials(list){
   if(sb&&batch.length){try{sb.from('materials').upsert(batch).then(({error})=>{if(error)console.error('learnMaterials',error);});}catch(e){console.error(e);}}
   return batch.length;
 }
+/* Ghi tên mã lên danh mục tổng, CHỜ máy chủ nhận (24/10/2026). Trả {ok:[mã đã lên], loi:[thông điệp]}.
+   Nơi gọi chỉ đổi trên máy những mã nằm trong ok — trước đây đổi trên máy trước, máy chủ từ chối thì
+   màn báo "đã khai báo" mà tải lại trang mã quay về như cũ. */
+async function ghiTenMa(batch){
+  const ok=[],loi=[];
+  if(!sb)return {ok:batch.map(x=>x.code),loi};
+  for(let i=0;i<batch.length;i+=500){const lo=batch.slice(i,i+500);
+    let r;try{r=await sb.from('materials').upsert(lo);}catch(e){r={error:e};}
+    if(r&&r.error){
+      if(laLoiMang(r.error)){datMang(false);loi.push((r.error.message||String(r.error))+' ('+lo.length+' mã)');continue;}
+      /* Một mã bị từ chối là cả lô trượt — gửi lại từng mã để mã hợp lệ vẫn lên. */
+      if(lo.length>1){for(const x of lo){let r1;try{r1=await sb.from('materials').upsert([x]);}catch(e){r1={error:e};}
+          if(r1&&r1.error)loi.push(x.code+': '+(r1.error.message||String(r1.error)));else ok.push(x.code);}}
+      else loi.push(lo[0].code+': '+(r.error.message||String(r.error)));}
+    else lo.forEach(x=>ok.push(x.code));}
+  return {ok,loi};
+}
+function apTenMa(x){const m=masterByCode[x.code];
+  if(m){m.name=x.name;if(x.uom)m.uom=x.uom;try{_vnCache.delete(x.code);}catch(e){}}
+  else{const nm={code:x.code,name:x.name,uom:x.uom||''};masterByCode[x.code]=nm;DATA.materials.push(nm);}}
 let plantMaterials={};   // { plantCode: [code,...] } — đồng bộ từ Supabase (bảng plant_materials)
 function materialsForPlant(plant){return (plantMaterials[plant]||[]).map(c=>masterByCode[c]).filter(Boolean);}
 // Quét các mã đang dùng (tồn đầu kỳ + danh mục kho) nhưng chưa có tên trong danh mục tổng
@@ -2537,19 +2557,17 @@ async function xoaMaChuaKhai(codes){
   else toast('✓ Đã xóa '+codes.length+' mã — '+kq);
   return true;
 }
+/* Xuất .xlsx THẬT (24/10/2026). Bản cũ là trang HTML đặt đuôi .xls: mở bằng Excel, điền rồi bấm Lưu thì Excel
+   giữ dạng "trang web" và tách dữ liệu sang thư mục <tên>_files — file .xls còn lại chỉ là vỏ, nạp lên không có dòng nào. */
 function exportUndeclared(bad){
-  const esc=escHtml;
-  const C='style="border:1px solid #000;padding:3px 6px;font-family:Calibri;font-size:11pt"';
-  let body='';bad.forEach((x,i)=>{body+=`<tr><td ${C}>${i+1}</td><td ${C}>${esc(x.code)}</td><td ${C}></td><td ${C}></td><td ${C}>${esc(x.plants.map(p=>plantName(p)).join('; '))}</td></tr>`;});
-  const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"></head><body>
-<table style="border-collapse:collapse">
-<tr><td colspan="5" style="font-weight:bold;font-family:Calibri;font-size:13pt">MÃ CHƯA KHAI BÁO — cần bổ sung Tên hàng &amp; ĐVT</td></tr>
-<tr><td ${C}><b>TT</b></td><td ${C}><b>Mã hàng</b></td><td ${C}><b>Tên hàng</b></td><td ${C}><b>ĐVT</b></td><td ${C}><b>Xuất hiện ở kho</b></td></tr>
-${body}</table></body></html>`;
-  const blob=new Blob(['\ufeff'+html],{type:'application/vnd.ms-excel;charset=utf-8'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='MaChuaKhaiBao.xls';
-  document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(()=>URL.revokeObjectURL(a.href),2000);
-  toast('Đã tải danh sách '+bad.length+' mã chưa khai báo');
+  const rows=[['TT','Mã hàng','Tên hàng','ĐVT','Xuất hiện ở kho']];
+  bad.forEach((x,i)=>rows.push([i+1,String(x.code),'','',x.plants.map(p=>plantName(p)).join('; ')]));
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  for(let r=1;r<rows.length;r++){const c=ws[XLSX.utils.encode_cell({r,c:1})];if(c){c.t='s';c.z='@';}}   // mã giữ dạng chữ
+  ws['!cols']=[{wch:5},{wch:12},{wch:45},{wch:8},{wch:40}];
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'MaChuaKhaiBao');
+  XLSX.writeFile(wb,'MaChuaKhaiBao.xlsx');
+  toast('Đã tải danh sách '+bad.length+' mã chưa khai báo — điền Tên hàng, ĐVT rồi nạp lại ở Danh mục tổng');
 }
 // Nạp danh mục vật tư từ Excel -> tạo/cập nhật mã + tự đẩy lên Supabase
 function importMasterCatalog(file,cb){
@@ -2573,8 +2591,10 @@ function importMasterCatalog(file,cb){
       const m=masterByCode[code];docDuoc++;
       if(m&&!name){const t=String(m.name||'').trim();if(t===''||t==='?'||t===code)trongTen++;else giongHet++;}
       else if(m&&m.name===name&&(!uom||m.uom===uom))giongHet++;
-      if(!m){const nm={code,name:name||code,uom};masterByCode[code]=nm;DATA.materials.push(nm);added++;batch.push({code,name:name||code,uom});}
-      else{let ch=false;if(name&&m.name!==name){m.name=name;ch=true;}if(uom&&m.uom!==uom){m.uom=uom;ch=true;}if(ch){updated++;batch.push({code,name:m.name,uom:m.uom});}}
+      if(batch.some(x=>x.code===code))continue;   // mã lặp trong file: lấy dòng đầu
+      if(!m){added++;batch.push({code,name:name||code,uom,_moi:true});}
+      else{const nm2=name&&m.name!==name?name:m.name,um2=uom&&m.uom!==uom?uom:m.uom;
+        if(nm2!==m.name||um2!==m.uom){updated++;batch.push({code,name:nm2,uom:um2||''});}}
     }
     if(!batch.length){
       /* Nói rõ vì sao không có gì cập nhật — trước đây chỉ một câu chung, người nạp không biết file sai chỗ nào. */
@@ -2582,13 +2602,16 @@ function importMasterCatalog(file,cb){
       else if(trongTen)errBox('Chưa khai được tên mã',['Đọc được <b>'+docDuoc+'</b> mã, trong đó <b>'+trongTen+'</b> mã chưa có tên trong danh mục nhưng ô <b>Tên hàng</b> trong file đang để trống'+(nameCol<0?' (không tìm thấy cột Tên hàng)':'')+'.','Điền tên vào cột Tên hàng rồi nạp lại, hoặc khai từng mã ở mục <b>Mã chưa khai báo tên</b>.'],'');
       else toast('Không có mã mới/khác để cập nhật — '+docDuoc+' mã trong file đã có tên giống hệt danh mục');
       cb&&cb();return;}
-    if(sb){toast('Đang đẩy '+batch.length+' mã lên Supabase...');
-      let err=0;for(let i=0;i<batch.length;i+=500){try{const {error}=await sb.from('materials').upsert(batch.slice(i,i+500));if(error){err++;console.error('materials',error);}}catch(e){err++;console.error(e);}}
-      log('Nạp danh mục từ Excel',`thêm ${added}, cập nhật ${updated}`);
-      toast(err?`Xong: +${added}, sửa ${updated} (có lỗi, xem F12)`:`✓ Thêm ${added}, cập nhật ${updated} mã — đã lên Supabase`);
-    }else toast(`Thêm ${added}, cập nhật ${updated} (local)`);
+    /* Chờ máy chủ nhận rồi mới đổi trên máy (24/10/2026) — trước đây đổi trước, máy chủ từ chối vẫn hiện như đã lưu. */
+    toast('Đang lưu '+batch.length+' mã...');
+    const kq=await ghiTenMa(batch.map(x=>({code:x.code,name:x.name,uom:x.uom})));
+    const C=new Set(kq.ok);let tOk=0,sOk=0;
+    batch.forEach(x=>{if(!C.has(x.code))return;apTenMa(x);if(x._moi)tOk++;else sOk++;});
+    if(kq.ok.length)log('Nạp danh mục từ Excel',`thêm ${tOk}, cập nhật ${sOk}`);
+    if(kq.loi.length)errBox('Nạp danh mục chưa trọn vẹn',['Đã lưu: thêm <b>'+tOk+'</b>, cập nhật <b>'+sOk+'</b> mã.','<b>'+(batch.length-kq.ok.length)+'</b> mã <b>chưa lên máy chủ</b> — nạp lại cùng file sau ít phút (mã đã lưu sẽ tự bỏ qua).'],'Bảng: materials'+NL+kq.loi.join(NL));
+    else toast(`✓ Thêm ${tOk}, cập nhật ${sOk} mã`);
     cb&&cb();
-  },err=>toast('Lỗi đọc file: '+err.message));
+  },err=>baoLoiDocFile(err));
 }
 // Đẩy TOÀN BỘ mã có tên (local) lên Supabase — sửa "?" do Supabase thiếu bản ghi
 async function syncAllMaterials(){
@@ -5567,7 +5590,7 @@ function parseCountListFile(file,cb){
       items[code]={name:nm||mm.name||code,uom:uo||mm.uom||''};ok++;
     }
     cb({items,ok,bad});
-  },err=>toast('Lỗi đọc file: '+((err&&err.message)||err)));
+  },err=>baoLoiDocFile(err));
 }
 // Lưu danh sách cần đếm cho 1 kho + kỳ (dùng chung cho cả 2 cách: chọn trên web và nạp Excel)
 function commitCountList(plant,sloc,period,items,cb){
@@ -7669,6 +7692,18 @@ function splitDelim(line,delim){
   out.push(cur);
   return out.map(c=>c.replace(/\ufeff/g,'').trim());
 }
+/* Excel lưu dạng "Trang web" (Web Page): file .xls chỉ còn VỎ, dữ liệu nằm ở thư mục <tên>_files bên cạnh —
+   trình duyệt không đọc được thư mục đó. Gặp file kiểu mã mẫu cũ của app bị mở bằng Excel rồi bấm Lưu (24/10/2026). */
+const LOI_VO_WEB='File này Excel đã lưu dạng "trang web" nên dữ liệu không nằm trong file. Mở file bằng Excel → File → Save As (Lưu thành) → chọn "Excel Workbook (*.xlsx)" rồi nạp file .xlsx đó.';
+function laVoTrangWeb(buf){
+  try{const t=new TextDecoder('utf-8').decode(buf.slice(0,4000)).toLowerCase();
+    return t.includes('excel workbook frameset')||/_files\/sheet\d+\.htm/.test(t);}catch(e){return false;}
+}
+function baoLoiDocFile(err,tienTo){
+  const m=(err&&err.message)||String(err||'');
+  if(m===LOI_VO_WEB)errBox('Không đọc được file Excel',[LOI_VO_WEB],'');
+  else toast((tienTo||'Lỗi đọc file: ')+m);
+}
 function readSheetRows(file,onRows,onErr){
   const reader=new FileReader();
   reader.onload=e=>{try{
@@ -7678,6 +7713,7 @@ function readSheetRows(file,onRows,onErr){
     else if(!(buf[0]===0x50&&buf[1]===0x4B)&&!(buf[0]===0xD0&&buf[1]===0xCF)){const t=new TextDecoder('utf-8').decode(buf);if((t.indexOf('\t')>=0||t.indexOf(',')>=0)&&t.indexOf('\n')>=0)text=t;}
     if(text!=null){
       const low=text.slice(0,3000).toLowerCase();
+      if(laVoTrangWeb(buf))throw new Error(LOI_VO_WEB);
       if(low.includes('<table')||low.includes('<html')||low.includes('<tr')||low.includes('<td')){
         // File .xls thực chất là HTML (ERP/biên bản xuất) -> để SheetJS parse đúng bảng
         const wb=XLSX.read(text,{type:'string'});rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
@@ -7733,7 +7769,7 @@ function importTransferFile(file,cb){
     if(ngayHong.length){toast('Có '+ngayHong.length+' dòng ngày không đọc được ('+ngayHong.slice(0,3).join(', ')+') — sửa cột Ngày thành dd/mm/yyyy rồi nạp lại');return;}
     if(!out.length){toast('Không đọc được dòng điều chuyển hợp lệ');return;}
     cb(out);
-  },err=>{toast('Lỗi đọc file: '+err.message);});
+  },err=>{baoLoiDocFile(err);});
 }
 /* Chờ MÁY CHỦ ghi xong rồi mới báo (24/10/2026). Trước đây bắn từng dòng không chờ, máy chủ từ chối vẫn
    báo "✓ Đã tạo N phiếu" — sổ thiếu dòng mà không ai biết. Ghi theo lô 100 dòng; một lô hoặc vào hết hoặc
@@ -9312,7 +9348,7 @@ function dcNhapKho(v){
       if(kq.ngayHong.length){toast('Có '+kq.ngayHong.length+' dòng ngày không đọc được ('+kq.ngayHong.slice(0,3).join(', ')+') — sửa cột Ngày thành dd/mm/yyyy rồi nạp lại');xIn.value='';return;}
       if(!kq.dong.length){toast(L('Không có dòng nào nạp được (thiếu mã hoặc số lượng)'));xIn.value='';return;}
       veXemTruocXls(kq);
-    },err=>{toast('Lỗi đọc file: '+err.message);xIn.value='';});
+    },err=>{baoLoiDocFile(err);xIn.value='';});
   };
   function veXemTruocXls(kq){
     const pl=nkPhanLoai(kq.dong,receipts,plantSel.value,slocSel.value);
@@ -10609,6 +10645,7 @@ function importOpeningT6(plant,sloc,file,cb,chanMaLa){
       if(buf[0]===0xFF&&buf[1]===0xFE)text=new TextDecoder('utf-16le').decode(buf);
       else if(buf[0]===0xFE&&buf[1]===0xFF)text=new TextDecoder('utf-16be').decode(buf);
       else if(!(buf[0]===0x50&&buf[1]===0x4B)&&!(buf[0]===0xD0&&buf[1]===0xCF)){ // không phải xlsx(PK) / xls-BIFF(OLE)
+        if(laVoTrangWeb(buf))throw new Error(LOI_VO_WEB);
         const t=new TextDecoder('utf-8').decode(buf);
         if((t.indexOf('\t')>=0||t.indexOf(',')>=0)&&t.indexOf('\n')>=0)text=t;
       }
@@ -11646,7 +11683,7 @@ function catTenEn(v){
     toast('Đã tải '+rows.length+' mã — điền cột Tên tiếng Anh rồi nạp lại lên');
   };
   bNap.onchange=e=>{const f=e.target.files[0];if(!f)return;
-    readSheetRows(f,rows=>{napTenEn(rows,ve);bNap.value='';},err=>{toast('Không đọc được file');bNap.value='';});};
+    readSheetRows(f,rows=>{napTenEn(rows,ve);bNap.value='';},err=>{baoLoiDocFile(err,'Không đọc được file: ');bNap.value='';});};
   ve();
 }
 async function luuTenEn(m,ten,o){
@@ -11776,7 +11813,7 @@ function catThieu(v){
     if(bad.length)uc.style.border='1.5px solid var(--accent-600)';
     const ub=el('div','card-b');
     ub.innerHTML=`<div class="section-eyebrow">${bad.length?'⚠':'✓'} Mã chưa khai báo (thiếu tên) — <b>${bad.length}</b> mã</div>
-      <div style="font-size:12px;color:var(--muted);margin:6px 0 10px">Các mã đang có trong tồn đầu kỳ / danh mục kho nhưng chưa có tên trong danh mục tổng (hiện dấu "?"). ${bad.length?'Bổ sung tên bên dưới hoặc tải Excel về điền rồi up lại (mục tồn đầu kỳ).':'Tất cả mã đều đã có tên.'}</div>`;
+      <div style="font-size:12px;color:var(--muted);margin:6px 0 10px">Các mã đang có trong tồn đầu kỳ / danh mục kho nhưng chưa có tên trong danh mục tổng (hiện dấu "?"). ${bad.length?'Bổ sung tên bên dưới, hoặc tải Excel về điền Tên hàng + ĐVT rồi nạp lại ở Danh mục tổng (nút Nạp danh mục vật tư từ Excel).':'Tất cả mã đều đã có tên.'}</div>`;
     uc.appendChild(ub);
     if(bad.length){
       const btnRow=el('div');btnRow.style.cssText='display:flex;gap:8px;flex-wrap:wrap;align-items:center';
@@ -11787,16 +11824,21 @@ function catThieu(v){
         bSync.onclick=()=>{if(confirm('Đẩy toàn bộ mã đã có tên (local) lên Supabase?\nSửa các mã "?" do máy chủ còn thiếu bản ghi.'))syncAllMaterials().then(()=>renderView());};
         btnRow.appendChild(bSync);
         const bSaveAll=el('button','btn btn-brand btn-sm','💾 Lưu tất cả đã điền');
-        bSaveAll.onclick=()=>{
+        bSaveAll.onclick=async()=>{
           const names=[...document.querySelectorAll('.undName')];
           const batch=[];
           names.forEach(inp=>{const code=inp.dataset.c;const name=inp.value.trim();if(!name)return;
             const uInp=document.querySelector('.undUom[data-c="'+code+'"]');const uom=uInp?uInp.value.trim():'';
-            const m=masterByCode[code];if(m){m.name=name;if(uom)m.uom=uom;}else{const nm={code,name,uom};masterByCode[code]=nm;DATA.materials.push(nm);}
-            batch.push({code,name,uom});});
+            batch.push({code,name,uom:uom||((masterByCode[code]||{}).uom)||''});});
           if(!batch.length){toast('Chưa điền tên mã nào');return;}
-          if(sb)sb.from('materials').upsert(batch).then(({error})=>{if(error){console.error(error);toast('Lỗi lưu: '+error.message);}else{log('Khai báo tên hàng loạt',batch.length+' mã');toast('✓ Đã lưu '+batch.length+' mã lên Supabase');renderView();}});
-          else{toast('Đã lưu '+batch.length+' mã (local)');renderView();}
+          bSaveAll.disabled=true;let kq;try{kq=await ghiTenMa(batch);}finally{bSaveAll.disabled=false;}
+          const C=new Set(kq.ok);batch.filter(x=>C.has(x.code)).forEach(apTenMa);
+          if(kq.ok.length)log('Khai báo tên hàng loạt',kq.ok.length+' mã');
+          if(kq.loi.length){errBox('Chưa lưu hết tên mã',['Đã lưu <b>'+kq.ok.length+'</b>/'+batch.length+' mã.','Các mã còn lại <b>chưa lên máy chủ</b> — vẫn nằm trong danh sách, bấm lưu lại sau ít phút.'],'Bảng: materials'+NL+kq.loi.join(NL));
+            /* giữ chữ đã gõ của mã chưa lưu được */
+            const conGo={};batch.filter(x=>!C.has(x.code)).forEach(x=>conGo[x.code]=x);renderView();
+            document.querySelectorAll('.undName').forEach(i=>{const x=conGo[i.dataset.c];if(x){i.value=x.name;const u=document.querySelector('.undUom[data-c="'+i.dataset.c+'"]');if(u)u.value=x.uom||'';}});}
+          else{toast('✓ Đã lưu '+kq.ok.length+' mã');renderView();}
         };
         btnRow.appendChild(bSaveAll);
       }
@@ -11831,13 +11873,13 @@ function catThieu(v){
             <td><button class="btn btn-brand btn-sm undSave">Lưu</button></td>`;
           gnChon(tr,x.code);tb.appendChild(tr);
           const bSave=tr.querySelector('.undSave');
-          bSave.onclick=()=>{
+          bSave.onclick=async()=>{
             const name=tr.querySelector('.undName').value.trim();const uom=tr.querySelector('.undUom').value.trim();
             if(!name){toast('Nhập tên cho '+x.code);return;}
-            const m=masterByCode[x.code];
-            if(m){m.name=name;if(uom)m.uom=uom;}else{const nm={code:x.code,name,uom};masterByCode[x.code]=nm;DATA.materials.push(nm);}
-            if(sb)sb.from('materials').upsert({code:x.code,name,uom}).then(({error})=>{if(error)console.error('materials',error);});
-            log('Khai báo tên mã',`${x.code} · ${name}`);toast('Đã khai báo '+x.code);renderView();
+            const muc={code:x.code,name,uom:uom||((masterByCode[x.code]||{}).uom)||''};
+            bSave.disabled=true;let kq;try{kq=await ghiTenMa([muc]);}finally{bSave.disabled=false;}
+            if(!kq.ok.length){errBox('Chưa lưu được tên mã',['Mã <b>'+escHtml(x.code)+'</b> <b>chưa lên máy chủ</b> — chữ đã gõ vẫn còn, bấm Lưu lại sau ít phút.'],'Bảng: materials'+NL+kq.loi.join(NL));return;}
+            apTenMa(muc);log('Khai báo tên mã',`${x.code} · ${name}`);toast('Đã khai báo '+x.code);renderView();
           };
         }else{
           tr.innerHTML=`<td class="tnum">${x.code}</td><td style="font-size:12px">${plantsTxt}</td>`;gnChon(tr,x.code);tb.appendChild(tr);
@@ -11973,6 +12015,7 @@ function importPlantCatalog(file,plant,cb){
   const msg=$('#catImportMsg');const reader=new FileReader();const isCsv=/\.csv$/i.test(file.name);
   reader.onload=e=>{
     try{
+      if(!isCsv&&laVoTrangWeb(new Uint8Array(e.target.result)))throw new Error(LOI_VO_WEB);
       const wb=isCsv?XLSX.read(e.target.result,{type:'string'}):XLSX.read(new Uint8Array(e.target.result),{type:'array'});
       const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
       if(!rows.length)throw new Error('File rỗng');
