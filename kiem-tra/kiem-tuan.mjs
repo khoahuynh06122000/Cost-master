@@ -232,6 +232,9 @@ const MAU = [
   { re: /ctxBar\(b,ctx,\{period:true,plants:mine\},\(\)=>\{chosen=null;nkMo=\{\};vePick\(\);renderList\(\);updRead\(\);\}\);/, mo: false, vi: 'Đổi kho khi đang xem trước Excel / ảnh: bảng vẫn còn, lưu sang kho mới (sửa 23/10, bản 2310-06)' },
   { re: /some\(c=>c\.includes\('mã'\)\|\|c\.includes\('mahang'\)/, mo: false, vi: 'Không nhận tiêu đề \"Mã vật tư\" / \"Mã VT\" -> lấy nhầm cột tên làm mã (sửa 23/10, bản 2310-06)' },
   { re: /RegExp\(\"\^Gộp \(\[\\d/, mo: false, vi: 'Mẫu dịch \"Gộp N dòng trùng mã\" mất dấu \\ nên không bao giờ khớp (sửa 23/10, bản 2310-06)' },
+  { re: /toast\('✓ Đã tạo '\+list\.length\+' phiếu điều chuyển'\)/, mo: false, vi: 'Nạp Excel điều chuyển báo đã tạo dù máy chủ từ chối ghi sổ (sửa 24/10, bản 2410-01)' },
+  { re: /const rcp=await sb\.from\('recipes'\)\.select\('\*'\);applyRecipes/, mo: false, vi: 'Mạng chập chờn xoá trắng công thức món / sản lượng / giải trình trên máy (sửa 24/10, bản 2410-01)' },
+  { re: /if\(_loiTai\.length\)\{\s*console\.warn\([^;]*\);\s*if\(_loiTai\.some\(x=>laLoiMang\(x\.e\)\)\)datMang\(false\);\s*\}else if\(!mangOK\)datMang\(true\);/, mo: false, vi: 'Một bảng thiếu / bị chặn quyền làm app không tự bỏ \"Mất mạng\" (sửa 24/10, bản 2410-01)' },
 ];
 function kiemTaiPhat() {
   for (const m of MAU) {
