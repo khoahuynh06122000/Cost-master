@@ -1121,7 +1121,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2410-01';
+const APP_VER='2410-02';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -2555,25 +2555,33 @@ ${body}</table></body></html>`;
 function importMasterCatalog(file,cb){
   readSheetRows(file,async rows=>{
     const norm=vnNorm;
-    let hIdx=-1;for(let i=0;i<Math.min(rows.length,12);i++){const line=rows[i].map(norm).join('|');if(line.includes('mahang')||line.includes('code')||line.includes('material')){hIdx=i;break;}}
+    let hIdx=-1;for(let i=0;i<Math.min(rows.length,12);i++){const line=rows[i].map(norm).join('|');if(line.includes('mahang')||line.includes('mavattu')||line.includes('mavt')||line.includes('code')||line.includes('material')){hIdx=i;break;}}
     if(hIdx<0)hIdx=0;
     const H=rows[hIdx].map(norm);
     const find=keys=>H.findIndex(c=>keys.some(k=>c.includes(k)));
-    let codeCol=find(['mahang','mavt','code','material']);if(codeCol<0)codeCol=0;
-    const nameCol=find(['tenhang','ten','name']);
+    let codeCol=find(['mahang','mavattu','mavt','code','material']);if(codeCol<0)codeCol=0;
+    /* + "Material Description" / "Mô tả" (file SAP): thiếu thì app đọc tên trống và báo "không có gì cập nhật" (24/10/2026) */
+    const nameCol=find(['tenhang','tenvattu','ten','name','description','mota']);
     const uomCol=find(['donvitinh','dvt','uom','unit']);
-    let added=0,updated=0;const batch=[];
+    let added=0,updated=0;const batch=[];let docDuoc=0,giongHet=0,trongTen=0;
     for(let i=hIdx+1;i<rows.length;i++){const r=rows[i];if(!r)continue;
       let code=String(r[codeCol]==null?'':r[codeCol]).trim();if(code.endsWith('.0'))code=code.slice(0,-2);
       if(!code)continue;
       if(!/^[0-9A-Za-z._\-]{2,20}$/.test(code))continue; // bỏ dòng rác (CSS/HTML lọt vào)
       const name=nameCol>=0?String(r[nameCol]||'').trim():'';
       const uom=uomCol>=0?String(r[uomCol]||'').trim():'';
-      const m=masterByCode[code];
+      const m=masterByCode[code];docDuoc++;
+      if(m&&!name){const t=String(m.name||'').trim();if(t===''||t==='?'||t===code)trongTen++;else giongHet++;}
+      else if(m&&m.name===name&&(!uom||m.uom===uom))giongHet++;
       if(!m){const nm={code,name:name||code,uom};masterByCode[code]=nm;DATA.materials.push(nm);added++;batch.push({code,name:name||code,uom});}
       else{let ch=false;if(name&&m.name!==name){m.name=name;ch=true;}if(uom&&m.uom!==uom){m.uom=uom;ch=true;}if(ch){updated++;batch.push({code,name:m.name,uom:m.uom});}}
     }
-    if(!batch.length){toast('Không có mã mới/khác để cập nhật');cb&&cb();return;}
+    if(!batch.length){
+      /* Nói rõ vì sao không có gì cập nhật — trước đây chỉ một câu chung, người nạp không biết file sai chỗ nào. */
+      if(!docDuoc)errBox('Không đọc được mã nào trong file',['Không thấy cột <b>Mã hàng</b> hoặc các ô mã không đúng dạng mã.','File cần cột: <b>Mã hàng</b>, <b>Tên hàng</b>, <b>ĐVT</b>.'],'');
+      else if(trongTen)errBox('Chưa khai được tên mã',['Đọc được <b>'+docDuoc+'</b> mã, trong đó <b>'+trongTen+'</b> mã chưa có tên trong danh mục nhưng ô <b>Tên hàng</b> trong file đang để trống'+(nameCol<0?' (không tìm thấy cột Tên hàng)':'')+'.','Điền tên vào cột Tên hàng rồi nạp lại, hoặc khai từng mã ở mục <b>Mã chưa khai báo tên</b>.'],'');
+      else toast('Không có mã mới/khác để cập nhật — '+docDuoc+' mã trong file đã có tên giống hệt danh mục');
+      cb&&cb();return;}
     if(sb){toast('Đang đẩy '+batch.length+' mã lên Supabase...');
       let err=0;for(let i=0;i<batch.length;i+=500){try{const {error}=await sb.from('materials').upsert(batch.slice(i,i+500));if(error){err++;console.error('materials',error);}}catch(e){err++;console.error(e);}}
       log('Nạp danh mục từ Excel',`thêm ${added}, cập nhật ${updated}`);
@@ -11724,12 +11732,20 @@ function catTong(v){
       upRow.appendChild(bUp);upRow.appendChild(fMaster);
       upRow.appendChild(el('div',null,'<div style="font-size:11.5px;color:var(--muted);margin-top:6px">File cần cột: <b>Mã hàng</b>, <b>Tên hàng</b>, <b>ĐVT</b>. Mã mới sẽ được thêm, mã cũ được cập nhật tên/ĐVT — tất cả tự đẩy lên Supabase.</div>'));
       mb.appendChild(upRow);
-      bAdd.onclick=()=>{const code=$('#nmCode').value.trim(),name=$('#nmName').value.trim(),uom=$('#nmUom').value.trim();
+      /* Mã đã có trong danh mục nhưng CHƯA có tên (tên trống / "?" / bằng chính mã — chính là các mã ở mục
+         "Mã chưa khai báo tên") thì ô này dùng để KHAI TÊN cho mã đó. Trước 24/10/2026 nó chỉ hỏi "mã có chưa"
+         rồi báo "đã tồn tại", nên không khai được. Chờ máy chủ nhận rồi mới đổi trên máy. */
+      bAdd.onclick=async()=>{const code=$('#nmCode').value.trim(),name=$('#nmName').value.trim(),uom=$('#nmUom').value.trim();
         if(!code||!name){toast('Nhập đủ mã và tên');return;}
-        if(masterByCode[code]){toast('Mã '+code+' đã tồn tại');return;}
-        const m={code,name,uom};masterByCode[code]=m;DATA.materials.push(m);
-        if(sb)sb.from('materials').upsert({code,name,uom}).then(({error})=>{if(error)console.error('materials',error);});
-        log('Thêm mã vật tư tổng',`${code} · ${name}`);toast('Đã thêm '+code);
+        const cu=masterByCode[code];const tenCu=cu&&cu.name!=null?String(cu.name).trim():'';
+        const chuaTen=!!cu&&(tenCu===''||tenCu==='?'||tenCu===code);
+        if(cu&&!chuaTen){toast('Mã '+code+' đã có trong danh mục: '+tenCu);return;}
+        const uomMoi=uom||(cu&&cu.uom)||'';
+        if(sb){bAdd.disabled=true;let r;try{r=await sb.from('materials').upsert({code,name,uom:uomMoi});}catch(e){r={error:e};}bAdd.disabled=false;
+          if(!r||r.error){errBox('Chưa lưu được mã',['Mã <b>'+escHtml(code)+'</b> chưa lên máy chủ — thử lại sau ít phút.'],'Bảng: materials'+NL+((r&&r.error&&r.error.message)||''));return;}}
+        if(cu){cu.name=name;cu.uom=uomMoi;try{_vnCache.delete(code);}catch(e){}}
+        else{const m={code,name,uom};masterByCode[code]=m;DATA.materials.push(m);}
+        log(cu?'Khai báo tên mã vật tư':'Thêm mã vật tư tổng',`${code} · ${name}`);toast(cu?('✓ Đã khai báo tên cho mã '+code):('Đã thêm '+code));
         $('#nmCode').value='';$('#nmName').value='';$('#nmUom').value='';drawMC($('#mcSearch')?$('#mcSearch').value:'');const t=$('#mcTotal');if(t)t.textContent=DATA.materials.length;};
     }
     mc.appendChild(mb);v.appendChild(mc);
