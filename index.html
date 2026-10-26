@@ -1121,7 +1121,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2610-07';
+const APP_VER='2610-08';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -2747,24 +2747,18 @@ function allowedSlocsOf(plant){
   return all.filter(w=>ok.has(w.sloc));
 }
 /* ===== KỲ KIỂM KÊ THEO THÁNG ===== */
-/* KỲ CHỐT KHO 26 → 25 (Khoa 26/10/2026): kỳ mang tên THÁNG KẾT THÚC — kỳ 11/2026 = 26/10 → 25/11.
-   Áp từ ngày KY_MOC; trước đó giữ tháng lịch để số các kỳ đã chốt không đổi (kỳ 10/2026 = 01/10 → 25/10). */
-const KY_MOC='2026-10-26',KY_NGAY_CHOT=25;
+/* KỲ CHỐT KHO 26 → 25 (Khoa 26/10/2026): kỳ mang tên THÁNG KẾT THÚC — kỳ 10/2026 = 26/09 → 25/10,
+   kỳ 11/2026 = 26/10 → 25/11. Áp cho MỌI kỳ (Khoa chốt lại cùng ngày: không giữ tháng lịch cho kỳ cũ). */
+const KY_NGAY_CHOT=25;
 function _p2(n){return String(n).padStart(2,'0');}
 function kyCuaYmd(y,m,d){
-  if(y+'-'+_p2(m)+'-'+_p2(d)>=KY_MOC&&d>KY_NGAY_CHOT){m++;if(m>12){m=1;y++;}}
+  if(d>KY_NGAY_CHOT){m++;if(m>12){m=1;y++;}}
   return y+'-'+_p2(m);
 }
-/* Ngày bắt đầu / kết thúc của một kỳ (Date, giờ máy) */
+/* Ngày bắt đầu / kết thúc của một kỳ (Date, giờ máy): ngày 26 tháng trước → ngày 25 tháng của kỳ */
 function kyKhoang(per){
   const a=String(per||'').split('-').map(Number);if(a.length<2||!a[0]||!a[1])return null;
-  const y=a[0],m=a[1];
-  const tuMoi=new Date(y,m-2,KY_NGAY_CHOT+1),denMoi=new Date(y,m-1,KY_NGAY_CHOT);
-  const moc=new Date(KY_MOC+'T00:00:00');
-  const tu=tuMoi>=moc?tuMoi:new Date(y,m-1,1);
-  const denLich=new Date(y,m,0);
-  const den=denLich>=moc?denMoi:denLich;
-  return {tu,den};
+  return {tu:new Date(a[0],a[1]-2,KY_NGAY_CHOT+1),den:new Date(a[0],a[1]-1,KY_NGAY_CHOT)};
 }
 function kyKhoangVN(per){const k=kyKhoang(per);if(!k)return '';const f=d=>_p2(d.getDate())+'/'+_p2(d.getMonth()+1);return f(k.tu)+'–'+f(k.den);}
 function kyNhan(per){return 'Kỳ '+periodVN(per)+' · '+kyKhoangVN(per)+(per===curPeriod()?' (hiện tại)':'');}
