@@ -1121,7 +1121,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2410-03';
+const APP_VER='2610-01';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -3276,6 +3276,74 @@ function inventoryFlow(s){
   };
 
   /* ============================================================
+     1b. ĐỌC BẢNG ĐỊNH LƯỢNG THEO MẪU CHUẨN CÔNG TY (26/10/2026)
+     STT | MÓN (hoặc TÊN MÓN) | [MENU / tên POS] | MÃ HÀNG | THÀNH PHẦN | ĐVT | TỈ LỆ QUY ĐỔI |
+     TRỌNG LƯỢNG SAU QUY ĐỔI | ĐỊNH LƯỢNG | ĐƠN GIÁ …  (Gà rán, Taiga, Beer Plaza, Arapang, 4 Mùa, Brasserie)
+     ĐỊNH LƯỢNG = lượng XUẤT KHO theo ĐVT SAP, đã chia tỉ lệ quy đổi
+     (sứa: 0,01 kg sau sơ chế ÷ 0,5 = 0,02 kg) — dùng thẳng cột này, không nhân thêm.
+     Dòng có STT là đầu món, các dòng sau (STT trống) thuộc món đó. Dòng không có mã hàng
+     (nguyên liệu phụ, giá cost, giá bán…) bỏ qua. Một nguyên liệu ghi 2 lần trong món thì cộng dồn.
+     ============================================================ */
+  C.docMauChuan = function (rows) {
+    var iTD = -1, h = null;
+    for (var i = 0; i < Math.min((rows || []).length, 30); i++) {
+      var ks = (rows[i] || []).map(vnk);
+      if (ks.indexOf('mahang') >= 0 && ks.indexOf('dinhluong') >= 0) { iTD = i; h = ks; break; }
+    }
+    if (iTD < 0) return null;
+    var cSTT = h.indexOf('stt'), cMon = h.indexOf('mon');
+    if (cMon < 0) cMon = h.indexOf('tenmon');
+    var cMa = h.indexOf('mahang'), cTP = h.indexOf('thanhphan'), cDvt = h.indexOf('dvt'), cDL = h.indexOf('dinhluong');
+    if (cSTT < 0 || cMon < 0) return { loi: ['Thiếu cột STT hoặc MÓN'] };
+    // Cột nằm giữa tên món và mã hàng (MENU tên tiếng Anh, hoặc cột không tiêu đề ghi tên POS) = thêm cách gọi tên món
+    var cAlias = [];
+    for (var c = cMon + 1; c < cMa; c++) cAlias.push(c);
+    var mon = {}, alias = {}, cur = null, soNL = 0, thieuMa = [], soAlias = 0, trungTen = 0;
+    for (var r = iTD + 1; r < rows.length; r++) {
+      var row = rows[r] || [];
+      var stt = chu(row[cSTT]);
+      if (stt && /^\d+([.,]\d+)?$/.test(stt)) {
+        cur = stt;
+        if (mon[cur]) cur = stt + '_' + r;     // STT lặp trong cùng sheet: tách riêng, không trộn hai món
+        var tens = [chu(row[cMon])];
+        for (var q = 0; q < cAlias.length; q++) tens.push(chu(row[cAlias[q]]));
+        mon[cur] = { ten: chu(row[cMon]), items: [], _ten: tens };
+      }
+      if (!cur) continue;
+      var ma = chu(row[cMa]);
+      if (!ma) continue;
+      var qty = so(row[cDL]);
+      if (!qty) continue;
+      if (!/^\d{5,}$/.test(ma)) {
+        thieuMa.push({ mon: cur, ten: chu(row[cTP]) || ma, qty: qty });
+        mon[cur].thieu = (mon[cur].thieu || 0) + 1;
+        continue;
+      }
+      var it = mon[cur].items, x = null;
+      for (var j = 0; j < it.length; j++) if (it[j].code === ma) { x = it[j]; break; }
+      if (x) x.qty += qty;
+      else it.push({ code: ma, name: chu(row[cTP]) || ma, uom: chu(row[cDvt]).toUpperCase(), qty: qty });
+      soNL++;
+    }
+    Object.keys(mon).forEach(function (k) {
+      var m = mon[k];
+      if (!m.ten && !m.items.length) { delete mon[k]; return; }
+      m._ten.forEach(function (t) {
+        var a = vnk(t);
+        if (!a) return;
+        if (alias[a] && alias[a] !== k) { trungTen++; return; }
+        if (!alias[a]) { alias[a] = k; soAlias++; }
+      });
+      delete m._ten;
+    });
+    var canhBao = [];
+    if (thieuMa.length) canhBao.push(thieuMa.length + ' dòng nguyên liệu chưa có mã vật tư — không trừ vào kho được.');
+    if (trungTen) canhBao.push(trungTen + ' tên món bị trùng giữa các món — app nhận theo món đứng trước.');
+    return { mon: mon, alias: alias, soMon: Object.keys(mon).length, soMonDon: 0, soNL: soNL,
+      soAlias: soAlias, thieuMa: thieuMa, canhBao: canhBao, loi: [], mauChuan: true };
+  };
+
+  /* ============================================================
      2. ĐỌC BÁO CÁO BÁN HÀNG (sheet Sales By Items — pivot đã tổng hợp)
      ============================================================ */
   C.docDoanhThu = function (rowsBan, rowsKy) {
@@ -3505,9 +3573,13 @@ function inventoryFlow(s){
    Xuất định lượng = số món bán × định lượng                  (mới)
    Lệch = Xuất thực tế − Xuất định lượng
    ============================================================ */
-let recipes={};        // STT món -> {ten, items:[{code,name,uom,qty}]}
-let recipeAlias={};    // khoá tên món (mọi cách gọi) -> STT
-let recipeInfo=null;   // thông tin lần nạp định lượng gần nhất
+/* ĐỊNH LƯỢNG THEO KHO (Khoa chốt 26/10/2026): mỗi kho một bộ, id dòng = 'plant|sloc|<sheet>#<STT>'.
+   Trước đây cả công ty MỘT bộ đánh dấu theo STT — mỗi file nhà hàng đều đánh STT từ 1 nên nạp
+   nhà hàng thứ hai là đè món của nhà hàng thứ nhất. Chỉ tải khi mở tab Chênh lệch, đúng kho đang xem. */
+let clBooks={};        // 'plant|sloc' -> {mon:{id:{ten,items,menu,alias}}, alias:{khoá tên:id}, n, at, by}
+let clBookCu=null;     // bộ chung cũ (dòng chưa gán kho) — {mon,alias,n,rows}
+let clCotKhoOK=true;   // máy chủ đã có cột kho trên bảng định lượng (SQL PHẦN 21)
+const _clDaTai={},_clDangTai={};
 let salesUsage={};     // 'plant|sloc|period' -> {usage,missing,pct,...}
 let varNotes={};       // 'plant|sloc|period|mã'  -> {note,status,...}
 let clTblOK=true;      // chưa chạy SQL thì tắt, app vẫn chạy bình thường
@@ -3569,41 +3641,123 @@ function clThieuBang(err){
   const m=(err&&(err.message||err.msg))||'';
   return /(recipes|sales_usage|variance_notes)/i.test(m)&&/(does not exist|schema cache|relation)/i.test(m);
 }
-async function saveRecipes(kq,boIds){
-  if(!sb)return {ok:false,why:'Chưa kết nối máy chủ'};
-  const rows=Object.keys(kq.mon).map(k=>({
-    id:String(k),name:kq.mon[k].ten||'',
-    alias:Object.keys(kq.alias).filter(a=>kq.alias[a]===String(k)),
-    items:kq.mon[k].items||[],updated_by:session?session.name:'',updated_at:new Date().toISOString()
-  }));
-  try{
-    for(let i=0;i<rows.length;i+=400){
-      const {error}=await sb.from('recipes').upsert(rows.slice(i,i+400),{onConflict:'id'});
-      if(error){if(clThieuBang(error)){clTblOK=false;return {ok:false,why:'Máy chủ chưa sẵn sàng lưu định lượng — báo kế toán'};}
-        return {ok:false,why:error.message||'Máy chủ từ chối'};}
+function clBookKey(p,s){return p+'|'+(s||'');}
+function clBook(p,s){return clBooks[clBookKey(p,s)]||null;}
+function clLaMonKhong(id){return /\|__khong$/.test(String(id));}
+const CL_RONG={mon:{},alias:{},n:0,at:'',by:''};
+/* Bộ định lượng dùng để tính cho kho: máy chủ chưa có cột kho thì dùng bộ chung như trước. */
+function clBookDung(p,s){return clCotKhoOK?(clBook(p,s)||CL_RONG):(clBookCu||CL_RONG);}
+function clThieuCotKho(err){const m=String((err&&err.message)||'')+' '+String((err&&err.code)||'');
+  return /(plant_code|sloc_code|menu)/i.test(m)&&/(column|schema cache|42703)/i.test(m);}
+function dungBook(rows){
+  const mon={},alias={};let at='',by='';
+  (rows||[]).forEach(r=>{const k=String(r.id);
+    mon[k]={ten:r.name||'',items:Array.isArray(r.items)?r.items:[],menu:r.menu||'',alias:Array.isArray(r.alias)?r.alias:[]};
+    if(r.updated_at&&String(r.updated_at)>at){at=String(r.updated_at);by=r.updated_by||'';}});
+  // Cách gọi khai rõ (sheet Data / cột tên POS / gán tay) trước, tên món sau
+  Object.keys(mon).forEach(k=>mon[k].alias.forEach(a=>{if(a&&!alias[a])alias[a]=k;}));
+  Object.keys(mon).forEach(k=>{const t=CL.vnk(mon[k].ten);if(t&&!alias[t])alias[t]=k;});
+  return {mon,alias,n:Object.keys(mon).filter(k=>!clLaMonKhong(k)).length,at:at?fmt(at):'',by};
+}
+async function clDocRecipes(q){
+  const out=[];
+  for(let from=0;from<200000;from+=1000){
+    let r;try{r=await q().range(from,from+999);}catch(e){return {error:e};}
+    if(r.error)return {error:r.error};
+    const d=r.data||[];out.push(...d);if(d.length<1000)break;}
+  return {data:out};
+}
+async function clTaiBook(p,s,epTai){
+  const key=clBookKey(p,s);if(!sb||!p)return null;
+  if(clBooks[key]&&!epTai)return clBooks[key];
+  if(_clDangTai[key])return _clDangTai[key];
+  _clDangTai[key]=(async()=>{try{
+    const r=await clDocRecipes(()=>sb.from('recipes').select('*').eq('plant_code',p).eq('sloc_code',s||'').order('id'));
+    if(r.error){
+      if(clThieuCotKho(r.error))clCotKhoOK=false;
+      else if(clThieuBang(r.error))clTblOK=false;
+      else console.warn('Tải định lượng',r.error);
+    }else{clCotKhoOK=true;clBooks[key]=dungBook(r.data);}
+    // Bộ chung cũ (trước 26/10/2026, chưa gán kho) — hỏi một lần mỗi phiên
+    if(clBookCu===null&&clTblOK){
+      const c=await clDocRecipes(()=>clCotKhoOK?sb.from('recipes').select('*').is('plant_code',null).order('id')
+                                                 :sb.from('recipes').select('*').order('id'));
+      clBookCu=c.error?Object.assign({rows:[]},CL_RONG):Object.assign(dungBook(c.data),{rows:c.data});
     }
-  }catch(e){return {ok:false,why:(e&&e.message)||'Lỗi không rõ'};}
-  // Xóa món không còn trong file mới — chỉ khi người dùng đã tick đồng ý
+    return clBooks[key]||null;
+  }finally{delete _clDangTai[key];}})();
+  return _clDangTai[key];
+}
+async function clUpsertRecipes(rows){
+  for(let i=0;i<rows.length;i+=400){
+    let r;try{r=await sb.from('recipes').upsert(rows.slice(i,i+400),{onConflict:'id'});}catch(e){r={error:e};}
+    if(r&&r.error){
+      if(clThieuCotKho(r.error)){clCotKhoOK=false;return {ok:false,daLuu:i,why:'Máy chủ chưa sẵn sàng lưu định lượng theo kho — báo admin'};}
+      if(clThieuBang(r.error)){clTblOK=false;return {ok:false,daLuu:i,why:'Máy chủ chưa sẵn sàng lưu định lượng — báo admin'};}
+      return {ok:false,daLuu:i,why:(r.error.message||'Máy chủ từ chối')};}
+  }
+  return {ok:true};
+}
+/* Lưu bộ định lượng cho MỘT kho. Cách gọi tên đã gán tay ở kỳ trước được giữ lại. */
+async function saveRecipes(kq,boIds,p,s){
+  if(!sb)return {ok:false,why:'Chưa kết nối máy chủ'};
+  if(!clCotKhoOK)return {ok:false,why:'Máy chủ chưa sẵn sàng lưu định lượng theo kho — báo admin'};
+  const pre=clBookKey(p,s)+'|',cu=clBook(p,s)||CL_RONG,at=new Date().toISOString(),by=session?session.name:'';
+  const rows=Object.keys(kq.mon).map(k=>{const id=pre+k,m=kq.mon[k],old=cu.mon[id];
+    const al=new Set(Object.keys(kq.alias).filter(a=>kq.alias[a]===String(k)));
+    ((old&&old.alias)||[]).forEach(a=>al.add(a));
+    return {id,plant_code:p,sloc_code:s||'',menu:m.menu||'',name:m.ten||'',alias:[...al],items:m.items||[],updated_by:by,updated_at:at};});
+  const w=await clUpsertRecipes(rows);
+  if(!w.ok){await clTaiBook(p,s,true);
+    return {ok:false,why:w.why+(w.daLuu?(' — đã lưu '+w.daLuu+'/'+rows.length+' món, nạp lại cùng file để lưu nốt'):'')};}
+  // Món không còn trong file: chỉ xóa khi người dùng đã tick đồng ý
   let daBo=0;
   if(boIds&&boIds.length){
     for(let i=0;i<boIds.length;i+=200){
       const lo=boIds.slice(i,i+200);
-      const {data,error}=await sb.from('recipes').delete().in('id',lo).select();
-      if(error)return {ok:false,why:'Đã lưu bản mới nhưng chưa xóa được món cũ: '+(error.message||'')};
-      daBo+=Array.isArray(data)?data.length:0;
+      let r;try{r=await sb.from('recipes').delete().in('id',lo).select();}catch(e){r={error:e};}
+      if(r&&r.error){await clTaiBook(p,s,true);return {ok:false,why:'Đã lưu bản mới nhưng chưa xóa được món cũ: '+(r.error.message||'')};}
+      daBo+=Array.isArray(r.data)?r.data.length:0;
     }
   }
-  applyRecipes(rows);
-  return {ok:true,n:rows.length,daBo:daBo};
+  await clTaiBook(p,s,true);
+  return {ok:true,n:rows.length,daBo};
 }
-function applyRecipes(rows){
-  recipes={};recipeAlias={};
-  (rows||[]).forEach(r=>{
-    const k=String(r.id);
-    recipes[k]={ten:r.name||'',items:Array.isArray(r.items)?r.items:[]};
-    (Array.isArray(r.alias)?r.alias:[]).forEach(a=>{if(a&&!recipeAlias[a])recipeAlias[a]=k;});
-    const t=CL.vnk(r.name||'');if(t&&!recipeAlias[t])recipeAlias[t]=k;
-  });
+/* Gán tên món POS vào một món của bộ định lượng kho (hoặc "không dùng nguyên liệu kho này").
+   Lưu thành một cách gọi của món — kỳ sau nạp doanh thu tự khớp. */
+async function clGanMon(p,s,posTen,id){
+  if(!sb)return {ok:false,why:'Chưa kết nối máy chủ'};
+  if(!clCotKhoOK)return {ok:false,why:'Máy chủ chưa sẵn sàng lưu định lượng theo kho — báo admin'};
+  const key=clBookKey(p,s);const bk=clBooks[key]||(clBooks[key]={mon:{},alias:{},n:0,at:'',by:''});
+  const a=CL.vnk(posTen);if(!a)return {ok:false,why:'Tên món trống'};
+  let m=bk.mon[id];
+  if(!m&&clLaMonKhong(id))m={ten:'Không dùng nguyên liệu kho này',items:[],menu:'__',alias:[]};
+  if(!m)return {ok:false,why:'Không thấy món trong bộ định lượng của kho'};
+  const alias=[...new Set([...(m.alias||[]),a])];
+  const row={id,plant_code:p,sloc_code:s||'',menu:m.menu||'',name:m.ten||'',alias,items:m.items||[],
+    updated_by:session?session.name:'',updated_at:new Date().toISOString()};
+  const w=await clUpsertRecipes([row]);
+  if(!w.ok)return w;
+  m.alias=alias;bk.mon[id]=m;bk.alias[a]=id;
+  return {ok:true};
+}
+/* Chép bộ chung cũ sang kho đang chọn. Điểm bán nhiều kho thì mặc định chỉ lấy nguyên liệu kho này
+   từng có (nhập, điều chuyển, kiểm kê, tồn đầu kỳ) — bia ở quầy, đồ ăn ở bếp, không tính trùng hai nơi. */
+async function clChepBoCu(p,s,chiMaKho){
+  const cu=clBookCu;if(!cu||!cu.rows||!cu.rows.length)return {ok:false,why:'Không có bộ chung cũ'};
+  if(!clCotKhoOK)return {ok:false,why:'Máy chủ chưa sẵn sàng lưu định lượng theo kho — báo admin'};
+  const pre=clBookKey(p,s)+'|',ma=chiMaKho?maCuaKhoNay(p,s):null,at=new Date().toISOString(),by=session?session.name:'';
+  const rows=[];
+  cu.rows.forEach(r=>{let items=Array.isArray(r.items)?r.items:[];
+    if(ma)items=items.filter(x=>ma.has(String(x.code)));
+    if(ma&&!items.length)return;
+    rows.push({id:pre+'cu#'+r.id,plant_code:p,sloc_code:s||'',menu:'Bộ chung cũ',name:r.name||'',
+      alias:Array.isArray(r.alias)?r.alias:[],items,updated_by:by,updated_at:at});});
+  if(!rows.length)return {ok:false,why:'Không món nào có nguyên liệu thuộc kho này'};
+  const w=await clUpsertRecipes(rows);
+  await clTaiBook(p,s,true);
+  if(!w.ok)return {ok:false,why:w.why+(w.daLuu?(' — đã chép '+w.daLuu+'/'+rows.length+' món'):'')};
+  return {ok:true,n:rows.length};
 }
 async function saveSalesUsage(plant,sloc,period,kq,ky){
   if(!sb)return {ok:false,why:'Chưa kết nối máy chủ'};
@@ -3774,11 +3928,8 @@ async function dbLoadAll(){
     /* Bảng phụ cũng giữ dữ liệu cũ khi tải lỗi (mạng chập chờn) — trước đây ghi rỗng, màn Chênh lệch kho /
        Người dùng trống tới lần tải sau (24/10/2026). Thiếu bảng thật thì mới để rỗng. */
     const thieuBang=x=>!!(x&&x.error)&&/schema cache|does not exist|42P01|PGRST205/i.test(String(x.error.message||'')+' '+String(x.error.code||''));
-    try{const rcp=await sb.from('recipes').select('*');
-      if(tot(rcp,'recipes')){applyRecipes(rcp.data||[]);
-        recipeInfo=(rcp.data&&rcp.data.length)?{n:rcp.data.length,at:fmt(rcp.data[0].updated_at),by:rcp.data[0].updated_by}:null;}
-      else if(thieuBang(rcp)){recipes={};recipeAlias={};clTblOK=false;}
-    }catch(e){recipes={};recipeAlias={};clTblOK=false;console.warn('Chưa có bảng recipes — bỏ qua',e&&e.message);}
+    /* Định lượng KHÔNG tải ở đây nữa (26/10/2026): trước đây mọi máy kéo cả bảng mỗi 45 giây và chỉ lấy
+       được 1.000 dòng đầu. Giờ tải khi mở tab Chênh lệch, đúng kho đang xem (clTaiBook). */
     try{const sug=await sb.from('sales_usage').select('*').order('created_at',{ascending:false}).limit(400);
       if(thieuBang(sug)){salesUsage={};clTblOK=false;}
       else if(tot(sug,'sales_usage')){salesUsage={};(sug.data||[]).forEach(r=>{salesUsage[clKey(r.plant_code,r.sloc_code,r.period)]={
@@ -4733,11 +4884,18 @@ function renderChenhLech(v){
       +'<b>SQL-tong-hop.sql</b> (phần 1.13) trên Supabase. Trước khi chạy, màn này chưa dùng được — '
       +'các phần khác của app vẫn chạy bình thường.','var(--red)'));
   }
+  const ctx=ensureClCtx();const key=clBookKey(ctx.plant,ctx.sloc);
+  if(sb&&clTblOK&&ctx.plant&&!_clDaTai[key]){
+    _clDaTai[key]=true;
+    clTaiBook(ctx.plant,ctx.sloc).then(()=>{_clDaTai[key]=2;if(activeTab==='chenhlech')renderView();});
+  }
+  const dangTai=sb&&_clDaTai[key]===true,bk=clBookDung(ctx.plant,ctx.sloc);
   const acts=[];
   if(kt){
     acts.push({k:'dinhluong',title:'Nạp bảng định lượng món',
-      sub:recipeInfo?(recipeInfo.n+' món · cập nhật '+recipeInfo.at):'Chưa có — nạp file định lượng trước',
-      ico:HIC.sheet,warm:!recipeInfo,render:clFormDinhLuong});
+      sub:dangTai?'Đang tải định lượng của kho…':(bk.n?(bk.n+' món · '+whName(ctx.plant,ctx.sloc)+(bk.at?' · cập nhật '+bk.at:''))
+        :('Kho '+whName(ctx.plant,ctx.sloc)+' chưa có — nạp file định lượng trước')),
+      ico:HIC.sheet,warm:!dangTai&&!bk.n,render:clFormDinhLuong});
     acts.push({k:'doanhthu',title:'Nạp doanh thu bán hàng',
       sub:'Sheet "Sales By Items" — tính lượng nguyên liệu đáng lẽ đã dùng',
       ico:HIC.cam,render:clFormDoanhThu});
@@ -4807,75 +4965,143 @@ function clTrangThai(host,txt,mau){
    1. NẠP BẢNG ĐỊNH LƯỢNG MÓN
    ============================================================ */
 function clFormDinhLuong(host){
+  const ctx=ensureClCtx();
+  ctxBar(host,ctx,{},()=>renderView());
   const box=el('div','card');box.style.cssText='padding:18px';host.appendChild(box);
   box.appendChild(el('div','',
-    '<div style="font-weight:700;margin-bottom:4px">Bảng định lượng — mỗi món cần bao nhiêu nguyên liệu</div>'
-    +'<div style="font-size:13px;color:var(--muted);margin-bottom:12px">File Excel có sheet <b>'+CL.SHEET_DL
-    +'</b> và sheet <b>'+CL.SHEET_MAP+'</b> (bảng đối chiếu tên món trên máy bán hàng).</div>'));
-
-  if(recipeInfo){
-    box.appendChild(clNote('Đang dùng bản nạp lúc <b>'+recipeInfo.at+'</b> — '
-      +nq(recipeInfo.n,0)+' món, do '+(recipeInfo.by||'?')+' nạp. Nạp file mới sẽ thay bản này.'));
+    '<div style="font-weight:700;margin-bottom:4px">Bảng định lượng của kho đang chọn</div>'
+    +'<div style="font-size:13px;color:var(--muted);margin-bottom:12px">Nhận file định lượng theo mẫu công ty (sheet có cột STT, MÓN, MÃ HÀNG, ĐỊNH LƯỢNG) '
+    +'hoặc file tổng có sheet "'+CL.SHEET_DL+'". Mỗi kho một bộ — nạp ở kho này không đụng kho khác.</div>'));
+  if(!clCotKhoOK){
+    box.appendChild(clNote('Máy chủ chưa sẵn sàng lưu định lượng theo từng kho — báo admin bật phần này trước khi nạp. Nạp lúc này sẽ ghi đè định lượng của kho khác.','var(--red)'));
+    return;
+  }
+  if(sb&&_clDaTai[clBookKey(ctx.plant,ctx.sloc)]===true){box.appendChild(clNote('Đang tải định lượng của kho…'));return;}
+  const bk=clBook(ctx.plant,ctx.sloc)||CL_RONG;
+  if(bk.n){
+    box.appendChild(clNote('Kho này đang có '+nq(bk.n,0)+' món'+(bk.at?(' — cập nhật lúc '+bk.at+(bk.by?' do '+bk.by:'')):'')
+      +'. Nạp file mới thì app so với bộ đang có rồi mới hỏi cập nhật.'));
+  }else{
+    box.appendChild(clNote('Kho này chưa có định lượng.'));
+    // Bộ chung cũ (trước 26/10/2026)
+    if(clBookCu&&clBookCu.n){
+      const nhieuKho=khoCuaDiemBan(ctx.plant)>1,ma=maCuaKhoNay(ctx.plant,ctx.sloc);
+      const cb2=el('div','card');cb2.style.cssText='padding:12px;margin-top:10px';
+      cb2.appendChild(el('div','','<div style="font-size:13px">Hệ thống còn <b>bộ định lượng chung cũ</b> ('+nq(clBookCu.n,0)
+        +' món, chưa gán kho). Có thể dùng bộ đó cho kho này.</div>'));
+      const lab=el('label');lab.style.cssText='display:flex;gap:8px;align-items:flex-start;margin-top:8px;font-size:13px;cursor:pointer';
+      const cbx=el('input');cbx.type='checkbox';cbx.checked=nhieuKho;cbx.style.cssText='width:18px;height:18px;flex:none;margin-top:2px';
+      const sp=el('span');sp.textContent='Chỉ lấy nguyên liệu kho này từng có ('+ma.size+' mã) — điểm bán có nhiều kho thì nên tick, để bia tính ở quầy, đồ ăn tính ở bếp, không tính trùng hai nơi.';
+      lab.appendChild(cbx);lab.appendChild(sp);cb2.appendChild(lab);
+      const bC=el('button','btn btn-ghost btn-sm','Dùng bộ chung cũ cho kho này');bC.style.marginTop='8px';
+      bC.onclick=async()=>{
+        if(!confirm('Chép bộ định lượng chung cũ ('+clBookCu.n+' món) sang kho '+whName(ctx.plant,ctx.sloc)
+          +(cbx.checked?' — chỉ giữ nguyên liệu kho này từng có':'')+'?'))return;
+        bC.disabled=true;bC.textContent='Đang chép…';
+        const r=await clChepBoCu(ctx.plant,ctx.sloc,cbx.checked);
+        bC.disabled=false;bC.textContent='Dùng bộ chung cũ cho kho này';
+        if(!r.ok){errBox('Chưa chép được bộ định lượng',[r.why||'Máy chủ từ chối.'],'Bảng: recipes');renderView();return;}
+        log('Chép bộ định lượng chung cũ',whName(ctx.plant,ctx.sloc)+' — '+r.n+' món');
+        toast('✓ Đã chép '+nq(r.n,0)+' món cho kho này');renderView();};
+      cb2.appendChild(bC);box.appendChild(cb2);
+    }
   }
 
   const kqBox=el('div');box.appendChild(kqBox);
-
   clFilePick(box,'File định lượng (.xlsx)',
-    'Đọc trực tiếp từ file gốc — không cần tách sheet ra file nhỏ. App so với bản đang dùng rồi mới hỏi có cập nhật không.',
+    'Đọc trực tiếp từ file gốc — app tự tìm các sheet có bảng định lượng, bạn tick sheet nào thuộc kho này.',
     async (file)=>{
       kqBox.innerHTML='';
       const st=clTrangThai(kqBox,'Đang đọc file…');
       try{
-        const raw=await clDocFile(file,[CL.SHEET_DL,CL.SHEET_MAP]);
-        if(!raw[CL.SHEET_DL]){
-          st.innerHTML='<b style="color:var(--red)">Không thấy sheet "'+CL.SHEET_DL+'"</b><br>'
-            +'Các sheet có trong file: '+(raw.__tenSheet||[]).join(' · ');return;
-        }
-        const kq=CL.docDinhLuong(raw[CL.SHEET_DL],raw[CL.SHEET_MAP]);
-        if(kq.loi&&kq.loi.length){st.innerHTML='<b style="color:var(--red)">'+kq.loi.join('<br>')+'</b>';return;}
-
-        st.innerHTML='<b>Đọc xong</b> — '+nq(kq.soMon,0)+' món ('+nq(kq.soMon-kq.soMonDon,0)
-          +' món nhiều nguyên liệu, '+nq(kq.soMonDon,0)+' món một nguyên liệu), '
-          +nq(kq.soNL,0)+' dòng nguyên liệu, '+nq(kq.soAlias,0)+' cách gọi tên.'
-          +(kq.canhBao&&kq.canhBao.length?'<br><span style="color:var(--amber,#8A5A00)">⚠ '+kq.canhBao.join('<br>⚠ ')+'</span>':'');
-        if(kq.thieuMa&&kq.thieuMa.length){
-          const d=el('details');d.style.cssText='margin-top:8px;font-size:13px';
-          d.innerHTML='<summary style="cursor:pointer;font-weight:600">Xem '+kq.thieuMa.length
-            +' dòng nguyên liệu chưa có mã vật tư</summary>';
-          const ul=el('div');ul.style.cssText='margin-top:6px;color:var(--muted)';
-          ul.innerHTML=kq.thieuMa.slice(0,60).map(x=>'• '+x.ten+' (món '+x.mon+')').join('<br>');
-          d.appendChild(ul);kqBox.appendChild(d);
-        }
-
-        clXemTruoc(kqBox,kq);
+        const ten=((await clDocFile(file,[])).__tenSheet)||[];
+        const all=await clDocFile(file,ten);
+        const tDL=ten.find(t=>t.trim().toLowerCase()===CL.SHEET_DL.toLowerCase());
+        const tMap=ten.find(t=>t.trim().toLowerCase()===CL.SHEET_MAP.toLowerCase());
+        const ds=[];
+        ten.forEach(t=>{
+          if(t===tMap)return;
+          if(t===tDL){const k=CL.docDinhLuong(all[t],tMap?all[tMap]:null);if(!(k.loi&&k.loi.length)&&k.soMon)ds.push({ten:t,kq:k});return;}
+          const k=CL.docMauChuan(all[t]||[]);
+          if(k&&!(k.loi&&k.loi.length)&&k.soMon)ds.push({ten:t,kq:k});
+        });
+        if(!ds.length){
+          st.innerHTML='<b style="color:var(--red)">Không thấy sheet định lượng nào trong file.</b><br>'
+            +'Cần sheet có các cột STT, MÓN (hoặc TÊN MÓN), MÃ HÀNG, ĐỊNH LƯỢNG. Các sheet trong file: '+escHtml(ten.join(' · '));
+          return;}
+        st.innerHTML='<b>Đọc xong</b> — tìm thấy '+ds.length+' sheet định lượng. Tick sheet thuộc kho <b>'
+          +escHtml(whName(ctx.plant,ctx.sloc))+'</b> rồi bấm Xem trước.';
+        const chon=new Set(ds.map(d=>d.ten));
+        const ls=el('div');ls.style.cssText='display:flex;flex-direction:column;gap:6px;margin-top:10px';
+        ds.forEach(d=>{const lb=el('label');lb.style.cssText='display:flex;gap:8px;align-items:flex-start;font-size:13.5px;cursor:pointer';
+          const c=el('input');c.type='checkbox';c.checked=true;c.style.cssText='width:18px;height:18px;flex:none;margin-top:2px';
+          c.onchange=()=>{if(c.checked)chon.add(d.ten);else chon.delete(d.ten);};
+          const sp=el('span');sp.textContent=d.ten.trim()+' — '+nq(d.kq.soMon,0)+' món · '+nq(d.kq.soNL,0)+' dòng nguyên liệu'
+            +((d.kq.thieuMa||[]).length?(' · '+d.kq.thieuMa.length+' dòng chưa có mã'):'');
+          lb.appendChild(c);lb.appendChild(sp);ls.appendChild(lb);});
+        kqBox.appendChild(ls);
+        const kq2=el('div');
+        const bX=el('button','btn btn-brand btn-sm','Xem trước');bX.style.marginTop='10px';
+        bX.onclick=()=>{
+          kq2.innerHTML='';
+          const pick=ds.filter(d=>chon.has(d.ten));
+          if(!pick.length){toast('Chưa tick sheet nào');return;}
+          const kq=clGopSheet(pick);
+          kq2.appendChild(clNote('Gộp '+pick.length+' sheet: '+nq(kq.soMon,0)+' món, '+nq(kq.soNL,0)+' dòng nguyên liệu, '
+            +nq(kq.soAlias,0)+' cách gọi tên.'+(kq.canhBao.length?'<br>⚠ '+kq.canhBao.map(escHtml).join('<br>⚠ '):'')));
+          if(kq.thieuMa.length){
+            const d=el('details');d.style.cssText='margin-top:8px;font-size:13px';
+            d.innerHTML='<summary style="cursor:pointer;font-weight:600">Xem '+kq.thieuMa.length+' dòng nguyên liệu chưa có mã vật tư</summary>';
+            const ul=el('div');ul.style.cssText='margin-top:6px;color:var(--muted)';
+            ul.innerHTML=kq.thieuMa.slice(0,60).map(x=>'• '+escHtml(x.ten)+' ('+escHtml(x.mon)+')').join('<br>');
+            d.appendChild(ul);kq2.appendChild(d);
+          }
+          clXemTruoc(kq2,kq,ctx);
+        };
+        kqBox.appendChild(bX);kqBox.appendChild(kq2);
       }catch(e){
-        st.innerHTML='<b style="color:var(--red)">Không đọc được file</b><br>'+((e&&e.message)||'');
+        st.innerHTML='<b style="color:var(--red)">Không đọc được file</b><br>'+escHtml((e&&e.message)||'');
       }
     });
 }
+/* Gộp các sheet đã tick thành một bộ. Khoá món = '<tên sheet>#<STT>' nên hai sheet cùng STT 1 không đè nhau. */
+function clGopSheet(ds){
+  const mon={},alias={},thieuMa=[],canhBao=[];let soNL=0,soAlias=0,trung=0;
+  ds.forEach(d=>{const pre=CL.vnk(d.ten).slice(0,24)+'#',k=d.kq;
+    Object.keys(k.mon).forEach(stt=>{mon[pre+stt]=Object.assign({},k.mon[stt],{menu:d.ten.trim()});});
+    Object.keys(k.alias).forEach(a=>{const id=pre+k.alias[a];if(!mon[id])return;
+      if(alias[a]&&alias[a]!==id){trung++;return;}if(!alias[a]){alias[a]=id;soAlias++;}});
+    soNL+=k.soNL||0;
+    (k.thieuMa||[]).forEach(x=>thieuMa.push({ten:x.ten,qty:x.qty,mon:d.ten.trim()+' · '+((k.mon[x.mon]||{}).ten||x.mon)}));
+    (k.canhBao||[]).forEach(c=>canhBao.push((ds.length>1?d.ten.trim()+': ':'')+c));});
+  if(trung)canhBao.push(trung+' tên món trùng giữa các sheet — app nhận theo sheet đứng trước.');
+  return {mon,alias,soMon:Object.keys(mon).length,soNL,soAlias,thieuMa,canhBao};
+}
 
-/* So bản mới với bản đang dùng, hiện rõ thay đổi rồi mới cho cập nhật */
-function clXemTruoc(host,kq){
-  const coCu=Object.keys(recipes).length>0;
-  const ss=CL.soSanh(kq.mon,coCu?recipes:{});
+/* So bản mới với bộ đang có của kho, hiện rõ thay đổi rồi mới cho cập nhật */
+function clXemTruoc(host,kq,ctx){
+  const pre=clBookKey(ctx.plant,ctx.sloc)+'|',bk=clBook(ctx.plant,ctx.sloc)||CL_RONG;
+  const cuMon={};Object.keys(bk.mon).forEach(id=>{if(!clLaMonKhong(id))cuMon[id]=bk.mon[id];});
+  const moiP={};Object.keys(kq.mon).forEach(k=>{moiP[pre+k]=kq.mon[k];});
+  const coCu=Object.keys(cuMon).length>0;
+  const ss=CL.soSanh(moiP,coCu?cuMon:{});
   const box=el('div');box.style.marginTop='14px';host.appendChild(box);
 
   if(!coCu){
-    box.appendChild(clNote('Đây là <b>lần nạp đầu tiên</b> — '+nq(ss.them.length,0)
-      +' món sẽ được đưa lên hệ thống làm bản định lượng chuẩn.'));
+    box.appendChild(clNote('Kho này chưa có định lượng — '+nq(ss.them.length,0)
+      +' món sẽ được đưa lên làm bộ định lượng của kho '+escHtml(whName(ctx.plant,ctx.sloc))+'.'));
   }else{
     const st2=el('div','stats');st2.style.marginBottom='12px';
     const o=(n2,l,mau)=>{const d=el('div','stat');
       d.innerHTML='<div><div class="n"'+(mau?' style="color:'+mau+'"':'')+'>'+nq(n2,0)+'</div><div class="l">'+l+'</div></div>';
       return d;};
     st2.appendChild(o(ss.them.length,'Món mới',ss.them.length?'var(--green)':''));
-    st2.appendChild(o(ss.sua.length,'Món sửa định lượng',ss.sua.length?'var(--amber,#8A5A00)':''));
+    st2.appendChild(o(ss.sua.length,'Món sửa định lượng',ss.sua.length?'var(--accent-ink)':''));
     st2.appendChild(o(ss.bo.length,'Món không còn trong file',ss.bo.length?'var(--red)':''));
     st2.appendChild(o(ss.giu,'Giữ nguyên'));
     box.appendChild(st2);
-
     if(!ss.them.length&&!ss.sua.length&&!ss.bo.length){
-      box.appendChild(clNote('<b>File này giống hệt bản đang dùng</b> — không có gì để cập nhật.'));
+      box.appendChild(clNote('File này giống hệt bộ định lượng đang có của kho — không có gì để cập nhật.'));
       return;
     }
     const ct=(ten,ds,ve)=>{
@@ -4886,15 +5112,15 @@ function clXemTruoc(host,kq){
       u.innerHTML=ds.slice(0,60).map(ve).join('<br>')+(ds.length>60?'<br>… và '+(ds.length-60)+' món nữa':'');
       d.appendChild(u);box.appendChild(d);
     };
-    ct('Món mới',ss.them,x=>'• <b>'+x.ten+'</b> — '+x.soNL+' nguyên liệu');
-    ct('Món sửa định lượng',ss.sua,x=>'• <b>'+x.ten+'</b>'
-      +(x.tenCu&&x.tenCu!==x.ten?' <span style="color:var(--amber,#8A5A00)">(tên cũ: '+x.tenCu+')</span>':'')
+    ct('Món mới',ss.them,x=>'• <b>'+escHtml(x.ten)+'</b> — '+x.soNL+' nguyên liệu');
+    ct('Món sửa định lượng',ss.sua,x=>'• <b>'+escHtml(x.ten)+'</b>'
+      +(x.tenCu&&x.tenCu!==x.ten?' (tên cũ: '+escHtml(x.tenCu)+')':'')
       +'<br>&nbsp;&nbsp;'+x.doi.slice(0,8).map(d2=>
-          d2.tu==null?('thêm '+d2.ten+' = '+nq(d2.den)+' '+(d2.uom||''))
-        : d2.den==null?('bỏ '+d2.ten)
-        : (d2.ten+': '+nq(d2.tu)+' → <b>'+nq(d2.den)+'</b> '+(d2.uom||''))
+          d2.tu==null?('thêm '+escHtml(d2.ten)+' = '+nq(d2.den)+' '+(d2.uom||''))
+        : d2.den==null?('bỏ '+escHtml(d2.ten))
+        : (escHtml(d2.ten)+': '+nq(d2.tu)+' → <b>'+nq(d2.den)+'</b> '+(d2.uom||''))
       ).join('; ')+(x.doi.length>8?'; …':''));
-    ct('Món KHÔNG còn trong file mới',ss.bo,x=>'• <b>'+x.ten+'</b> — '+x.soNL+' nguyên liệu');
+    ct('Món KHÔNG còn trong file mới',ss.bo,x=>'• <b>'+escHtml(x.ten)+'</b> — '+x.soNL+' nguyên liệu');
   }
 
   // Món bị bỏ: KHÔNG tự xóa. Xóa nhầm là mọi kỳ cũ mất định lượng để đối chiếu.
@@ -4903,45 +5129,43 @@ function clXemTruoc(host,kq){
     const lab=el('label');lab.style.cssText='display:flex;gap:9px;align-items:flex-start;margin-top:12px;font-size:13.5px;cursor:pointer';
     const cb=el('input');cb.type='checkbox';cb.style.cssText='width:18px;height:18px;margin-top:2px;flex:none';
     cb.onchange=()=>{xoaCu=cb.checked;};
-    const sp=el('span');sp.innerHTML='Xóa luôn <b>'+ss.bo.length+' món không còn trong file mới</b> khỏi hệ thống.'
-      +'<br><span style="color:var(--muted)">Không tick thì các món đó được giữ lại — an toàn hơn, vì kỳ cũ vẫn cần định lượng để đối chiếu. Chỉ tick khi chắc những món này đã ngừng bán hẳn.</span>';
+    const sp=el('span');sp.innerHTML='Xóa luôn <b>'+ss.bo.length+' món không còn trong file mới</b> khỏi bộ định lượng của kho này.'
+      +'<br><span style="color:var(--muted)">Không tick thì các món đó được giữ lại — an toàn hơn, vì kỳ cũ vẫn cần định lượng để đối chiếu.</span>';
     lab.appendChild(cb);lab.appendChild(sp);box.appendChild(lab);
   }
 
   const bar=el('div','form-row');bar.style.marginTop='12px';
-  const bLuu=el('button','btn btn-brand',coCu?'Cập nhật bảng định lượng':'Lưu bảng định lượng lên hệ thống');
+  const nhanLuu=coCu?'Cập nhật định lượng kho này':'Lưu định lượng cho kho này';
+  const bLuu=el('button','btn btn-brand',nhanLuu);
   bLuu.onclick=async()=>{
     const boIds=xoaCu?ss.bo.map(x=>x.id):null;
-    let xn='CẬP NHẬT BẢNG ĐỊNH LƯỢNG\n\n'
-      +'• '+ss.them.length+' món mới\n• '+ss.sua.length+' món sửa định lượng\n'
-      +'• '+(boIds?ss.bo.length+' món sẽ bị XÓA':(ss.bo.length+' món không còn trong file — GIỮ LẠI'))+'\n'
-      +'• '+ss.giu+' món giữ nguyên\n\n'
-      +'Số liệu chênh lệch của các kỳ sẽ tính lại theo bản mới này.\n\nBấm OK để cập nhật.';
+    const N=String.fromCharCode(10);
+    const xn='CẬP NHẬT ĐỊNH LƯỢNG — '+whName(ctx.plant,ctx.sloc)+N+N
+      +'• '+ss.them.length+' món mới'+N+'• '+ss.sua.length+' món sửa định lượng'+N
+      +'• '+(boIds?ss.bo.length+' món sẽ bị XÓA':(ss.bo.length+' món không còn trong file — GIỮ LẠI'))+N
+      +'• '+ss.giu+' món giữ nguyên'+N+N+'Bấm OK để cập nhật.';
     if(coCu&&!confirm(xn))return;
     bLuu.disabled=true;bLuu.textContent='Đang lưu…';
-    const r=await saveRecipes(kq,boIds);
-    bLuu.disabled=false;bLuu.textContent=coCu?'Cập nhật bảng định lượng':'Lưu bảng định lượng lên hệ thống';
-    if(!r.ok){errBox('Chưa cập nhật được bảng định lượng',
-      [r.why||'Máy chủ từ chối.','Bảng cũ <b>vẫn nguyên</b> — xử lý xong rồi bấm lại.'],'Bảng: recipes');return;}
-    recipeInfo={n:r.n,at:now(),by:session?session.name:''};
-    log('Cập nhật bảng định lượng',
-      r.n+' món (mới '+ss.them.length+', sửa '+ss.sua.length+', bỏ '+(r.daBo||0)+')');
-    toast('✓ Đã cập nhật '+nq(r.n,0)+' món'+(r.daBo?' · xóa '+r.daBo+' món cũ':''));
+    const r=await saveRecipes(kq,boIds,ctx.plant,ctx.sloc);
+    bLuu.disabled=false;bLuu.textContent=nhanLuu;
+    if(!r.ok){errBox('Chưa cập nhật được định lượng',[r.why||'Máy chủ từ chối.'],'Bảng: recipes');return;}
+    log('Cập nhật định lượng',whName(ctx.plant,ctx.sloc)+' — '+r.n+' món (mới '+ss.them.length+', sửa '+ss.sua.length+', bỏ '+(r.daBo||0)+')');
+    toast('✓ Đã lưu '+nq(r.n,0)+' món cho kho này'+(r.daBo?' · xóa '+r.daBo+' món cũ':''));
     renderView();
   };
   bar.appendChild(bLuu);box.appendChild(bar);
 
-  // Soi danh mục kho: mã nào ghi đơn vị khác bảng định lượng
+  // Soi danh mục: mã nào ghi đơn vị khác bảng định lượng
   try{
     const lech=CL.lechDvt(kq,masterByCode);
     if(lech.length){
       const d=el('details');d.style.cssText='margin-top:12px;font-size:13px';
       d.innerHTML='<summary style="cursor:pointer;font-weight:600;color:var(--red)">⚠ '+lech.length
-        +' mã có đơn vị tính khác giữa danh mục kho và bảng định lượng</summary>';
+        +' mã có đơn vị tính khác giữa danh mục và bảng định lượng</summary>';
       const u=el('div');u.style.cssText='margin-top:6px;color:var(--muted);line-height:1.7';
       u.innerHTML='Những mã này trừ kho sẽ sai đơn vị — cần sửa cho khớp:<br>'
-        +lech.slice(0,40).map(x=>'• <b>'+x.ten+'</b> ('+x.code+'): kho ghi <b>'+x.kho
-          +'</b>, định lượng ghi <b>'+x.dinhLuong+'</b>').join('<br>')
+        +lech.slice(0,40).map(x=>'• <b>'+escHtml(x.ten)+'</b> ('+x.code+'): danh mục ghi <b>'+escHtml(x.kho)
+          +'</b>, định lượng ghi <b>'+escHtml(x.dinhLuong)+'</b>').join('<br>')
         +(lech.length>40?'<br>… và '+(lech.length-40)+' mã nữa':'');
       d.appendChild(u);box.appendChild(d);
     }
@@ -4954,11 +5178,12 @@ function clXemTruoc(host,kq){
 function clFormDoanhThu(host){
   const ctx=ensureClCtx();
   ctxBar(host,ctx,{period:true},()=>renderView());
-
+  const kt=isViewer();
   const box=el('div','card');box.style.cssText='padding:18px';host.appendChild(box);
-  if(!recipeInfo){
-    box.appendChild(clNote(
-      '<b>Chưa có bảng định lượng.</b> Nạp bảng định lượng trước, nếu không app không biết mỗi món ăn hết bao nhiêu nguyên liệu.'));
+  if(sb&&_clDaTai[clBookKey(ctx.plant,ctx.sloc)]===true){box.appendChild(clNote('Đang tải định lượng của kho…'));return;}
+  const bk0=clBookDung(ctx.plant,ctx.sloc);
+  if(!bk0.n){
+    box.appendChild(clNote('Kho '+escHtml(whName(ctx.plant,ctx.sloc))+' chưa có bảng định lượng. Nạp định lượng cho kho này trước, nếu không app không biết mỗi món ăn hết bao nhiêu nguyên liệu.'));
     return;
   }
   box.appendChild(el('div','',
@@ -4971,55 +5196,96 @@ function clFormDoanhThu(host){
   clFilePick(box,'File doanh thu (.xlsx)','',async (file)=>{
     kqBox.innerHTML='';
     const st=clTrangThai(kqBox,'Đang đọc file…');
+    let dt;
     try{
       const raw=await clDocFile(file,[CL.SHEET_BAN,CL.SHEET_KY]);
       if(!raw[CL.SHEET_BAN]){
         st.innerHTML='<b style="color:var(--red)">Không thấy sheet "'+CL.SHEET_BAN+'"</b><br>'
-          +'Các sheet có trong file: '+(raw.__tenSheet||[]).join(' · ');return;
+          +'Các sheet có trong file: '+escHtml((raw.__tenSheet||[]).join(' · '));return;
       }
-      const dt=CL.docDoanhThu(raw[CL.SHEET_BAN],raw[CL.SHEET_KY]);
+      dt=CL.docDoanhThu(raw[CL.SHEET_BAN],raw[CL.SHEET_KY]);
       if(dt.loi&&dt.loi.length){st.innerHTML='<b style="color:var(--red)">'+dt.loi.join('<br>')+'</b>';return;}
-      const dl={mon:recipes,alias:recipeAlias};
-      const kq=CL.tinhTieuHao(dt.ban,dl);
+    }catch(e){
+      st.innerHTML='<b style="color:var(--red)">Không đọc được file</b><br>'+escHtml((e&&e.message)||'');return;
+    }
+    // Kho khác cùng điểm bán (VD Quầy Lễ Hội Bia + Bếp LH Bia chung một file doanh thu)
+    const anh=clCotKhoOK?DATA.warehouses.filter(w=>w.plant===ctx.plant&&w.sloc!==ctx.sloc):[];
+    for(const w of anh){try{await clTaiBook(w.plant,w.sloc);}catch(e){}}
+    const kq2=el('div');kqBox.appendChild(kq2);
+    const ve=()=>{
+      kq2.innerHTML='';
+      const bk=clBookDung(ctx.plant,ctx.sloc);
+      const khac=anh.map(w=>({w,b:clBook(w.plant,w.sloc)})).filter(x=>x.b&&x.b.n);
+      const banKho=[],banKhac=[];
+      dt.ban.forEach(b=>{
+        if(bk.alias[b.key]!=null&&bk.mon[bk.alias[b.key]]){banKho.push(b);return;}
+        const o=khac.find(x=>x.b.alias[b.key]!=null&&x.b.mon[x.b.alias[b.key]]);
+        if(o){banKhac.push(Object.assign({},b,{kho:o.w.sloc_name}));return;}
+        banKho.push(b);});
+      const kq=CL.tinhTieuHao(banKho,{mon:bk.mon,alias:bk.alias});
 
       let canh='';
       if(dt.ky.period&&dt.ky.period!==ctx.period){
-        canh+='<div style="color:var(--red);font-weight:700;margin-top:6px">⚠ Kỳ trong file là <b>'
-          +periodVN(dt.ky.period)+'</b> nhưng đang chọn kỳ <b>'+periodVN(ctx.period)
-          +'</b>. Kiểm lại trước khi lưu — lưu nhầm kỳ là đối chiếu sai toàn bộ.</div>';
+        canh+='<div style="color:var(--red);font-weight:700;margin-top:6px">⚠ Kỳ trong file là '
+          +periodVN(dt.ky.period)+' nhưng đang chọn kỳ '+periodVN(ctx.period)
+          +'. Kiểm lại trước khi lưu — lưu nhầm kỳ là đối chiếu sai toàn bộ.</div>';
       }
       if(kq.pct<90){
-        const nhomYeu=(kq.theoNhom||[]).filter(g=>(!kq.chiFoodBev||g.tinh)&&g.pct<50)
-          .map(g=>g.nhom+' '+pc(g.pct));
-        canh+='<div style="color:var(--amber,#8A5A00);font-weight:600;margin-top:6px">⚠ Mới quy đổi được '
+        const nhomYeu=(kq.theoNhom||[]).filter(g=>(!kq.chiFoodBev||g.tinh)&&g.pct<50).map(g=>g.nhom+' '+pc(g.pct));
+        canh+='<div style="color:var(--accent-ink);font-weight:600;margin-top:6px">⚠ Mới quy đổi được '
           +pc(kq.pct)+' sản lượng'+(kq.chiFoodBev?' (Food + Beverage)':'')+'. '
-          +(nhomYeu.length?'Yếu nhất: <b>'+nhomYeu.join('</b>, <b>')+'</b>. ':'')
-          +'Phần chưa quy đổi được làm các mã liên quan <b>hiện lên như đang hao hụt dù không hao</b>.</div>';
+          +(nhomYeu.length?'Yếu nhất: '+escHtml(nhomYeu.join(', '))+'. ':'')
+          +'Phần chưa quy đổi được làm các mã liên quan hiện lên như đang hao hụt dù không hao.</div>';
       }
-
       const ngoai=kq.slTongTatCa-kq.slTong;
       st.innerHTML='<b>Đọc xong</b> — '+nq(dt.ban.length,0)+' món bán ra'
         +(dt.boTong?' (đã bỏ '+dt.boTong+' dòng cộng của báo cáo)':'')
         +', tổng '+nq(dt.tongSL,0)+' đơn vị.'
         +'<br>Kỳ trong file: <b>'+(dt.ky.tu||'?')+' → '+(dt.ky.den||'?')+'</b>'
-        +(dt.ky.diem?' · điểm bán ghi trong file: <b>'+dt.ky.diem+'</b>':'')
+        +(dt.ky.diem?' · điểm bán ghi trong file: <b>'+escHtml(dt.ky.diem)+'</b>':'')
+        +(banKhac.length?'<br>'+nq(banKhac.length,0)+' món thuộc định lượng kho khác cùng điểm bán ('
+          +escHtml([...new Set(banKhac.map(x=>x.kho))].join(', '))+') — không tính cho kho này.':'')
         +'<br>Quy ra <b>'+nq(kq.soMa,0)+' mã vật tư</b>, khớp '+nq(kq.slKhop,0)+'/'+nq(kq.slTong,0)
         +' đơn vị = <b>'+pc(kq.pct)+'</b>'
         +(kq.chiFoodBev?' <span style="color:var(--muted)">(chỉ tính Food + Beverage'
             +(ngoai>0?'; '+nq(ngoai,0)+' đơn vị nhóm khác không tính':'')+')</span>':'')
         +'.'+canh;
 
-      clBangNhom(kqBox,kq.theoNhom);
+      clBangNhom(kq2,kq.theoNhom);
 
       if(kq.khongKhop.length){
-        const d=el('details');d.style.cssText='margin-top:10px;font-size:13px';
-        d.innerHTML='<summary style="cursor:pointer;font-weight:600">Xem '+kq.khongKhop.length
-          +' món chưa tra được định lượng</summary>';
-        const ul=el('div');ul.style.cssText='margin-top:6px;color:var(--muted)';
-        ul.innerHTML=kq.khongKhop.slice(0,80).map(x=>'• '+nq(x.sl,0)+' — '+x.ten
-          +(x.nhom?' <span style="opacity:.75">['+x.nhom+']</span>':'')).join('<br>')
-          +(kq.khongKhop.length>80?'<br>… và '+(kq.khongKhop.length-80)+' món nữa':'');
-        d.appendChild(ul);kqBox.appendChild(d);
+        const d=el('details');d.style.cssText='margin-top:10px;font-size:13px';d.open=kt&&clCotKhoOK;
+        d.innerHTML='<summary style="cursor:pointer;font-weight:600">'+kq.khongKhop.length
+          +' món chưa tra được định lượng'+(kt&&clCotKhoOK?' — gán món để app nhớ cho các kỳ sau':'')+'</summary>';
+        const ul=el('div');ul.style.cssText='margin-top:6px;display:flex;flex-direction:column;gap:6px';
+        let dsl=null;
+        if(kt&&clCotKhoOK){
+          dsl=el('datalist');dsl.id='clDsMon';
+          const opt=Object.keys(bk.mon).filter(k=>!clLaMonKhong(k)).map(k=>({k,t:bk.mon[k].ten+(bk.mon[k].menu?(' · '+bk.mon[k].menu):'')}));
+          opt.sort((a,b)=>a.t.localeCompare(b.t,'vi'));
+          const nhan2id={};opt.forEach(o=>{if(!nhan2id[o.t])nhan2id[o.t]=o.k;const op=document.createElement('option');op.value=o.t;dsl.appendChild(op);});
+          dsl._map=nhan2id;ul.appendChild(dsl);
+        }
+        kq.khongKhop.slice(0,80).forEach(x=>{
+          const row=el('div');row.style.cssText='display:flex;flex-wrap:wrap;gap:6px;align-items:center';
+          const sp=el('span');sp.style.cssText='flex:1 1 220px;min-width:0';
+          sp.textContent=nq(x.sl,0)+' — '+x.ten+(x.nhom?' ['+x.nhom+']':'');row.appendChild(sp);
+          if(dsl){
+            const inp=el('input','input');inp.setAttribute('list','clDsMon');inp.placeholder='Gõ tên món định lượng…';
+            inp.style.cssText='flex:1 1 220px;min-width:0;max-width:100%';
+            const bG=el('button','btn btn-brand btn-sm','Gán');
+            const bK=el('button','btn btn-ghost btn-sm','Không dùng NL kho này');
+            const gan=async(id,btn)=>{btn.disabled=true;
+              const r=await clGanMon(ctx.plant,ctx.sloc,x.ten,id);btn.disabled=false;
+              if(!r.ok){errBox('Chưa gán được món',[r.why||'Máy chủ từ chối.'],'Bảng: recipes');return;}
+              log('Gán món POS vào định lượng',whName(ctx.plant,ctx.sloc)+' — '+x.ten);ve();};
+            bG.onclick=()=>{const id=dsl._map[inp.value.trim()];if(!id){toast('Chọn món trong danh sách gợi ý');return;}gan(id,bG);};
+            bK.onclick=()=>gan(clBookKey(ctx.plant,ctx.sloc)+'|__khong',bK);
+            row.appendChild(inp);row.appendChild(bG);row.appendChild(bK);
+          }
+          ul.appendChild(row);});
+        if(kq.khongKhop.length>80)ul.appendChild(el('div','','… và '+(kq.khongKhop.length-80)+' món nữa'));
+        d.appendChild(ul);kq2.appendChild(d);
       }
 
       const bar=el('div','form-row');bar.style.marginTop='12px';
@@ -5029,17 +5295,16 @@ function clFormDoanhThu(host){
         const r=await saveSalesUsage(ctx.plant,ctx.sloc,ctx.period,kq,dt.ky);
         bLuu.disabled=false;
         if(!r.ok){errBox('Chưa lưu được doanh thu',
-          [r.why||'Máy chủ từ chối.','Số liệu <b>chưa</b> được lưu.'],'Bảng: sales_usage');
+          [r.why||'Máy chủ từ chối.','Số liệu chưa được lưu.'],'Bảng: sales_usage');
           bLuu.textContent='Thử lưu lại';return;}
         log('Nạp doanh thu bán hàng',whName(ctx.plant,ctx.sloc)+' kỳ '+periodVN(ctx.period)
           +' — '+kq.soMa+' mã, '+pc(kq.pct));
         toast('✓ Đã lưu — xem ở mục Chênh lệch');
         hubOpen['chenhlech']='bang';renderView();
       };
-      bar.appendChild(bLuu);kqBox.appendChild(bar);
-    }catch(e){
-      st.innerHTML='<b style="color:var(--red)">Không đọc được file</b><br>'+((e&&e.message)||'');
-    }
+      bar.appendChild(bLuu);kq2.appendChild(bar);
+    };
+    ve();
   });
 }
 

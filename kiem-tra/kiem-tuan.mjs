@@ -235,6 +235,7 @@ const MAU = [
   { re: /toast\('✓ Đã tạo '\+list\.length\+' phiếu điều chuyển'\)/, mo: false, vi: 'Nạp Excel điều chuyển báo đã tạo dù máy chủ từ chối ghi sổ (sửa 24/10, bản 2410-01)' },
   { re: /a\.download='MaChuaKhaiBao\.xls'/, mo: false, vi: 'Mẫu mã chưa khai báo xuất HTML đuôi .xls — Excel lưu thành trang web, nạp lại không có dòng nào (sửa 24/10, bản 2410-03)' },
   { re: /if\(m\)\{m\.name=name;if\(uom\)m\.uom=uom;\}else\{const nm=\{code:x\.code,name,uom\}/, mo: false, vi: 'Khai tên mã đổi trên máy trước khi máy chủ nhận — báo đã khai mà tải lại mất (sửa 24/10, bản 2410-03)' },
+  { re: /const rcp=await sb\.from\('recipes'\)\.select\('\*'\);/, mo: false, vi: 'Định lượng tải cả bảng về mọi máy mỗi 45 giây, chỉ 1.000 dòng đầu (sửa 26/10, bản 2610-01)' },
   { re: /const rcp=await sb\.from\('recipes'\)\.select\('\*'\);applyRecipes/, mo: false, vi: 'Mạng chập chờn xoá trắng công thức món / sản lượng / giải trình trên máy (sửa 24/10, bản 2410-01)' },
   { re: /if\(_loiTai\.length\)\{\s*console\.warn\([^;]*\);\s*if\(_loiTai\.some\(x=>laLoiMang\(x\.e\)\)\)datMang\(false\);\s*\}else if\(!mangOK\)datMang\(true\);/, mo: false, vi: 'Một bảng thiếu / bị chặn quyền làm app không tự bỏ \"Mất mạng\" (sửa 24/10, bản 2410-01)' },
 ];
