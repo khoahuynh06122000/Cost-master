@@ -1121,7 +1121,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2610-05';
+const APP_VER='2610-06';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -3746,6 +3746,7 @@ function clMotSuat(bk,menu){
   return u;
 }
 function clBuffetUsage(p,s,per){
+  if(!laKhoBep(p,s))return null;   // vé buffet chỉ tính cho kho bếp
   const b=clBuffet&&clBuffet[clKey(p,s,per)];if(!b||!b.dong.length)return null;
   const bk=clBookDung(p,s);const u={};let suat=0,thieuGia=0;
   b.dong.forEach(d=>{const n=clSuat(d);suat+=n;if((Number(d.te)||0)>0&&clHeSoTE(d)==null)thieuGia+=Number(d.te)||0;
@@ -5066,7 +5067,7 @@ function renderChenhLech(v){
       ico:HIC.cam,render:clFormDoanhThu});
   }
   if(kt)acts.push({k:'buffet',title:'Vé & doanh thu buffet',
-    sub:'Nhập vé người lớn / trẻ em + doanh thu buffet theo tháng — ra xuất theo định lượng',ico:HIC.list,render:clFormBuffet});
+    sub:'Kho bếp buffet: nhập vé người lớn / trẻ em + doanh thu theo tháng — ra xuất theo định lượng',ico:HIC.list,render:clFormBuffet});
   if(kt)acts.push({k:'theodiem',title:'Hàng sử dụng theo điểm bán',
     sub:'Nạp 1 file doanh thu POS — tính hàng sử dụng trong tháng cho mọi điểm',ico:HIC.list,render:clTheoDiem});
   acts.push({k:'bang',title:kt?'Xem chênh lệch & duyệt giải trình':'Chênh lệch kho của tôi',
@@ -5489,6 +5490,8 @@ function clFormBuffet(host){
     +'<div style="font-size:13px;color:var(--muted);margin-bottom:12px">Định lượng buffet ghi lượng cho 1 vé người lớn. '
     +'Hệ số trẻ em = giá vé trẻ em ÷ giá vé người lớn. Xuất định lượng = (vé người lớn + vé trẻ em × hệ số) × định lượng 1 suất của thực đơn.</div>'));
   if(!clBuffetOK){box.appendChild(clNote('Máy chủ chưa sẵn sàng lưu số khách buffet — báo admin bật phần này.','var(--red)'));return;}
+  /* Vé buffet chỉ cho kho BẾP (Khoa 26/10/2026). Kho nhà hàng tính hoàn toàn bằng file bán POS × định lượng. */
+  if(!laKhoBep(ctx.plant,ctx.sloc)){box.appendChild(clNote('Kho '+escHtml(whName(ctx.plant,ctx.sloc))+' là kho nhà hàng — xuất định lượng tính hoàn toàn từ file bán POS × định lượng (thẻ Nạp doanh thu hoặc Hàng sử dụng theo điểm bán). Vé buffet chỉ nhập cho kho bếp: bấm Đổi kho để chọn bếp.'));return;}
   if(sb&&_clDaTai[clBookKey(ctx.plant,ctx.sloc)]===true){box.appendChild(clNote('Đang tải định lượng của kho…'));return;}
   const bk=clBookDung(ctx.plant,ctx.sloc);
   const menus=[...new Set(Object.keys(bk.mon).filter(id=>!clLaMonKhong(id)).map(id=>bk.mon[id].menu).filter(m=>m&&m!=='__'))];
