@@ -1121,7 +1121,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2610-04';
+const APP_VER='2610-05';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -5065,8 +5065,8 @@ function renderChenhLech(v){
       sub:'Sheet "Sales By Items" — tính lượng nguyên liệu đáng lẽ đã dùng',
       ico:HIC.cam,render:clFormDoanhThu});
   }
-  if(kt)acts.push({k:'buffet',title:'Số khách buffet',
-    sub:'Gõ số khách người lớn / trẻ em theo tháng cho từng thực đơn buffet',ico:HIC.list,render:clFormBuffet});
+  if(kt)acts.push({k:'buffet',title:'Vé & doanh thu buffet',
+    sub:'Nhập vé người lớn / trẻ em + doanh thu buffet theo tháng — ra xuất theo định lượng',ico:HIC.list,render:clFormBuffet});
   if(kt)acts.push({k:'theodiem',title:'Hàng sử dụng theo điểm bán',
     sub:'Nạp 1 file doanh thu POS — tính hàng sử dụng trong tháng cho mọi điểm',ico:HIC.list,render:clTheoDiem});
   acts.push({k:'bang',title:kt?'Xem chênh lệch & duyệt giải trình':'Chênh lệch kho của tôi',
@@ -5485,9 +5485,9 @@ function clFormBuffet(host){
   const ctx=ensureClCtx();
   ctxBar(host,ctx,{period:true},()=>renderView());
   const box=el('div','card');box.style.cssText='padding:18px';host.appendChild(box);
-  box.appendChild(el('div','','<div style="font-weight:700;margin-bottom:4px">Số khách buffet tháng '+periodVN(ctx.period)+'</div>'
-    +'<div style="font-size:13px;color:var(--muted);margin-bottom:12px">Định lượng buffet ghi lượng cho 1 khách người lớn. '
-    +'Hệ số trẻ em = giá vé trẻ em ÷ giá vé người lớn. Xuất định lượng = (người lớn + trẻ em × hệ số) × định lượng 1 suất của thực đơn.</div>'));
+  box.appendChild(el('div','','<div style="font-weight:700;margin-bottom:4px">Vé và doanh thu buffet tháng '+periodVN(ctx.period)+'</div>'
+    +'<div style="font-size:13px;color:var(--muted);margin-bottom:12px">Định lượng buffet ghi lượng cho 1 vé người lớn. '
+    +'Hệ số trẻ em = giá vé trẻ em ÷ giá vé người lớn. Xuất định lượng = (vé người lớn + vé trẻ em × hệ số) × định lượng 1 suất của thực đơn.</div>'));
   if(!clBuffetOK){box.appendChild(clNote('Máy chủ chưa sẵn sàng lưu số khách buffet — báo admin bật phần này.','var(--red)'));return;}
   if(sb&&_clDaTai[clBookKey(ctx.plant,ctx.sloc)]===true){box.appendChild(clNote('Đang tải định lượng của kho…'));return;}
   const bk=clBookDung(ctx.plant,ctx.sloc);
@@ -5503,28 +5503,39 @@ function clFormBuffet(host){
     const card=el('div','card');card.style.cssText='padding:12px;margin-top:10px';
     card.appendChild(el('div','','<div style="font-weight:600">'+escHtml(mn)+'</div><div style="font-size:12.5px;color:var(--muted)">'
       +soMon+' món · '+Object.keys(ms).length+' mã nguyên liệu trong 1 suất</div>'));
+    /* Giá vé ít đổi: tháng này chưa nhập thì lấy giá của tháng gần nhất đã lưu (Khoa 26/10/2026) */
+    let giaCu=null;
+    if(!c.giaNL&&!c.giaTE){
+      const ky=Object.keys(clBuffet||{}).filter(k=>k.indexOf(clKey(ctx.plant,ctx.sloc,''))===0&&k<clKey(ctx.plant,ctx.sloc,ctx.period)).sort().reverse();
+      for(const k of ky){const d=(clBuffet[k].dong||[]).find(x=>x.menu===mn&&(x.giaNL||x.giaTE));if(d){giaCu={giaNL:d.giaNL,giaTE:d.giaTE,ky:k.split('|')[2]};break;}}
+    }
     const r=el('div','form-row');r.style.cssText='flex-wrap:wrap;margin-top:8px';
-    const f=(nhan,gt)=>{const l=el('label','field f-qty','<span>'+nhan+'</span>');const i=el('input','input');i.type='number';i.min='0';i.step='1';i.inputMode='numeric';
-      if(gt!=null&&gt!=='')i.value=gt;l.appendChild(i);r.appendChild(l);return i;};
-    const iNL=f('Khách người lớn',c.nl),iTE=f('Khách trẻ em',c.te),iGN=f('Giá vé người lớn',c.giaNL),iGT=f('Giá vé trẻ em',c.giaTE);
+    const f=(row,nhan,gt)=>{const l=el('label','field f-qty','<span>'+nhan+'</span>');const i=el('input','input');i.type='number';i.min='0';i.step='1';i.inputMode='numeric';
+      if(gt!=null&&gt!=='')i.value=gt;l.appendChild(i);row.appendChild(l);return i;};
+    const iNL=f(r,'Vé người lớn',c.nl),iTE=f(r,'Vé trẻ em',c.te),iDT=f(r,'Doanh thu buffet (đ)',c.doanhThu);
     card.appendChild(r);
+    const r2=el('div','form-row');r2.style.cssText='flex-wrap:wrap;margin-top:4px';
+    const iGN=f(r2,'Giá vé người lớn',c.giaNL||(giaCu&&giaCu.giaNL)),iGT=f(r2,'Giá vé trẻ em',c.giaTE||(giaCu&&giaCu.giaTE));
+    card.appendChild(r2);
+    if(giaCu)card.appendChild(el('div','',"<div style='font-size:12px;color:var(--muted)'>Giá vé lấy lại từ tháng "+periodVN(giaCu.ky)+' — đổi giá thì sửa ở đây.</div>'));
     const ro=el('div','readout');card.appendChild(ro);
-    const ve=()=>{const d={nl:+iNL.value||0,te:+iTE.value||0,giaNL:+iGN.value||0,giaTE:+iGT.value||0};const h=clHeSoTE(d);
-      ro.textContent=(d.nl||d.te)?('= '+nq(clSuat(d))+' suất'+(h!=null?(' · hệ số trẻ em '+nq(h)):(d.te?' · chưa có giá vé nên trẻ em chưa tính':''))):'';};
-    [iNL,iTE,iGN,iGT].forEach(i=>i.oninput=ve);ve();
-    o[mn]={iNL,iTE,iGN,iGT};box.appendChild(card);
+    const ve=()=>{const d={nl:+iNL.value||0,te:+iTE.value||0,giaNL:+iGN.value||0,giaTE:+iGT.value||0};const h=clHeSoTE(d),dt=+iDT.value||0;
+      ro.textContent=(d.nl||d.te)?('= '+nq(clSuat(d))+' suất'+(h!=null?(' · hệ số trẻ em '+nq(h)):(d.te?' · chưa có giá vé nên trẻ em chưa tính':''))
+        +(dt?(' · doanh thu bình quân '+nq(dt/(d.nl+d.te),0)+' đ/vé'):'')):'';};
+    [iNL,iTE,iDT,iGN,iGT].forEach(i=>i.oninput=ve);ve();
+    o[mn]={iNL,iTE,iDT,iGN,iGT};box.appendChild(card);
   });
   const bar=el('div','form-row');bar.style.marginTop='12px';
-  const bL=el('button','btn btn-brand','Lưu số khách tháng '+periodVN(ctx.period));
+  const bL=el('button','btn btn-brand','Lưu vé buffet tháng '+periodVN(ctx.period));
   bL.onclick=async()=>{
-    const dong=menus.map(mn=>({menu:mn,nl:+o[mn].iNL.value||0,te:+o[mn].iTE.value||0,giaNL:+o[mn].iGN.value||0,giaTE:+o[mn].iGT.value||0}))
-      .filter(d=>d.nl>0||d.te>0);
-    if(dong.some(d=>d.nl<0||d.te<0)){toast('Số khách không được âm');return;}
-    if(!dong.length&&!cu.length){toast('Chưa nhập số khách');return;}
+    const tat=menus.map(mn=>({menu:mn,nl:+o[mn].iNL.value||0,te:+o[mn].iTE.value||0,doanhThu:+o[mn].iDT.value||0,giaNL:+o[mn].iGN.value||0,giaTE:+o[mn].iGT.value||0}));
+    if(tat.some(d=>d.nl<0||d.te<0||d.doanhThu<0||d.giaNL<0||d.giaTE<0)){toast('Số vé, doanh thu, giá vé không được âm');return;}
+    const dong=tat.filter(d=>d.nl>0||d.te>0);
+    if(!dong.length&&!cu.length){toast('Chưa nhập số vé');return;}
     bL.disabled=true;const r=await clLuuBuffet(ctx.plant,ctx.sloc,ctx.period,dong);bL.disabled=false;
     if(!r.ok){errBox('Chưa lưu được số khách buffet',[r.why||'Máy chủ từ chối.'],'Bảng: buffet_khach');return;}
-    log('Số khách buffet',whName(ctx.plant,ctx.sloc)+' tháng '+periodVN(ctx.period)+' — '+dong.map(d=>d.menu+': '+d.nl+' NL, '+d.te+' TE').join('; '));
-    toast('✓ Đã lưu số khách buffet');hubOpen['chenhlech']='bang';renderView();
+    log('Số khách buffet',whName(ctx.plant,ctx.sloc)+' tháng '+periodVN(ctx.period)+' — '+dong.map(d=>d.menu+': '+d.nl+' NL, '+d.te+' TE, DT '+d.doanhThu).join('; '));
+    toast('✓ Đã lưu vé buffet');hubOpen['chenhlech']='bang';renderView();
   };
   bar.appendChild(bL);box.appendChild(bar);
 }
@@ -5763,7 +5774,8 @@ function clBang(host){
 
   // --- cảnh báo phải thấy trước khi đọc số ---
   if(bf){
-    host.appendChild(clNote('Xuất định lượng có cộng phần buffet: '+bf.dong.map(d=>escHtml(d.menu)+' '+nq(clSuat(d),0)+' suất').join(' · ')
+    host.appendChild(clNote('Xuất định lượng có cộng phần buffet: '+bf.dong.map(d=>escHtml(d.menu)+' '+nq(d.nl,0)+' vé NL + '+nq(d.te,0)+' vé TE = '+nq(clSuat(d),0)+' suất'
+      +(d.doanhThu?(' · doanh thu '+nq(d.doanhThu,0)+' đ'):'')).join(' · ')
       +(bf.thieuGia?(' — '+nq(bf.thieuGia,0)+' khách trẻ em CHƯA tính vì chưa có giá vé'):'')+'.'));
   }
   if(su.pct!=null&&su.pct<90){
