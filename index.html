@@ -1121,7 +1121,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2610-11';
+const APP_VER='2610-12';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -6542,7 +6542,8 @@ function nxtPhieuCua(p,s2,per){
 function nxtDongKho(p,s2,per,gomChuaKK){
   const sub=nxtPhieuCua(p,s2,per);
   const w=DATA.warehouses.find(x=>x.plant===p&&x.sloc===s2)||{};
-  const dau=[periodVN(per),w.plant_name||p,w.sloc_name||s2];
+  /* Khoa 26/10/2026: bỏ cột Điểm bán; cột Kho ghi tên kho đầy đủ + mã, cột Loại kho ghi Bếp / Nhà hàng */
+  const dau=[periodVN(per),(w.sloc_name||s2)+' ('+p+'-'+s2+')',dcLoaiKho(p,s2)==='bep'?'Bếp':'Nhà hàng'];
   if(sub){
     const dk=dkCuaPhieu(sub);
     return inventoryFlow(sub).filter(r=>r.dk||r.buy||r.tin||r.tout||r.cuoi)
@@ -6559,14 +6560,14 @@ function nxtDongKho(p,s2,per,gomChuaKK){
   return out.sort((x,y)=>String(x[4]).localeCompare(String(y[4]),'vi'));
 }
 function nxtXuat(dsKho,per,tenFile,gomChuaKK){
-  const H=['Kỳ','Điểm bán','Kho','Mã hàng','Tên hàng','ĐVT','Tồn đầu kỳ','Nhập mua','ĐC đến','ĐC đi','Tồn kiểm kê','Xuất thực tế','Phiếu kiểm kê','Nguồn tồn đầu kỳ'];
+  const H=['Kỳ','Kho','Loại kho','Mã hàng','Tên hàng','ĐVT','Tồn đầu kỳ','Nhập mua','ĐC đến','ĐC đi','Tồn kiểm kê','Xuất thực tế','Phiếu kiểm kê','Nguồn tồn đầu kỳ'];
   const rows=[H];let nKho=0;
   dsKho.forEach(w=>{const r=nxtDongKho(w.plant,w.sloc,per,gomChuaKK);if(r.length){nKho++;r.forEach(x=>rows.push(x));}});
   if(rows.length<2){toast('Kỳ '+periodVN(per)+' chưa có số liệu nào để tải');return 0;}
   const ws=XLSX.utils.aoa_to_sheet([['NHẬP – XUẤT – TỒN · Kỳ '+periodVN(per)+' ('+kyKhoangVN(per)+')'],
     ['Xuất thực tế = Tồn đầu kỳ + Nhập mua + ĐC đến − ĐC đi − Tồn kiểm kê'],[]].concat(rows));
   for(let r=4;r<rows.length+3;r++){const c=ws[XLSX.utils.encode_cell({r,c:3})];if(c){c.t='s';c.z='@';}}
-  ws['!cols']=[{wch:8},{wch:24},{wch:22},{wch:11},{wch:40},{wch:7},{wch:11},{wch:10},{wch:9},{wch:9},{wch:11},{wch:12},{wch:30},{wch:30}];
+  ws['!cols']=[{wch:8},{wch:30},{wch:10},{wch:11},{wch:40},{wch:7},{wch:11},{wch:10},{wch:9},{wch:9},{wch:11},{wch:12},{wch:30},{wch:30}];
   ws['!autofilter']={ref:'A4:N'+(rows.length+3)};
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'NXT '+per);
   XLSX.writeFile(wb,tenFile);
