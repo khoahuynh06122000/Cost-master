@@ -1121,7 +1121,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2610-02';
+const APP_VER='2610-03';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -3089,6 +3089,82 @@ function inventoryFlow(s){
     return ra;
   };
 
+  /* ---------- DỮ LIỆU GỐC CỦA PIVOT (26/10/2026) ----------
+     File doanh thu POS chứa toàn bộ giao dịch tháng của cả công ty trong bộ nhớ đệm pivot
+     (pivotCacheRecords: 522.296 dòng, 155 MB XML). Sheet "Sales By Items" chỉ là bảng đã lọc sẵn một điểm.
+     Đọc kiểu DÒNG CHẢY — giải nén hết một lượt là 155 MB chữ trong bộ nhớ, máy yếu sẽ treo. */
+  function docTruong(xml) {
+    var ra = [], re = /<cacheField\b([^>]*?)(\/>|>([\s\S]*?)<\/cacheField>)/g, m;
+    while ((m = re.exec(xml))) {
+      var ten = goXml((/\bname="([^"]*)"/.exec(m[1]) || [])[1] || '');
+      var inner = m[3] || '', items = null;
+      var si = /<sharedItems\b[^>]*?(?:\/>|>([\s\S]*?)<\/sharedItems>)/.exec(inner);
+      if (si && si[1] != null) {
+        items = [];
+        var rt = /<(s|n|d|b|e|m)(?:\s+v="([^"]*)")?[^>]*?\/?>/g, t;
+        while ((t = rt.exec(si[1]))) items.push(t[1] === 'm' ? null : t[1] === 'n' ? parseFloat(t[2]) : goXml(t[2] || ''));
+      }
+      ra.push({ ten: ten, items: items });
+    }
+    return ra;
+  }
+  U.docTruongPivot = docTruong;
+  /* chon(tenCacTruong) -> true thì đọc bộ đó; moiDong(mảng giá trị theo thứ tự trường); tienDo(soDong) */
+  U.docPivot = async function (file, chon, moiDong, tienDo) {
+    var muc = await U.mucLuc(file);
+    var defs = Object.keys(muc).filter(function (k) { return /^xl\/pivotCache\/pivotCacheDefinition\d+\.xml$/.test(k); }).sort();
+    var def = null, fields = null;
+    for (var i = 0; i < defs.length; i++) {
+      var x = await U.docMuc(file, muc, defs[i]);
+      var f = docTruong(x || '');
+      if (chon(f.map(function (o) { return o.ten; }))) { def = defs[i]; fields = f; break; }
+    }
+    if (!def) return null;
+    var rels = await U.docMuc(file, muc, def.replace('pivotCache/', 'pivotCache/_rels/') + '.rels') || '';
+    var tg = (/Target="([^"]*pivotCacheRecords[^"]*)"/.exec(rels) || [])[1];
+    var rec = tg ? 'xl/pivotCache/' + tg.replace(/^.*\//, '') : def.replace('Definition', 'Records');
+    var e = muc[rec];
+    if (!e) throw new Error('File không có dữ liệu gốc của bảng pivot (' + rec + ')');
+    var h = await lat(file, e.tai, e.tai + 30);
+    if (u32(h, 0) !== 0x04034b50) throw new Error('Mục ZIP hỏng: ' + rec);
+    var bd = e.tai + 30 + u16(h, 26) + u16(h, 28);
+    var st = file.slice(bd, bd + e.nen).stream();
+    if (e.cach !== 0) {
+      if (typeof DecompressionStream === 'undefined') throw new Error('Trình duyệt không hỗ trợ giải nén (DecompressionStream)');
+      st = st.pipeThrough(new DecompressionStream('deflate-raw'));
+    }
+    var rd = st.pipeThrough(new TextDecoderStream()).getReader();
+    var du = '', n = 0, reTok = /<(x|n|s|d|b|m|e)(?:\s+v="([^"]*)")?\s*\/>/g;
+    for (;;) {
+      var o = await rd.read();
+      if (o.done) break;
+      du += o.value;
+      var cuoi = du.lastIndexOf('</r>');
+      if (cuoi < 0) continue;
+      var khuc = du.slice(0, cuoi + 4);
+      du = du.slice(cuoi + 4);
+      var p = 0, a;
+      while ((a = khuc.indexOf('<r>', p)) >= 0) {
+        var b = khuc.indexOf('</r>', a);
+        if (b < 0) break;
+        var body = khuc.slice(a + 3, b), gt = [], mm;
+        p = b + 4;
+        reTok.lastIndex = 0;
+        while ((mm = reTok.exec(body))) {
+          var tk = mm[1], v = mm[2], j = gt.length;
+          if (tk === 'x') { var it = fields[j] && fields[j].items; gt.push(it ? it[+v] : null); }
+          else if (tk === 'n') gt.push(parseFloat(v));
+          else if (tk === 'm') gt.push(null);
+          else gt.push(v == null ? null : goXml(v));
+        }
+        moiDong(gt);
+        n++;
+      }
+      if (tienDo) tienDo(n);
+    }
+    return { fields: fields.map(function (o) { return o.ten; }), soDong: n };
+  };
+
   root.XP = U;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ============================================================
@@ -3562,6 +3638,44 @@ function inventoryFlow(s){
       }
     });
     return ra;
+  };
+
+  /* ============================================================
+     6. GOM GIAO DỊCH POS THEO ĐIỂM (26/10/2026)
+     Đầu vào: từng dòng giao dịch (Revenue = điểm, Product name, Category, Quantity, Date).
+     Đầu ra: mỗi điểm một danh sách bán cùng dạng docDoanhThu().ban — để dùng lại tinhTieuHao.
+     ============================================================ */
+  C.TRUONG_GD = { diem: 'revenue', ten: 'productname', nhom: 'category', sl: 'quantity', ngay: 'date' };
+  C.laBoGiaoDich = function (ten) {
+    var k = (ten || []).map(vnk);
+    return k.indexOf('revenue') >= 0 && k.indexOf('productname') >= 0 && k.indexOf('quantity') >= 0;
+  };
+  C.taoGomDiem = function (tenTruong) {
+    var k = tenTruong.map(vnk), T = C.TRUONG_GD;
+    var iD = k.indexOf(T.diem), iT = k.indexOf(T.ten), iN = k.indexOf(T.nhom), iS = k.indexOf(T.sl), iNg = k.indexOf(T.ngay);
+    var diem = {}, thang = {}, tu = '', den = '', boQua = 0;
+    return {
+      them: function (g) {
+        var d = chu(g[iD]), ten = chu(g[iT]), sl = typeof g[iS] === 'number' ? g[iS] : so(g[iS]);
+        if (!d || !ten || !sl) { boQua++; return; }
+        var ng = iNg >= 0 && g[iNg] ? String(g[iNg]).slice(0, 10) : '';
+        if (ng) { if (!tu || ng < tu) tu = ng; if (!den || ng > den) den = ng; var th = ng.slice(0, 7); thang[th] = (thang[th] || 0) + 1; }
+        var o = diem[d] || (diem[d] = { diem: d, gop: {}, ban: [], tongSL: 0 });
+        var key = vnk(ten);
+        if (!key) return;
+        var nhom = iN >= 0 ? chu(g[iN]) : '';
+        o.tongSL += sl;
+        if (o.gop[key]) { o.gop[key].sl += sl; return; }
+        o.gop[key] = { ten: ten, nhom: nhom, sl: sl, key: key };
+        o.ban.push(o.gop[key]);
+      },
+      ketQua: function () {
+        // Kỳ = tháng có nhiều giao dịch nhất (file hay lẫn vài dòng nửa đêm của ngày 1 tháng sau)
+        var ky = Object.keys(thang).sort(function (a, b) { return thang[b] - thang[a]; })[0] || '';
+        var ds = Object.keys(diem).map(function (d) { var o = diem[d]; delete o.gop; return o; });
+        return { diem: ds, tu: tu, den: den, period: ky, boQua: boQua };
+      }
+    };
   };
 
   root.CL = C;
@@ -4902,6 +5016,8 @@ function renderChenhLech(v){
       sub:'Sheet "Sales By Items" — tính lượng nguyên liệu đáng lẽ đã dùng',
       ico:HIC.cam,render:clFormDoanhThu});
   }
+  if(kt)acts.push({k:'theodiem',title:'Hàng sử dụng theo điểm bán',
+    sub:'Nạp 1 file doanh thu POS — tính hàng sử dụng trong tháng cho mọi điểm',ico:HIC.list,render:clTheoDiem});
   acts.push({k:'bang',title:kt?'Xem chênh lệch & duyệt giải trình':'Chênh lệch kho của tôi',
     sub:'Đối chiếu xuất định lượng với xuất thực tế theo kiểm kê',
     ico:HIC.list,render:clBang});
@@ -5310,6 +5426,191 @@ function clFormDoanhThu(host){
   });
 }
 
+
+/* ============================================================
+   2b. HÀNG SỬ DỤNG THEO ĐIỂM BÁN (26/10/2026)
+   Nạp MỘT file doanh thu POS → đọc toàn bộ giao dịch → gom theo điểm (Revenue) → gán điểm POS với điểm bán
+   trong app (nhớ lại, bảng pos_diem_ban) → tính hàng sử dụng theo định lượng của từng kho.
+   Điểm chưa có định lượng riêng thì dùng bộ chung cũ (tờ trình đồ uống).
+   ============================================================ */
+let clPosMap=null,clPosMapOK=true;   // tên điểm POS -> plant_code
+function clThieuBangPos(e){const m=String((e&&e.message)||'')+' '+String((e&&e.code)||'');return /pos_diem_ban|42P01|PGRST205/i.test(m)&&/(does not exist|schema cache|42P01|PGRST205)/i.test(m);}
+function clPosMapLocal(){try{return JSON.parse(localStorage.getItem('kk_pos_diem_v1')||'{}')||{};}catch(e){return {};}}
+async function clTaiPosMap(){
+  if(clPosMap)return clPosMap;
+  clPosMap=clPosMapLocal();
+  if(!sb)return clPosMap;
+  let r;try{r=await sb.from('pos_diem_ban').select('*');}catch(e){r={error:e};}
+  if(r&&r.error){if(clThieuBangPos(r.error))clPosMapOK=false;else console.warn('pos_diem_ban',r.error);return clPosMap;}
+  clPosMapOK=true;(r.data||[]).forEach(x=>{if(x&&x.pos_name)clPosMap[x.pos_name]=x.plant_code||'';});
+  return clPosMap;
+}
+async function clLuuPosMap(pos,plant){
+  clPosMap=clPosMap||{};clPosMap[pos]=plant||'';
+  try{const m=clPosMapLocal();m[pos]=plant||'';localStorage.setItem('kk_pos_diem_v1',JSON.stringify(m));}catch(e){}
+  if(!sb||!clPosMapOK)return {ok:true,chiMay:true};
+  let r;try{r=await sb.from('pos_diem_ban').upsert([{pos_name:pos,plant_code:plant||null,updated_by:session?session.name:'',updated_at:new Date().toISOString()}],{onConflict:'pos_name'});}catch(e){r={error:e};}
+  if(r&&r.error){if(clThieuBangPos(r.error)){clPosMapOK=false;return {ok:true,chiMay:true};}return {ok:false,why:r.error.message||'Máy chủ từ chối'};}
+  return {ok:true};
+}
+/* Gợi ý điểm bán theo tên — chỉ GỢI Ý, người dùng bấm mới gán (không tự đoán). */
+function clGoiYDiem(pos){
+  const bo=t=>CL.vnk(t).replace(/^(nhahang|quay|khu|diemban|dban|bnc|nh)+/,'');
+  const k=bo(pos);if(k.length<3)return [];
+  return plantsList().filter(p=>{const t=bo(p.name||'');return t&&(t.indexOf(k)>=0||k.indexOf(t)>=0);}).slice(0,3);
+}
+/* Tính hàng sử dụng cho một điểm bán: từng kho có định lượng riêng; không kho nào có thì dùng bộ chung cũ. */
+function clTinhDiem(ban,plant){
+  const khos=(plant&&clCotKhoOK)?DATA.warehouses.filter(w=>w.plant===plant).map(w=>({w,b:clBook(w.plant,w.sloc)})).filter(x=>x.b&&x.b.n):[];
+  if(!khos.length){
+    const bk=clBookCu||CL_RONG;const kq=CL.tinhTieuHao(ban,{mon:bk.mon,alias:bk.alias});
+    return {kq,theoKho:[],boCu:true};
+  }
+  const mon={},alias={};
+  khos.forEach(x=>{Object.assign(mon,x.b.mon);Object.keys(x.b.alias).forEach(a=>{if(!alias[a])alias[a]=x.b.alias[a];});});
+  const kq=CL.tinhTieuHao(ban,{mon,alias});
+  const theoKho=khos.map(x=>{const cua=ban.filter(b=>x.b.alias[b.key]!=null&&x.b.mon[x.b.alias[b.key]]);
+    return {w:x.w,kq:CL.tinhTieuHao(cua,{mon:x.b.mon,alias:x.b.alias})};});
+  return {kq,theoKho,boCu:false};
+}
+let clTheoDiemKQ=null;   // kết quả đọc file lần gần nhất (giữ khi vẽ lại màn)
+function clTheoDiem(host){
+  const box=el('div','card');box.style.cssText='padding:18px';host.appendChild(box);
+  box.appendChild(el('div','',
+    '<div style="font-weight:700;margin-bottom:4px">Hàng sử dụng trong tháng theo từng điểm bán</div>'
+    +'<div style="font-size:13px;color:var(--muted);margin-bottom:12px">Nạp file doanh thu POS (file gốc có bảng pivot — vài trăm MB vẫn đọc được). '
+    +'App đọc toàn bộ giao dịch trong file, gom theo điểm, rồi tính hàng sử dụng theo định lượng. Mỗi điểm POS gán với điểm bán trong app một lần, app nhớ cho các tháng sau.</div>'));
+  const kqBox=el('div');
+  clFilePick(box,'File doanh thu POS (.xlsx)','',async(file)=>{
+    kqBox.innerHTML='';clTheoDiemKQ=null;
+    const st=clTrangThai(kqBox,'Đang đọc file…');
+    try{
+      if(typeof DecompressionStream==='undefined'||typeof TextDecoderStream==='undefined')
+        throw new Error('Trình duyệt này quá cũ để đọc file lớn. Dùng Chrome/Edge bản mới trên máy tính.');
+      let gom=null;const t0=Date.now();
+      const r=await XP.docPivot(file,ten=>{if(!CL.laBoGiaoDich(ten))return false;gom=CL.taoGomDiem(ten);return true;},
+        g=>gom.them(g),n=>{st.textContent='Đang đọc giao dịch… '+nq(n,0)+' dòng';});
+      if(!r){st.innerHTML='<b style="color:var(--red)">File này không có dữ liệu giao dịch gốc của POS.</b><br>Cần file doanh thu xuất từ POS có các cột Revenue, Product name, Quantity (bảng Transaction Detail).';return;}
+      clTheoDiemKQ=Object.assign(gom.ketQua(),{soDong:r.soDong,giay:((Date.now()-t0)/1000).toFixed(1),tenFile:file.name});
+    }catch(e){st.innerHTML='<b style="color:var(--red)">Không đọc được file</b><br>'+escHtml((e&&e.message)||'');return;}
+    kqBox.innerHTML='';veTheoDiem(kqBox);
+  });
+  box.appendChild(kqBox);
+  if(clTheoDiemKQ)veTheoDiem(kqBox);
+}
+async function veTheoDiem(host){
+  const R=clTheoDiemKQ;if(!R)return;
+  host.innerHTML='';const st=clTrangThai(host,'Đang tải định lượng của các điểm…');
+  await clTaiPosMap();
+  // tải định lượng các kho của điểm đã gán (+ bộ chung cũ)
+  const plants=[...new Set(R.diem.map(d=>clPosMap[d.diem]).filter(Boolean))];
+  for(const p of plants)for(const w of DATA.warehouses.filter(x=>x.plant===p)){try{await clTaiBook(w.plant,w.sloc);}catch(e){}}
+  if(clBookCu===null&&sb){const w=DATA.warehouses[0];try{await clTaiBook(w.plant,w.sloc);}catch(e){}}
+  const ds=R.diem.map(d=>{const fb=d.ban.filter(b=>CL.laNhomTinh(b.nhom));const plant=clPosMap[d.diem]||'';
+    const t=clTinhDiem(d.ban,plant);return Object.assign({},d,{plant,slFB:fb.reduce((a,b)=>a+b.sl,0),t});});
+  const coFB=ds.filter(d=>d.slFB>0).sort((a,b)=>b.slFB-a.slFB),khongFB=ds.filter(d=>!(d.slFB>0));
+  st.innerHTML='<b>Đọc xong</b> — '+nq(R.soDong,0)+' dòng giao dịch trong '+R.giay+' giây · '+R.diem.length+' điểm POS'
+    +'<br>Kỳ trong file: <b>'+(R.tu||'?')+' → '+(R.den||'?')+'</b> · tính cho tháng <b>'+periodVN(R.period)+'</b>'
+    +'<br>'+coFB.length+' điểm có bán Food / Beverage'+(khongFB.length?(' · '+khongFB.length+' điểm không có (dịch vụ, cho thuê…) — bỏ qua'):'')
+    +(clPosMapOK?'':'<br><span style="color:var(--accent-ink)">Việc gán điểm đang chỉ lưu trên máy này — báo admin bật phần lưu chung.</span>');
+
+  // Nút tổng
+  const bar=el('div','form-row');bar.style.cssText='margin-top:12px;flex-wrap:wrap';
+  const bX=el('button','btn btn-ghost','📥 Xuất Excel hàng sử dụng');
+  bX.onclick=()=>clXuatTheoDiem(coFB,R);
+  const luuDuoc=coFB.filter(d=>d.t.theoKho.length);
+  const bL=el('button','btn btn-brand','Lưu vào Chênh lệch kho — '+luuDuoc.reduce((a,d)=>a+d.t.theoKho.length,0)+' kho · tháng '+periodVN(R.period));
+  bL.disabled=!luuDuoc.length;
+  bL.onclick=()=>clLuuTheoDiem(luuDuoc,R,bL);
+  bar.appendChild(bX);bar.appendChild(bL);host.appendChild(bar);
+  if(!luuDuoc.length)host.appendChild(clNote('Chưa điểm nào vừa được gán điểm bán vừa có định lượng riêng theo kho — chưa lưu vào Chênh lệch kho được. Vẫn xuất Excel được (tính bằng bộ chung cũ).'));
+
+  const opt=plantsList().map(p=>'<option value="'+escHtml(p.plant)+'">'+escHtml(p.name)+'</option>').join('');
+  coFB.forEach(d=>{
+    const kq=d.t.kq;
+    /* Món chia nguyên liệu cho cả quầy lẫn bếp: đếm mã theo TỪNG KHO rồi gộp, không lấy bộ gộp (chỉ giữ một phía). */
+    const soMa=d.t.theoKho.length?new Set([].concat(...d.t.theoKho.map(x=>Object.keys(x.kq.usage)))).size:kq.soMa;
+    const det=el('details','card');det.style.cssText='padding:12px 14px;margin-top:10px';
+    const sm=el('summary');sm.style.cssText='cursor:pointer;display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline';
+    sm.innerHTML='<b>'+escHtml(d.diem)+'</b>'
+      +'<span style="color:var(--muted);font-size:13px">'+(d.plant?('→ '+escHtml(plantName(d.plant))):'chưa gán điểm bán')+'</span>'
+      +'<span style="font-size:13px">'+nq(d.slFB,0)+' đơn vị F&amp;B · quy đổi <b>'+pc(kq.pct)+'</b> · '+nq(soMa,0)+' mã</span>';
+    det.appendChild(sm);
+    const bd=el('div');bd.style.marginTop='10px';det.appendChild(bd);
+    // gán điểm bán
+    const r1=el('div','form-row');r1.style.flexWrap='wrap';
+    const f=el('label','field f-grow','<span>Điểm bán trong app</span>');
+    const sel=el('select','input');sel.innerHTML='<option value="">— chưa gán —</option>'+opt;sel.value=d.plant;f.appendChild(sel);r1.appendChild(f);
+    const gy=d.plant?[]:clGoiYDiem(d.diem);
+    gy.forEach(p=>{const b=el('button','btn btn-ghost btn-sm','Gợi ý: '+p.name);b.onclick=()=>{sel.value=p.plant;sel.onchange();};r1.appendChild(b);});
+    sel.onchange=async()=>{sel.disabled=true;const r=await clLuuPosMap(d.diem,sel.value);sel.disabled=false;
+      if(!r.ok){errBox('Chưa lưu được việc gán điểm',[r.why||'Máy chủ từ chối.'],'Bảng: pos_diem_ban');return;}
+      toast('✓ Đã gán '+d.diem+(sel.value?' → '+plantName(sel.value):' — bỏ gán'));veTheoDiem(host);};
+    bd.appendChild(r1);
+    if(d.t.boCu)bd.appendChild(clNote(d.plant?'Các kho của điểm bán này chưa có định lượng riêng — đang tính bằng bộ chung cũ (tờ trình đồ uống).'
+      :'Đang tính bằng bộ chung cũ (tờ trình đồ uống). Gán điểm bán + nạp định lượng cho kho để tính đủ cả đồ ăn.'));
+    // hàng sử dụng
+    const nhom=d.t.theoKho.length?d.t.theoKho:[{w:null,kq}];
+    nhom.forEach(x=>{
+      const ma=Object.values(x.kq.usage).sort((a,b)=>String(a.name).localeCompare(String(b.name),'vi'));
+      const h=el('div');h.style.cssText='font-weight:600;margin-top:10px';
+      h.textContent=(x.w?x.w.sloc_name:'Hàng sử dụng')+' — '+ma.length+' mã';bd.appendChild(h);
+      if(!ma.length)return;
+      const w=el('div','tbl-wrap');w.style.cssText='max-height:360px;overflow:auto;margin-top:6px';
+      const t=el('table');t.innerHTML='<thead><tr><th>Mã</th><th>Tên hàng</th><th>ĐVT</th><th class="num">SL sử dụng</th></tr></thead>';
+      const tb=el('tbody');
+      ma.forEach(u=>{const tr=el('tr');tr.innerHTML='<td class="tnum">'+escHtml(u.code)+'</td><td>'+escHtml((masterByCode[u.code]||{}).name||u.name||u.code)
+        +'</td><td>'+escHtml(u.uom||'')+'</td><td class="num">'+nq(u.qty)+'</td>';tb.appendChild(tr);});
+      t.appendChild(tb);w.appendChild(t);bd.appendChild(w);
+    });
+    if(kq.khongKhop.length){
+      const k2=el('details');k2.style.cssText='margin-top:8px;font-size:13px';
+      k2.innerHTML='<summary style="cursor:pointer">'+kq.khongKhop.length+' món chưa có định lượng</summary>';
+      const u=el('div');u.style.cssText='margin-top:6px;color:var(--muted)';
+      u.textContent=kq.khongKhop.slice(0,60).map(x=>nq(x.sl,0)+' — '+x.ten).join(' · ')+(kq.khongKhop.length>60?' …':'');
+      k2.appendChild(u);bd.appendChild(k2);
+    }
+    host.appendChild(det);
+  });
+  try{dichMan(host);}catch(e){}
+}
+function clXuatTheoDiem(ds,R){
+  const rows=[['Điểm POS','Điểm bán (app)','Kho','Mã hàng','Tên hàng','ĐVT','SL sử dụng','Nguồn định lượng']];
+  const thieu=[['Điểm POS','Món','Nhóm','SL bán']];
+  ds.forEach(d=>{
+    const nhom=d.t.theoKho.length?d.t.theoKho:[{w:null,kq:d.t.kq}];
+    nhom.forEach(x=>Object.values(x.kq.usage).sort((a,b)=>String(a.code).localeCompare(String(b.code))).forEach(u=>{
+      rows.push([d.diem,d.plant?plantName(d.plant):'',x.w?x.w.sloc_name:'',String(u.code),(masterByCode[u.code]||{}).name||u.name||'',u.uom||'',
+        Math.round(u.qty*1e6)/1e6,d.t.boCu?'Bộ chung cũ':'Định lượng kho']);}));
+    d.t.kq.khongKhop.forEach(x=>thieu.push([d.diem,x.ten,x.nhom||'',x.sl]));
+  });
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  for(let r=1;r<rows.length;r++){const c=ws[XLSX.utils.encode_cell({r,c:3})];if(c){c.t='s';c.z='@';}}
+  ws['!cols']=[{wch:22},{wch:26},{wch:22},{wch:11},{wch:42},{wch:7},{wch:12},{wch:16}];
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Hang su dung');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(thieu),'Mon chua co DL');
+  XLSX.writeFile(wb,'Hang_su_dung_theo_diem_'+(R.period||'')+'.xlsx');
+  toast('Đã tải Excel hàng sử dụng '+periodVN(R.period));
+}
+async function clLuuTheoDiem(ds,R,btn){
+  const ky=R.period;if(!ky){toast('Không xác định được tháng trong file');return;}
+  const viec=[];ds.forEach(d=>d.t.theoKho.forEach(x=>viec.push({d,x})));
+  const daCo=viec.filter(v=>salesUsage[clKey(v.x.w.plant,v.x.w.sloc,ky)]);
+  const N=String.fromCharCode(10);
+  if(!confirm('LƯU HÀNG SỬ DỤNG THÁNG '+periodVN(ky)+N+N+viec.length+' kho:'+N+viec.slice(0,20).map(v=>'• '+v.x.w.sloc_name).join(N)
+    +(viec.length>20?N+'…':'')+(daCo.length?N+N+daCo.length+' kho đã có số tháng này — sẽ được THAY bằng số mới.':'')+N+N+'Bấm OK để lưu.'))return;
+  btn.disabled=true;let ok=0;const loi=[];
+  for(const v of viec){
+    const a=v.d.t.kq;
+    const obj={usage:v.x.kq.usage,khongKhop:a.khongKhop,theoNhom:a.theoNhom,chiFoodBev:a.chiFoodBev,pct:a.pct,slKhop:a.slKhop,slTong:a.slTong};
+    const r=await saveSalesUsage(v.x.w.plant,v.x.w.sloc,ky,obj,{diem:v.d.diem});
+    if(r.ok)ok++;else loi.push(v.x.w.sloc_name+': '+(r.why||'máy chủ từ chối'));
+  }
+  btn.disabled=false;
+  log('Lưu hàng sử dụng theo điểm','tháng '+periodVN(ky)+' — '+ok+'/'+viec.length+' kho');
+  if(loi.length)errBox('Chưa lưu hết',['Đã lưu '+ok+'/'+viec.length+' kho.','Các kho còn lại chưa lên máy chủ — bấm lưu lại sau ít phút.'],loi.join(N));
+  else toast('✓ Đã lưu hàng sử dụng tháng '+periodVN(ky)+' cho '+ok+' kho — xem ở Chênh lệch kho');
+}
 
 /* ============================================================
    3. BẢNG ĐỐI CHIẾU + GIẢI TRÌNH
