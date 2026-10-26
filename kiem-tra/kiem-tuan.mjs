@@ -238,6 +238,17 @@ const MAU = [
   { re: /const rcp=await sb\.from\('recipes'\)\.select\('\*'\);/, mo: false, vi: 'Định lượng tải cả bảng về mọi máy mỗi 45 giây, chỉ 1.000 dòng đầu (sửa 26/10, bản 2610-01)' },
   { re: /const rcp=await sb\.from\('recipes'\)\.select\('\*'\);applyRecipes/, mo: false, vi: 'Mạng chập chờn xoá trắng công thức món / sản lượng / giải trình trên máy (sửa 24/10, bản 2410-01)' },
   { re: /if\(_loiTai\.length\)\{\s*console\.warn\([^;]*\);\s*if\(_loiTai\.some\(x=>laLoiMang\(x\.e\)\)\)datMang\(false\);\s*\}else if\(!mangOK\)datMang\(true\);/, mo: false, vi: 'Một bảng thiếu / bị chặn quyền làm app không tự bỏ \"Mất mạng\" (sửa 24/10, bản 2410-01)' },
+  { re: /date:iDate\.value,period:perSel\.value/, mo: false, vi: 'Nhập kho gõ tay / quét ảnh lưu kỳ theo chip kỳ, không theo ngày nhập — hàng sang kỳ khác, lọt khoá kỳ (sửa 26/10, bản 2610-13)' },
+  { re: /const \{data,error\}=await sb\.from\('transfers'\)\.insert\(row\)\.select\(\);/, mo: false, vi: 'Duyệt điều chuyển ghi sổ từng mã một — rớt mạng giữa chừng sổ thiếu dòng, phiếu kẹt (sửa 26/10, bản 2610-13)' },
+  { re: /sb\.from\('transfers'\)\.select\('\*'\)\.order\('created_at',\{ascending:false\}\),/, mo: false, vi: 'Tải sổ điều chuyển không phân trang — quá 1.000 dòng là mất dòng cũ (sửa 26/10, bản 2610-13)' },
+  { re: /q\.order\(orderCol,\{ascending:false\}\)\.order\('id'/, mo: false, vi: 'Phân trang tải dữ liệu theo thứ tự mới trước — dòng mới chen vào làm lặp dòng (sửa 26/10, bản 2610-13)' },
+  { re: /const prev=openingStock\[key\]\?\{items:\{\.\.\.openingStock\[key\]\.items\}/, mo: false, vi: 'Duyệt biên bản lấy mốc đầu kỳ = tồn đầu kỳ hiện hành — duyệt khác thứ tự kỳ là sai mốc (sửa 26/10, bản 2610-13)' },
+  { re: /if\(await daLenMayChu\(it\.sub\.id\)\)/, mo: false, vi: 'Hàng đợi chỉ so mã phiếu kiểm kê, không so nội dung — mất số đếm / mất phần sửa (sửa 26/10, bản 2610-13)' },
+  { re: /trReqs\.forEach\(r=>\{\(groups\[dcSig\(r\)\]=/, mo: false, vi: 'Dọn phiếu trùng gom mọi ngày + phiếu Từ chối — xoá nhầm phiếu hợp lệ (sửa 26/10, bản 2610-13)' },
+  { re: /var diem = \{\}, thang = \{\}, tu = ''/, mo: false, vi: 'File POS cộng cả giao dịch ngoài kỳ 26->25 vào kỳ — đếm hai lần (sửa 26/10, bản 2610-13)' },
+  { re: /const viec=\[\];ds\.forEach\(d=>d\.t\.theoKho\.forEach\(x=>viec\.push\(\{d,x\}\)\)\);/, mo: false, vi: 'Hai điểm POS cùng một kho: điểm sau đè hàng sử dụng của điểm trước (sửa 26/10, bản 2610-13)' },
+  { re: /shifts\.unshift\(rec\);log\('Bàn giao ca',[^\n]*\n\s*dbIns\('shifts'/, mo: false, vi: 'Bàn giao ca báo đã lưu + xoá số trước khi máy chủ nhận (sửa 26/10, bản 2610-13)' },
+  { re: /countLists\[plant\+'\|'\+sloc\+'\|'\+period\]=\{items,by:session\.name,at:now\(\)\};\s*\n\s*dbUpsertCountList/, mo: false, vi: 'Mở kỳ báo thành công trước khi máy chủ nhận danh sách (sửa 26/10, bản 2610-13)' },
 ];
 function kiemTaiPhat() {
   for (const m of MAU) {
