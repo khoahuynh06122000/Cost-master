@@ -1121,7 +1121,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2610-09';
+const APP_VER='2610-10';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -2020,14 +2020,14 @@ let dashPlantSC='';    // plant đang lọc ở dashboard Bàn giao ca
 let dashSlocSC='';     // sloc đang lọc ở dashboard Bàn giao ca
 let dashPlantOP='';    // plant đang lọc ở dashboard Tồn đầu kỳ
 let dashSlocOP='';     // sloc đang lọc ở dashboard Tồn đầu kỳ
-/* LỌC LOẠI KHO (Khoa 26/10/2026): '' = tất cả · 'nh' = nhà hàng · 'bep' = bếp. Phiếu thuộc loại nào
-   khi MỘT TRONG HAI ĐẦU là kho loại đó — phiếu giữa nhà hàng và bếp hiện ở cả hai (liên quan cả hai giám sát). */
+/* LỌC LOẠI KHO (Khoa 26/10/2026): '' = tất cả · 'nh' = nhà hàng · 'bep' = bếp. Mỗi phiếu thuộc ĐÚNG MỘT loại,
+   theo KHO NHẬN HÀNG (bên đi xin) — Bếp LH Bia xin hàng của Quầy LH Bia là phiếu Bếp. Phiếu hủy theo kho hủy.
+   (Bản 2610-09 cho phiếu NH ↔ bếp hiện ở cả hai — Khoa chốt lại cùng ngày.) */
 let dashLoaiDC='';
 function dcLoaiKho(p,s){return laKhoBep(p,s)?'bep':'nh';}
-function dcDauPhieu(r){const a=[[r.fromPlant,r.fromSloc]];if(r.toPlant&&r.kind!=='huy')a.push([r.toPlant,r.toSloc]);return a.filter(x=>x[0]);}
-function dcDauSo(t){return [t.fromKey,t.toKey].filter(k=>k&&k.indexOf('|')>0).map(k=>k.split('|'));}
+function dcDauPhieu(r){return (r.toPlant&&r.kind!=='huy')?[[r.toPlant,r.toSloc]]:[[r.fromPlant,r.fromSloc]].filter(x=>x[0]);}
+function dcDauSo(t){const ok=k=>k&&k.indexOf('|')>0;return ok(t.toKey)?[t.toKey.split('|')]:ok(t.fromKey)?[t.fromKey.split('|')]:[];}
 function dcHopLoai(dau){return !dashLoaiDC||dau.some(x=>dcLoaiKho(x[0],x[1])===dashLoaiDC);}
-function dcCaHaiLoai(dau){const l=new Set(dau.map(x=>dcLoaiKho(x[0],x[1])));return l.size>1;}
 /* Hàng chip chọn loại kho — dùng chung cho Theo dõi sổ và Toàn bộ phiếu yêu cầu */
 function dcChipLoai(host,dsPhieu){
   const bar=el('div');bar.style.cssText='display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:4px 0 10px';
@@ -2037,9 +2037,6 @@ function dcChipLoai(host,dsPhieu){
     const b=el('button','btn btn-sm '+(dashLoaiDC===k?'btn-brand':'btn-ghost'),lb+' ('+dem(k)+')');
     b.onclick=()=>{dashLoaiDC=k;renderView();};bar.appendChild(b);});
   host.appendChild(bar);
-  if(dashLoaiDC){const n=(dsPhieu||[]).filter(r=>dcHopLoai(dcDauPhieu(r))&&dcCaHaiLoai(dcDauPhieu(r))).length;
-    if(n){const c=el('div','note');const i2=el('div');i2.style.minWidth='0';
-      i2.textContent=n+' phiếu giữa nhà hàng và bếp — hiện ở cả hai bộ lọc Nhà hàng và Bếp.';c.appendChild(i2);host.appendChild(c);}}
 }
 let dashKyDC=null;     // tháng đang lọc ở Theo dõi sổ điều chuyển: null = chưa chọn (mặc định tháng này), '' = tất cả
 let dashPlantDC='';    // khu (plant) CHO hàng đang lọc ở Theo dõi sổ điều chuyển
