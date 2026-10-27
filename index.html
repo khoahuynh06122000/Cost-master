@@ -1121,7 +1121,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2710-02';
+const APP_VER='2710-03';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1140,6 +1140,8 @@ const TXT={en:{"Kiểm kê F&B": "F&B Stocktake","Tổng quan": "Overview","Nghi
 /* Rà soát 26/10/2026 (bản 2610-13) */
 /* Bản 2710-01 */
 /* Bản 2710-02 */
+/* Bản 2710-03 */
+Object.assign(TXT.en,{"♻ Hủy số cũ, up file mới": "♻ Discard old numbers, upload a new file", "Đang up file mới THAY phiếu": "Uploading a new file to REPLACE sheet", "Toàn bộ số cũ của phiếu sẽ được thay bằng số trong file mới. Phiếu giữ nguyên mã, vẫn chờ kế toán duyệt; lần thay được ghi lại để kế toán xem số cũ → số mới.": "All old numbers of the sheet will be replaced by the numbers in the new file. The sheet keeps its code and still awaits accountant approval; the replacement is logged so the accountant can see old → new.", "Thôi, không thay": "Cancel, keep the sheet", "♻ Thay số phiếu": "♻ Replace numbers of sheet"});Object.assign(TXT.hi,{"♻ Hủy số cũ, up file mới": "♻ पुरानी संख्याएँ हटाएँ, नई फ़ाइल अपलोड करें", "Đang up file mới THAY phiếu": "नई फ़ाइल से पर्ची बदली जा रही है", "Toàn bộ số cũ của phiếu sẽ được thay bằng số trong file mới. Phiếu giữ nguyên mã, vẫn chờ kế toán duyệt; lần thay được ghi lại để kế toán xem số cũ → số mới.": "पर्ची की सभी पुरानी संख्याएँ नई फ़ाइल की संख्याओं से बदल दी जाएँगी। पर्ची का कोड वही रहेगा और लेखाकार की मंज़ूरी बाकी रहेगी; बदलाव दर्ज होगा ताकि लेखाकार पुराना → नया देख सके।", "Thôi, không thay": "रद्द करें, पर्ची रखें", "♻ Thay số phiếu": "♻ पर्ची की संख्याएँ बदलें"});
 Object.assign(TXT.en,{"Phiếu kiểm kê của kho tôi": "My store's count sheets", "Phiếu chờ kế toán duyệt vẫn xem và sửa số được — sửa ngay trên phiếu, không lập phiếu mới.": "Sheets awaiting accountant approval can still be viewed and corrected — edit the same sheet, do not create a new one.", "✎ Sửa số": "✎ Edit numbers"});Object.assign(TXT.hi,{"Phiếu kiểm kê của kho tôi": "मेरे स्टोर की गिनती पर्चियाँ", "Phiếu chờ kế toán duyệt vẫn xem và sửa số được — sửa ngay trên phiếu, không lập phiếu mới.": "लेखाकार की मंज़ूरी बाकी वाली पर्चियाँ अब भी देखी और सुधारी जा सकती हैं — उसी पर्ची में सुधारें, नई न बनाएँ।", "✎ Sửa số": "✎ संख्या सुधारें"});
 Object.assign(TXT.en,{"⚠ Mã mới, chưa có trong danh mục — vẫn lưu số; kế toán duyệt rồi mã mới vào danh mục": "⚠ New code, not in the catalogue — the quantity is still saved; it joins the catalogue after the accountant approves it", "chờ kế toán duyệt mã": "awaiting accountant approval", "Mã mới chờ duyệt": "New codes awaiting approval", "Mã bộ phận quét / nạp chưa có trong danh mục — duyệt tên & ĐVT, hoặc đổi sang mã đúng": "Codes scanned / uploaded that are not in the catalogue — approve name & unit, or change to the correct code", "Mã đúng phải là mã đã có tên trong danh mục tổng": "The correct code must already have a name in the master catalogue", "Mã đúng trùng mã đang đổi": "The correct code is the same as the code being changed", "Bộ phận đề xuất": "Suggested by outlet", "Tên hàng (duyệt)": "Item name (approve)", "✓ Duyệt": "✓ Approve", "↪ Đổi mã": "↪ Change code", "✓ Duyệt tất cả đã điền": "✓ Approve all filled"});Object.assign(TXT.hi,{"⚠ Mã mới, chưa có trong danh mục — vẫn lưu số; kế toán duyệt rồi mã mới vào danh mục": "⚠ नया कोड, सूची में नहीं — मात्रा फिर भी सेव होती है; लेखाकार की मंज़ूरी के बाद कोड सूची में जुड़ेगा", "chờ kế toán duyệt mã": "लेखाकार की मंज़ूरी बाकी", "Mã mới chờ duyệt": "मंज़ूरी के लिए नए कोड", "Mã bộ phận quét / nạp chưa có trong danh mục — duyệt tên & ĐVT, hoặc đổi sang mã đúng": "स्कैन / अपलोड किए गए कोड जो सूची में नहीं हैं — नाम व इकाई मंज़ूर करें, या सही कोड में बदलें", "Mã đúng phải là mã đã có tên trong danh mục tổng": "सही कोड का नाम मुख्य सूची में पहले से होना चाहिए", "Mã đúng trùng mã đang đổi": "सही कोड वही है जो बदला जा रहा है", "Bộ phận đề xuất": "विभाग का सुझाव", "Tên hàng (duyệt)": "वस्तु का नाम (मंज़ूरी)", "✓ Duyệt": "✓ मंज़ूर", "↪ Đổi mã": "↪ कोड बदलें", "✓ Duyệt tất cả đã điền": "✓ भरे हुए सभी मंज़ूर करें"});
 Object.assign(TXT.en,{"Chưa có ngày nhập hợp lệ": "No valid receiving date", "Tải lại": "Reload", "Chưa chia khu": "Not split by zone", "Chưa bàn giao được — số đã nhập vẫn còn trên màn, thử lại khi có mạng": "Handover not saved — your entries are still on screen, try again when online", "Không hỏi được máy chủ — kiểm tra mạng rồi thử lại": "Could not reach the server — check the connection and try again", "Tất cả dòng trong file đã có trong sổ — không ghi gì": "All lines in the file are already in the ledger — nothing written", "Chưa tải được định lượng / vé buffet hiện có của kho này (mạng không ổn định). Để tránh ghi đè dữ liệu đang có, phần này tạm khoá — kiểm tra mạng rồi bấm Tải lại.": "Could not load this store's current recipes / buffet tickets (unstable connection). To avoid overwriting existing data this part is locked — check the connection and press Reload."});Object.assign(TXT.hi,{"Chưa có ngày nhập hợp lệ": "प्राप्ति की मान्य तारीख नहीं है", "Tải lại": "फिर से लोड करें", "Chưa chia khu": "ज़ोन में नहीं बाँटा", "Chưa bàn giao được — số đã nhập vẫn còn trên màn, thử lại khi có mạng": "हैंडओवर सेव नहीं हुआ — दर्ज संख्याएँ स्क्रीन पर हैं, नेटवर्क आने पर फिर कोशिश करें", "Không hỏi được máy chủ — kiểm tra mạng rồi thử lại": "सर्वर से संपर्क नहीं हुआ — नेटवर्क जाँचें और फिर कोशिश करें", "Tất cả dòng trong file đã có trong sổ — không ghi gì": "फ़ाइल की सभी पंक्तियाँ पहले से बही में हैं — कुछ नहीं लिखा गया", "Chưa tải được định lượng / vé buffet hiện có của kho này (mạng không ổn định). Để tránh ghi đè dữ liệu đang có, phần này tạm khoá — kiểm tra mạng rồi bấm Tải lại.": "इस स्टोर की मौजूदा रेसिपी / बुफ़े टिकट लोड नहीं हुए (नेटवर्क अस्थिर)। मौजूदा डेटा न मिटे इसलिए यह हिस्सा बंद है — नेटवर्क जाँचें और फिर से लोड करें दबाएँ।"});
@@ -6290,6 +6292,15 @@ function nkGoNay(){const h=_isoNgay(new Date());if(_nkGo.hom!==h)_nkGo={hom:h};r
 let _khuDaChon={};
 let kkSel=null;      // kho đang chọn ở màn Kiểm kê {plant,sloc}
 let kkMethod='';     // hình thức kiểm đếm đang chọn: '' | 'excel' | 'direct'
+/* THAY PHIẾU BẰNG FILE MỚI (Khoa 27/10/2026): bếp đã up file kiểm kê, kế toán chưa duyệt, phát hiện file sai -> hủy số cũ, up
+   file mới. Không xoá phiếu (mỗi kho mỗi kỳ một phiếu, mã phiếu giữ nguyên) mà THAY toàn bộ số của chính phiếu đó, chốt có điều
+   kiện Chờ duyệt (guiSuaPhieu) và ghi một vết sửa số cũ -> số mới cho kế toán xem. Giá trị = mã phiếu đang được thay. */
+let kkThayPhieuId=null;
+function coTheThayBangFile(s){return !!s&&coTheSuaPhieuKK(s)&&laKhoBep(s.plant,s.sloc);}
+function moThayBangFile(s){
+  kkSel={plant:s.plant,sloc:s.sloc};kkPeriod=s.period||curPeriod();kkThayPhieuId=s.id;kkMethod='excel';counting=null;countEditId=null;
+  activeTab='kiemke';renderNav();renderView();
+}
 /* Đã chọn cách nhập rồi thì thẻ chọn (2 ô to ~410px) thu về MỘT dòng — trước đây nó
    nằm nguyên phía trên nên mã đầu tiên cách đỉnh gần 2 màn hình (Khoa 14/10/2026).
    onDoi=null -> không có nút đổi (đang đếm bổ sung một phiếu thì không cho rời). */
@@ -6425,6 +6436,16 @@ function renderKKUpload(v,fixed){
   if(fixed){plantSel.value=fixed.plant;fillSloc();slocSel.value=fixed.sloc;perSel.value=fixed.period;
     b.appendChild(el('div',null,`<div style="margin:2px 0 6px"><span class="badge badge-open">Kho ${whName(fixed.plant,fixed.sloc)} · ${_tuan?tuanLabel(_tuan):('kỳ tháng '+periodVN(fixed.period))}</span></div>`));}
   else{b.appendChild(row);b.appendChild(perF);}
+  /* Đang thay phiếu bằng file mới: nói rõ, có lối thoát */
+  const _thay=!_tuan&&kkThayPhieuId?(submissions||[]).find(x=>x.id===kkThayPhieuId&&x.status==='Chờ duyệt'&&x.plant===plantSel.value&&x.sloc===slocSel.value&&x.period===perSel.value):null;
+  if(!_tuan&&kkThayPhieuId&&!_thay)kkThayPhieuId=null;
+  if(_thay){const nt=el('div','note');nt.style.borderColor='var(--accent-600)';const ni=el('div');ni.style.minWidth='0';
+    const a1=el('div');a1.style.cssText='font-weight:700;color:var(--accent-ink)';a1.textContent=L('Đang up file mới THAY phiếu')+' '+_thay.id;
+    const a2=el('div');a2.style.cssText='font-size:12px;color:var(--muted);margin-top:2px';
+    a2.textContent=L('Toàn bộ số cũ của phiếu sẽ được thay bằng số trong file mới. Phiếu giữ nguyên mã, vẫn chờ kế toán duyệt; lần thay được ghi lại để kế toán xem số cũ → số mới.');
+    const bThoi=el('button','btn btn-ghost btn-sm');bThoi.style.marginTop='6px';bThoi.textContent=L('Thôi, không thay');
+    bThoi.onclick=()=>{kkThayPhieuId=null;kkMethod='';renderView();};
+    ni.appendChild(a1);ni.appendChild(a2);ni.appendChild(bThoi);nt.appendChild(ni);b.appendChild(nt);}
   b.appendChild(el('div','note',`<div><b>Làm 3 bước:</b> ① bấm <b>Tải mẫu</b> bên dưới → ② mở file, điền cột <b>Số lượng</b> (để trống mã nào là mã đó không tính) → ③ bấm <b>Chọn tệp</b> nạp lại lên.</div>`));
   /* Kho bếp: mẫu có thêm 2 cột. Nói ra ngay chỗ tải mẫu, đừng để BP mở file ra
      mới thấy hai cột lạ rồi không biết có bắt buộc không. */
@@ -6526,14 +6547,14 @@ function renderKKUpload(v,fixed){
     r.preview.forEach(x=>tb.appendChild(el('tr',null,`<td class="tnum">${x.code}${x.maLa?' <span class="badge badge-wait" style="font-size:9px;padding:1px 5px">'+L('chưa có tên')+'</span>':''}${x.isNew?' <span class="badge badge-soft" style="font-size:9px;padding:1px 5px">mới</span>':''}</td><td>${x.name}</td><td><span class="badge badge-uom">${x.uom}</span></td><td class="num cell-strong tnum">${x.qty}</td>${_coMeta?('<td class="tnum">'+_esc(x.d||'')+'</td><td>'+_esc(x.g||'')+'</td>'):''}`)));
     tbl.appendChild(tb);w.appendChild(tbl);prev.appendChild(w);
     const brow=el('div');brow.style.cssText='display:flex;flex-wrap:wrap;gap:10px;margin-top:12px';
-    const bOk=el('button','btn btn-primary',_tuan?'💾 Lưu số kiểm tuần':'✓ Tạo phiếu kiểm kê (Chờ duyệt)');
+    const bOk=el('button','btn btn-primary',_tuan?'💾 Lưu số kiểm tuần':(_thay?L('♻ Thay số phiếu')+' '+_thay.id:'✓ Tạo phiếu kiểm kê (Chờ duyệt)'));
     const bNo=el('button','btn btn-ghost','Hủy');
     /* Khoá nút trong lúc tạo phiếu: chạm 2 lần lúc mạng chậm trước đây ra 2 phiếu (21/10/2026). */
     bOk.onclick=async()=>{if(bOk.disabled)return;
       if(r.plant!==plantSel.value||r.sloc!==slocSel.value||(!_tuan&&period!==perSel.value)){
         prev.innerHTML='';fin.value='';toast(L('Đã đổi kho / kỳ — nạp lại file cho kho đang chọn'));return;}
       bOk.disabled=true;bNo.disabled=true;
-      try{await commitKKUpload(r,period,()=>renderView(),_tuan);}finally{bOk.disabled=false;bNo.disabled=false;}};
+      try{await commitKKUpload(r,period,()=>renderView(),_tuan,_thay);}finally{bOk.disabled=false;bNo.disabled=false;}};
     bNo.onclick=()=>{prev.innerHTML='';fin.value='';};
     brow.appendChild(bOk);brow.appendChild(bNo);prev.appendChild(brow);try{dichMan(prev);}catch(e){}
   }
@@ -6545,7 +6566,7 @@ function renderKKUpload(v,fixed){
     if(_tuan){importOpeningT6(plantSel.value,slocSel.value,f,_nhan,_cheDo);return;}
     if(periodLocked(plantSel.value,slocSel.value,perSel.value)){toast(lockMsg(plantSel.value,slocSel.value,perSel.value));fin.value='';return;}
     const _dup=pendingSub(plantSel.value,slocSel.value,perSel.value);
-    if(_dup){fin.value='';errBox('Kho này đã có phiếu chờ duyệt',[
+    if(_dup&&!(_thay&&_dup.id===_thay.id)){fin.value='';errBox('Kho này đã có phiếu chờ duyệt',[
       'Phiếu <b>'+_dup.id+'</b> ('+_dup.count+' mã, gửi bởi '+_dup.user+') đang chờ duyệt.',
       'Mỗi kho mỗi kỳ <b>chỉ có một phiếu</b> — nạp thêm file sẽ đẻ phiếu thứ 2 và che mất chênh lệch.',
       'Cần sửa số thì mở phiếu đó ra duyệt/từ chối, hoặc để bộ phận bấm <b>Đếm bổ sung</b>.'
@@ -6553,7 +6574,7 @@ function renderKKUpload(v,fixed){
   card.appendChild(b);v.appendChild(card);
 }
 // tạo phiếu kiểm kê 'Chờ duyệt' từ dữ liệu đã xem trước
-function commitKKUpload(r,period,cb,tuan){
+function commitKKUpload(r,period,cb,tuan,thay){
   /* Phiếu tháng: kiểm lại NGAY LÚC BẤM, không chỉ lúc chọn file — trong lúc xem trước có thể
      kho đã có phiếu (máy khác vừa gửi, hoặc lần bấm trước vừa xong). Kiểm trước khi đụng
      danh mục để lần bấm bị chặn không ghi gì (21/10/2026). */
@@ -6562,7 +6583,7 @@ function commitKKUpload(r,period,cb,tuan){
     if(_dangGuiKK[_kGui]){toast('Đang gửi phiếu, đợi một chút…');return Promise.resolve();}
     if(periodLocked(r.plant,r.sloc,period)){toast(lockMsg(r.plant,r.sloc,period));return Promise.resolve();}
     const _dup=pendingSub(r.plant,r.sloc,period);
-    if(_dup){errBox('Kho này đã có phiếu chờ duyệt',[
+    if(_dup&&!(thay&&_dup.id===thay.id)){errBox('Kho này đã có phiếu chờ duyệt',[
       'Phiếu <b>'+_dup.id+'</b> ('+_dup.count+' mã, gửi bởi '+_dup.user+') đang chờ duyệt.',
       'Mỗi kho mỗi kỳ <b>chỉ có một phiếu</b> — không tạo thêm phiếu từ file này.',
       'Cần sửa số thì bấm <b>✎ Sửa số / đếm bổ sung phiếu này</b> ở màn Kiểm kê.'
@@ -6617,6 +6638,40 @@ function commitKKUpload(r,period,cb,tuan){
     baoChoMang(['Phiếu <b>'+sub.id+'</b> · '+sub.count+' mã · '+whName(sub.plant,sub.sloc)],'Phiếu chờ gửi: '+sub.id);
     cb&&cb();
   };
+  /* THAY PHIẾU: thay TOÀN BỘ số của phiếu đang chờ duyệt bằng số trong file mới (Khoa 27/10/2026) */
+  if(thay){
+    const s0=thay,oldIt=s0.items||{},newIt={...r.items};
+    const changes=[];new Set([...Object.keys(oldIt),...Object.keys(newIt)]).forEach(c=>{
+      const o=(oldIt[c]==null||oldIt[c]==='')?null:Number(oldIt[c]),w=(newIt[c]==null||newIt[c]==='')?null:Number(newIt[c]);
+      if(o===w)return;const m=masterByCode[c]||{name:c,uom:''};changes.push({code:c,name:m.name||c,uom:m.uom||'',from:o,to:w});});
+    const _them=changes.filter(x=>x.from==null).length,_bo=changes.filter(x=>x.to==null).length,_doi=changes.length-_them-_bo;
+    if(!changes.length&&!(s0.zones&&s0.zones.length)){toast('File mới giống hệt số trên phiếu '+s0.id+' — không có gì để thay');return Promise.resolve();}
+    if(!confirm('HỦY SỐ CŨ, THAY BẰNG FILE MỚI'+NL+'Phiếu '+s0.id+' — '+whName(r.plant,r.sloc)+' · kỳ '+periodVN(period)+NL+NL
+      +'Số cũ: '+(s0.count||Object.keys(oldIt).length)+' mã  →  file mới: '+r.ok+' mã'+NL
+      +'· '+_doi+' mã đổi số · '+_them+' mã thêm · '+_bo+' mã không còn trong file (bỏ khỏi phiếu)'+NL
+      +((s0.zones&&s0.zones.length)?'· Chi tiết tiểu kho của lần đếm cũ sẽ bỏ — file mới là số tổng.'+NL:'')+NL
+      +'Phiếu giữ mã '+s0.id+', vẫn Chờ duyệt. Lần thay được ghi lại để kế toán xem số cũ → số mới.'))return Promise.resolve();
+    _dangGuiKK[_kGui]=true;
+    return (async()=>{try{
+      const edits=(s0.edits||[]).concat([{at:now(),by:session.name+' (thay bằng file Excel)',changes}]);
+      const gc=metaSach(r.meta,newIt);
+      const patch={items:newIt,count:r.ok,edits};
+      if(zoneColOK&&s0.zones&&s0.zones.length)patch.zones=null;     // số tổng, bỏ chi tiết khu cũ
+      if(noteColOK&&(gc||s0.itemNotes))patch.item_notes=gc||null;
+      const kq=await guiSuaPhieu(s0,patch);
+      if(kq==='loi')return;            // đã dựng hộp lỗi — phiếu cũ còn nguyên, màn xem trước còn
+      s0.items={...newIt};s0.count=r.ok;s0.edits=edits;if(patch.zones===null)s0.zones=null;s0.itemNotes=gc||null;
+      if(s0._choGui){const it=outbox.find(x=>!x.loai&&x.id===s0.id);if(it&&patch.zones===null){delete it.sub.zones;outboxSave();}}
+      if(kq==='hangdoi')s0._choGuiSua=true;
+      {const k=r.plant+'|'+r.sloc;if(drafts[k]&&drafts[k].suaPhieu===s0.id){delete drafts[k];saveDrafts();}}   // nháp sửa dở của bản cũ hết giá trị
+      hocDanhMuc();if(kq==='ok')baoMaLa();
+      log('Thay phiếu kiểm kê bằng file mới'+(kq==='hangdoi'?' khi mất mạng':''),s0.id+' · '+whName(r.plant,r.sloc)+' · '+changes.length+' mã đổi');
+      kkThayPhieuId=null;kkMethod='';
+      if(kq==='hangdoi')baoChoMang(['Phiếu <b>'+s0.id+'</b> · thay bằng file mới · '+r.ok+' mã'],'Phiếu: '+s0.id);
+      else toast('✓ Đã thay số phiếu '+s0.id+' bằng file mới ('+r.ok+' mã) — vẫn chờ duyệt');
+      cb&&cb();
+    }finally{delete _dangGuiKK[_kGui];}})();
+  }
   _dangGuiKK[_kGui]=true;
   return (async()=>{try{
     const sub={id:await nextKKId(r.plant,r.sloc),plant:r.plant,sloc:r.sloc,user:session.name+' (nhập từ Excel)',role:ROLES[session.role].label,time:now(),period:period,status:'Chờ duyệt',items:{...r.items},itemNotes:metaSach(r.meta,r.items),count:r.ok};
@@ -7782,6 +7837,7 @@ function phieuCuaKhoToi(v){
     const bd=el('span','badge '+(s.status==='Đã duyệt'?'badge-done':'badge-wait'));bd.textContent=s._choGui?L('chờ gửi'):L(s.status);r.appendChild(bd);
     const bX=el('button','btn btn-ghost btn-sm');bX.textContent=L('Xem phiếu');bX.onclick=()=>showDetail(s);r.appendChild(bX);
     if(coTheSuaPhieuKK(s)){const bS=el('button','btn btn-primary btn-sm');bS.textContent=L('✎ Sửa số');bS.onclick=()=>moSuaPhieuKK(s);r.appendChild(bS);}
+    if(coTheThayBangFile(s)&&!s._choGui){const bT=el('button','btn btn-ghost btn-sm');bT.textContent=L('♻ Hủy số cũ, up file mới');bT.onclick=()=>moThayBangFile(s);r.appendChild(bT);}
     b.appendChild(r);});
   card.appendChild(b);v.appendChild(card);
 }
@@ -7803,7 +7859,7 @@ function renderKiemke(v){
   // BƯỚC 1 — kho & kỳ: ghim thành chip, bấm "Đổi kho / kỳ" mới mở ô chọn
   const kctx={plant:kkSel.plant,sloc:kkSel.sloc,period:kkPeriod};
   ctxBar(v,kctx,{period:true,plants:mine},()=>{
-    kkSel={plant:kctx.plant,sloc:kctx.sloc};kkPeriod=kctx.period;kkMethod='';counting=null;countEditId=null;renderView();
+    kkSel={plant:kctx.plant,sloc:kctx.sloc};kkPeriod=kctx.period;kkMethod='';counting=null;countEditId=null;kkThayPhieuId=null;renderView();
   });
 
   const p=kkPeriod;const ld=lastDayVN(p);
@@ -7816,7 +7872,8 @@ function renderKiemke(v){
     <div style="font-size:12.5px;color:var(--muted);margin:2px 0 12px">Kho <b>${whName(kkSel.plant,kkSel.sloc)}</b> · kỳ tháng ${periodVN(kkPeriod)}. ${isPrivileged()?'Chọn 1 trong 2 cách nhập số kiểm kê:':'Bấm vào thẻ bên dưới để bắt đầu nhập số:'}</div>`;
   const mgrid=el('div','hub-grid');
   const _pend=pendingSub(kkSel.plant,kkSel.sloc,kkPeriod);
-  if(_pend&&countEditId!==_pend.id){
+  if(_pend&&kkThayPhieuId&&kkThayPhieuId!==_pend.id)kkThayPhieuId=null;
+  if(_pend&&countEditId!==_pend.id&&kkThayPhieuId!==_pend.id){
     // Đã có phiếu chờ duyệt -> KHÔNG cho lập phiếu thứ 2. Muốn thêm/sửa số thì đếm bổ sung
     // ngay trên phiếu cũ, mọi lần sửa đều ghi vết cho kế toán xem lúc duyệt.
     const pc=el('div','card');pc.style.cssText='margin-top:14px;border:1.5px solid var(--accent-600)';
@@ -7832,6 +7889,7 @@ function renderKiemke(v){
     const bEd=el('button','btn btn-primary','✎ Sửa số / đếm bổ sung phiếu này');
     bEd.onclick=()=>moSuaPhieuKK(_pend);
     const bSee=el('button','btn btn-ghost','Xem phiếu');bSee.onclick=()=>showDetail(_pend);
+    if(coTheThayBangFile(_pend)&&!_pend._choGui){const bT=el('button','btn btn-ghost');bT.textContent=L('♻ Hủy số cũ, up file mới');bT.onclick=()=>moThayBangFile(_pend);pr.appendChild(bT);}
     pr.appendChild(bEd);pr.appendChild(bSee);pb.appendChild(pr);pc.appendChild(pb);v.appendChild(pc);
     return;
   }
@@ -7862,7 +7920,7 @@ function renderKiemke(v){
   mgrid.appendChild(cD);mb.appendChild(mgrid);mCard.appendChild(mb);
   if(!_oneWay){                        // mot cach thi khong hien the chon
     if(kkMethod)kmThuGon(v,kkMethod==='excel'?'Up Excel':'Kiểm đếm trực tiếp',
-      countEditId?null:()=>{kkMethod='';counting=null;renderView();});
+      countEditId?null:()=>{kkMethod='';counting=null;kkThayPhieuId=null;renderView();});
     else v.appendChild(mCard);
   }
   // panel Up Excel (khi chọn); Kiểm đếm trực tiếp do khối 'counting' bên dưới lo
@@ -11137,6 +11195,7 @@ function showDetail(s){
     const bSua=el('button','btn btn-primary btn-sm','✎ Sửa số đã đếm');
     bSua.onclick=()=>moSuaPhieuKK(s);
     bar.appendChild(bSua);
+    if(coTheThayBangFile(s)&&!s._choGui){const bT=el('button','btn btn-ghost btn-sm');bT.textContent=L('♻ Hủy số cũ, up file mới');bT.onclick=()=>moThayBangFile(s);bar.appendChild(bT);}
     bar.appendChild(el('span','',`<span style="font-size:12.5px;color:var(--muted)">Kế toán chưa duyệt nên kho vẫn sửa được số: sửa số cũ, thêm mã thiếu, bỏ mã đếm nhầm. Phiếu giữ nguyên mã số và mọi thay đổi được ghi lại để kế toán xem khi duyệt.</span>`));
   }else{
     bar.appendChild(el('span','',`<span style="font-size:12.5px;color:var(--muted)">Chờ Kế toán viên phê duyệt.</span>`));
