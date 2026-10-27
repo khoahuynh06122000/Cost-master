@@ -1121,7 +1121,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2710-03';
+const APP_VER='2710-04';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -8444,6 +8444,11 @@ function renderCountSheet(v){
   _moved=new Set([...Object.keys(_mv.buy),...Object.keys(_mv.tin),...Object.keys(_mv.tout)]);
   _moved.forEach(c=>_codeSet.add(c));
   }
+  /* Mã ĐÃ CÓ SỐ trong nháp / phiếu đang sửa phải luôn có dòng (Khoa 27/10/2026): mã BP "Đếm thêm" ngoài danh sách chỉ được
+     thêm vào danh sách trong phiên đó — mở lại phiếu để sửa (hoặc tải lại trang) là mã đó mất dòng, số vẫn nằm trong phiếu
+     mà không sửa / bỏ được. */
+  Object.keys(items||{}).forEach(c=>{if(items[c]!==''&&items[c]!=null)_codeSet.add(c);});
+  {const _dz=drafts[key]&&drafts[key].zones;if(_dz)Object.values(_dz).forEach(o=>Object.keys(o||{}).forEach(c=>_codeSet.add(c)));}
   // tên/ĐVT dự phòng cho mã mới chỉ mới có ở phiếu nhập kho (chưa vào danh mục điểm bán)
   const _nameFromRc={};
   receipts.forEach(r=>{if(r.plant===counting.plant&&r.sloc===counting.sloc&&((r.period||periodOfDate(r.date))===_per)&&r.name&&!masterByCode[r.code])_nameFromRc[r.code]={code:r.code,name:r.name,uom:r.uom||''};});
