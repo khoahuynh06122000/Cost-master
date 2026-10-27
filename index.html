@@ -1121,7 +1121,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2710-04';
+const APP_VER='2710-05';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1141,6 +1141,8 @@ const TXT={en:{"Kiểm kê F&B": "F&B Stocktake","Tổng quan": "Overview","Nghi
 /* Bản 2710-01 */
 /* Bản 2710-02 */
 /* Bản 2710-03 */
+/* Bản 2710-05 */
+Object.assign(TXT.en,{"Email này đã có tài khoản — đăng nhập bằng mật khẩu đã đặt. Quên mật khẩu thì bấm \"Quên mật khẩu?\". Chưa vào được app (đang chờ duyệt) thì báo admin.": "This email already has an account — sign in with the password you set. Forgot it? Tap \"Forgot password?\". Still waiting for approval? Contact the admin."});Object.assign(TXT.hi,{"Email này đã có tài khoản — đăng nhập bằng mật khẩu đã đặt. Quên mật khẩu thì bấm \"Quên mật khẩu?\". Chưa vào được app (đang chờ duyệt) thì báo admin.": "इस ईमेल का खाता पहले से है — अपने पासवर्ड से साइन इन करें। पासवर्ड भूल गए तो \"पासवर्ड भूल गए?\" दबाएँ। मंज़ूरी बाकी हो तो एडमिन को बताएँ।"});
 Object.assign(TXT.en,{"♻ Hủy số cũ, up file mới": "♻ Discard old numbers, upload a new file", "Đang up file mới THAY phiếu": "Uploading a new file to REPLACE sheet", "Toàn bộ số cũ của phiếu sẽ được thay bằng số trong file mới. Phiếu giữ nguyên mã, vẫn chờ kế toán duyệt; lần thay được ghi lại để kế toán xem số cũ → số mới.": "All old numbers of the sheet will be replaced by the numbers in the new file. The sheet keeps its code and still awaits accountant approval; the replacement is logged so the accountant can see old → new.", "Thôi, không thay": "Cancel, keep the sheet", "♻ Thay số phiếu": "♻ Replace numbers of sheet"});Object.assign(TXT.hi,{"♻ Hủy số cũ, up file mới": "♻ पुरानी संख्याएँ हटाएँ, नई फ़ाइल अपलोड करें", "Đang up file mới THAY phiếu": "नई फ़ाइल से पर्ची बदली जा रही है", "Toàn bộ số cũ của phiếu sẽ được thay bằng số trong file mới. Phiếu giữ nguyên mã, vẫn chờ kế toán duyệt; lần thay được ghi lại để kế toán xem số cũ → số mới.": "पर्ची की सभी पुरानी संख्याएँ नई फ़ाइल की संख्याओं से बदल दी जाएँगी। पर्ची का कोड वही रहेगा और लेखाकार की मंज़ूरी बाकी रहेगी; बदलाव दर्ज होगा ताकि लेखाकार पुराना → नया देख सके।", "Thôi, không thay": "रद्द करें, पर्ची रखें", "♻ Thay số phiếu": "♻ पर्ची की संख्याएँ बदलें"});
 Object.assign(TXT.en,{"Phiếu kiểm kê của kho tôi": "My store's count sheets", "Phiếu chờ kế toán duyệt vẫn xem và sửa số được — sửa ngay trên phiếu, không lập phiếu mới.": "Sheets awaiting accountant approval can still be viewed and corrected — edit the same sheet, do not create a new one.", "✎ Sửa số": "✎ Edit numbers"});Object.assign(TXT.hi,{"Phiếu kiểm kê của kho tôi": "मेरे स्टोर की गिनती पर्चियाँ", "Phiếu chờ kế toán duyệt vẫn xem và sửa số được — sửa ngay trên phiếu, không lập phiếu mới.": "लेखाकार की मंज़ूरी बाकी वाली पर्चियाँ अब भी देखी और सुधारी जा सकती हैं — उसी पर्ची में सुधारें, नई न बनाएँ।", "✎ Sửa số": "✎ संख्या सुधारें"});
 Object.assign(TXT.en,{"⚠ Mã mới, chưa có trong danh mục — vẫn lưu số; kế toán duyệt rồi mã mới vào danh mục": "⚠ New code, not in the catalogue — the quantity is still saved; it joins the catalogue after the accountant approves it", "chờ kế toán duyệt mã": "awaiting accountant approval", "Mã mới chờ duyệt": "New codes awaiting approval", "Mã bộ phận quét / nạp chưa có trong danh mục — duyệt tên & ĐVT, hoặc đổi sang mã đúng": "Codes scanned / uploaded that are not in the catalogue — approve name & unit, or change to the correct code", "Mã đúng phải là mã đã có tên trong danh mục tổng": "The correct code must already have a name in the master catalogue", "Mã đúng trùng mã đang đổi": "The correct code is the same as the code being changed", "Bộ phận đề xuất": "Suggested by outlet", "Tên hàng (duyệt)": "Item name (approve)", "✓ Duyệt": "✓ Approve", "↪ Đổi mã": "↪ Change code", "✓ Duyệt tất cả đã điền": "✓ Approve all filled"});Object.assign(TXT.hi,{"⚠ Mã mới, chưa có trong danh mục — vẫn lưu số; kế toán duyệt rồi mã mới vào danh mục": "⚠ नया कोड, सूची में नहीं — मात्रा फिर भी सेव होती है; लेखाकार की मंज़ूरी के बाद कोड सूची में जुड़ेगा", "chờ kế toán duyệt mã": "लेखाकार की मंज़ूरी बाकी", "Mã mới chờ duyệt": "मंज़ूरी के लिए नए कोड", "Mã bộ phận quét / nạp chưa có trong danh mục — duyệt tên & ĐVT, hoặc đổi sang mã đúng": "स्कैन / अपलोड किए गए कोड जो सूची में नहीं हैं — नाम व इकाई मंज़ूर करें, या सही कोड में बदलें", "Mã đúng phải là mã đã có tên trong danh mục tổng": "सही कोड का नाम मुख्य सूची में पहले से होना चाहिए", "Mã đúng trùng mã đang đổi": "सही कोड वही है जो बदला जा रहा है", "Bộ phận đề xuất": "विभाग का सुझाव", "Tên hàng (duyệt)": "वस्तु का नाम (मंज़ूरी)", "✓ Duyệt": "✓ मंज़ूर", "↪ Đổi mã": "↪ कोड बदलें", "✓ Duyệt tất cả đã điền": "✓ भरे हुए सभी मंज़ूर करें"});
@@ -4781,6 +4783,12 @@ async function doSignUp(){
   catch(e){ msg.textContent='Không kết nối được máy chủ đăng ký (mạng yếu hoặc Supabase đang tạm dừng). Kiểm tra mạng rồi thử lại.'; return; }
   if(error){
     const net=/failed to fetch|networkerror|fetch|network/i.test(error.message||'');
+    /* Email đã có tài khoản (Khoa 27/10/2026): trước đây hiện nguyên câu máy chủ "User already registered". Nói theo việc
+       cần làm và đưa sang màn đăng nhập, điền sẵn email. */
+    if(!net&&/already registered|already been registered|user_already_exists|already exists/i.test((error.message||'')+' '+(error.code||''))){
+      msg.textContent='';showAuth('login');$('#liEmail').value=email;
+      $('#authMsg').textContent=L('Email này đã có tài khoản — đăng nhập bằng mật khẩu đã đặt. Quên mật khẩu thì bấm "Quên mật khẩu?". Chưa vào được app (đang chờ duyệt) thì báo admin.');
+      return;}
     msg.textContent = net ? 'Không kết nối được máy chủ đăng ký (mạng yếu hoặc Supabase đang tạm dừng). Kiểm tra mạng rồi thử lại.' : ('Lỗi: '+error.message);
     return;
   }
