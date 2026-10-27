@@ -249,6 +249,7 @@ const MAU = [
   { re: /const viec=\[\];ds\.forEach\(d=>d\.t\.theoKho\.forEach\(x=>viec\.push\(\{d,x\}\)\)\);/, mo: false, vi: 'Hai điểm POS cùng một kho: điểm sau đè hàng sử dụng của điểm trước (sửa 26/10, bản 2610-13)' },
   { re: /shifts\.unshift\(rec\);log\('Bàn giao ca',[^\n]*\n\s*dbIns\('shifts'/, mo: false, vi: 'Bàn giao ca báo đã lưu + xoá số trước khi máy chủ nhận (sửa 26/10, bản 2610-13)' },
   { re: /countLists\[plant\+'\|'\+sloc\+'\|'\+period\]=\{items,by:session\.name,at:now\(\)\};\s*\n\s*dbUpsertCountList/, mo: false, vi: 'Mở kỳ báo thành công trước khi máy chủ nhận danh sách (sửa 26/10, bản 2610-13)' },
+  { re: /\(m\?'':' \[mã chờ khai báo\]'\)\)\.trim\(\)/, mo: false, vi: 'Quét ảnh mã mới bỏ mất tên đọc trên phiếu — kế toán phải gõ lại tên lúc duyệt (sửa 27/10, bản 2710-01)' },
 ];
 function kiemTaiPhat() {
   for (const m of MAU) {
