@@ -1121,7 +1121,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2710-05';
+const APP_VER='2910-01';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -2281,7 +2281,7 @@ async function insSubmissionSafe(sub,imLang){
       // phiếu của kho khác và trả về đúng mã vừa trùng => vòng lặp mù (mất phiếu 21/08/2026).
       const rest=String(sub.id).indexOf(pfx)===0?String(sub.id).slice(pfx.length):'';
       const parts=rest?rest.split('-'):[];
-      const ymd=parts[0]||kkYmd();
+      const ymd=parts[0]||kkYmd(kkNgayChot(sub.period));
       const n=parseInt(parts[1]||'1',10)||1;
       sub.id=pfx+ymd+'-'+(n+1);
       continue;
@@ -4267,6 +4267,18 @@ function lastDayVN(p){const k=kyKhoang(p);const d=k?k.den:new Date();return {dat
 // lockedSub trả về chính phiếu đang khóa để thông báo cho người dùng biết phải xử lý phiếu nào.
 function lockedSub(plant,sloc,period){return submissions.find(s=>s.plant===plant&&s.sloc===sloc&&s.period===period&&s.status==='Đã duyệt');}
 function periodLocked(plant,sloc,period){return !!lockedSub(plant,sloc,period);}
+/* KỲ KIỂM KÊ MẶC ĐỊNH (Khoa 29/10/2026): kỳ 26 → 25. Kế toán mở kỳ 10 ngày 26/10 thì app đã sang kỳ 11, BP mở màn đếm
+   là phiếu ghi kỳ 11 — 6 phiếu lệch kỳ, bot báo "chưa nhập". Nay: kho có kỳ kế toán đã mở (kỳ này hoặc kỳ liền trước)
+   mà chưa duyệt kiểm kê thì mặc định đúng kỳ đó; không có thì kỳ theo ngày hôm nay. */
+function kyMacDinhKK(plant,sloc){
+  const cur=curPeriod(),truoc=kyTruoc(cur);
+  const ds=Object.keys(countLists||{}).map(k=>k.split('|')).filter(a=>a[0]===plant&&a[1]===sloc&&a[2]&&a[2]>=truoc&&a[2]<=cur)
+    .map(a=>a[2]).filter(per=>!periodLocked(plant,sloc,per)).sort();
+  return ds.length?ds[ds.length-1]:cur;
+}
+/* Ngày kiểm kê ghi trên phiếu = ngày chốt kỳ (25). Kỳ 10/2026 -> 25/10/2026, dù BP gửi ngày 26–29/10. */
+function kkNgayChot(per){const k=kyKhoang(per);return k?k.den:new Date();}
+let _kkKyTay=false; // người dùng tự chọn kỳ (hoặc mở từ một phiếu) -> không tự đổi về kỳ mặc định
 /* KHÓA NHẬP KHO THEO KỲ (Khoa 23/10/2026): kỳ kế toán đã duyệt kiểm kê thì không nhập kho vào kỳ đó
    nữa — nhập thêm là đổi số Xuất của kỳ đã chốt. Giống luật điều chuyển: admin vẫn làm được nhưng
    phải xác nhận. Trả true = được ghi. */
@@ -4850,7 +4862,7 @@ function applyDeepLinkKK(kk){
   activeTab='kiemke';
   if(!isViewer()){ // vai field (giám sát/bếp trưởng): mở thẳng màn đếm nếu có quyền kho đó
     if((session.plants||[]).indexOf(kk.plant)>=0){
-      kkSel={plant:kk.plant,sloc:kk.sloc};kkPeriod=kk.period||curPeriod();kkMethod='direct';
+      kkSel={plant:kk.plant,sloc:kk.sloc};kkPeriod=kk.period||curPeriod();_kkKyTay=!!kk.period;kkMethod='direct';
       counting={plant:kk.plant,sloc:kk.sloc,period:kk.period||curPeriod()};
     }
   }
@@ -6306,7 +6318,7 @@ let kkMethod='';     // hình thức kiểm đếm đang chọn: '' | 'excel' | 
 let kkThayPhieuId=null;
 function coTheThayBangFile(s){return !!s&&coTheSuaPhieuKK(s)&&laKhoBep(s.plant,s.sloc);}
 function moThayBangFile(s){
-  kkSel={plant:s.plant,sloc:s.sloc};kkPeriod=s.period||curPeriod();kkThayPhieuId=s.id;kkMethod='excel';counting=null;countEditId=null;
+  kkSel={plant:s.plant,sloc:s.sloc};kkPeriod=s.period||curPeriod();_kkKyTay=true;kkThayPhieuId=s.id;kkMethod='excel';counting=null;countEditId=null;
   activeTab='kiemke';renderNav();renderView();
 }
 /* Đã chọn cách nhập rồi thì thẻ chọn (2 ô to ~410px) thu về MỘT dòng — trước đây nó
@@ -6682,7 +6694,7 @@ function commitKKUpload(r,period,cb,tuan,thay){
   }
   _dangGuiKK[_kGui]=true;
   return (async()=>{try{
-    const sub={id:await nextKKId(r.plant,r.sloc),plant:r.plant,sloc:r.sloc,user:session.name+' (nhập từ Excel)',role:ROLES[session.role].label,time:now(),period:period,status:'Chờ duyệt',items:{...r.items},itemNotes:metaSach(r.meta,r.items),count:r.ok};
+    const sub={id:await nextKKId(r.plant,r.sloc,kkNgayChot(period)),plant:r.plant,sloc:r.sloc,user:session.name+' (nhập từ Excel)',role:ROLES[session.role].label,time:now(),period:period,status:'Chờ duyệt',items:{...r.items},itemNotes:metaSach(r.meta,r.items),count:r.ok};
     if(!mangOK||(typeof navigator!=='undefined'&&navigator.onLine===false)){choHangDoi(sub);return;}
     let okIns=false;
     try{okIns=await insSubmissionSafe(sub);}
@@ -7813,7 +7825,7 @@ function moSuaPhieuKK(s){
   }
   if(!_giu){drafts[_k]={items:{...(s.items||{})},zones:zonesToDraft(s.zones),meta:metaToDraft(s.itemNotes),suaPhieu:s.id,ky:s.period||curPeriod(),
     nSua:(s.edits||[]).length,goc:{items:{...(s.items||{})},zones:zonesToDraft(s.zones),meta:metaToDraft(s.itemNotes)}};saveDrafts();}
-  kkSel={plant:s.plant,sloc:s.sloc};kkPeriod=s.period||curPeriod();
+  kkSel={plant:s.plant,sloc:s.sloc};kkPeriod=s.period||curPeriod();_kkKyTay=true;
   countEditId=s.id;kkMethod='direct';
   counting={plant:s.plant,sloc:s.sloc,period:s.period||curPeriod()};
   activeTab='kiemke';renderNav();renderView();
@@ -7862,17 +7874,18 @@ function renderKiemke(v){
   if(!mine.length){v.appendChild(el('div','card',`<div class="card-b"><div class="empty"><div class="big">Chưa được gán điểm bán</div><div>Bạn chưa được Quản trị viên gán điểm bán nào. Vui lòng liên hệ để được cấp quyền.</div></div></div>`));return;}
   phieuCuaKhoToi(v);
 
-  if(!kkPeriod)kkPeriod=curPeriod();
   if(!kkSel||!mine.some(p=>p.plant===kkSel.plant)){const p0=mine[0];kkSel={plant:p0.plant,sloc:(allowedSlocsOf(p0.plant)[0]||{}).sloc||''};}
+  if(!_kkKyTay||!kkPeriod)kkPeriod=kyMacDinhKK(kkSel.plant,kkSel.sloc);
   // BƯỚC 1 — kho & kỳ: ghim thành chip, bấm "Đổi kho / kỳ" mới mở ô chọn
   const kctx={plant:kkSel.plant,sloc:kkSel.sloc,period:kkPeriod};
   ctxBar(v,kctx,{period:true,plants:mine},()=>{
+    _kkKyTay=kctx.period!==kkPeriod;
     kkSel={plant:kctx.plant,sloc:kctx.sloc};kkPeriod=kctx.period;kkMethod='';counting=null;countEditId=null;kkThayPhieuId=null;renderView();
   });
 
   const p=kkPeriod;const ld=lastDayVN(p);
   const per=el('div','note');per.style.cssText='margin:14px 0 0;font-size:12px';
-  per.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span><b>Kỳ kiểm kê: tháng ${periodVN(p)}</b>${p===curPeriod()?'':' <b style="color:var(--accent-600)">(kỳ đã chọn — không phải tháng hiện tại)</b>'} · Hạn chốt kho: <b>${ld.str}</b> (ngày cuối tháng). Hãy cập nhật số liệu trước hạn để kế toán duyệt. Sau khi kế toán duyệt, tháng này sẽ bị khóa.</span>`;
+  per.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span><b>Kỳ kiểm kê: tháng ${periodVN(p)}</b>${p===curPeriod()?'':' <b style="color:var(--accent-600)">(kỳ đã chọn — không phải tháng hiện tại)</b>'} · ${kyKhoangVN(p)} · Ngày kiểm kê ghi trên phiếu: <b>${ld.str}</b> (ngày chốt kỳ). Hãy cập nhật số liệu trước hạn để kế toán duyệt. Sau khi kế toán duyệt, tháng này sẽ bị khóa.</span>`;
   v.appendChild(per);
   // BƯỚC 2 — chọn hình thức kiểm đếm (Up Excel / Kiểm đếm trực tiếp)
   const mCard=el('div','card');mCard.style.marginTop='14px';const mb=el('div','card-b');
@@ -8844,7 +8857,7 @@ function renderCountSheet(v){
   bXls.onclick=()=>{
     const n=filled();if(n===0){toast('Chưa nhập mã nào để xuất');return;}
     const clean={};Object.entries(items).forEach(([c,val])=>{if(val!==''&&val!=null)clean[c]=Number(val);});
-    exportBBKK({id:kkIdBase(counting.plant,counting.sloc),plant:counting.plant,sloc:counting.sloc,user:session.name,role:ROLES[session.role].label,time:now(),period:counting.period||curPeriod(),items:clean,itemNotes:metaSach(meta,clean)});
+    exportBBKK({id:kkIdBase(counting.plant,counting.sloc,kkNgayChot(counting.period||curPeriod())),plant:counting.plant,sloc:counting.sloc,user:session.name,role:ROLES[session.role].label,time:now(),period:counting.period||curPeriod(),items:clean,itemNotes:metaSach(meta,clean)});
   };
   bDone.onclick=()=>{
     const n=filled();if(n===0){toast('Chưa nhập mã nào');return;}
@@ -8953,7 +8966,7 @@ function renderCountSheet(v){
       }
       const _zs=zonesForSave(drafts[key],zonesOf(counting.plant,counting.sloc));
       const _it=itemsSach(items);
-      const sub={zones:_zs,id:await nextKKId(counting.plant,counting.sloc),plant:counting.plant,sloc:counting.sloc,user:session.name,role:ROLES[session.role].label,time:now(),period:counting.period||curPeriod(),status:'Chờ duyệt',items:_it,itemNotes:metaSach(meta,_it),count:n,edits:[]};
+      const sub={zones:_zs,id:await nextKKId(counting.plant,counting.sloc,kkNgayChot(counting.period||curPeriod())),plant:counting.plant,sloc:counting.sloc,user:session.name,role:ROLES[session.role].label,time:now(),period:counting.period||curPeriod(),status:'Chờ duyệt',items:_it,itemNotes:metaSach(meta,_it),count:n,edits:[]};
       /* MẤT MẠNG: xếp hàng đợi ngay, KHÔNG dựng hộp lỗi đỏ. BP đang đếm dở giữa
          kho không sóng mà thấy báo đỏ thì hoang mang, dễ bỏ dở. Phiếu nằm trong
          máy, có sóng là app tự gửi. */
@@ -11357,7 +11370,7 @@ async function deliverBienBan(s,blob,filename){
 function exportBBKK(s,byZone){
   const esc=escHtml;
   const wh=whName(s.plant,s.sloc);
-  const d=parseTs(s.time)||new Date();
+  const d=(s.period&&kyKhoang(s.period)?kyKhoang(s.period).den:null)||parseTs(s.time)||new Date(); /* ngày kiểm kê = ngày chốt kỳ 25 (29/10/2026) */
   const ngay=`Ngày ${String(d.getDate()).padStart(2,'0')} tháng ${String(d.getMonth()+1).padStart(2,'0')} năm ${d.getFullYear()}`;
   // sắp xếp theo tên hàng A-Z
   const rows=Object.entries(s.items).map(([code,qty])=>{const m=masterByCode[code]||DATA.materials.find(x=>x.code===code)||{name:code,uom:''};return {code,qty,name:m.name,uom:m.uom};})
