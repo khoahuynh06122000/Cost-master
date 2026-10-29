@@ -1121,7 +1121,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2910-01';
+const APP_VER='2910-02';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -4270,8 +4270,11 @@ function periodLocked(plant,sloc,period){return !!lockedSub(plant,sloc,period);}
 /* KỲ KIỂM KÊ MẶC ĐỊNH (Khoa 29/10/2026): kỳ 26 → 25. Kế toán mở kỳ 10 ngày 26/10 thì app đã sang kỳ 11, BP mở màn đếm
    là phiếu ghi kỳ 11 — 6 phiếu lệch kỳ, bot báo "chưa nhập". Nay: kho có kỳ kế toán đã mở (kỳ này hoặc kỳ liền trước)
    mà chưa duyệt kiểm kê thì mặc định đúng kỳ đó; không có thì kỳ theo ngày hôm nay. */
-function kyMacDinhKK(plant,sloc){
-  const cur=curPeriod(),truoc=kyTruoc(cur);
+function kyMacDinhKK(plant,sloc,hom){
+  const _h=hom||new Date(),cur=kyCuaYmd(_h.getFullYear(),_h.getMonth()+1,_h.getDate()),truoc=kyTruoc(cur);
+  /* Rule Khoa 29/10/2026: kiểm kê up từ ngày 26 tới cuối tháng vẫn là số chốt của kỳ vừa đóng (ghi nhận ngày 25),
+     dù kế toán đã mở kỳ hay chưa — trừ khi kỳ đó đã duyệt kiểm kê. */
+  if(_h.getDate()>KY_NGAY_CHOT&&!periodLocked(plant,sloc,truoc))return truoc;
   const ds=Object.keys(countLists||{}).map(k=>k.split('|')).filter(a=>a[0]===plant&&a[1]===sloc&&a[2]&&a[2]>=truoc&&a[2]<=cur)
     .map(a=>a[2]).filter(per=>!periodLocked(plant,sloc,per)).sort();
   return ds.length?ds[ds.length-1]:cur;
