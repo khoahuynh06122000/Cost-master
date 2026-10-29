@@ -161,6 +161,19 @@ try {
   });
 
   const perVN = (activePeriod || '').split('-').reverse().join('/'); // YYYY-MM -> MM/YYYY
+  /* Cửa sổ kiểm kê tháng (rule Khoa 29/10/2026): BP chỉ nhập từ ngày 25 tới cuối tháng của kỳ đó; qua tháng là đóng,
+     kho chưa nhập phải nhờ kế toán nhập bù. */
+  function dongCuaSo(per) {
+    const [y, m] = String(per || '').split('-').map(Number);
+    if (!y || !m) return '';
+    const cuoi = new Date(Date.UTC(y, m, 0)).getUTCDate(), mm = String(m).padStart(2, '0');
+    const h = gioVN(), hy = h.getUTCFullYear(), hm = h.getUTCMonth() + 1, hd = h.getUTCDate();
+    const truoc = hy < y || (hy === y && (hm < m || (hm === m && hd < 25)));
+    const sau = hy > y || (hy === y && hm > m);
+    if (truoc) return `⏳ Bộ phận nhập kiểm kê từ 25/${mm} đến ${cuoi}/${mm} — chưa tới thời gian nhập.\n`;
+    if (sau) return `⛔ Đã hết thời gian nhập (25/${mm}–${cuoi}/${mm}). Kho chưa nhập không tự nhập được nữa — kế toán nhập bù.\n`;
+    return `🗓 Đang trong thời gian nhập: 25/${mm} → ${cuoi}/${mm}.\n`;
+  }
   const line = u => `- ${whLabel(u.p, u.s)}`;
 
   // Dựng 1 tin cho 1 nhóm kho. Trả null khi nhóm đó không có kho mở kỳ hoặc đã duyệt hết (im lặng).
@@ -169,7 +182,7 @@ try {
     const wait = ds.filter(u => u.st === 'wait');
     const done = ds.filter(u => u.st === 'done');
     if (!none.length && !wait.length) return null;
-    let msg = `📋 THEO DÕI KIỂM KÊ ${ten} — KỲ THÁNG ${perVN} (đã mở kỳ)\nThời điểm: ${new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })}\n`;
+    let msg = `📋 THEO DÕI KIỂM KÊ ${ten} — KỲ THÁNG ${perVN} (đã mở kỳ)\nThời điểm: ${new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })}\n` + dongCuaSo(activePeriod);
     if (none.length) msg += `\n🔴 CHƯA NHẬP (${none.length} kho):\n` +
       none.sort((a,b) => b.days - a.days).map(u => `${line(u)}${u.days >= 1 ? ` — mở kỳ ${u.days} ngày trước` : ''}`).join('\n') + '\n';
     if (wait.length) msg += `\n🟡 ĐÃ NHẬP · CHỜ KẾ TOÁN DUYỆT (${wait.length} kho):\n` +
