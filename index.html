@@ -1121,7 +1121,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='3010-01';
+const APP_VER='3010-02';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -11192,7 +11192,7 @@ function nhanChoGui(){
     : '<span class="badge badge-wait">📴 Chưa gửi — chờ có mạng</span>';
 }
 function renderTonghop(v){
-  const isKTV = session && session.role==='ketoan_vien';
+  const isKTV = session && (session.role==='ketoan_vien'||session.role==='ketoan_dl');   // KT định lượng duyệt hàng loạt phiếu bếp của mình (30/10/2026)
   v.appendChild(el('div','page-head',`<div><h1>Tổng hợp số liệu</h1><div class="ph-sub">Cập nhật tức thì khi điểm bán gửi số đếm và điều chuyển.</div></div>`));
   const pending=submissions.filter(s=>s.status==='Chờ duyệt').length;
   const stats=el('div','stats');
