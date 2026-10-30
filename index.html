@@ -1121,7 +1121,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='3010-02';
+const APP_VER='3010-03';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -4377,9 +4377,12 @@ let ocrPreviewOpen=false; // đang xem bảng preview quét ảnh (chưa bấm l
 async function loadNotifsOnly(){
   if(!sb)return false;
   try{
-    const {data,error}=await sb.from('notifications').select('*').order('created_at',{ascending:false}).limit(200);
+    let q=sb.from('notifications').select('*');if(_notifMoc)q=q.gt('created_at',_notifMoc);   // chỉ kéo thông báo mới
+    const {data,error}=await q.order('created_at',{ascending:false}).limit(200);
     if(error||!data)return false;
-    notifications=data.map(r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,message:r.message,kind:r.kind,by:r.created_by,read:!!r.read_flag,time:fmt(r.created_at)}));
+    const daCo=new Set((notifications||[]).map(x=>x.id));
+    const moi=data.filter(r=>!daCo.has(r.id)).map(r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,message:r.message,kind:r.kind,by:r.created_by,read:!!r.read_flag,time:fmt(r.created_at)}));
+    notifications=(_notifMoc?moi.concat(notifications||[]):moi).slice(0,200);ghiMocTB({data});
     return true;
   }catch(e){console.warn('loadNotifsOnly',e);return false;}
 }
@@ -4423,6 +4426,113 @@ function giuMoiTrenMay(cu,truoc,moi){
   const ra=(moi||[]).filter(x=>!(x&&x.id!=null&&truoc.has(x.id)&&!conCu.has(x.id)));
   return them.length?them.concat(ra):ra;
 }
+const DB_MAP={
+  submissions:r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,user:r.user_name,role:r.role,status:r.status,count:r.count,items:r.items||{},zones:Array.isArray(r.zones)?r.zones:null,itemNotes:r.item_notes||null,period:r.period||(r.created_at?periodOfDate(r.created_at):''),approvedBy:r.approved_by,approvedAt:r.approved_at?fmt(r.approved_at):null,prevOpening:r.prev_opening||null,edits:r.edits||[],time:fmt(r.created_at)}),
+  transfers:r=>({id:r.id,date:r.date,code:r.code,name:r.name,uom:r.uom,qty:r.qty,from:r.from_wh,to:r.to_wh,fromKey:r.from_key||null,toKey:r.to_key||null,period:r.period||null,reason:r.reason,user:r.user_name,time:fmt(r.created_at)}),
+  shifts:r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,date:r.date,ca:r.ca,fromUser:r.from_user,items:r.items||{},count:r.count,status:r.status,receivedBy:r.received_by,receivedAt:r.received_at?fmt(r.received_at):null,time:fmt(r.created_at)}),
+  spot_checks:r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,by:r.created_by,desc:r.description,amount:Number(r.amount)||0,status:r.status,reviewedBy:r.reviewed_by,reviewedAt:r.reviewed_at?fmt(r.reviewed_at):null,note:r.review_note,time:fmt(r.created_at)}),
+  closing_stock:r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,period:r.period,items:r.items||{},recon:r.recon||{},explain:r.explain||{},status:r.status||'Chờ duyệt',by:r.created_by,approvedBy:r.approved_by,approvedAt:r.approved_at?fmt(r.approved_at):null,prevOpening:r.prev_opening||null,time:fmt(r.created_at)}),
+  receipts:r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,code:r.code,name:r.name,uom:r.uom,qty:Number(r.qty)||0,date:r.date,period:r.period||periodOfDate(r.date),note:r.note,by:r.created_by,time:fmt(r.created_at)}),
+  transfer_requests:r=>({id:r.id,kind:r.kind,fromPlant:r.from_plant,fromSloc:r.from_sloc,toPlant:r.to_plant,toSloc:r.to_sloc,
+        items:r.items||{},reason:r.reason||'',status:r.status||'Chờ duyệt',period:r.period||null,idCu:r.id_cu||'',
+        by:r.created_by,time:fmt(r.created_at),createdAt:r.created_at||null,approvedBy:r.approved_by,approvedAt:r.approved_at?fmt(r.approved_at):null,rejectNote:r.reject_note||''}),
+  weekly_counts:r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,week:r.week,
+        items:r.items||{},itemNotes:r.item_notes||null,count:r.count||0,by:r.created_by,note:r.note||'',time:fmt(r.created_at)})
+};
+/* ===== ĐỒNG BỘ TĂNG DẦN (Khoa 30/10/2026, giảm Egress Supabase) =====
+   Lượt tải ĐỦ: lúc mở app, 60 phút một lần, và khi máy chủ chưa chạy SQL PHẦN 27.
+   Giữa hai lượt đủ, vòng đồng bộ chỉ kéo dòng có updated_at mới (lùi 2 phút cho chắc) + các dòng đã xóa
+   (bảng xoa_log do trigger ghi). Thiếu cột / thiếu bảng thì tự quay về tải đủ — app chạy y như cũ. */
+let _dbMoc={},_xoaMoc=null,_tangDanOK=null,_lanTaiDu=0,_lanTinh=0,_notifMoc=null,_lanDongBo=0;
+function ghiMoc(bang,x){
+  const rows=x&&!x.error&&x.data;if(!rows)return;
+  if(!rows.length){if(!_dbMoc[bang])_dbMoc[bang]='1970-01-01T00:00:00Z';return;}
+  if(!Object.prototype.hasOwnProperty.call(rows[0],'updated_at')){_tangDanOK=false;return;}
+  let m=_dbMoc[bang]||'';rows.forEach(r=>{if(r.updated_at&&String(r.updated_at)>m)m=String(r.updated_at);});_dbMoc[bang]=m;
+}
+function ghiMocTB(x){const rows=x&&!x.error&&x.data;if(!rows)return;rows.forEach(r=>{if(r.created_at&&(!_notifMoc||String(r.created_at)>_notifMoc))_notifMoc=String(r.created_at);});}
+async function doMocXoa(){
+  if(_tangDanOK===false)return;
+  try{const q=await sb.from('xoa_log').select('id').order('id',{ascending:false}).limit(1);
+    if(q.error){if(!laLoiMang(q.error))_tangDanOK=false;return;}
+    _xoaMoc=(q.data&&q.data[0])?Number(q.data[0].id):0;if(_tangDanOK===null)_tangDanOK=true;
+  }catch(e){}
+}
+const DB_TANG=[
+  {bang:'submissions',lay:()=>submissions,dat:a=>{submissions=a;}},
+  {bang:'transfers',lay:()=>transfers,dat:a=>{transfers=a;}},
+  {bang:'shifts',lay:()=>shifts,dat:a=>{shifts=a;}},
+  {bang:'spot_checks',lay:()=>spotChecks,dat:a=>{spotChecks=a;}},
+  {bang:'closing_stock',lay:()=>closings,dat:a=>{closings=a;}},
+  {bang:'receipts',lay:()=>receipts,dat:a=>{receipts=a;}},
+  {bang:'transfer_requests',lay:()=>trReqs,dat:a=>{trReqs=a;}},
+  {bang:'weekly_counts',lay:()=>weeklyCounts,dat:a=>{weeklyCounts=a;},chiKhi:()=>wkTblOK},
+  {bang:'opening_stock',map:true},
+  {bang:'count_lists',map:true}];
+async function keoThayDoi(bang){
+  const moc=_dbMoc[bang];const out=[];let from=0;
+  const tu=moc?new Date(new Date(moc).getTime()-120000).toISOString():null;
+  for(;;){let q=sb.from(bang).select('*');if(tu)q=q.gte('updated_at',tu);
+    const {data,error}=await q.order('updated_at',{ascending:true}).range(from,from+999);
+    if(error)return {error};out.push(...(data||[]));if(!data||data.length<1000)break;from+=1000;}
+  return {data:out};
+}
+const laLoiCot=e=>!!e&&/updated_at|xoa_log|schema cache|does not exist|42703|42P01|PGRST20/i.test(String(e.message||'')+' '+String(e.code||''));
+/* Trả 'du' khi phải tải đủ (thiếu cột / bảng), 'mang' khi rớt mạng, true khi xong. */
+async function dbLoadDelta(){
+  if(!sb)return true;
+  await choFlushXong();_dangTai++;
+  const _the=++_taiThe;let kq=true;
+  try{
+    const dsBang=DB_TANG.filter(t=>!t.chiKhi||t.chiKhi());
+    const [ketqua,xo,nt]=await Promise.all([
+      Promise.all(dsBang.map(t=>keoThayDoi(t.bang))),
+      sb.from('xoa_log').select('id,bang,khoa').gt('id',_xoaMoc||0).order('id',{ascending:true}).limit(1000),
+      _notifMoc?sb.from('notifications').select('*').gt('created_at',_notifMoc).order('created_at',{ascending:false}).limit(200)
+               :sb.from('notifications').select('*').order('created_at',{ascending:false}).limit(200)]);
+    const loi=[...ketqua.map(x=>x.error),xo.error,nt.error].filter(Boolean);
+    if(loi.some(laLoiMang)){datMang(false);return (kq='mang');}
+    if(loi.some(laLoiCot)){_tangDanOK=false;return (kq='du');}
+    if(loi.length)return (kq='du');
+    if(_the<_taiGanCuoi)return true;
+    _taiGanCuoi=_the;
+    dsBang.forEach((t,i)=>{
+      const rows=ketqua[i].data||[];if(!rows.length)return;
+      if(t.bang==='opening_stock')rows.forEach(r=>{openingStock[r.plant_code+'|'+r.sloc_code]={items:r.items||{},fromId:r.from_id,at:r.set_at?fmt(r.set_at):'',by:r.set_by};});
+      else if(t.bang==='count_lists')rows.forEach(r=>{countLists[r.plant_code+'|'+r.sloc_code+'|'+r.period]={items:r.items||{},by:r.created_by,at:r.created_at?fmt(r.created_at):''};});
+      else{
+        if(t.bang==='submissions'){if(Object.prototype.hasOwnProperty.call(rows[0],'zones'))zoneColOK=true;if(Object.prototype.hasOwnProperty.call(rows[0],'item_notes'))noteColOK=true;}
+        const arr=(t.lay()||[]).slice();const vt=new Map();arr.forEach((x,k)=>{if(x&&x.id!=null)vt.set(String(x.id),k);});
+        const moi=[];
+        rows.forEach(r=>{const m=DB_MAP[t.bang](r);const k=vt.get(String(r.id));
+          if(k!=null){if(arr[k]&&arr[k]._choGui)return;arr[k]=m;}else moi.push(m);});
+        t.dat(moi.reverse().concat(arr));
+      }
+      ghiMoc(t.bang,{data:rows});
+    });
+    // dòng đã xóa trên máy chủ (trigger ghi vào xoa_log)
+    (xo.data||[]).forEach(d=>{const b=d.bang,k=String(d.khoa);
+      if(b==='opening_stock')delete openingStock[k];
+      else if(b==='count_lists')delete countLists[k];
+      else{const t=DB_TANG.find(x=>x.bang===b&&!x.map);if(t)t.dat((t.lay()||[]).filter(x=>!(x&&String(x.id)===k&&!x._choGui)));}
+      _xoaMoc=Math.max(_xoaMoc||0,Number(d.id)||0);});
+    if((nt.data||[]).length){const daCo=new Set((notifications||[]).map(x=>x.id));
+      const moi=nt.data.filter(r=>!daCo.has(r.id)).map(r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,message:r.message,kind:r.kind,by:r.created_by,read:!!r.read_flag,time:fmt(r.created_at)}));
+      notifications=moi.concat(notifications||[]).slice(0,200);ghiMocTB(nt);}
+    try{outboxGan();}catch(e){}
+    locTheoKho();
+    if(!mangOK)datMang(true);
+  }catch(e){console.warn('dbLoadDelta',e);if(laLoiMang(e)){datMang(false);kq='mang';}else kq='du';}
+  finally{_dangTai=Math.max(0,_dangTai-1);if(!_dangTai&&_flushCho){_flushCho=false;setTimeout(()=>{try{outboxFlush();}catch(e){}},0);}}
+  return kq;
+}
+/* Một lượt đồng bộ: tăng dần nếu được, còn lại tải đủ. Tải đủ an toàn 60 phút một lần. */
+async function dbDongBo(){
+  _lanDongBo=Date.now();
+  if(_tangDanOK!==true||_xoaMoc==null||Date.now()-_lanTaiDu>60*60*1000)return dbLoadAll();
+  const kq=await dbLoadDelta();
+  if(kq==='du')return dbLoadAll();
+}
 let _taiThe=0,_taiGanCuoi=0;   // số lượt tải: lượt BẮT ĐẦU trước mà xong sau không được đè lượt mới hơn
 async function dbLoadAll(){
   if(!sb)return;
@@ -4435,15 +4545,19 @@ async function dbLoadAll(){
        phiếu kiểm kê, bàn giao ca, đột xuất tải một lần — máy chủ cắt ở 1.000 dòng mà không báo, dòng cũ biến
        mất khỏi máy: tồn ước tính, Xuất (tính), file NXT, khóa kỳ đều sai. Chốt tồn / phiếu ĐC còn bị giới hạn
        300 / 500 dòng. */
+    /* GIẢM EGRESS (Khoa 30/10/2026): danh mục vật tư / danh mục kho / nhật ký chỉ tải lúc mở app rồi 30 phút một
+       lần — 7.436 mã tải lại mỗi 45 giây trên mọi máy là phần lớn dung lượng vượt hạn mức Supabase. */
+    const _tinh=!_lanTinh||Date.now()-_lanTinh>30*60*1000;
+    const _boQua=Promise.resolve(null);
     const [su,tr,sh,op,pm,al,sc,mt,nt,rc]=await Promise.all([
       fetchAllRows('submissions','*','created_at'),
       fetchAllRows('transfers','*','created_at'),
       fetchAllRows('shifts','*','created_at'),
       sb.from('opening_stock').select('*'),
-      fetchAllRows('plant_materials','plant_code,code',['plant_code','code']),
-      sb.from('audit_log').select('*').order('at',{ascending:false}).limit(500),
+      _tinh?fetchAllRows('plant_materials','plant_code,code',['plant_code','code']):_boQua,
+      _tinh?sb.from('audit_log').select('*').order('at',{ascending:false}).limit(500):_boQua,
       fetchAllRows('spot_checks','*','created_at'),
-      fetchAllRows('materials','code,name,uom,name_en',['code']),
+      _tinh?fetchAllRows('materials','code,name,uom,name_en',['code']):_boQua,
       sb.from('notifications').select('*').order('created_at',{ascending:false}).limit(200),
       fetchAllRows('closing_stock','*','created_at'),
     ]);
@@ -4458,25 +4572,23 @@ async function dbLoadAll(){
     const _loiTai=[];
     const tot=(x,ten)=>{if(x&&!x.error)return true;_loiTai.push({ten,e:x&&x.error});return false;};
     // merge mã vật tư mới (do import tồn đầu kỳ thêm) vào danh mục tổng để bền qua các phiên
-    (mt.data||[]).forEach(r=>{if(!r||r.code==null)return;const code=String(r.code).trim();if(!code)return;const nm=r.name!=null?String(r.name).trim():'';const um=r.uom!=null?String(r.uom).trim():'';const en=r.name_en!=null?String(r.name_en).trim():'';const ex=masterByCode[code];if(!ex){const m={code,name:nm||code,uom:um};if(en)m.nameEn=en;masterByCode[code]=m;DATA.materials.push(m);}else{if(nm&&(!ex.name||ex.name==='?'||ex.name===code)){ex.name=nm;if(um&&!ex.uom)ex.uom=um;}if(en)ex.nameEn=en;}});
+    ((mt&&mt.data)||[]).forEach(r=>{if(!r||r.code==null)return;const code=String(r.code).trim();if(!code)return;const nm=r.name!=null?String(r.name).trim():'';const um=r.uom!=null?String(r.uom).trim():'';const en=r.name_en!=null?String(r.name_en).trim():'';const ex=masterByCode[code];if(!ex){const m={code,name:nm||code,uom:um};if(en)m.nameEn=en;masterByCode[code]=m;DATA.materials.push(m);}else{if(nm&&(!ex.name||ex.name==='?'||ex.name===code)){ex.name=nm;if(um&&!ex.uom)ex.uom=um;}if(en)ex.nameEn=en;}});
     if(su.data&&su.data.length)zoneColOK=Object.prototype.hasOwnProperty.call(su.data[0],'zones');
     if(su.data&&su.data.length)noteColOK=Object.prototype.hasOwnProperty.call(su.data[0],'item_notes');
-    if(tot(su,'submissions'))submissions=giuMoiTrenMay(submissions,_truoc.su,(su.data||[]).map(r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,user:r.user_name,role:r.role,status:r.status,count:r.count,items:r.items||{},zones:Array.isArray(r.zones)?r.zones:null,itemNotes:r.item_notes||null,period:r.period||(r.created_at?periodOfDate(r.created_at):''),approvedBy:r.approved_by,approvedAt:r.approved_at?fmt(r.approved_at):null,prevOpening:r.prev_opening||null,edits:r.edits||[],time:fmt(r.created_at)})));
+    ghiMoc('submissions',su);if(tot(su,'submissions'))submissions=giuMoiTrenMay(submissions,_truoc.su,(su.data||[]).map(DB_MAP.submissions));
     // id của dòng sổ: bắt buộc phải có thì admin mới xóa được ĐÚNG một dòng dư
     // (xóa theo reason+code+period sẽ quét sạch cả dòng đúng lẫn dòng trùng).
-    if(tot(tr,'transfers'))transfers=giuMoiTrenMay(transfers,_truoc.tr,(tr.data||[]).map(r=>({id:r.id,date:r.date,code:r.code,name:r.name,uom:r.uom,qty:r.qty,from:r.from_wh,to:r.to_wh,fromKey:r.from_key||null,toKey:r.to_key||null,period:r.period||null,reason:r.reason,user:r.user_name,time:fmt(r.created_at)})));
-    if(tot(sh,'shifts'))shifts=giuMoiTrenMay(shifts,_truoc.sh,(sh.data||[]).map(r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,date:r.date,ca:r.ca,fromUser:r.from_user,items:r.items||{},count:r.count,status:r.status,receivedBy:r.received_by,receivedAt:r.received_at?fmt(r.received_at):null,time:fmt(r.created_at)})));
-    if(tot(op,'opening_stock')){openingStock={};(op.data||[]).forEach(r=>{openingStock[r.plant_code+'|'+r.sloc_code]={items:r.items||{},fromId:r.from_id,at:r.set_at?fmt(r.set_at):'',by:r.set_by};});}
-    if(tot(pm,'plant_materials')){plantMaterials={};(pm.data||[]).forEach(r=>{(plantMaterials[r.plant_code]=plantMaterials[r.plant_code]||[]).push(r.code);});}
-    if(tot(al,'audit_log'))auditLog=(al.data||[]).map(r=>({time:fmt(r.at),user:r.user_name,role:r.role,action:r.action,detail:r.detail}));
-    if(tot(sc,'spot_checks'))spotChecks=giuMoiTrenMay(spotChecks,_truoc.sc,(sc.data||[]).map(r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,by:r.created_by,desc:r.description,amount:Number(r.amount)||0,status:r.status,reviewedBy:r.reviewed_by,reviewedAt:r.reviewed_at?fmt(r.reviewed_at):null,note:r.review_note,time:fmt(r.created_at)})));
-    if(tot(nt,'notifications'))notifications=(nt&&nt.data?nt.data:[]).map(r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,message:r.message,kind:r.kind,by:r.created_by,read:!!r.read_flag,time:fmt(r.created_at)}));
-    if(tot(rc,'closing_stock'))closings=giuMoiTrenMay(closings,_truoc.cl,(rc&&rc.data?rc.data:[]).map(r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,period:r.period,items:r.items||{},recon:r.recon||{},explain:r.explain||{},status:r.status||'Chờ duyệt',by:r.created_by,approvedBy:r.approved_by,approvedAt:r.approved_at?fmt(r.approved_at):null,prevOpening:r.prev_opening||null,time:fmt(r.created_at)})));
-    try{const rp=await fetchAllRows('receipts','*','created_at');/* tải đủ — .limit(2000) thực ra chỉ nhận 1.000 dòng (19/10/2026) */if(tot(rp,'receipts'))receipts=giuMoiTrenMay(receipts,_truoc.rc,(rp.data||[]).map(r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,code:r.code,name:r.name,uom:r.uom,qty:Number(r.qty)||0,date:r.date,period:r.period||periodOfDate(r.date),note:r.note,by:r.created_by,time:fmt(r.created_at)})));}catch(e){receipts=[];console.warn('Chưa có bảng receipts (nhập kho) — bỏ qua',e&&e.message);}
+    ghiMoc('transfers',tr);if(tot(tr,'transfers'))transfers=giuMoiTrenMay(transfers,_truoc.tr,(tr.data||[]).map(DB_MAP.transfers));
+    ghiMoc('shifts',sh);if(tot(sh,'shifts'))shifts=giuMoiTrenMay(shifts,_truoc.sh,(sh.data||[]).map(DB_MAP.shifts));
+    ghiMoc('opening_stock',op);if(tot(op,'opening_stock')){openingStock={};(op.data||[]).forEach(r=>{openingStock[r.plant_code+'|'+r.sloc_code]={items:r.items||{},fromId:r.from_id,at:r.set_at?fmt(r.set_at):'',by:r.set_by};});}
+    if(pm&&tot(pm,'plant_materials')){plantMaterials={};(pm.data||[]).forEach(r=>{(plantMaterials[r.plant_code]=plantMaterials[r.plant_code]||[]).push(r.code);});}
+    if(al&&tot(al,'audit_log'))auditLog=(al.data||[]).map(r=>({time:fmt(r.at),user:r.user_name,role:r.role,action:r.action,detail:r.detail}));
+    ghiMoc('spot_checks',sc);if(tot(sc,'spot_checks'))spotChecks=giuMoiTrenMay(spotChecks,_truoc.sc,(sc.data||[]).map(DB_MAP.spot_checks));
+    ghiMocTB(nt);if(tot(nt,'notifications'))notifications=(nt&&nt.data?nt.data:[]).map(r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,message:r.message,kind:r.kind,by:r.created_by,read:!!r.read_flag,time:fmt(r.created_at)}));
+    ghiMoc('closing_stock',rc);if(tot(rc,'closing_stock'))closings=giuMoiTrenMay(closings,_truoc.cl,(rc&&rc.data?rc.data:[]).map(DB_MAP.closing_stock));
+    try{const rp=await fetchAllRows('receipts','*','created_at');/* tải đủ — .limit(2000) thực ra chỉ nhận 1.000 dòng (19/10/2026) */ghiMoc('receipts',rp);if(tot(rp,'receipts'))receipts=giuMoiTrenMay(receipts,_truoc.rc,(rp.data||[]).map(DB_MAP.receipts));}catch(e){receipts=[];console.warn('Chưa có bảng receipts (nhập kho) — bỏ qua',e&&e.message);}
     try{const tq=await fetchAllRows('transfer_requests','*','created_at');
-      if(tot(tq,'transfer_requests'))trReqs=giuMoiTrenMay(trReqs,_truoc.tq,(tq.data||[]).map(r=>({id:r.id,kind:r.kind,fromPlant:r.from_plant,fromSloc:r.from_sloc,toPlant:r.to_plant,toSloc:r.to_sloc,
-        items:r.items||{},reason:r.reason||'',status:r.status||'Chờ duyệt',period:r.period||null,idCu:r.id_cu||'',
-        by:r.created_by,time:fmt(r.created_at),createdAt:r.created_at||null,approvedBy:r.approved_by,approvedAt:r.approved_at?fmt(r.approved_at):null,rejectNote:r.reject_note||''})));
+      ghiMoc('transfer_requests',tq);if(tot(tq,'transfer_requests'))trReqs=giuMoiTrenMay(trReqs,_truoc.tq,(tq.data||[]).map(DB_MAP.transfer_requests));
     }catch(e){trReqs=[];console.warn('Chưa có bảng transfer_requests — bỏ qua',e&&e.message);}
     // Chênh lệch kho: định lượng món · lượng quy đổi từ doanh thu · giải trình
     /* Bảng phụ cũng giữ dữ liệu cũ khi tải lỗi (mạng chập chờn) — trước đây ghi rỗng, màn Chênh lệch kho /
@@ -4484,14 +4596,14 @@ async function dbLoadAll(){
     const thieuBang=x=>!!(x&&x.error)&&/schema cache|does not exist|42P01|PGRST205/i.test(String(x.error.message||'')+' '+String(x.error.code||''));
     /* Định lượng KHÔNG tải ở đây nữa (26/10/2026): trước đây mọi máy kéo cả bảng mỗi 45 giây và chỉ lấy
        được 1.000 dòng đầu. Giờ tải khi mở tab Chênh lệch, đúng kho đang xem (clTaiBook). */
-    try{const sug=await fetchAllRows('sales_usage','*',['plant_code','sloc_code','period']);
+    if(_tinh)try{const sug=await fetchAllRows('sales_usage','*',['plant_code','sloc_code','period']);
       if(thieuBang(sug)){salesUsage={};clTblOK=false;}
       else if(tot(sug,'sales_usage')){salesUsage={};(sug.data||[]).forEach(r=>{salesUsage[clKey(r.plant_code,r.sloc_code,r.period)]={
         usage:r.usage||{},missing:r.missing||[],theoNhom:r.by_group||[],chiFoodBev:!!r.only_fb,
         pct:Number(r.pct)||0,slKhop:Number(r.sl_khop)||0,
         slTong:Number(r.sl_tong)||0,src:r.src||'',by:r.created_by,at:fmt(r.created_at)};});}
     }catch(e){salesUsage={};clTblOK=false;console.warn('Chưa có bảng sales_usage — bỏ qua',e&&e.message);}
-    try{const vn=await fetchAllRows('variance_notes','*',['plant_code','sloc_code','period','code']);
+    if(_tinh)try{const vn=await fetchAllRows('variance_notes','*',['plant_code','sloc_code','period','code']);
       if(thieuBang(vn))varNotes={};
       else if(tot(vn,'variance_notes')){varNotes={};(vn.data||[]).forEach(r=>{varNotes[clNoteKey(r.plant_code,r.sloc_code,r.period,r.code)]={
         note:r.note||'',status:r.status||'',by:r.by_user,at:fmt(r.at_time),
@@ -4504,11 +4616,10 @@ async function dbLoadAll(){
        Kiểm kê tuần báo là chưa dùng được. */
     try{const wk=await fetchAllRows('weekly_counts','*','created_at');
       if(wk&&wk.error&&/schema cache|does not exist|42P01/i.test(String(wk.error.message||'')+' '+String(wk.error.code||''))){weeklyCounts=[];wkTblOK=false;}
-      else if(tot(wk,'weekly_counts')){weeklyCounts=giuMoiTrenMay(weeklyCounts,_truoc.wk,(wk.data||[]).map(r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,week:r.week,
-        items:r.items||{},itemNotes:r.item_notes||null,count:r.count||0,by:r.created_by,note:r.note||'',time:fmt(r.created_at)})));
+      else if(ghiMoc('weekly_counts',wk),tot(wk,'weekly_counts')){weeklyCounts=giuMoiTrenMay(weeklyCounts,_truoc.wk,(wk.data||[]).map(DB_MAP.weekly_counts));
       wkTblOK=true;}
     }catch(e){weeklyCounts=[];wkTblOK=false;console.warn('Chưa có bảng weekly_counts — bỏ qua',e&&e.message);}
-    try{const cl2=await fetchAllRows('count_lists','*',['plant_code','sloc_code','period']);if(tot(cl2,'count_lists')){countLists={};(cl2.data||[]).forEach(r=>{countLists[r.plant_code+'|'+r.sloc_code+'|'+r.period]={items:r.items||{},by:r.created_by,at:r.created_at?fmt(r.created_at):''};});}}catch(e){countLists={};console.warn('Chưa có bảng count_lists — bỏ qua',e&&e.message);}
+    try{const cl2=await fetchAllRows('count_lists','*',['plant_code','sloc_code','period']);ghiMoc('count_lists',cl2);if(tot(cl2,'count_lists')){countLists={};(cl2.data||[]).forEach(r=>{countLists[r.plant_code+'|'+r.sloc_code+'|'+r.period]={items:r.items||{},by:r.created_by,at:r.created_at?fmt(r.created_at):''};});}}catch(e){countLists={};console.warn('Chưa có bảng count_lists — bỏ qua',e&&e.message);}
     if(session&&(session.role==='admin'||session.role==='giam_sat')){try{const pr=await fetchAllRows('profiles','*','created_at');if(tot(pr,'profiles'))profiles=pr.data||[];}catch(e){}
       try{const up=await fetchAllRows('user_plants','*',['user_id','plant_code','sloc_code']);if(tot(up,'user_plants')){userPlants={};userWh={};(up.data||[]).forEach(r=>{
         const arr=(userPlants[r.user_id]=userPlants[r.user_id]||[]);if(!arr.includes(r.plant_code))arr.push(r.plant_code);
@@ -4516,6 +4627,9 @@ async function dbLoadAll(){
     /* Phiếu / phần bổ sung / bản tuần đang chờ gửi phải nằm lại trên màn sau MỌI lần tải —
        trước đây chỉ nối lại lúc mở app, vòng đồng bộ 45s xong là phiếu chờ gửi biến mất và
        luật mỗi kho mỗi kỳ một phiếu không chặn được nữa (22/10/2026). */
+    {const _matMang=_loiTai.some(x=>laLoiMang(x.e));
+     if(_tinh&&!_matMang)_lanTinh=Date.now();
+     if(!_matMang){_lanTaiDu=Date.now();await doMocXoa();}}
     try{outboxGan();}catch(e){}
     /* Lọc theo kho TRƯỚC khi đổi trạng thái mạng — datMang có thể vẽ lại màn, vẽ trước khi lọc thì kế toán
        định lượng thoáng thấy dữ liệu kho không được giao (24/10/2026). */
@@ -4567,19 +4681,20 @@ function dbSubscribe(){
     }
     try{
       const before=syncSig();
-      await dbLoadAll();
+      await dbDongBo();
       if(syncSig()!==before)showFreshPill();   // có gì mới -> hiện nút; không đổi -> im lặng
       notifyTodoChange();                       // và bắn thông báo về máy nếu có thông báo / việc mới
       try{autoNhacTre();}catch(e){console.warn('nhacTre',e);}   // tự nhắc kho trễ (30 phút soát 1 lần)
       if(outboxCount())await outboxFlush();     // còn phiếu chờ thì tranh thủ gửi
     }catch(e){console.warn('sync',e);if(laLoiMang(e))datMang(false);}
-  },45000);
+  },120000);   // 2 phút (trước 45 giây) — giảm Egress Supabase, 30/10/2026
   // (3) Quay lại tab -> tải ngầm; có mới thì hiện nút, KHÔNG tự vẽ lại
   if(!window._visBound){window._visBound=true;
     document.addEventListener('visibilitychange',async()=>{
       if(document.visibilityState==='visible'&&session){
+        if(Date.now()-_lanDongBo<60000)return;   // vừa đồng bộ chưa tới 1 phút: khỏi tải lại
         const before=syncSig();
-        try{await dbLoadAll();}catch(e){}
+        try{await dbDongBo();}catch(e){}
         if(syncSig()!==before)showFreshPill();
       }
     });
