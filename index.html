@@ -1121,7 +1121,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='3010-05';
+const APP_VER='3010-06';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -4363,7 +4363,26 @@ const SB_DIRECT='https://jygrdbuwveitrlfuwigs.supabase.co';
 const SB_URL=(location.protocol.indexOf('http')===0 && !/localhost|127\.0\.0\.1/.test(location.hostname)) ? (location.origin+'/sb') : SB_DIRECT;
 const SB_KEY='sb_publishable_Bevi280yyI-CXeaUbiiaRQ_ovnv3yGo';
 let sb=null;
-try{ sb=window.supabase.createClient(SB_URL,SB_KEY); }catch(e){ console.error('Supabase init lỗi',e); }
+/* PHIÊN HẾT HẠN ("JWT expired") — 30/10/2026: điện thoại khóa màn / app chạy nền lâu thì bộ hẹn giờ tự gia hạn phiên
+   của supabase-js bị trình duyệt tạm dừng; lần ghi đầu tiên sau đó bị máy chủ trả 401 "JWT expired" và phiếu không
+   lên (bếp Bánh 29/10). Bọc fetch: gặp đúng lỗi này thì gia hạn phiên một lần rồi gửi lại y nguyên yêu cầu. Không
+   đụng các yêu cầu đăng nhập (/auth/v1/). Gia hạn trượt (phiên đăng nhập đã hết hẳn) thì trả nguyên lỗi như cũ. */
+let _dangGiaHan=null;
+async function fetchGiaHan(input,init){
+  const res=await fetch(input,init);
+  try{
+    const url=typeof input==='string'?input:(input&&input.url)||'';
+    if(res.status!==401||url.indexOf('/auth/v1/')>=0||!sb)return res;
+    const txt=await res.clone().text();
+    if(!/JWT expired|jwt expired|PGRST301|invalid JWT/i.test(txt))return res;
+    if(!_dangGiaHan)_dangGiaHan=sb.auth.refreshSession().finally(()=>{setTimeout(()=>{_dangGiaHan=null;},0);});
+    const kq=await _dangGiaHan;const tok=kq&&kq.data&&kq.data.session&&kq.data.session.access_token;
+    if(!tok)return res;
+    const h=new Headers((init&&init.headers)||(input&&input.headers)||{});h.set('Authorization','Bearer '+tok);
+    return fetch(input,Object.assign({},init||{},{headers:h}));
+  }catch(e){return res;}
+}
+try{ sb=window.supabase.createClient(SB_URL,SB_KEY,{global:{fetch:fetchGiaHan}}); }catch(e){ console.error('Supabase init lỗi',e); }
 // chụp URL lúc mở (hash + query) để nhận biết link đặt lại mật khẩu TRƯỚC khi Supabase tự xóa hash
 const _bootAuthUrl=((location.hash||'')+' '+(location.search||'')).toLowerCase();
 // LINK SÂU: ?kk=plant|sloc|period -> sau khi đăng nhập, mở thẳng màn đếm đúng kho/kỳ
