@@ -1121,7 +1121,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='3010-06';
+const APP_VER='3010-07';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1145,6 +1145,8 @@ const TXT={en:{"Kiểm kê F&B": "F&B Stocktake","Tổng quan": "Overview","Nghi
 /* Bản 2910-03 */
 /* Bản 2910-05 */
 /* Bản 3010-05 */
+/* Bản 3010-07 */
+Object.assign(TXT.en,{"🗑 Xóa phiếu để làm lại": "🗑 Delete sheet to redo", "Phiếu này không xóa được (đã duyệt, hoặc đã qua thời gian kiểm kê tháng).": "This sheet cannot be deleted (already approved, or the monthly count window has closed).", "Đã xóa phiếu chưa gửi — đếm hoặc up lại phiếu mới cho kho này.": "Unsent sheet deleted — count or upload a new sheet for this store.", "Cần có mạng để xóa phiếu — thử lại khi có sóng.": "A connection is needed to delete the sheet — try again when online.", "Phiếu vừa được kế toán xử lý — không xóa được nữa.": "The accountant has just processed this sheet — it can no longer be deleted.", "Đã xóa phiếu — đếm hoặc up lại phiếu mới cho kho này.": "Sheet deleted — count or upload a new sheet for this store.", "Chưa xóa được phiếu": "The sheet was not deleted", "Phiếu vẫn còn, số không mất.": "The sheet is still there; no counts were lost.", "Phiếu kiểm kê đã bị xóa": "Count sheet deleted"});Object.assign(TXT.hi,{"🗑 Xóa phiếu để làm lại": "🗑 दोबारा करने के लिए पर्ची हटाएँ", "Phiếu này không xóa được (đã duyệt, hoặc đã qua thời gian kiểm kê tháng).": "यह पर्ची हटाई नहीं जा सकती (मंज़ूर हो चुकी है, या मासिक गिनती का समय खत्म हो गया है)।", "Đã xóa phiếu chưa gửi — đếm hoặc up lại phiếu mới cho kho này.": "न भेजी गई पर्ची हटा दी गई — इस स्टोर के लिए नई पर्ची गिनें या अपलोड करें।", "Cần có mạng để xóa phiếu — thử lại khi có sóng.": "पर्ची हटाने के लिए नेटवर्क चाहिए — सिग्नल आने पर फिर कोशिश करें।", "Phiếu vừa được kế toán xử lý — không xóa được nữa.": "लेखाकार ने अभी यह पर्ची संसाधित की है — अब हटाई नहीं जा सकती।", "Đã xóa phiếu — đếm hoặc up lại phiếu mới cho kho này.": "पर्ची हटा दी गई — इस स्टोर के लिए नई पर्ची गिनें या अपलोड करें।", "Chưa xóa được phiếu": "पर्ची नहीं हटी", "Phiếu vẫn còn, số không mất.": "पर्ची अभी भी है, गिनती सुरक्षित है।", "Phiếu kiểm kê đã bị xóa": "गिनती पर्ची हटा दी गई"});
 Object.assign(TXT.en,{"Ngày nhập (theo phiếu)": "Receiving date (from slip)", "Đọc được ngày trên phiếu — kiểm lại, sai thì sửa ô này.": "Date read from the slip — check it and correct this box if wrong.", "Không đọc được ngày trên phiếu — đang để ngày hôm nay, sửa lại đúng ngày in trên phiếu.": "Could not read the slip date — today is filled in; change it to the date printed on the slip.", "⚠ Có ngày sau hôm nay — kiểm lại.": "⚠ A date is later than today — please check.", "Ngày nhập lấy theo ngày in trên phiếu trong ảnh — xem và sửa ở bảng xem trước.": "Receiving date is taken from the date printed on the slip — review and correct it in the preview.", "Ngày nhập lấy theo cột Ngày trong file; dòng để trống ngày ghi ngày nạp file (hôm nay).": "Receiving date is taken from the file's Date column; rows without a date use the upload date (today)."});Object.assign(TXT.hi,{"Ngày nhập (theo phiếu)": "प्राप्ति तिथि (पर्ची से)", "Đọc được ngày trên phiếu — kiểm lại, sai thì sửa ô này.": "पर्ची से तिथि पढ़ी गई — जाँचें, गलत हो तो यह खाना सुधारें।", "Không đọc được ngày trên phiếu — đang để ngày hôm nay, sửa lại đúng ngày in trên phiếu.": "पर्ची की तिथि नहीं पढ़ी जा सकी — आज की तिथि रखी है; पर्ची पर छपी तिथि डालें।", "⚠ Có ngày sau hôm nay — kiểm lại.": "⚠ कोई तिथि आज के बाद की है — जाँचें।", "Ngày nhập lấy theo ngày in trên phiếu trong ảnh — xem và sửa ở bảng xem trước.": "प्राप्ति तिथि पर्ची पर छपी तिथि से ली जाती है — पूर्वावलोकन में देखें और सुधारें।", "Ngày nhập lấy theo cột Ngày trong file; dòng để trống ngày ghi ngày nạp file (hôm nay).": "प्राप्ति तिथि फ़ाइल के तिथि कॉलम से ली जाती है; खाली तिथि वाली पंक्तियों में अपलोड की तिथि (आज) लगेगी।"});
 Object.assign(TXT.en,{"⚠ File này đã được nạp vào KHO KHÁC — có thể đang nạp nhầm kho": "⚠ This file was already loaded into ANOTHER store — you may be loading the wrong store", "⚠ File này đã được nạp trước đó": "⚠ This file was loaded before", "Kiểm tra lại kho đang chọn trước khi lưu. Nhầm kho thì bấm Hủy, đổi kho cho đúng.": "Check the selected store before saving. If it is the wrong store, press Cancel and switch store.", "Dòng đã nạp sẽ được bỏ qua, không nhân đôi. Chỉ dòng mới hoặc dòng đổi số mới được ghi.": "Rows already loaded are skipped, not duplicated. Only new or changed rows are written.", "Phiếu điều chuyển chờ duyệt": "Transfer slips awaiting approval"});Object.assign(TXT.hi,{"⚠ File này đã được nạp vào KHO KHÁC — có thể đang nạp nhầm kho": "⚠ यह फ़ाइल किसी दूसरे स्टोर में पहले ही लोड हो चुकी है — हो सकता है स्टोर गलत हो", "⚠ File này đã được nạp trước đó": "⚠ यह फ़ाइल पहले लोड हो चुकी है", "Kiểm tra lại kho đang chọn trước khi lưu. Nhầm kho thì bấm Hủy, đổi kho cho đúng.": "सेव करने से पहले चुना हुआ स्टोर जाँचें। गलत हो तो रद्द करें और सही स्टोर चुनें।", "Dòng đã nạp sẽ được bỏ qua, không nhân đôi. Chỉ dòng mới hoặc dòng đổi số mới được ghi.": "पहले लोड की गई पंक्तियाँ छोड़ दी जाएँगी, दोहराई नहीं जाएँगी। केवल नई या बदली पंक्तियाँ लिखी जाएँगी।", "Phiếu điều chuyển chờ duyệt": "मंज़ूरी बाकी ट्रांसफ़र पर्चियाँ"});
 Object.assign(TXT.en,{"Chưa đến thời gian kiểm kê tháng": "Not the monthly stocktake window", "Chưa đến hoặc đã qua thời gian kiểm kê tháng": "Outside the monthly stocktake window", "Cần nhập bù kỳ trước thì liên hệ kế toán. Phiếu đã gửi vẫn xem được ở khung bên trên.": "To add a late count for the previous period, contact the accountant. Sheets already sent can still be viewed above.", "Số đã đếm vẫn còn ở nháp trên máy. Cần nhập bù thì liên hệ kế toán.": "Your counts are still saved as a draft on this device. Contact the accountant for a late entry."});Object.assign(TXT.hi,{"Chưa đến thời gian kiểm kê tháng": "मासिक गिनती का समय नहीं", "Chưa đến hoặc đã qua thời gian kiểm kê tháng": "मासिक गिनती की अवधि से बाहर", "Cần nhập bù kỳ trước thì liên hệ kế toán. Phiếu đã gửi vẫn xem được ở khung bên trên.": "पिछली अवधि की गिनती बाद में जोड़नी हो तो लेखाकार से संपर्क करें। भेजी गई पर्चियाँ ऊपर देखी जा सकती हैं।", "Số đã đếm vẫn còn ở nháp trên máy. Cần nhập bù thì liên hệ kế toán.": "आपकी गिनती इस डिवाइस पर ड्राफ़्ट में सुरक्षित है। बाद में जोड़ने के लिए लेखाकार से संपर्क करें।"});
@@ -8035,6 +8037,7 @@ function phieuCuaKhoToi(v){
     const bX=el('button','btn btn-ghost btn-sm');bX.textContent=L('Xem phiếu');bX.onclick=()=>showDetail(s);r.appendChild(bX);
     if(coTheSuaPhieuKK(s)){const bS=el('button','btn btn-primary btn-sm');bS.textContent=L('✎ Sửa số');bS.onclick=()=>moSuaPhieuKK(s);r.appendChild(bS);}
     if(coTheThayBangFile(s)&&!s._choGui){const bT=el('button','btn btn-ghost btn-sm');bT.textContent=L('♻ Hủy số cũ, up file mới');bT.onclick=()=>moThayBangFile(s);r.appendChild(bT);}
+    if(coTheXoaPhieuKK(s)){const bX=el('button','btn btn-ghost btn-sm');bX.style.color='var(--red)';bX.textContent=L('🗑 Xóa phiếu để làm lại');bX.onclick=()=>xoaPhieuChoDuyet(s);r.appendChild(bX);}
     b.appendChild(r);});
   card.appendChild(b);v.appendChild(card);
 }
@@ -8101,6 +8104,7 @@ function renderKiemke(v){
     bEd.onclick=()=>moSuaPhieuKK(_pend);
     const bSee=el('button','btn btn-ghost','Xem phiếu');bSee.onclick=()=>showDetail(_pend);
     if(coTheThayBangFile(_pend)&&!_pend._choGui){const bT=el('button','btn btn-ghost');bT.textContent=L('♻ Hủy số cũ, up file mới');bT.onclick=()=>moThayBangFile(_pend);pr.appendChild(bT);}
+    if(coTheXoaPhieuKK(_pend)){const bX=el('button','btn btn-ghost');bX.style.color='var(--red)';bX.textContent=L('🗑 Xóa phiếu để làm lại');bX.onclick=()=>xoaPhieuChoDuyet(_pend);pr.appendChild(bX);}
     pr.appendChild(bEd);pr.appendChild(bSee);pb.appendChild(pr);pc.appendChild(pb);v.appendChild(pc);
     return;
   }
@@ -11485,6 +11489,7 @@ function showDetail(s){
     bSua.onclick=()=>moSuaPhieuKK(s);
     bar.appendChild(bSua);
     if(coTheThayBangFile(s)&&!s._choGui){const bT=el('button','btn btn-ghost btn-sm');bT.textContent=L('♻ Hủy số cũ, up file mới');bT.onclick=()=>moThayBangFile(s);bar.appendChild(bT);}
+    if(coTheXoaPhieuKK(s)){const bX=el('button','btn btn-ghost btn-sm');bX.style.color='var(--red)';bX.textContent=L('🗑 Xóa phiếu để làm lại');bX.onclick=async()=>{if(await xoaPhieuChoDuyet(s)){activeTab='kiemke';renderNav();renderView();}};bar.appendChild(bX);}
     bar.appendChild(el('span','',`<span style="font-size:12.5px;color:var(--muted)">Kế toán chưa duyệt nên kho vẫn sửa được số: sửa số cũ, thêm mã thiếu, bỏ mã đếm nhầm. Phiếu giữ nguyên mã số và mọi thay đổi được ghi lại để kế toán xem khi duyệt.</span>`));
   }else{
     bar.appendChild(el('span','',`<span style="font-size:12.5px;color:var(--muted)">Chờ Kế toán viên phê duyệt.</span>`));
@@ -11779,6 +11784,47 @@ async function approveSubmission(s){
    kiểm kê lại" mà không xem máy chủ có xoá không — máy chủ từ chối thì phiếu vẫn nằm đó, bếp đếm lại
    và gửi không được (mỗi kho mỗi kỳ một phiếu). Chỉ xoá khi phiếu VẪN Chờ duyệt. Bấm Hủy ở ô lý do = dừng. */
 let _dangTuChoiKK={};
+/* XÓA PHIẾU CHỜ DUYỆT (Khoa 30/10/2026): nhiều bộ phận đếm sai / up sai mà không xóa được, chỉ sửa từng mã. Cho bộ phận xóa
+   phiếu CHỜ DUYỆT của chính kho mình — cùng điều kiện với "Sửa số" (coTheSuaPhieuKK: kho được gán, trong 25 → cuối tháng của
+   đúng kỳ phiếu) — rồi đếm / up lại phiếu mới. Xóa có điều kiện status='Chờ duyệt' trên máy chủ: kế toán vừa duyệt thì không
+   xóa được. Phiếu còn trong hàng đợi (chưa lên máy chủ) thì chỉ bỏ khỏi hàng đợi. Cần SQL PHẦN 28 (quyền xóa phiếu chờ duyệt). */
+let _dangXoaKK={};
+function coTheXoaPhieuKK(s){return coTheSuaPhieuKK(s);}
+async function xoaPhieuChoDuyet(s){
+  if(!coTheXoaPhieuKK(s)){toast(L('Phiếu này không xóa được (đã duyệt, hoặc đã qua thời gian kiểm kê tháng).'));return false;}
+  if(_dangXoaKK[s.id])return false;
+  if(!confirm('XÓA PHIẾU KIỂM KÊ '+s.id+'\n'+whName(s.plant,s.sloc)+' · kỳ '+periodVN(s.period)+' · '+(s.count||Object.keys(s.items||{}).length)+' mã'+'\n\n'
+    +'Phiếu chưa được kế toán duyệt nên xóa được. Xóa xong kho này đếm hoặc up lại phiếu mới cho kỳ này.'+'\n'
+    +'Số trong phiếu sẽ mất — chỉ sai vài mã thì dùng "Sửa số" thay vì xóa.'+'\n\n'+'OK = xóa phiếu · Cancel = giữ phiếu'))return false;
+  const _donMay=()=>{
+    submissions=(submissions||[]).filter(x=>x.id!==s.id);
+    outbox=(outbox||[]).filter(it=>!(it&&((it.sub&&it.sub.id===s.id)||it.id===s.id||it.id==='SUA|'+s.id||it.subId===s.id)));outboxSave();
+    Object.keys(drafts||{}).forEach(k=>{if(drafts[k]&&drafts[k].suaPhieu===s.id)delete drafts[k];});saveDrafts();
+    if(countEditId===s.id){countEditId=null;counting=null;}if(kkThayPhieuId===s.id)kkThayPhieuId=null;
+  };
+  if(s._choGui){_donMay();log('Xóa phiếu kiểm kê chưa gửi',s.id+' · '+whName(s.plant,s.sloc));
+    toast(L('Đã xóa phiếu chưa gửi — đếm hoặc up lại phiếu mới cho kho này.'));renderNav();renderView();return true;}
+  if(sb&&(!mangOK||(typeof navigator!=='undefined'&&navigator.onLine===false))){toast(L('Cần có mạng để xóa phiếu — thử lại khi có sóng.'));return false;}
+  _dangXoaKK[s.id]=true;
+  try{
+    if(sb){
+      const {data,error}=await sb.from('submissions').delete().match({id:s.id,status:'Chờ duyệt'}).select('id');
+      if(error){if(laLoiMang(error))datMang(false);
+        errBox('Chưa xóa được phiếu',['Phiếu vẫn còn, số không mất.','Kiểm tra mạng rồi thử lại. Vẫn lỗi thì bấm 📋 Sao chép rồi gửi kế toán.'],'submissions delete '+s.id+'\n'+String(error.message||error.code||error));return false;}
+      if(!data||!data.length){
+        let x=null;try{const q=await sb.from('submissions').select('id,status').eq('id',s.id).limit(1);x=q.data&&q.data[0];}catch(e){}
+        if(x&&x.status==='Chờ duyệt'){errBox('Chưa xóa được phiếu',['Tài khoản này chưa được phép xóa phiếu của kho này. Phiếu vẫn còn, số không mất.','Liên hệ kế toán xóa giúp, hoặc dùng "Sửa số" để sửa trên chính phiếu.'],'submissions delete 0 dong — '+s.id);return false;}
+        if(x){toast(L('Phiếu vừa được kế toán xử lý — không xóa được nữa.'));renderView();return false;}
+      }
+    }
+    _donMay();
+    log('Xóa phiếu kiểm kê chờ duyệt',s.id+' · '+whName(s.plant,s.sloc)+' · kỳ '+periodVN(s.period)+' · '+(s.count||0)+' mã');
+    try{notifyWh(s.plant,s.sloc,session.name+' đã xóa phiếu kiểm kê '+s.id+' (chờ duyệt, '+(s.count||0)+' mã) để đếm lại · '+whName(s.plant,s.sloc)+' · kỳ '+periodVN(s.period),'kkxoa','Phiếu kiểm kê đã bị xóa',session.name);}catch(e){}
+    toast(L('Đã xóa phiếu — đếm hoặc up lại phiếu mới cho kho này.'));
+    if(document.getElementById('view')&&activeTab==='kiemke'){renderNav();renderView();}
+    return true;
+  }finally{delete _dangXoaKK[s.id];}
+}
 async function rejectSubmission(s){
   if(_dangTuChoiKK[s.id])return;
   const reason=prompt('Lý do từ chối (giám sát sẽ thấy, có thể bỏ trống):');
@@ -14404,8 +14450,8 @@ function myNotifs(){
   return arr.slice(0,80);
 }
 function unreadNotifs(){const st=notifReadSet();return myNotifs().filter(x=>!st.has(x.id));}
-const NOTIF_ICO={dcnhac:'⏰',transfer:'🔄',reject:'⚠️',countlist:'🗂',reconcile:'🔁',mala:'🏷'};
-const NOTIF_TITLE={dcnhac:'Phiếu điều chuyển chờ duyệt',transfer:'Phiếu điều chuyển',reject:'Biên bản kiểm kê bị từ chối',mala:'Mã chưa có trong master data',
+const NOTIF_ICO={kkxoa:'🗑',dcnhac:'⏰',transfer:'🔄',reject:'⚠️',countlist:'🗂',reconcile:'🔁',mala:'🏷'};
+const NOTIF_TITLE={kkxoa:'Phiếu kiểm kê đã bị xóa',dcnhac:'Phiếu điều chuyển chờ duyệt',transfer:'Phiếu điều chuyển',reject:'Biên bản kiểm kê bị từ chối',mala:'Mã chưa có trong master data',
   countlist:'Kế toán đã mở kỳ kiểm kê',reconcile:'Kết quả đối chiếu chốt tồn',
   late:'Kho chưa cập nhật kiểm kê'};
 function paintBell(){
@@ -14484,7 +14530,7 @@ function gotoNotif(x){
     const canDuyet=String(x.message||'').indexOf('Chờ tôi duyệt')>=0;
     if(go('dieuchuyen',isViewer()?(canDuyet?'duyet':'theodoi'):(canDuyet?'duyet':'ds')))return;
   }
-  if(x.kind==='reject'||x.kind==='countlist'){if(go('kiemke',null))return;}
+  if(x.kind==='reject'||x.kind==='countlist'||x.kind==='kkxoa'){if(go('kiemke',null))return;}
   if(x.kind==='reconcile'){if(go('opening',null))return;}
   if(x.kind==='mala'){if(go('catalog','thieu'))return;}   // kế toán/admin: mở thẳng "Mã chưa khai báo tên"
   renderView();
