@@ -1121,7 +1121,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='3010-03';
+const APP_VER='3010-04';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -4548,6 +4548,7 @@ async function dbLoadAll(){
     /* GIẢM EGRESS (Khoa 30/10/2026): danh mục vật tư / danh mục kho / nhật ký chỉ tải lúc mở app rồi 30 phút một
        lần — 7.436 mã tải lại mỗi 45 giây trên mọi máy là phần lớn dung lượng vượt hạn mức Supabase. */
     const _tinh=!_lanTinh||Date.now()-_lanTinh>30*60*1000;
+    if(_tangDanOK===false)_tangDanOK=null;   /* máy chủ có thể vừa chạy SQL PHẦN 27 — mỗi lượt tải đủ kiểm lại (30/10/2026) */
     const _boQua=Promise.resolve(null);
     const [su,tr,sh,op,pm,al,sc,mt,nt,rc]=await Promise.all([
       fetchAllRows('submissions','*','created_at'),
