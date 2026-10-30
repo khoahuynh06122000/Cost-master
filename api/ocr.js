@@ -21,7 +21,7 @@ Chứng từ có thể mang tiêu đề "Phiếu nhập kho" HOẶC "Phiếu xu�
 STT | Mã hàng | Tên hàng | ĐVT (đơn vị tính) | Số lượng | Số lô | Đơn giá | Thành tiền.
 
 Nhiệm vụ: đọc CHÍNH XÁC từng dòng hàng hóa và trả về DUY NHẤT một mảng JSON, không kèm chữ nào khác.
-Mỗi phần tử: {"code": string, "name": string, "uom": string, "qty": number}
+Mỗi phần tử: {"code": string, "name": string, "uom": string, "qty": number, "ngay": string}
 
 QUY TẮC BẮT BUỘC:
 - "qty" LẤY TỪ CỘT "SỐ LƯỢNG". TUYỆT ĐỐI KHÔNG lấy nhầm cột "Số lô", "Đơn giá" hay "Thành tiền" (các cột này thường bằng 0).
@@ -29,7 +29,8 @@ QUY TẮC BẮT BUỘC:
 - "code": mã hàng ở cột "Mã hàng". Nếu chứng từ KHÔNG có cột mã thì để chuỗi rỗng "".
 - "name": tên hàng đúng như in, giữ dấu tiếng Việt (gộp cả phần bị xuống dòng, ví dụ "Nước khoáng Sun Aqua 520ml/chai").
 - "uom": đơn vị tính (CHA=chai, kg, lít, thùng, cái, lon...). Không có thì để "".
-- BỎ QUA: dòng tiêu đề bảng, "TỔNG CỘNG", chữ ký, header phiếu (tên công ty, kho xuất, kho nhập, ngày, số phiếu), phần "Số tiền viết bằng chữ".
+- "ngay": NGÀY LẬP CHỨNG TỪ in ở phần đầu phiếu (Ngày ... tháng ... năm ..., hoặc ô "Ngày"), viết dạng dd/mm/yyyy. Mọi dòng của cùng một phiếu ghi cùng ngày đó; nhiều ảnh là nhiều phiếu thì mỗi dòng theo ngày của phiếu chứa nó. Không thấy rõ ngày thì để "". KHÔNG đoán ngày.
+- BỎ QUA (không tạo dòng hàng): dòng tiêu đề bảng, "TỔNG CỘNG", chữ ký, header phiếu (tên công ty, kho xuất, kho nhập, số phiếu — riêng NGÀY thì ghi vào trường "ngay"), phần "Số tiền viết bằng chữ".
 - TUYỆT ĐỐI không bịa mặt hàng hay số lượng. Chỉ đọc thứ nhìn thấy rõ. Số nào mờ/không chắc thì bỏ qua dòng đó.`;
 
 const SCHEMA = {
@@ -41,6 +42,7 @@ const SCHEMA = {
       name: { type: 'STRING' },
       uom:  { type: 'STRING' },
       qty:  { type: 'NUMBER' },
+      ngay: { type: 'STRING' },
     },
     required: ['name', 'qty'],
   },
@@ -232,6 +234,7 @@ module.exports = async (req, res) => {
         name: String(x?.name || '').trim(),
         uom:  String(x?.uom  || '').trim(),
         qty:  Number(x?.qty),
+        ngay: String(x?.ngay || '').trim().slice(0, 20),
       }))
       .filter((x) => x.name && isFinite(x.qty) && x.qty > 0);
 
