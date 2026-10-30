@@ -124,12 +124,15 @@ try {
   // ===== THU THẬP DỮ LIỆU (mỗi truy vấn đã có retry) =====
   // Chỉ theo dõi khi KẾ TOÁN ĐÃ MỞ KỲ: mỗi kho được mở = 1 dòng trong count_lists.
   // Trạng thái lấy từ submissions (Chờ duyệt / Đã duyệt). Tất cả đã duyệt => im lặng.
-  const [plants, opened, subs, slocs] = await Promise.all([
+  const [plants, opened, subs, slocs, dongRows] = await Promise.all([
     q('plants?select=plant_code,plant_name'),
     q('count_lists?select=plant_code,sloc_code,period,created_at'),
     q('submissions?select=plant_code,sloc_code,status,period&limit=5000'),
     q('slocs?select=plant_code,sloc_code,sloc_name').catch(() => []), // tên kho (nếu có bảng)
+    // Kho đóng cửa (Khoa 30/10/2026, bản 3010-10) — chưa có bảng thì coi như mọi kho mở
+    q('kho_dong?select=plant_code,sloc_code&dong=eq.true').catch(() => []),
   ]);
+  const khoDong = new Set((Array.isArray(dongRows) ? dongRows : []).map(r => r.plant_code + '|' + (r.sloc_code || '')));
   const snameMap = {};
   (Array.isArray(slocs) ? slocs : []).forEach(s => { snameMap[s.plant_code + '|' + s.sloc_code] = s.sloc_name; });
   const khoApp = khoTrongApp();
@@ -153,7 +156,8 @@ try {
 
   // Trạng thái từng kho đã mở: 'done' (đã duyệt) | 'wait' (đã nhập, chờ duyệt) | 'none' (chưa nhập).
   const subOf = (p, s) => subs.filter(x => x.plant_code === p && x.sloc_code === s && x.period === activePeriod);
-  const units = openUnits.map(o => {
+  // Kho đóng cửa mà chưa có phiếu kỳ này thì không theo dõi (có phiếu thì vẫn báo — không giấu số thật)
+  const units = openUnits.filter(o => !khoDong.has(o.plant_code + '|' + o.sloc_code) || subOf(o.plant_code, o.sloc_code).length).map(o => {
     const ss = subOf(o.plant_code, o.sloc_code);
     const st = ss.some(x => x.status === 'Đã duyệt') ? 'done' : (ss.length ? 'wait' : 'none');
     const days = Math.floor((Date.now() - new Date(o.created_at).getTime()) / 864e5);
@@ -201,7 +205,7 @@ try {
     let ban;
     try { ban = await q(`weekly_counts?select=plant_code,sloc_code,week,count,created_by,created_at&week=in.(${W},${W0})`); }
     catch (e) { console.warn('Không đọc được kiểm kê tuần:', e.message); return `🍳 KIỂM KÊ TUẦN — ${W}\n⚠ Không đọc được số kiểm tuần lần này (xem log GitHub).`; }
-    const tatCaBep = dsKhoBep();
+    const tatCaBep = dsKhoBep().filter(u => !khoDong.has(u.p + '|' + u.s) || ban.some(b => b.plant_code === u.p && b.sloc_code === u.s && b.week === W));
     if (!tatCaBep.length) return null;
     const cua = (u, w) => ban.filter(b => b.plant_code === u.p && b.sloc_code === u.s && b.week === w)
       .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))[0];
