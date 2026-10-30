@@ -900,6 +900,22 @@
   .hub-phu{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
   .hub-phu .btn{gap:8px}
   @media (max-width:480px){.km-bar .km-lb{display:none}}
+
+/* SƠ ĐỒ GIÁM SÁT: kho tự xuống hàng thành lưới thẻ, không thu nhỏ, không cắt (30/10/2026) */
+.ttree{min-width:0}
+.tbranches{flex-wrap:wrap;align-items:stretch!important;gap:16px}
+.tbranches::before{display:none}
+.tcol{flex:1 1 260px;min-width:min(260px,100%);max-width:380px}
+.tcol::before{display:none}
+@media (max-width:640px){
+  .usr-chart{padding:18px 14px 24px;overflow-x:visible}
+  .ttree{min-width:0}
+  .tbranches{flex-direction:column;align-items:stretch!important;gap:14px;margin-top:22px}
+  .tbranches::before{display:none}
+  .tcol{min-width:0;width:100%;max-width:none;flex:none}
+  .tcol::before{display:none}
+  .troot{max-width:100%}
+}
 </style>
 <script>try{if(localStorage.getItem('appDark')==='1')document.documentElement.classList.add('dark');}catch(e){}</script>
 </head>
@@ -1121,7 +1137,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='3010-07';
+const APP_VER='3010-08';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -4596,7 +4612,7 @@ async function dbLoadAll(){
     const _loiTai=[];
     const tot=(x,ten)=>{if(x&&!x.error)return true;_loiTai.push({ten,e:x&&x.error});return false;};
     // merge mã vật tư mới (do import tồn đầu kỳ thêm) vào danh mục tổng để bền qua các phiên
-    ((mt&&mt.data)||[]).forEach(r=>{if(!r||r.code==null)return;const code=String(r.code).trim();if(!code)return;const nm=r.name!=null?String(r.name).trim():'';const um=r.uom!=null?String(r.uom).trim():'';const en=r.name_en!=null?String(r.name_en).trim():'';const ex=masterByCode[code];if(!ex){const m={code,name:nm||code,uom:um};if(en)m.nameEn=en;masterByCode[code]=m;DATA.materials.push(m);}else{if(nm&&(!ex.name||ex.name==='?'||ex.name===code)){ex.name=nm;if(um&&!ex.uom)ex.uom=um;}if(en)ex.nameEn=en;}});
+    ((mt&&mt.data)||[]).forEach(r=>{if(!r||r.code==null)return;const code=String(r.code).trim();if(!code)return;const nm=r.name!=null?String(r.name).trim():'';const um=r.uom!=null?String(r.uom).trim():'';const en=r.name_en!=null?String(r.name_en).trim():'';const ex=masterByCode[code];if(!ex){const m={code,name:nm||code,uom:um};if(en)m.nameEn=en;masterByCode[code]=m;DATA.materials.push(m);}else{/* MÁY CHỦ LÀ CHUẨN (30/10/2026): trước đây chỉ lấy tên máy chủ khi tên nhúng sẵn trống / '?' / trùng mã — kế toán sửa tên hay ĐVT ở Danh mục VT thì máy khác vẫn hiện tên cũ mãi. Tên máy chủ thật (không trống, không '?', không trùng mã) thì luôn thắng; ĐVT máy chủ có thì thắng. */const tenThat=nm&&nm!=='?'&&nm!==code;if(tenThat&&ex.name!==nm){ex.name=nm;_vnCache.delete(code);}else if(!tenThat&&nm&&(!ex.name||ex.name==='?')){ex.name=nm;}if(um&&ex.uom!==um)ex.uom=um;if(en&&ex.nameEn!==en){ex.nameEn=en;_vnCache.delete(code);}}});
     if(su.data&&su.data.length)zoneColOK=Object.prototype.hasOwnProperty.call(su.data[0],'zones');
     if(su.data&&su.data.length)noteColOK=Object.prototype.hasOwnProperty.call(su.data[0],'item_notes');
     ghiMoc('submissions',su);if(tot(su,'submissions'))submissions=giuMoiTrenMay(submissions,_truoc.su,(su.data||[]).map(DB_MAP.submissions));
@@ -13369,6 +13385,9 @@ function renderUsersTree(view){
 function _fitChart(card){
   const tree=card.querySelector('.ttree');if(!tree)return;
   tree.style.transform='';tree.style.transformOrigin='top center';card.style.overflow='';card.style.height='';
+  /* KHÔNG thu nhỏ nữa (30/10/2026): thu tới 40% chữ không đọc được, nhiều kho hơn nữa thì cột cuối bị cắt mất ngoài khung.
+     Kho giờ tự xuống hàng (máy tính) / xếp dọc (điện thoại) bằng CSS. */
+  return;
   const flex=tree.querySelector('.tbranches')||tree;
   const avail=card.clientWidth-24,need=flex.scrollWidth; // 24 = trừ padding card
   if(need>avail&&avail>0){const s=Math.max(0.4,avail/need);tree.style.transform='scale('+s+')';card.style.overflow='hidden';card.style.height=(tree.offsetHeight*s+8)+'px';}
