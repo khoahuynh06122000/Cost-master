@@ -1137,7 +1137,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='3010-08';
+const APP_VER='3010-09';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -1162,6 +1162,7 @@ const TXT={en:{"Kiểm kê F&B": "F&B Stocktake","Tổng quan": "Overview","Nghi
 /* Bản 2910-05 */
 /* Bản 3010-05 */
 /* Bản 3010-07 */
+/* 3010-09 định lượng chỉ kho nhà hàng */Object.assign(TXT.en,{"Chưa tải được định lượng hiện có của kho này (mạng không ổn định). Để tránh ghi đè dữ liệu đang có, phần này tạm khoá — kiểm tra mạng rồi bấm Tải lại.":"Could not load this store's current recipes (unstable connection). To avoid overwriting existing data this part is locked — check the connection and press Reload.","Chưa nạp doanh thu bán hàng cho kho này, kỳ này.":"No sales data loaded for this store and period yet.","Định lượng và chênh lệch kho chỉ áp cho kho nhà hàng — tài khoản này chưa được gán kho nhà hàng nào.":"Recipes and stock variance apply to restaurant stores only — this account has no restaurant store assigned.","Định lượng chỉ áp cho kho nhà hàng — kho bếp không nạp định lượng, không đối chiếu chênh lệch.":"Recipes apply to restaurant stores only — kitchen stores have no recipes and no variance check.","Định lượng chỉ nạp cho kho nhà hàng.":"Recipes can be loaded for restaurant stores only."});Object.assign(TXT.hi,{"Chưa tải được định lượng hiện có của kho này (mạng không ổn định). Để tránh ghi đè dữ liệu đang có, phần này tạm khoá — kiểm tra mạng rồi bấm Tải lại.":"इस स्टोर की मौजूदा रेसिपी लोड नहीं हुई (नेटवर्क अस्थिर)। मौजूदा डेटा न मिटे इसलिए यह हिस्सा बंद है — नेटवर्क जाँचें और फिर से लोड करें दबाएँ।","Chưa nạp doanh thu bán hàng cho kho này, kỳ này.":"इस स्टोर और अवधि के लिए अभी बिक्री डेटा लोड नहीं हुआ।","Định lượng và chênh lệch kho chỉ áp cho kho nhà hàng — tài khoản này chưa được gán kho nhà hàng nào.":"रेसिपी और स्टॉक अंतर केवल रेस्टोरेंट स्टोर पर लागू — इस खाते को कोई रेस्टोरेंट स्टोर नहीं दिया गया है।","Định lượng chỉ áp cho kho nhà hàng — kho bếp không nạp định lượng, không đối chiếu chênh lệch.":"रेसिपी केवल रेस्टोरेंट स्टोर पर लागू — किचन स्टोर में रेसिपी और अंतर जाँच नहीं।","Định lượng chỉ nạp cho kho nhà hàng.":"रेसिपी केवल रेस्टोरेंट स्टोर के लिए लोड होती है।"});
 Object.assign(TXT.en,{"🗑 Xóa phiếu để làm lại": "🗑 Delete sheet to redo", "Phiếu này không xóa được (đã duyệt, hoặc đã qua thời gian kiểm kê tháng).": "This sheet cannot be deleted (already approved, or the monthly count window has closed).", "Đã xóa phiếu chưa gửi — đếm hoặc up lại phiếu mới cho kho này.": "Unsent sheet deleted — count or upload a new sheet for this store.", "Cần có mạng để xóa phiếu — thử lại khi có sóng.": "A connection is needed to delete the sheet — try again when online.", "Phiếu vừa được kế toán xử lý — không xóa được nữa.": "The accountant has just processed this sheet — it can no longer be deleted.", "Đã xóa phiếu — đếm hoặc up lại phiếu mới cho kho này.": "Sheet deleted — count or upload a new sheet for this store.", "Chưa xóa được phiếu": "The sheet was not deleted", "Phiếu vẫn còn, số không mất.": "The sheet is still there; no counts were lost.", "Phiếu kiểm kê đã bị xóa": "Count sheet deleted"});Object.assign(TXT.hi,{"🗑 Xóa phiếu để làm lại": "🗑 दोबारा करने के लिए पर्ची हटाएँ", "Phiếu này không xóa được (đã duyệt, hoặc đã qua thời gian kiểm kê tháng).": "यह पर्ची हटाई नहीं जा सकती (मंज़ूर हो चुकी है, या मासिक गिनती का समय खत्म हो गया है)।", "Đã xóa phiếu chưa gửi — đếm hoặc up lại phiếu mới cho kho này.": "न भेजी गई पर्ची हटा दी गई — इस स्टोर के लिए नई पर्ची गिनें या अपलोड करें।", "Cần có mạng để xóa phiếu — thử lại khi có sóng.": "पर्ची हटाने के लिए नेटवर्क चाहिए — सिग्नल आने पर फिर कोशिश करें।", "Phiếu vừa được kế toán xử lý — không xóa được nữa.": "लेखाकार ने अभी यह पर्ची संसाधित की है — अब हटाई नहीं जा सकती।", "Đã xóa phiếu — đếm hoặc up lại phiếu mới cho kho này.": "पर्ची हटा दी गई — इस स्टोर के लिए नई पर्ची गिनें या अपलोड करें।", "Chưa xóa được phiếu": "पर्ची नहीं हटी", "Phiếu vẫn còn, số không mất.": "पर्ची अभी भी है, गिनती सुरक्षित है।", "Phiếu kiểm kê đã bị xóa": "गिनती पर्ची हटा दी गई"});
 Object.assign(TXT.en,{"Ngày nhập (theo phiếu)": "Receiving date (from slip)", "Đọc được ngày trên phiếu — kiểm lại, sai thì sửa ô này.": "Date read from the slip — check it and correct this box if wrong.", "Không đọc được ngày trên phiếu — đang để ngày hôm nay, sửa lại đúng ngày in trên phiếu.": "Could not read the slip date — today is filled in; change it to the date printed on the slip.", "⚠ Có ngày sau hôm nay — kiểm lại.": "⚠ A date is later than today — please check.", "Ngày nhập lấy theo ngày in trên phiếu trong ảnh — xem và sửa ở bảng xem trước.": "Receiving date is taken from the date printed on the slip — review and correct it in the preview.", "Ngày nhập lấy theo cột Ngày trong file; dòng để trống ngày ghi ngày nạp file (hôm nay).": "Receiving date is taken from the file's Date column; rows without a date use the upload date (today)."});Object.assign(TXT.hi,{"Ngày nhập (theo phiếu)": "प्राप्ति तिथि (पर्ची से)", "Đọc được ngày trên phiếu — kiểm lại, sai thì sửa ô này.": "पर्ची से तिथि पढ़ी गई — जाँचें, गलत हो तो यह खाना सुधारें।", "Không đọc được ngày trên phiếu — đang để ngày hôm nay, sửa lại đúng ngày in trên phiếu.": "पर्ची की तिथि नहीं पढ़ी जा सकी — आज की तिथि रखी है; पर्ची पर छपी तिथि डालें।", "⚠ Có ngày sau hôm nay — kiểm lại.": "⚠ कोई तिथि आज के बाद की है — जाँचें।", "Ngày nhập lấy theo ngày in trên phiếu trong ảnh — xem và sửa ở bảng xem trước.": "प्राप्ति तिथि पर्ची पर छपी तिथि से ली जाती है — पूर्वावलोकन में देखें और सुधारें।", "Ngày nhập lấy theo cột Ngày trong file; dòng để trống ngày ghi ngày nạp file (hôm nay).": "प्राप्ति तिथि फ़ाइल के तिथि कॉलम से ली जाती है; खाली तिथि वाली पंक्तियों में अपलोड की तिथि (आज) लगेगी।"});
 Object.assign(TXT.en,{"⚠ File này đã được nạp vào KHO KHÁC — có thể đang nạp nhầm kho": "⚠ This file was already loaded into ANOTHER store — you may be loading the wrong store", "⚠ File này đã được nạp trước đó": "⚠ This file was loaded before", "Kiểm tra lại kho đang chọn trước khi lưu. Nhầm kho thì bấm Hủy, đổi kho cho đúng.": "Check the selected store before saving. If it is the wrong store, press Cancel and switch store.", "Dòng đã nạp sẽ được bỏ qua, không nhân đôi. Chỉ dòng mới hoặc dòng đổi số mới được ghi.": "Rows already loaded are skipped, not duplicated. Only new or changed rows are written.", "Phiếu điều chuyển chờ duyệt": "Transfer slips awaiting approval"});Object.assign(TXT.hi,{"⚠ File này đã được nạp vào KHO KHÁC — có thể đang nạp nhầm kho": "⚠ यह फ़ाइल किसी दूसरे स्टोर में पहले ही लोड हो चुकी है — हो सकता है स्टोर गलत हो", "⚠ File này đã được nạp trước đó": "⚠ यह फ़ाइल पहले लोड हो चुकी है", "Kiểm tra lại kho đang chọn trước khi lưu. Nhầm kho thì bấm Hủy, đổi kho cho đúng.": "सेव करने से पहले चुना हुआ स्टोर जाँचें। गलत हो तो रद्द करें और सही स्टोर चुनें।", "Dòng đã nạp sẽ được bỏ qua, không nhân đôi. Chỉ dòng mới hoặc dòng đổi số mới được ghi.": "पहले लोड की गई पंक्तियाँ छोड़ दी जाएँगी, दोहराई नहीं जाएँगी। केवल नई या बदली पंक्तियाँ लिखी जाएँगी।", "Phiếu điều chuyển chờ duyệt": "मंज़ूरी बाकी ट्रांसफ़र पर्चियाँ"});
@@ -3985,8 +3986,8 @@ let clCotKhoOK=true;   // máy chủ đã có cột kho trên bảng định lư
 const _clDaTai={},_clDangTai={};
 /* Tải LỖI (mạng chập chờn) khác hẳn "kho chưa có định lượng": trước đây lỗi chỉ ghi Console, màn coi như kho trống —
    nạp file là mất hết cách gọi gán tay, "Dùng bộ chung cũ" chép chồng lên bộ thật, buffet ra 0 (rà soát 26/10/2026). */
-const _clLoiTai={};let _clLoiBuffet='';
-const CL_LOI_TAI='Chưa tải được định lượng / vé buffet hiện có của kho này (mạng không ổn định). Để tránh ghi đè dữ liệu đang có, phần này tạm khoá — kiểm tra mạng rồi bấm Tải lại.';
+const _clLoiTai={};
+const CL_LOI_TAI='Chưa tải được định lượng hiện có của kho này (mạng không ổn định). Để tránh ghi đè dữ liệu đang có, phần này tạm khoá — kiểm tra mạng rồi bấm Tải lại.';
 let salesUsage={};     // 'plant|sloc|period' -> {usage,missing,pct,...}
 let varNotes={};       // 'plant|sloc|period|mã'  -> {note,status,...}
 let clTblOK=true;      // chưa chạy SQL thì tắt, app vẫn chạy bình thường
@@ -4002,60 +4003,11 @@ function clSub(plant,sloc,period){
   return submissions.find(s=>s.plant===plant&&s.sloc===sloc&&s.period===period&&s.status==='Đã duyệt');
 }
 /* Dựng bảng đối chiếu cho một kho + kỳ */
-/* ===== BUFFET (26/10/2026) =====
-   POS không bán vé buffet (khách vào bằng vé combo ở hệ thống khác) → kế toán gõ số khách mỗi tháng cho
-   TỪNG thực đơn buffet của kho: người lớn, trẻ em, giá vé người lớn, giá vé trẻ em.
-   Hệ số trẻ em = giá vé TE ÷ giá vé NL. Xuất định lượng = (NL + TE × hệ số) × định lượng 1 suất của thực đơn.
-   Bảng buffet_khach (SQL PHẦN 23): 'plant|sloc|period' -> {dong:[{menu,nl,te,giaNL,giaTE}],by,at} */
-let clBuffet=null,clBuffetOK=true;
-async function clTaiBuffet(){
-  if(clBuffet)return clBuffet;
-  clBuffet={};if(!sb)return clBuffet;
-  let r;try{r=await sb.from('buffet_khach').select('*');}catch(e){r={error:e};}
-  if(r&&r.error){const m=String((r.error.message)||'')+' '+String(r.error.code||'');
-    if(/buffet_khach|42P01|PGRST205/i.test(m)&&/(does not exist|schema cache|42P01|PGRST205)/i.test(m))clBuffetOK=false;
-    else{console.warn('buffet_khach',r.error);_clLoiBuffet=m;const b=clBuffet;clBuffet=null;return b;}   // lỗi -> lần sau tải lại
-    return clBuffet;}
-  clBuffetOK=true;_clLoiBuffet='';
-  (r.data||[]).forEach(x=>{clBuffet[clKey(x.plant_code,x.sloc_code,x.period)]={dong:Array.isArray(x.dong)?x.dong:[],by:x.updated_by||'',at:x.updated_at?fmt(x.updated_at):''};});
-  return clBuffet;
-}
-async function clLuuBuffet(p,s,per,dong){
-  if(!sb)return {ok:false,why:'Chưa kết nối máy chủ'};
-  if(_clLoiBuffet||!clBuffet)return {ok:false,why:CL_LOI_TAI};
-  if(!clBuffetOK)return {ok:false,why:'Máy chủ chưa sẵn sàng lưu số khách buffet — báo admin'};
-  const row={plant_code:p,sloc_code:s||'',period:per,dong,updated_by:session?session.name:'',updated_at:new Date().toISOString()};
-  let r;try{r=await sb.from('buffet_khach').upsert([row],{onConflict:'plant_code,sloc_code,period'});}catch(e){r={error:e};}
-  if(r&&r.error)return {ok:false,why:r.error.message||'Máy chủ từ chối'};
-  (clBuffet=clBuffet||{})[clKey(p,s,per)]={dong,by:row.updated_by,at:now()};
-  return {ok:true};
-}
-function clHeSoTE(d){const a=Number(d.giaNL)||0,b=Number(d.giaTE)||0;return a>0&&b>0?b/a:null;}
-function clSuat(d){const h=clHeSoTE(d);return (Number(d.nl)||0)+(h!=null?(Number(d.te)||0)*h:0);}
-/* Định lượng 1 suất của một thực đơn = cộng mọi món thuộc thực đơn đó (định lượng buffet ghi theo 1 khách). */
-function clMotSuat(bk,menu){
-  const u={};
-  Object.keys(bk.mon).forEach(id=>{const m=bk.mon[id];if(clLaMonKhong(id)||m.menu!==menu)return;
-    (m.items||[]).forEach(x=>{const e=u[x.code]||(u[x.code]={code:x.code,name:x.name,uom:x.uom,qty:0});e.qty+=Number(x.qty)||0;});});
-  return u;
-}
-function clBuffetUsage(p,s,per){
-  if(!laKhoBep(p,s))return null;   // vé buffet chỉ tính cho kho bếp
-  const b=clBuffet&&clBuffet[clKey(p,s,per)];if(!b||!b.dong.length)return null;
-  const bk=clBookDung(p,s);const u={};let suat=0,thieuGia=0;
-  b.dong.forEach(d=>{const n=clSuat(d);suat+=n;if((Number(d.te)||0)>0&&clHeSoTE(d)==null)thieuGia+=Number(d.te)||0;
-    const ms=clMotSuat(bk,d.menu);
-    Object.values(ms).forEach(x=>{const e=u[x.code]||(u[x.code]={code:x.code,name:x.name,uom:x.uom,qty:0});e.qty+=x.qty*n;});});
-  return {usage:u,suat,thieuGia,dong:b.dong,by:b.by,at:b.at};
-}
 function clRows(plant,sloc,period){
   const sub=clSub(plant,sloc,period);
-  let su=salesUsage[clKey(plant,sloc,period)];
-  const bf=clBuffetUsage(plant,sloc,period);
-  // Xuất định lượng = phần bán trên POS + phần buffet theo số khách
+  const su=salesUsage[clKey(plant,sloc,period)];
+  // Xuất định lượng = file bán POS × định lượng (chỉ kho nhà hàng — bếp không tính định lượng, Khoa 30/10/2026)
   const dm=Object.assign({},(su&&su.usage)||{});
-  if(bf)Object.values(bf.usage).forEach(x=>{const c=dm[x.code];dm[x.code]=c?Object.assign({},c,{qty:(Number(c.qty)||0)+x.qty}):Object.assign({},x);});
-  if(!su&&bf)su={usage:{},pct:null,chiFoodBev:false,slKhop:0,slTong:0,missing:[],theoNhom:[],src:'Buffet (số khách)',by:bf.by,at:bf.at,chiBuffet:true};
   const rows=[];const daCo=new Set();
   if(sub){
     inventoryFlow(sub).forEach(r=>{
@@ -4085,7 +4037,7 @@ function clRows(plant,sloc,period){
     r.note=n?n.note:'';r.noteStatus=n?n.status:'';
   });
   rows.sort((a,b)=>Math.abs(b.lech||0)-Math.abs(a.lech||0));
-  return {rows,sub,su,bf};
+  return {rows,sub,su};
 }
 function clVuot(r){
   if(r.lech==null)return false;
@@ -5535,7 +5487,7 @@ function ctxBar(host,ctx,opts,onChange){
   mine.forEach(p=>{const o=el('option',null,p.name);o.value=p.plant;pSel.appendChild(o);});
   if(ctx.plant)pSel.value=ctx.plant;pf.appendChild(pSel);
   const sf=el('label','field','<span>Kho (Sloc)</span>');const sSel=el('select','input');sf.appendChild(sSel);
-  function fillS(keep){sSel.innerHTML='';allowedSlocsOf(pSel.value).forEach(w=>{const o=el('option',null,`${w.sloc_name} (${w.sloc})`);o.value=w.sloc;sSel.appendChild(o);});if(keep&&ctx.sloc)sSel.value=ctx.sloc;}
+  function fillS(keep){sSel.innerHTML='';(opts.slocs||allowedSlocsOf)(pSel.value).forEach(w=>{const o=el('option',null,`${w.sloc_name} (${w.sloc})`);o.value=w.sloc;sSel.appendChild(o);});if(keep&&ctx.sloc)sSel.value=ctx.sloc;}
   fillS(true);
   pick.appendChild(pf);pick.appendChild(sf);
   let perSel=null;
@@ -5570,10 +5522,15 @@ function matPicker(labelTxt,onPick){
 
 /* ============ CHÊNH LỆCH KHO ============ */
 let clCtx=null;
+/* ĐỊNH LƯỢNG CHỈ CHO KHO NHÀ HÀNG (Khoa 30/10/2026): bếp không nạp định lượng, không đối chiếu chênh lệch.
+   Món ăn lấy nguyên liệu ở kho bếp thì phần đó không tính. */
+function clSlocNH(plant){return allowedSlocsOf(plant).filter(w=>!laKhoBep(plant,w.sloc));}
+function clPlantsNH(){return allowedPlants().filter(p=>clSlocNH(p.plant).length);}
 function ensureClCtx(){
-  const mine=allowedPlants();
+  const mine=clPlantsNH();
+  if(clCtx&&clCtx.plant&&laKhoBep(clCtx.plant,clCtx.sloc)){const w=clSlocNH(clCtx.plant)[0];if(w)clCtx.sloc=w.sloc;else clCtx=null;}
   if(!clCtx||!clCtx.plant||!mine.some(p=>p.plant===clCtx.plant)){
-    const p=mine[0];const s=p?(allowedSlocsOf(p.plant)[0]||{}):{};
+    const p=mine[0];const s=p?(clSlocNH(p.plant)[0]||{}):{};
     clCtx={plant:p?p.plant:'',sloc:s.sloc||'',period:curPeriod()};
   }
   if(!clCtx.period)clCtx.period=curPeriod();
@@ -5608,14 +5565,16 @@ function renderChenhLech(v){
       +'<b>SQL-tong-hop.sql</b> (phần 1.13) trên Supabase. Trước khi chạy, màn này chưa dùng được — '
       +'các phần khác của app vẫn chạy bình thường.','var(--red)'));
   }
-  const ctx=ensureClCtx();const key=clBookKey(ctx.plant,ctx.sloc);
+  const ctx=ensureClCtx();
+  if(!ctx.plant){v.appendChild(clNote('Định lượng và chênh lệch kho chỉ áp cho kho nhà hàng — tài khoản này chưa được gán kho nhà hàng nào.'));return;}
+  const key=clBookKey(ctx.plant,ctx.sloc);
   if(sb&&clTblOK&&ctx.plant&&!_clDaTai[key]){
     _clDaTai[key]=true;
-    Promise.all([clTaiBook(ctx.plant,ctx.sloc),clTaiBuffet()]).then(()=>{_clDaTai[key]=(_clLoiTai[key]||_clLoiBuffet)?'loi':2;if(activeTab==='chenhlech')renderView();});
+    clTaiBook(ctx.plant,ctx.sloc).then(()=>{_clDaTai[key]=_clLoiTai[key]?'loi':2;if(activeTab==='chenhlech')renderView();});
   }
   if(_clDaTai[key]==='loi'){const n=clNote(CL_LOI_TAI,'var(--red)');v.appendChild(n);
     const bR=el('button','btn btn-brand btn-sm',L('Tải lại'));bR.style.margin='0 0 12px';
-    bR.onclick=()=>{delete _clDaTai[key];delete _clLoiTai[key];_clLoiBuffet='';delete clBooks[key];renderView();};v.appendChild(bR);}
+    bR.onclick=()=>{delete _clDaTai[key];delete _clLoiTai[key];delete clBooks[key];renderView();};v.appendChild(bR);}
   const dangTai=sb&&_clDaTai[key]===true,bk=clBookDung(ctx.plant,ctx.sloc);
   const acts=[];
   if(kt){
@@ -5627,13 +5586,12 @@ function renderChenhLech(v){
       sub:'Sheet "Sales By Items" — tính lượng nguyên liệu đáng lẽ đã dùng',
       ico:HIC.cam,render:clFormDoanhThu});
   }
-  if(kt)acts.push({k:'buffet',title:'Vé & doanh thu buffet',
-    sub:'Kho bếp buffet: nhập vé người lớn / trẻ em + doanh thu theo tháng — ra xuất theo định lượng',ico:HIC.list,render:clFormBuffet});
   if(kt)acts.push({k:'theodiem',title:'Hàng sử dụng theo điểm bán',
     sub:'Nạp 1 file doanh thu POS — tính hàng sử dụng trong tháng cho mọi điểm',ico:HIC.list,render:clTheoDiem});
   acts.push({k:'bang',title:kt?'Xem chênh lệch & duyệt giải trình':'Chênh lệch kho của tôi',
     sub:'Đối chiếu xuất định lượng với xuất thực tế theo kiểm kê',
     ico:HIC.list,render:clBang});
+  v.appendChild(clNote('Định lượng chỉ áp cho kho nhà hàng — kho bếp không nạp định lượng, không đối chiếu chênh lệch.'));
   renderHubView(v,'chenhlech',acts);
 }
 
@@ -5697,7 +5655,8 @@ function clTrangThai(host,txt,mau){
    ============================================================ */
 function clFormDinhLuong(host){
   const ctx=ensureClCtx();
-  ctxBar(host,ctx,{},()=>renderView());
+  if(!ctx.plant||laKhoBep(ctx.plant,ctx.sloc)){host.appendChild(clNote('Định lượng chỉ nạp cho kho nhà hàng.'));return;}
+  ctxBar(host,ctx,{plants:clPlantsNH(),slocs:clSlocNH},()=>renderView());
   const box=el('div','card');box.style.cssText='padding:18px';host.appendChild(box);
   box.appendChild(el('div','',
     '<div style="font-weight:700;margin-bottom:4px">Bảng định lượng của kho đang chọn</div>'
@@ -5909,7 +5868,7 @@ function clXemTruoc(host,kq,ctx){
    ============================================================ */
 function clFormDoanhThu(host){
   const ctx=ensureClCtx();
-  ctxBar(host,ctx,{period:true},()=>renderView());
+  ctxBar(host,ctx,{period:true,plants:clPlantsNH(),slocs:clSlocNH},()=>renderView());
   const kt=isViewer();
   const box=el('div','card');box.style.cssText='padding:18px';host.appendChild(box);
   if(sb&&_clDaTai[clBookKey(ctx.plant,ctx.sloc)]===true){box.appendChild(clNote('Đang tải định lượng của kho…'));return;}
@@ -5942,7 +5901,7 @@ function clFormDoanhThu(host){
       st.innerHTML='<b style="color:var(--red)">Không đọc được file</b><br>'+escHtml((e&&e.message)||'');return;
     }
     // Kho khác cùng điểm bán (VD Quầy Lễ Hội Bia + Bếp LH Bia chung một file doanh thu)
-    const anh=clCotKhoOK?DATA.warehouses.filter(w=>w.plant===ctx.plant&&w.sloc!==ctx.sloc):[];
+    const anh=clCotKhoOK?DATA.warehouses.filter(w=>w.plant===ctx.plant&&w.sloc!==ctx.sloc&&!laKhoBep(w.plant,w.sloc)):[];
     for(const w of anh){try{await clTaiBook(w.plant,w.sloc);}catch(e){}}
     const kq2=el('div');kqBox.appendChild(kq2);
     const ve=()=>{
@@ -6043,70 +6002,6 @@ function clFormDoanhThu(host){
 }
 
 
-/* ============================================================
-   2a. SỐ KHÁCH BUFFET (26/10/2026)
-   ============================================================ */
-function clFormBuffet(host){
-  const ctx=ensureClCtx();
-  ctxBar(host,ctx,{period:true},()=>renderView());
-  const box=el('div','card');box.style.cssText='padding:18px';host.appendChild(box);
-  box.appendChild(el('div','','<div style="font-weight:700;margin-bottom:4px">Vé và doanh thu buffet tháng '+periodVN(ctx.period)+'</div>'
-    +'<div style="font-size:13px;color:var(--muted);margin-bottom:12px">Định lượng buffet ghi lượng cho 1 vé người lớn. '
-    +'Hệ số trẻ em = giá vé trẻ em ÷ giá vé người lớn. Xuất định lượng = (vé người lớn + vé trẻ em × hệ số) × định lượng 1 suất của thực đơn.</div>'));
-  if(!clBuffetOK){box.appendChild(clNote('Máy chủ chưa sẵn sàng lưu số khách buffet — báo admin bật phần này.','var(--red)'));return;}
-  /* Vé buffet chỉ cho kho BẾP (Khoa 26/10/2026). Kho nhà hàng tính hoàn toàn bằng file bán POS × định lượng. */
-  if(!laKhoBep(ctx.plant,ctx.sloc)){box.appendChild(clNote('Kho '+escHtml(whName(ctx.plant,ctx.sloc))+' là kho nhà hàng — xuất định lượng tính hoàn toàn từ file bán POS × định lượng (thẻ Nạp doanh thu hoặc Hàng sử dụng theo điểm bán). Vé buffet chỉ nhập cho kho bếp: bấm Đổi kho để chọn bếp.'));return;}
-  if(sb&&_clDaTai[clBookKey(ctx.plant,ctx.sloc)]===true){box.appendChild(clNote('Đang tải định lượng của kho…'));return;}
-  if(sb&&_clDaTai[clBookKey(ctx.plant,ctx.sloc)]==='loi'){box.appendChild(clNote(CL_LOI_TAI,'var(--red)'));return;}
-  const bk=clBookDung(ctx.plant,ctx.sloc);
-  const menus=[...new Set(Object.keys(bk.mon).filter(id=>!clLaMonKhong(id)).map(id=>bk.mon[id].menu).filter(m=>m&&m!=='__'))];
-  if(!menus.length){box.appendChild(clNote('Kho '+escHtml(whName(ctx.plant,ctx.sloc))+' chưa có định lượng — nạp file định lượng buffet cho kho này trước.'));return;}
-  const cu=((clBuffet||{})[clKey(ctx.plant,ctx.sloc,ctx.period)]||{}).dong||[];
-  if(cu.length)box.appendChild(clNote('Đã lưu lúc '+((clBuffet[clKey(ctx.plant,ctx.sloc,ctx.period)]||{}).at||'?')+'. Sửa số rồi bấm Lưu để thay.'));
-  box.appendChild(clNote('Chỉ điền dòng thực đơn là buffet. Thực đơn gọi món (à la carte) để trống — phần đó tính từ file bán POS.'));
-  const o={};
-  menus.forEach(mn=>{
-    const c=cu.find(d=>d.menu===mn)||{};
-    const ms=clMotSuat(bk,mn),soMon=Object.keys(bk.mon).filter(id=>bk.mon[id].menu===mn).length;
-    const card=el('div','card');card.style.cssText='padding:12px;margin-top:10px';
-    card.appendChild(el('div','','<div style="font-weight:600">'+escHtml(mn)+'</div><div style="font-size:12.5px;color:var(--muted)">'
-      +soMon+' món · '+Object.keys(ms).length+' mã nguyên liệu trong 1 suất</div>'));
-    /* Giá vé ít đổi: tháng này chưa nhập thì lấy giá của tháng gần nhất đã lưu (Khoa 26/10/2026) */
-    let giaCu=null;
-    if(!c.giaNL&&!c.giaTE){
-      const ky=Object.keys(clBuffet||{}).filter(k=>k.indexOf(clKey(ctx.plant,ctx.sloc,''))===0&&k<clKey(ctx.plant,ctx.sloc,ctx.period)).sort().reverse();
-      for(const k of ky){const d=(clBuffet[k].dong||[]).find(x=>x.menu===mn&&(x.giaNL||x.giaTE));if(d){giaCu={giaNL:d.giaNL,giaTE:d.giaTE,ky:k.split('|')[2]};break;}}
-    }
-    const r=el('div','form-row');r.style.cssText='flex-wrap:wrap;margin-top:8px';
-    const f=(row,nhan,gt)=>{const l=el('label','field f-qty','<span>'+nhan+'</span>');const i=el('input','input');i.type='number';i.min='0';i.step='1';i.inputMode='numeric';
-      if(gt!=null&&gt!=='')i.value=gt;l.appendChild(i);row.appendChild(l);return i;};
-    const iNL=f(r,'Vé người lớn',c.nl),iTE=f(r,'Vé trẻ em',c.te),iDT=f(r,'Doanh thu buffet (đ)',c.doanhThu);
-    card.appendChild(r);
-    const r2=el('div','form-row');r2.style.cssText='flex-wrap:wrap;margin-top:4px';
-    const iGN=f(r2,'Giá vé người lớn',c.giaNL||(giaCu&&giaCu.giaNL)),iGT=f(r2,'Giá vé trẻ em',c.giaTE||(giaCu&&giaCu.giaTE));
-    card.appendChild(r2);
-    if(giaCu)card.appendChild(el('div','',"<div style='font-size:12px;color:var(--muted)'>Giá vé lấy lại từ tháng "+periodVN(giaCu.ky)+' — đổi giá thì sửa ở đây.</div>'));
-    const ro=el('div','readout');card.appendChild(ro);
-    const ve=()=>{const d={nl:+iNL.value||0,te:+iTE.value||0,giaNL:+iGN.value||0,giaTE:+iGT.value||0};const h=clHeSoTE(d),dt=+iDT.value||0;
-      ro.textContent=(d.nl||d.te)?('= '+nq(clSuat(d))+' suất'+(h!=null?(' · hệ số trẻ em '+nq(h)):(d.te?' · chưa có giá vé nên trẻ em chưa tính':''))
-        +(dt?(' · doanh thu bình quân '+nq(dt/(d.nl+d.te),0)+' đ/vé'):'')):'';};
-    [iNL,iTE,iDT,iGN,iGT].forEach(i=>i.oninput=ve);ve();
-    o[mn]={iNL,iTE,iDT,iGN,iGT};box.appendChild(card);
-  });
-  const bar=el('div','form-row');bar.style.marginTop='12px';
-  const bL=el('button','btn btn-brand','Lưu vé buffet tháng '+periodVN(ctx.period));
-  bL.onclick=async()=>{
-    const tat=menus.map(mn=>({menu:mn,nl:+o[mn].iNL.value||0,te:+o[mn].iTE.value||0,doanhThu:+o[mn].iDT.value||0,giaNL:+o[mn].iGN.value||0,giaTE:+o[mn].iGT.value||0}));
-    if(tat.some(d=>d.nl<0||d.te<0||d.doanhThu<0||d.giaNL<0||d.giaTE<0)){toast('Số vé, doanh thu, giá vé không được âm');return;}
-    const dong=tat.filter(d=>d.nl>0||d.te>0);
-    if(!dong.length&&!cu.length){toast('Chưa nhập số vé');return;}
-    bL.disabled=true;const r=await clLuuBuffet(ctx.plant,ctx.sloc,ctx.period,dong);bL.disabled=false;
-    if(!r.ok){errBox('Chưa lưu được số khách buffet',[r.why||'Máy chủ từ chối.'],'Bảng: buffet_khach');return;}
-    log('Số khách buffet',whName(ctx.plant,ctx.sloc)+' tháng '+periodVN(ctx.period)+' — '+dong.map(d=>d.menu+': '+d.nl+' NL, '+d.te+' TE, DT '+d.doanhThu).join('; '));
-    toast('✓ Đã lưu vé buffet');hubOpen['chenhlech']='bang';renderView();
-  };
-  bar.appendChild(bL);box.appendChild(bar);
-}
 
 /* ============================================================
    2b. HÀNG SỬ DỤNG THEO ĐIỂM BÁN (26/10/2026)
@@ -6142,7 +6037,7 @@ function clGoiYDiem(pos){
 }
 /* Tính hàng sử dụng cho một điểm bán: từng kho có định lượng riêng; không kho nào có thì dùng bộ chung cũ. */
 function clTinhDiem(ban,plant){
-  const khos=(plant&&clCotKhoOK)?DATA.warehouses.filter(w=>w.plant===plant).map(w=>({w,b:clBook(w.plant,w.sloc)})).filter(x=>x.b&&x.b.n):[];
+  const khos=(plant&&clCotKhoOK)?DATA.warehouses.filter(w=>w.plant===plant&&!laKhoBep(w.plant,w.sloc)).map(w=>({w,b:clBook(w.plant,w.sloc)})).filter(x=>x.b&&x.b.n):[];
   if(!khos.length){
     const bk=clBookCu||CL_RONG;const kq=CL.tinhTieuHao(ban,{mon:bk.mon,alias:bk.alias});
     return {kq,theoKho:[],boCu:true};
@@ -6185,7 +6080,7 @@ async function veTheoDiem(host){
   await clTaiPosMap();
   // tải định lượng các kho của điểm đã gán (+ bộ chung cũ)
   const plants=[...new Set(R.diem.map(d=>clPosMap[d.diem]).filter(Boolean))];
-  for(const p of plants)for(const w of DATA.warehouses.filter(x=>x.plant===p)){try{await clTaiBook(w.plant,w.sloc);}catch(e){}}
+  for(const p of plants)for(const w of DATA.warehouses.filter(x=>x.plant===p&&!laKhoBep(x.plant,x.sloc))){try{await clTaiBook(w.plant,w.sloc);}catch(e){}}
   if(clBookCu===null&&sb){const w=DATA.warehouses[0];try{await clTaiBook(w.plant,w.sloc);}catch(e){}}
   const ds=R.diem.map(d=>{const fb=d.ban.filter(b=>CL.laNhomTinh(b.nhom));const plant=clPosMap[d.diem]||'';
     const t=clTinhDiem(d.ban,plant);return Object.assign({},d,{plant,slFB:fb.reduce((a,b)=>a+b.sl,0),t});});
@@ -6319,9 +6214,9 @@ async function clLuuTheoDiem(ds,R,btn){
 let clChiLech=true;    // mặc định chỉ hiện mã đang lệch — đừng đổ cả trăm dòng đúng ra
 function clBang(host){
   const ctx=ensureClCtx();
-  ctxBar(host,ctx,{period:true},()=>renderView());
+  ctxBar(host,ctx,{period:true,plants:clPlantsNH(),slocs:clSlocNH},()=>renderView());
   const kt=isViewer();
-  const {rows,sub,su,bf}=clRows(ctx.plant,ctx.sloc,ctx.period);
+  const {rows,sub,su}=clRows(ctx.plant,ctx.sloc,ctx.period);
 
   // --- thiếu dữ liệu thì nói rõ thiếu cái gì, làm gì tiếp ---
   if(!sub||!su){
@@ -6330,7 +6225,7 @@ function clBang(host){
     /* Một câu sạch, không chữ đậm giữa câu — chữ đậm cắt câu thành nhiều mảnh nên không dịch được. */
     if(!sub)b.push('Kho này chưa có biên bản kiểm kê được duyệt cho kỳ '+periodVN(ctx.period)
       +' — chưa chốt kiểm kê thì chưa có "xuất thực tế" để đối chiếu.');
-    if(!su)b.push('Chưa nạp doanh thu bán hàng (hoặc số khách buffet) cho kho này, kỳ này.');
+    if(!su)b.push('Chưa nạp doanh thu bán hàng cho kho này, kỳ này.');
     thieu.innerHTML='<div class="big">Chưa đối chiếu được</div><div>'+b.join('<br>')+'</div>';
     host.appendChild(thieu);
     if(kt&&!su){
@@ -6356,16 +6251,10 @@ function clBang(host){
   st.appendChild(oStat(nq(vuot.length,0),'Lệch quá '+ng+'%',vuot.length?'var(--red)':''));
   if(su.pct!=null)st.appendChild(oStat(pc(su.pct),su.chiFoodBev?'Quy đổi được (Food + Beverage)':'Sản lượng quy đổi được',
     su.pct<90?'var(--accent-ink)':'var(--green)'));
-  if(bf)st.appendChild(oStat(nq(bf.suat,0),'Suất buffet'));
   st.appendChild(oStat(nq(chuaGT.length,0),'Chờ giải trình',chuaGT.length?'var(--amber,#8A5A00)':''));
   host.appendChild(st);
 
   // --- cảnh báo phải thấy trước khi đọc số ---
-  if(bf){
-    host.appendChild(clNote('Xuất định lượng có cộng phần buffet: '+bf.dong.map(d=>escHtml(d.menu)+' '+nq(d.nl,0)+' vé NL + '+nq(d.te,0)+' vé TE = '+nq(clSuat(d),0)+' suất'
-      +(d.doanhThu?(' · doanh thu '+nq(d.doanhThu,0)+' đ'):'')).join(' · ')
-      +(bf.thieuGia?(' — '+nq(bf.thieuGia,0)+' khách trẻ em CHƯA tính vì chưa có giá vé'):'')+'.'));
-  }
   if(su.pct!=null&&su.pct<90){
     host.appendChild(clNote('<b>Số lệch dưới đây chưa tin được hết.</b> Mới quy đổi được '
       +pc(su.pct)+(su.chiFoodBev?' sản lượng Food + Beverage':' sản lượng bán ra')
