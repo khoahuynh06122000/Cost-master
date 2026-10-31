@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Giải mã sao lưu</title>
+<style>
+  :root { --bg:#f4f6f6; --card:#fff; --ink:#1c2430; --muted:#5d6877; --line:#dfe5e4; --brand:#0E5C55; --ok:#1f8a4c; --ok-bg:#e8f5ee; --err:#b4232f; --err-bg:#fdecee; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg:#12161c; --card:#1a2028; --ink:#e6eaf0; --muted:#9aa5b3; --line:#2a323d; --brand:#5fc4b3; --ok:#4cc883; --ok-bg:#16301f; --err:#f07580; --err-bg:#3a1a1e; } }
+  :root[data-theme="dark"] { --bg:#12161c; --card:#1a2028; --ink:#e6eaf0; --muted:#9aa5b3; --line:#2a323d; --brand:#5fc4b3; --ok:#4cc883; --ok-bg:#16301f; --err:#f07580; --err-bg:#3a1a1e; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.6 "Segoe UI",system-ui,sans-serif; }
+  .wrap { max-width:620px; margin:0 auto; padding:32px 16px; }
+  h1 { font-size:22px; margin:0 0 4px; } p.sub { margin:0 0 20px; color:var(--muted); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px; display:grid; gap:14px; }
+  label { font-weight:600; font-size:14px; display:grid; gap:6px; }
+  input { font:inherit; font-size:16px; padding:10px 12px; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--ink); width:100%; }
+  button { font:inherit; font-weight:700; padding:12px; border:0; border-radius:8px; background:var(--brand); color:#fff; cursor:pointer; }
+  button:disabled { opacity:.5; cursor:default; }
+  button:focus-visible, input:focus-visible { outline:2px solid var(--brand); outline-offset:2px; }
+  ol { margin:0; padding-left:20px; color:var(--muted); font-size:14px; }
+  .msg { border-radius:8px; padding:10px 14px; font-size:14px; } .msg.ok { background:var(--ok-bg); color:var(--ok); } .msg.err { background:var(--err-bg); color:var(--err); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Giải mã file sao lưu</h1>
+  <p class="sub">App Kiểm kê F&amp;B · file giải mã ngay trên máy này, không gửi đi đâu.</p>
+  <div class="card">
+    <ol>
+      <li>Giải nén file .zip tải từ GitHub (mục Artifacts của lượt sao lưu).</li>
+      <li>Chọn file <b>.xlsx.enc</b> (mở bằng Excel) hoặc <b>.json.gz.enc</b> (bản đầy đủ).</li>
+      <li>Gõ mật khẩu sao lưu rồi bấm Giải mã.</li>
+    </ol>
+    <label>File sao lưu (.enc)<input id="f" type="file" accept=".enc"></label>
+    <label>Mật khẩu sao lưu<input id="p" type="password" autocomplete="off"></label>
+    <button id="b">Giải mã và tải về</button>
+    <div id="m" class="msg" hidden></div>
+  </div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+function bao(t,ok){const m=$('m');m.hidden=false;m.className='msg '+(ok?'ok':'err');m.textContent=t;}
+async function giaiMa(buf,pass){
+  const u=new Uint8Array(buf);
+  if(new TextDecoder().decode(u.slice(0,4))!=='KKB1')throw new Error('KHONG_PHAI');
+  const salt=u.slice(4,20),iv=u.slice(20,32),ct=u.slice(32);
+  const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(pass),'PBKDF2',false,['deriveKey']);
+  const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:200000,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['decrypt']);
+  try{return await crypto.subtle.decrypt({name:'AES-GCM',iv},key,ct);}catch(e){throw new Error('SAI_MK');}
+}
+async function boGzip(buf){
+  const s=new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'));
+  return await new Response(s).arrayBuffer();
+}
+$('b').onclick=async()=>{
+  const f=$('f').files[0],pass=$('p').value;
+  if(!f){bao('Chọn file sao lưu trước.');return;}
+  if(!pass){bao('Gõ mật khẩu sao lưu.');return;}
+  $('b').disabled=true;$('b').textContent='Đang giải mã…';
+  try{
+    let out=await giaiMa(await f.arrayBuffer(),pass);
+    let ten=f.name.replace(/\.enc$/i,'');
+    if(/\.json\.gz$/i.test(ten)){out=await boGzip(out);ten=ten.replace(/\.gz$/i,'');}
+    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([out]));a.download=ten;
+    document.body.appendChild(a);a.click();a.remove();
+    bao('Đã giải mã: '+ten+' — kiểm tra thư mục Tải về.',true);
+  }catch(e){
+    bao(e.message==='SAI_MK'?'Sai mật khẩu, hoặc file bị hỏng.':e.message==='KHONG_PHAI'?'File này không phải file sao lưu của app.':'Không giải mã được: '+e.message);
+  }finally{$('b').disabled=false;$('b').textContent='Giải mã và tải về';}
+};
+</script>
+</body>
+</html>

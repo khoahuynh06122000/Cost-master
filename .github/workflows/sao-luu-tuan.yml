@@ -1,0 +1,42 @@
+name: Sao luu du lieu hang tuan
+
+on:
+  schedule:
+    - cron: '0 23 * * 0'   # 06:00 VN moi sang THU 2
+  workflow_dispatch: {}    # bam chay tay de sao luu ngay
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Cai thu vien Excel
+        run: npm install --no-save --no-package-lock xlsx@0.18.5
+      - name: Doc du lieu, dong file, ma hoa
+        run: node agent/sao-luu.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          BACKUP_PASSWORD: ${{ secrets.BACKUP_PASSWORD }}
+      - name: Luu file sao luu (giu 90 ngay)
+        uses: actions/upload-artifact@v4
+        with:
+          name: sao-luu-${{ github.run_number }}
+          path: |
+            sao-luu-out/*.enc
+          retention-days: 90
+          if-no-files-found: error
+      - name: Bao ve Teams
+        run: node agent/sao-luu.mjs --bao-xong
+        env:
+          TEAMS_PERSONAL_URL: ${{ secrets.TEAMS_PERSONAL_URL }}
+          TEAMS_FLOW_URL: ${{ secrets.TEAMS_FLOW_URL }}
+      - name: Bao loi ve Teams
+        if: failure()
+        run: node agent/sao-luu.mjs --bao-loi
+        env:
+          TEAMS_PERSONAL_URL: ${{ secrets.TEAMS_PERSONAL_URL }}
+          TEAMS_FLOW_URL: ${{ secrets.TEAMS_FLOW_URL }}
