@@ -1137,7 +1137,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='0211-02';
+const APP_VER='0211-03';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -2995,15 +2995,21 @@ function allowedSlocsOf(plant){
 /* KỲ CHỐT KHO 26 → 25 (Khoa 26/10/2026): kỳ mang tên THÁNG KẾT THÚC — kỳ 10/2026 = 26/09 → 25/10,
    kỳ 11/2026 = 26/10 → 25/11. Áp cho MỌI kỳ (Khoa chốt lại cùng ngày: không giữ tháng lịch cho kỳ cũ). */
 const KY_NGAY_CHOT=25;
+/* Khoa 02/11/2026: luật 26 -> 25 CHỈ áp từ kỳ 10/2026 (26/09/2026 -> 25/10/2026) trở đi. Trước mốc là tháng lịch
+   như cũ; kỳ 09/2026 vì thế là 01/09 -> 25/09. */
+const KY_MOC_YMD=20260926,KY_MOC_KY='2026-10';
 function _p2(n){return String(n).padStart(2,'0');}
 function kyCuaYmd(y,m,d){
-  if(d>KY_NGAY_CHOT){m++;if(m>12){m=1;y++;}}
+  if(y*10000+m*100+d>=KY_MOC_YMD&&d>KY_NGAY_CHOT){m++;if(m>12){m=1;y++;}}
   return y+'-'+_p2(m);
 }
-/* Ngày bắt đầu / kết thúc của một kỳ (Date, giờ máy): ngày 26 tháng trước → ngày 25 tháng của kỳ */
+/* Ngày bắt đầu / kết thúc của một kỳ (Date, giờ máy): từ kỳ 10/2026 là ngày 26 tháng trước → ngày 25 tháng của kỳ;
+   kỳ trước đó là tháng lịch (kỳ 09/2026 kết thúc 25/09 vì 26/09 đã thuộc kỳ 10). */
 function kyKhoang(per){
   const a=String(per||'').split('-').map(Number);if(a.length<2||!a[0]||!a[1])return null;
-  return {tu:new Date(a[0],a[1]-2,KY_NGAY_CHOT+1),den:new Date(a[0],a[1]-1,KY_NGAY_CHOT)};
+  const p=a[0]+'-'+_p2(a[1]);
+  if(p>=KY_MOC_KY)return {tu:new Date(a[0],a[1]-2,KY_NGAY_CHOT+1),den:new Date(a[0],a[1]-1,KY_NGAY_CHOT)};
+  return {tu:new Date(a[0],a[1]-1,1),den:p==='2026-09'?new Date(2026,8,KY_NGAY_CHOT):new Date(a[0],a[1],0)};
 }
 function kyKhoangVN(per){const k=kyKhoang(per);if(!k)return '';const f=d=>_p2(d.getDate())+'/'+_p2(d.getMonth()+1);return f(k.tu)+'–'+f(k.den);}
 function kyNhan(per){return 'Kỳ '+periodVN(per)+' · '+kyKhoangVN(per)+(per===curPeriod()?' (hiện tại)':'');}
@@ -4273,11 +4279,10 @@ function periodLocked(plant,sloc,period){return !!lockedSub(plant,sloc,period);}
    là phiếu ghi kỳ 11 — 6 phiếu lệch kỳ, bot báo "chưa nhập". Nay: kho có kỳ kế toán đã mở (kỳ này hoặc kỳ liền trước)
    mà chưa duyệt kiểm kê thì mặc định đúng kỳ đó; không có thì kỳ theo ngày hôm nay. */
 function kyMacDinhKK(plant,sloc,hom){
-  const _h=hom||new Date(),cur=kyCuaYmd(_h.getFullYear(),_h.getMonth()+1,_h.getDate()),truoc=kyTruoc(cur);
-  /* Rule Khoa 29/10/2026: kiểm kê up từ ngày 26 tới cuối tháng vẫn là số chốt của kỳ vừa đóng (ghi nhận ngày 25),
-     dù kế toán đã mở kỳ hay chưa — trừ khi kỳ đó đã duyệt kiểm kê. */
-  if(_h.getDate()>KY_NGAY_CHOT&&!periodLocked(plant,sloc,truoc))return truoc;
-  const ds=Object.keys(countLists||{}).map(k=>k.split('|')).filter(a=>a[0]===plant&&a[1]===sloc&&a[2]&&a[2]>=truoc&&a[2]<=cur)
+  const _h=hom||new Date(),cur=kyCuaYmd(_h.getFullYear(),_h.getMonth()+1,_h.getDate());
+  /* Khoa 02/11/2026: kỳ kiểm kê tháng là kỳ KẾ TOÁN ĐÃ MỞ SỔ cho kho này (chưa duyệt kiểm kê) — lấy kỳ mở mới nhất.
+     Chưa mở kỳ nào thì theo kỳ hiện tại. Bỏ luật cửa sổ 25 -> cuối tháng (29/10). */
+  const ds=Object.keys(countLists||{}).map(k=>k.split('|')).filter(a=>a[0]===plant&&a[1]===sloc&&a[2])
     .map(a=>a[2]).filter(per=>!periodLocked(plant,sloc,per)).sort();
   return ds.length?ds[ds.length-1]:cur;
 }
@@ -4290,6 +4295,7 @@ function kkCauCuaSo(){const c=kkCuaSo(),a=c.ky.split('-').map(Number),cuoi=new D
   return 'Kiểm kê tháng chỉ nhập từ ngày 25 đến ngày cuối tháng. Kỳ tháng '+periodVN(c.ky)+' nhập từ 25/'+_p2(a[1])+' đến '+cuoi+'/'+_p2(a[1])+'.';}
 /* Chặn lúc BẤM gửi / lưu: trả true khi bị chặn (đã báo). */
 function kkChanCuaSo(period){
+  return false;   // Khoa 02/11/2026: bỏ luật cửa sổ 25 -> cuối tháng, kỳ theo kỳ kế toán mở sổ
   if(!session||isViewer())return false;
   const c=kkCuaSo();
   if(c.mo&&period===c.ky)return false;
@@ -4302,7 +4308,7 @@ function kkChanCuaSo(period){
 }
 /* Kỳ đang KIỂM KÊ: ngày 25 → cuối tháng là chính tháng đó (25–31/10 -> kỳ 10); ngày 1–24 là kỳ sắp kiểm (= kỳ hiện tại).
    Dùng làm mặc định cho mọi màn kế toán nói về kiểm kê tháng — curPeriod() ngày 26–31 đã là kỳ sau (luật 26 -> 25). */
-function kyKiemKe(){const c=kkCuaSo();return c.mo?c.ky:curPeriod();}
+function kyKiemKe(){return curPeriod();}   // Khoa 02/11/2026: về như cũ
 function kkNgayChot(per){const k=kyKhoang(per);return k?k.den:new Date();}
 let _kkKyTay=false; // người dùng tự chọn kỳ (hoặc mở từ một phiếu) -> không tự đổi về kỳ mặc định
 /* KHÓA NHẬP KHO THEO KỲ (Khoa 23/10/2026): kỳ kế toán đã duyệt kiểm kê thì không nhập kho vào kỳ đó
@@ -5083,8 +5089,6 @@ function enterApp(){
       }catch(e){}
     },2600);
     if(session.role==='giam_sat'||session.role==='bep_truong'){
-      const _cs=kkCuaSo();
-      setTimeout(()=>toast(_cs.mo?L('🗓 Đang trong thời gian kiểm kê tháng '+periodVN(_cs.ky)+' — nhập từ ngày 25 đến cuối tháng.'):L(kkCauCuaSo())),500);
       const w=myUpdateLateInfo();
       if(w){const msg=w.never?`Điểm bán bạn phụ trách chưa cập nhật lần nào. Vui lòng cập nhật.`:`Đã ${w.days} ngày chưa cập nhật (gần nhất ${w.last.toLocaleDateString('vi-VN')}).`;
         setTimeout(()=>toast('⚠ '+msg),1400);}
@@ -7890,7 +7894,6 @@ function coTheSuaPhieuKK(s){
   /* Kế toán/admin vào màn tổng hợp (renderKiemkeDash) chứ không có bộ đếm, nên nút
      sửa ở đây vô nghĩa với họ; sửa số của kho là việc của kho. */
   if(isViewer())return false;
-  {const c=kkCuaSo();if(!c.mo||s.period!==c.ky)return false;}   // ngoài 25 → cuối tháng của đúng kỳ phiếu thì chỉ xem
   return (session&&session.wh?session.wh:[]).some(w=>w.plant===s.plant&&(!w.sloc||w.sloc===s.sloc));
 }
 function moSuaPhieuKK(s){
@@ -8085,30 +8088,17 @@ function renderKiemke(v){
 
   if(!kkSel||!mine.some(p=>p.plant===kkSel.plant)){const p0=mine[0];kkSel={plant:p0.plant,sloc:(allowedSlocsOf(p0.plant)[0]||{}).sloc||''};}
   khoDongTheKK(v,kkSel.plant,kkSel.sloc);
-  const _field=!isViewer();
-  if(_field){
-    const cs=kkCuaSo();kkPeriod=cs.ky;_kkKyTay=false;
-    if(!cs.mo){
-      counting=null;countEditId=null;kkThayPhieuId=null;
-      const c=el('div','card');c.style.marginTop='14px';
-      const b=el('div','card-b');
-      const h=el('div','section-eyebrow');h.textContent=L('Chưa đến thời gian kiểm kê tháng');b.appendChild(h);
-      const t1=el('div');t1.style.cssText='margin:6px 0';t1.textContent=L('Hôm nay không còn là kỳ tháng '+periodVN(kyTruoc(cs.ky))+' — kỳ đó đã đóng, không nhập thêm được.');b.appendChild(t1);
-      const t2=el('div');t2.style.cssText='margin:6px 0;font-weight:700';t2.textContent=L(kkCauCuaSo());b.appendChild(t2);
-      const t3=el('div','cell-sub');t3.textContent=L('Cần nhập bù kỳ trước thì liên hệ kế toán. Phiếu đã gửi vẫn xem được ở khung bên trên.');b.appendChild(t3);
-      c.appendChild(b);v.appendChild(c);return;
-    }
-  }else if(!_kkKyTay||!kkPeriod)kkPeriod=kyMacDinhKK(kkSel.plant,kkSel.sloc);
+  if(!_kkKyTay||!kkPeriod)kkPeriod=kyMacDinhKK(kkSel.plant,kkSel.sloc);
   // BƯỚC 1 — kho & kỳ: ghim thành chip, bấm "Đổi kho / kỳ" mới mở ô chọn
   const kctx={plant:kkSel.plant,sloc:kkSel.sloc,period:kkPeriod};
-  ctxBar(v,kctx,{period:!_field,plants:mine},()=>{
+  ctxBar(v,kctx,{period:true,plants:mine},()=>{
     _kkKyTay=kctx.period!==kkPeriod;
     kkSel={plant:kctx.plant,sloc:kctx.sloc};kkPeriod=kctx.period;kkMethod='';counting=null;countEditId=null;kkThayPhieuId=null;renderView();
   });
 
   const p=kkPeriod;const ld=lastDayVN(p);
   const per=el('div','note');per.style.cssText='margin:14px 0 0;font-size:12px';
-  per.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span><b>Kỳ kiểm kê: tháng ${periodVN(p)}</b>${p===curPeriod()?'':' <b style="color:var(--accent-600)">(kỳ đã chọn — không phải tháng hiện tại)</b>'} · ${kyKhoangVN(p)} · Ngày kiểm kê ghi trên phiếu: <b>${ld.str}</b> (ngày chốt kỳ).${_field?' Kiểm kê tháng chỉ nhập từ ngày 25 đến cuối tháng.':''} Hãy cập nhật số liệu trước hạn để kế toán duyệt. Sau khi kế toán duyệt, tháng này sẽ bị khóa.</span>`;
+  per.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span><b>Kỳ kiểm kê: tháng ${periodVN(p)}</b>${p===curPeriod()?'':' <b style="color:var(--accent-600)">(kỳ đã chọn — không phải tháng hiện tại)</b>'} · ${kyKhoangVN(p)} · Ngày kiểm kê ghi trên phiếu: <b>${ld.str}</b> (ngày chốt kỳ). Hãy cập nhật số liệu trước hạn để kế toán duyệt. Sau khi kế toán duyệt, tháng này sẽ bị khóa.</span>`;
   v.appendChild(per);
   // BƯỚC 2 — chọn hình thức kiểm đếm (Up Excel / Kiểm đếm trực tiếp)
   const mCard=el('div','card');mCard.style.marginTop='14px';const mb=el('div','card-b');

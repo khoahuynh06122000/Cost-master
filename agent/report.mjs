@@ -186,7 +186,7 @@ try {
     const wait = ds.filter(u => u.st === 'wait');
     const done = ds.filter(u => u.st === 'done');
     if (!none.length && !wait.length) return null;
-    let msg = `📋 THEO DÕI KIỂM KÊ ${ten} — KỲ THÁNG ${perVN} (đã mở kỳ)\nThời điểm: ${new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })}\n` + dongCuaSo(activePeriod);
+    let msg = `📋 THEO DÕI KIỂM KÊ ${ten} — KỲ THÁNG ${perVN} (đã mở kỳ)\nThời điểm: ${new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })}\n`;
     if (none.length) msg += `\n🔴 CHƯA NHẬP (${none.length} kho):\n` +
       none.sort((a,b) => b.days - a.days).map(u => `${line(u)}${u.days >= 1 ? ` — mở kỳ ${u.days} ngày trước` : ''}`).join('\n') + '\n';
     if (wait.length) msg += `\n🟡 ĐÃ NHẬP · CHỜ KẾ TOÁN DUYỆT (${wait.length} kho):\n` +
