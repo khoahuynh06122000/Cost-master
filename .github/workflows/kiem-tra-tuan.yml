@@ -1,7 +1,7 @@
 name: Kiem tra app hang tuan
 on:
   schedule:
-    - cron: '30 0 * * 1'   # 07:30 sang THU 2 gio VN — truoc admin-audit (08:00)
+    - cron: '30 0 * * 1'   # 07:30 sang THU 2 gio VN
   workflow_dispatch: {}    # cho phep bam chay tay tren GitHub (tab Actions)
 permissions:
   contents: read
