@@ -255,7 +255,7 @@ try {
         const _v = new Date(new Date(x.cu).getTime() + 7 * 3600e3), ngayLap = String(_v.getUTCDate()).padStart(2, '0') + '/' + String(_v.getUTCMonth() + 1).padStart(2, '0');
         (laBep(x.p, x.s) ? out.bep : out.nh).push(x);
         if (daNhac.some(d => d.plant_code === x.p && d.sloc_code === x.s)) continue;   // chạy lại trong ngày: không nhắc 2 lần
-        const msg = `⏰ ${whLabel(x.p, x.s)} đang có ${x.n} phiếu điều chuyển Chờ tôi duyệt (cũ nhất lập ${ngayLap} — ${ngay} ngày). ⚠ Quy định: đã xuất hàng cho kho khác thì PHẢI duyệt phiếu ngay trong ngày — chưa duyệt thì sổ chưa trừ kho, kiểm kê cuối tháng sẽ lệch. Vào Nhập kho & ĐC → Chờ tôi duyệt.`;
+        const msg = `⏰ ${whLabel(x.p, x.s)} đang có ${x.n} phiếu điều chuyển Chờ tôi duyệt (cũ nhất lập ${ngayLap} — ${ngay} ngày). ⚠ Quy định: đã xuất hàng cho kho khác thì PHẢI duyệt phiếu ngay trong ngày — chưa duyệt thì sổ chưa trừ kho, kiểm kê cuối tháng sẽ lệch. Phiếu quá 48 giờ chưa duyệt sẽ bị hệ thống tự hủy. Vào Nhập kho & ĐC → Chờ tôi duyệt.`;
         try {
           const r = await fetch(`${SB_URL}/rest/v1/notifications`, { method: 'POST',
             headers: { ...H, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
@@ -276,22 +276,22 @@ try {
   }
   const nhac = await nhacDuyetDC();
   // Tin Teams: liệt kê TỪNG PHIẾU chờ duyệt, gom theo kho phải duyệt, phiếu cũ nhất lên trước (Khoa 09/11/2026)
-  const ngayVN = t => { const v = new Date(new Date(t).getTime() + 7 * 3600e3); return String(v.getUTCDate()).padStart(2, '0') + '/' + String(v.getUTCMonth() + 1).padStart(2, '0'); };
-  const soNgay = t => Math.floor((Date.now() - new Date(t).getTime()) / 864e5);
+  // Rút gọn (Khoa 09/11/2026): mỗi phiếu chỉ còn ĐIỂM TẠO + TẠO BAO LÂU + CÒN BAO LÂU tới hạn 48 giờ.
+  // Hạn tính y hệt dcHan() của app và agent/het-han-dc.mjs.
+  const HAN_MOC = Date.parse('2026-11-09T12:00:00+07:00');
+  const baoLau = ms => { const g = Math.max(0, Math.floor(ms / 3600e3)); return g < 24 ? `${g} giờ` : `${Math.floor(g / 24)} ngày${g % 24 ? ' ' + (g % 24) + ' giờ' : ''}`; };
   const dongPhieu = r => {
-    const den = r.kind === 'du' ? `hàng dư từ ${whLabel(r.from_plant, r.from_sloc)}` : `cho ${whLabel(r.to_plant, r.to_sloc)}`;
-    const nMa = r.items && typeof r.items === 'object' ? Object.keys(r.items).length : 0;
-    const d = soNgay(r.created_at);
-    return `• ${r.id} — ${den} · ${nMa} mã · lập ${ngayVN(r.created_at)} (${d > 0 ? d + ' ngày' : 'hôm nay'})${r.created_by ? ' · ' + r.created_by : ''}`;
+    const t = Date.parse(r.created_at), con = Math.ceil((Math.max(t, HAN_MOC) + 48 * 3600e3 - Date.now()) / 3600e3);
+    const diem = r.kind === 'du' ? sname(r.from_plant, r.from_sloc) : sname(r.to_plant, r.to_sloc);
+    return `• ${diem} — tạo ${baoLau(Date.now() - t)} trước · ${con > 0 ? 'còn ' + con + ' giờ' : 'quá hạn, sắp tự hủy'}`;
   };
   const phanDC = ks => {
     if (!ks.length) return null;
     ks = ks.slice().sort((a, b) => String(a.cu).localeCompare(String(b.cu)));
     const tong = ks.reduce((a, x) => a + x.ds.length, 0);
-    return `⏰ PHIẾU ĐIỀU CHUYỂN CHƯA DUYỆT — ${tong} phiếu ở ${ks.length} kho\n\n` +
-      ks.map(x => `📦 ${whLabel(x.p, x.s)} (${x.ds.length} phiếu)\n` +
-        x.ds.slice().sort((a, b) => String(a.created_at).localeCompare(String(b.created_at))).map(dongPhieu).join('\n')).join('\n\n') +
-      `\n\n⚠ Đã xuất hàng thì phải duyệt phiếu ngay trong ngày — chưa duyệt thì sổ chưa trừ kho, kiểm kê cuối tháng sẽ lệch.`;
+    return `⏰ ${tong} PHIẾU ĐIỀU CHUYỂN CHƯA DUYỆT (hạn duyệt 48 giờ, quá hạn tự hủy)\n\n` +
+      ks.map(x => `📦 Chờ ${sname(x.p, x.s)} duyệt:\n` +
+        x.ds.slice().sort((a, b) => String(a.created_at).localeCompare(String(b.created_at))).map(dongPhieu).join('\n')).join('\n\n');
   };
 
   // Bếp chỉ báo bếp, NH chỉ báo NH — mỗi nhóm một link Teams.

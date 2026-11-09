@@ -1,0 +1,20 @@
+name: Tu huy phieu dieu chuyen qua han duyet
+
+on:
+  schedule:
+    - cron: '7 * * * *'   # moi gio — phieu xin / hang du cho duyet qua 48 gio thi tu huy + bao 2 kho
+  workflow_dispatch: {}
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Tu huy phieu qua han
+        run: node agent/het-han-dc.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
