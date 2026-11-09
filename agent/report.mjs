@@ -60,8 +60,11 @@ function khoangTuan(W) {
   return `${f(thu2)} – ${f(cn)}/${cn.getUTCFullYear()}`;
 }
 
+// Teams hiển thị tin dạng HTML: ký tự xuống dòng bị gộp thành một đoạn dài (Khoa báo 09/11/2026)
+// -> đổi xuống dòng thành <br>, thoát < > để chữ không bị hiểu nhầm thành thẻ.
 async function postTeams(url, text) {
-  return fetch(url, { method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'}, body: text });
+  const html = String(text).replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\r?\n/g, '<br>');
+  return fetch(url, { method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'}, body: html });
 }
 
 // --- retry: tự thử lại tối đa 3 lần, chờ tăng dần (2s,4s,8s) ---
@@ -230,13 +233,14 @@ try {
   async function nhacDuyetDC() {
     const out = { bep: [], nh: [] };
     try {
-      const ds = await q('transfer_requests?select=id,kind,from_plant,from_sloc,to_plant,to_sloc,created_at&status=eq.' + encodeURIComponent('Chờ duyệt'));
+      const ds = await q('transfer_requests?select=id,kind,from_plant,from_sloc,to_plant,to_sloc,items,created_by,created_at&status=eq.' + encodeURIComponent('Chờ duyệt'));
       const g = {};
       ds.forEach(r => {
         if (r.kind === 'huy') return;
         const [p, s] = r.kind === 'du' ? [r.to_plant, r.to_sloc] : [r.from_plant, r.from_sloc];
         if (!p) return;
-        const k = p + '|' + s; (g[k] = g[k] || { p, s, n: 0, cu: r.created_at }).n++;
+        const k = p + '|' + s; (g[k] = g[k] || { p, s, n: 0, cu: r.created_at, ds: [] }).n++;
+        g[k].ds.push(r);
         if (String(r.created_at) < String(g[k].cu)) g[k].cu = r.created_at;
       });
       const ks = Object.values(g);
@@ -249,7 +253,7 @@ try {
       for (const x of ks) {
         const ngay = Math.floor((Date.now() - new Date(x.cu).getTime()) / 864e5);
         const _v = new Date(new Date(x.cu).getTime() + 7 * 3600e3), ngayLap = String(_v.getUTCDate()).padStart(2, '0') + '/' + String(_v.getUTCMonth() + 1).padStart(2, '0');
-        (laBep(x.p, x.s) ? out.bep : out.nh).push(`- ${whLabel(x.p, x.s)} — ${x.n} phiếu, cũ nhất ${ngay} ngày`);
+        (laBep(x.p, x.s) ? out.bep : out.nh).push(x);
         if (daNhac.some(d => d.plant_code === x.p && d.sloc_code === x.s)) continue;   // chạy lại trong ngày: không nhắc 2 lần
         const msg = `⏰ ${whLabel(x.p, x.s)} đang có ${x.n} phiếu điều chuyển Chờ tôi duyệt (cũ nhất lập ${ngayLap} — ${ngay} ngày). ⚠ Quy định: đã xuất hàng cho kho khác thì PHẢI duyệt phiếu ngay trong ngày — chưa duyệt thì sổ chưa trừ kho, kiểm kê cuối tháng sẽ lệch. Vào Nhập kho & ĐC → Chờ tôi duyệt.`;
         try {
@@ -271,7 +275,24 @@ try {
     return out;
   }
   const nhac = await nhacDuyetDC();
-  const phanDC = ds => ds.length ? `⏰ PHIẾU ĐIỀU CHUYỂN CHỜ DUYỆT (${ds.length} kho):\n${ds.join('\n')}\n⚠ Quy định: đã xuất hàng thì phải duyệt phiếu ngay trong ngày — chưa duyệt thì sổ chưa trừ kho, kiểm kê cuối tháng sẽ lệch.` : null;
+  // Tin Teams: liệt kê TỪNG PHIẾU chờ duyệt, gom theo kho phải duyệt, phiếu cũ nhất lên trước (Khoa 09/11/2026)
+  const ngayVN = t => { const v = new Date(new Date(t).getTime() + 7 * 3600e3); return String(v.getUTCDate()).padStart(2, '0') + '/' + String(v.getUTCMonth() + 1).padStart(2, '0'); };
+  const soNgay = t => Math.floor((Date.now() - new Date(t).getTime()) / 864e5);
+  const dongPhieu = r => {
+    const den = r.kind === 'du' ? `hàng dư từ ${whLabel(r.from_plant, r.from_sloc)}` : `cho ${whLabel(r.to_plant, r.to_sloc)}`;
+    const nMa = r.items && typeof r.items === 'object' ? Object.keys(r.items).length : 0;
+    const d = soNgay(r.created_at);
+    return `• ${r.id} — ${den} · ${nMa} mã · lập ${ngayVN(r.created_at)} (${d > 0 ? d + ' ngày' : 'hôm nay'})${r.created_by ? ' · ' + r.created_by : ''}`;
+  };
+  const phanDC = ks => {
+    if (!ks.length) return null;
+    ks = ks.slice().sort((a, b) => String(a.cu).localeCompare(String(b.cu)));
+    const tong = ks.reduce((a, x) => a + x.ds.length, 0);
+    return `⏰ PHIẾU ĐIỀU CHUYỂN CHƯA DUYỆT — ${tong} phiếu ở ${ks.length} kho\n\n` +
+      ks.map(x => `📦 ${whLabel(x.p, x.s)} (${x.ds.length} phiếu)\n` +
+        x.ds.slice().sort((a, b) => String(a.created_at).localeCompare(String(b.created_at))).map(dongPhieu).join('\n')).join('\n\n') +
+      `\n\n⚠ Đã xuất hàng thì phải duyệt phiếu ngay trong ngày — chưa duyệt thì sổ chưa trừ kho, kiểm kê cuối tháng sẽ lệch.`;
+  };
 
   // Bếp chỉ báo bếp, NH chỉ báo NH — mỗi nhóm một link Teams.
   const tuanBep = await phanTuan();
