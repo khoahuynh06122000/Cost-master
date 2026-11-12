@@ -975,7 +975,8 @@
 .kt-test:not(.dat)>summary .kt-so{border-color:var(--ink-soft);color:var(--ink)}
 .kt-test[open]>summary .kt-so{background:var(--ink);color:var(--surface)}
 .kt-ten{display:flex;flex-direction:column;gap:2px;min-width:0}.kt-ten b{font-size:14px;font-weight:700}.kt-ten span{font-size:12.5px;color:var(--muted);line-height:1.45}
-.kt-pv{font-size:12.5px;color:var(--ink-soft)}.kt-ai{font-size:12.5px;font-weight:600;color:var(--ink-soft)}
+.kt-pv{font-size:12.5px;color:var(--ink-soft)}
+.kt-test>summary>*{min-width:0}.kt-kq .kt-pill,.kt-tt .kt-pill,.kt-dx-t .kt-pill{white-space:normal;text-align:left;max-width:100%}.kt-ai{font-size:12.5px;font-weight:600;color:var(--ink-soft)}
 .kt-nl{margin:0 20px 14px 62px;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
 .kt-nl .ks-nl-i{padding-left:14px}
 .kt-cach{margin:14px 0}
@@ -1309,7 +1310,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1211-04';
+const APP_VER='1211-05';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
