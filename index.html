@@ -1412,7 +1412,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1611-02';
+const APP_VER='1611-03';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -7297,7 +7297,6 @@ function renderKiemkeDash(v){
     {k:'upxls',ico:HIC.box,title:'Nhập số kiểm kê từ Excel',sub:'Nhập thay điểm bán khi giám sát không tự đếm được',render:v2=>renderKKUpload(v2)},
     {k:'theodoi',ico:HIC.list,title:'Theo dõi & duyệt phiếu',sub:'Bộ lọc, thống kê, danh sách phiếu kiểm kê',n:_cho?_cho+' phiếu chờ duyệt':'',warm:!!_cho,render:kkDashList},
     {k:'nxt',ico:HIC.sheet,title:'Nhập – Xuất – Tồn',sub:'Xem số lượng theo kỳ, điểm bán, kho: tồn đầu kỳ, nhập, điều chuyển, tồn kiểm kê, xuất thực tế — tải Excel',render:kkNXT},
-    {k:'ky',ico:HIC.sheet,title:'Chứng từ ký SignHub',sub:'PDF cả tháng: biên bản kiểm kê, biên bản hủy hàng, phiếu điều chuyển hàng',render:kkChungTu},
   ]);
 }
 /* ===== NHẬP – XUẤT – TỒN (26/10/2026) =====
@@ -7433,130 +7432,6 @@ function nxtVeMotKho(host,w,C){
     cardifyTables(vung);dichMan(vung);};
   let _h=0;ti.oninput=()=>{clearTimeout(_h);_h=setTimeout(()=>{C.tim=ti.value;ve();},200);};
   ve();
-}
-/* ===== CHỨNG TỪ KÝ SIGNHUB (Khoa 02/11/2026, góp ý của sếp) =====
-   Cuối tháng tải về → đưa lên SignHub ký → lưu lại, để có chứng từ cho ban kiểm soát. Ba loại, mỗi loại GỘP MỘT FILE PDF
-   cho cả tháng: biên bản kiểm kê (phiếu ĐÃ DUYỆT), biên bản hủy hàng và phiếu điều chuyển hàng (phiếu ĐÃ DUYỆT, theo kỳ ghi sổ).
-   PDF tạo bằng hộp In của trình duyệt (chọn "Lưu thành PDF") — giữ đúng tiếng Việt, không cần thư viện. */
-let ctCtx=null;
-function ctTen(code,it){const m=masterByCode[code]||{};return String((it&&it.name)||m.name||code).replace(/^[﻿​]+/,'');}
-function ctDvt(code,it){const m=masterByCode[code]||{};return (it&&it.uom)||m.uom||'';}
-function ctSo(x){const n=Number(x)||0;return n.toLocaleString('vi-VN',{maximumFractionDigits:3});}
-function ctNgayVN(iso){const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso||''));return m?m[3]+'/'+m[2]+'/'+m[1]:String(iso||'');}
-function ctNgayGhiSo(r){const ds=dcDongSoCua(r.id).map(t=>t.date).filter(Boolean).sort();return ds.length?ctNgayVN(ds[0]):(r.approvedAt||'');}
-function ctKhoDs(){const ps=ctCtx.plant?[ctCtx.plant]:allowedPlants().map(x=>x.plant);const out=new Set();
-  ps.forEach(p=>allowedSlocsOf(p).forEach(w=>{const sl=w.sloc||w;if(ctCtx.loai&&dcLoaiKho(p,sl)!==ctCtx.loai)return;out.add(p+'|'+sl);}));return out;}
-function ctPhieuKK(){const ks=ctKhoDs();
-  return submissions.filter(x=>x.period===ctCtx.period&&x.status==='Đã duyệt'&&!x._choGui&&ks.has(x.plant+'|'+x.sloc))
-    .sort((a,b)=>whName(a.plant,a.sloc).localeCompare(whName(b.plant,b.sloc),'vi'));}
-function ctPhieuDC(huy){const ks=ctKhoDs();
-  return (trReqs||[]).filter(r=>r.status==='Đã duyệt'&&!r._choGui&&(huy?r.kind==='huy':r.kind!=='huy')&&kyPhieuDC(r)===ctCtx.period
-    &&(ks.has(r.fromPlant+'|'+r.fromSloc)||(!huy&&r.toPlant&&ks.has(r.toPlant+'|'+r.toSloc))))
-    .sort((a,b)=>String(a.createdAt||'').localeCompare(String(b.createdAt||''))||String(a.id).localeCompare(String(b.id)));}
-function ctDongHang(r){return Object.keys(r.items||{}).map(c=>{const it=r.items[c]||{};
-  const ok=Number(it.qtyOk!=null?it.qtyOk:it.qtyReq)||0;return {code:c,name:ctTen(c,it),uom:ctDvt(c,it),req:Number(it.qtyReq)||0,ok,exp:it.exp||''};})
-  .filter(x=>x.ok>0||x.req>0).sort((a,b)=>a.name.localeCompare(b.name,'vi'));}
-const CT_CTY='CÔNG TY CỔ PHẦN DỊCH VỤ CÁP TREO BÀ NÀ';
-function ctKy2(t1,t2){return `<table class="ky"><tr><td><b>${t1}</b><br><i>(Ký, ghi rõ họ tên)</i></td><td><b>${t2}</b><br><i>(Ký, ghi rõ họ tên)</i></td></tr></table>`;}
-function ctBBKK(s){const e=escHtml,wh=whName(s.plant,s.sloc),d=lastDayVN(s.period||curPeriod()).date;
-  const gc=s.itemNotes||{};const gcOf=c=>{const g=gc[c];if(!g)return '';const dd=/^\d{4}-\d{2}-\d{2}$/.test(String(g.d||''))?ctNgayVN(g.d):String(g.d||'');return [dd,String(g.g||'')].filter(Boolean).join(' · ');};
-  const rows=Object.entries(s.items||{}).map(([c,q])=>({c,q,n:ctTen(c),u:ctDvt(c)})).sort((a,b)=>a.n.localeCompare(b.n,'vi'));
-  return `<section><div class="cty">${CT_CTY}</div><h1>BIÊN BẢN KIỂM KÊ KHO/TÀI SẢN</h1>
-<p><b>BỘ PHẬN/KHO:</b> ${e(wh)} (${e(s.plant)}-${e(s.sloc)}) · Kỳ ${e(periodVN(s.period))} (${e(kyKhoangVN(s.period))})</p>
-<p>Thời điểm kiểm kê: Ngày ${String(d.getDate()).padStart(2,'0')} tháng ${String(d.getMonth()+1).padStart(2,'0')} năm ${d.getFullYear()} · Số phiếu: ${e(s.id)}</p>
-<p>Tổ kiểm kê (kế toán duyệt): ${e(s.approvedBy||'……………………')} · Kho/bộ phận (người đếm): ${e(s.user||'')} — ${e(plantName(s.plant))}</p>
-<table class="bang"><thead><tr><th>TT</th><th>Mã vật tư</th><th>Tên hàng</th><th>ĐVT</th><th>Số lượng kiểm kê</th><th>Ghi chú</th></tr></thead><tbody>
-${rows.map((r,i)=>`<tr><td class="c">${i+1}</td><td class="c">${e(r.c)}</td><td>${e(r.n)}</td><td class="c">${e(r.u)}</td><td class="r">${ctSo(r.q)}</td><td>${e(gcOf(r.c))}</td></tr>`).join('')}
-</tbody></table>
-<p>Có/Không có hàng hóa kém phẩm chất, hết hạn, gần hết hạn theo xác nhận của bp quản lý kho: ……………</p>
-<p class="vet">Trên hệ thống: gửi ${e(s.time||'')} bởi ${e(s.user||'')} · duyệt ${e(s.approvedAt||'')} bởi ${e(s.approvedBy||'')}</p>
-${ctKy2('ĐẠI DIỆN KẾ TOÁN','ĐẠI DIỆN KIỂM KÊ')}</section>`;}
-function ctBBHuy(r){const e=escHtml,rows=ctDongHang(r);
-  return `<section><div class="cty">${CT_CTY}</div><h1>BIÊN BẢN HỦY HÀNG / HAO HỤT</h1>
-<p><b>Số phiếu:</b> ${e(r.id)}${r.idCu?' (mã cũ '+e(r.idCu)+')':''} · <b>Ngày ghi sổ:</b> ${e(ctNgayGhiSo(r))} · Kỳ ${e(periodVN(kyPhieuDC(r)))}</p>
-<p><b>Kho hủy:</b> ${e(whName(r.fromPlant,r.fromSloc))} (${e(r.fromPlant)}-${e(r.fromSloc)}) — ${e(plantName(r.fromPlant))}</p>
-<p><b>Lý do:</b> ${e(r.reason||'……………………')}</p>
-<table class="bang"><thead><tr><th>TT</th><th>Mã vật tư</th><th>Tên hàng</th><th>ĐVT</th><th>SL đề nghị hủy</th><th>SL duyệt hủy</th><th>Ghi chú</th></tr></thead><tbody>
-${rows.map((x,i)=>`<tr><td class="c">${i+1}</td><td class="c">${e(x.code)}</td><td>${e(x.name)}</td><td class="c">${e(x.uom)}</td><td class="r">${ctSo(x.req)}</td><td class="r">${ctSo(x.ok)}</td><td>${e(x.exp?('HSD '+x.exp):'')}</td></tr>`).join('')}
-</tbody></table>
-<p class="vet">Trên hệ thống: lập ${e(r.time||'')} bởi ${e(r.by||'')} · duyệt ${e(r.approvedAt||'')} bởi ${e(r.approvedBy||'')}</p>
-${ctKy2('BỘ PHẬN LẬP','KẾ TOÁN DUYỆT')}</section>`;}
-function ctPhieuDCHtml(r){const e=escHtml,rows=ctDongHang(r);
-  const loai=r.kind==='du'?'Hàng dư cuối ngày':r.kind==='day'?'Đẩy hàng':'Xin hàng';
-  return `<section><div class="cty">${CT_CTY}</div><h1>PHIẾU ĐIỀU CHUYỂN HÀNG</h1>
-<p><b>Số phiếu:</b> ${e(r.id)}${r.idCu?' (mã cũ '+e(r.idCu)+')':''} · <b>Loại:</b> ${e(loai)} · <b>Ngày ghi sổ:</b> ${e(ctNgayGhiSo(r))} · Kỳ ${e(periodVN(kyPhieuDC(r)))}</p>
-<p><b>Bên giao:</b> ${e(whName(r.fromPlant,r.fromSloc))} (${e(r.fromPlant)}-${e(r.fromSloc)}) — ${e(plantName(r.fromPlant))}</p>
-<p><b>Bên nhận:</b> ${e(whName(r.toPlant,r.toSloc))} (${e(r.toPlant)}-${e(r.toSloc)}) — ${e(plantName(r.toPlant))}</p>
-${r.reason?'<p><b>Ghi chú:</b> '+e(r.reason)+'</p>':''}
-<table class="bang"><thead><tr><th>TT</th><th>Mã vật tư</th><th>Tên hàng</th><th>ĐVT</th><th>SL đề nghị</th><th>SL thực giao</th></tr></thead><tbody>
-${rows.map((x,i)=>`<tr><td class="c">${i+1}</td><td class="c">${e(x.code)}</td><td>${e(x.name)}</td><td class="c">${e(x.uom)}</td><td class="r">${ctSo(x.req)}</td><td class="r">${ctSo(x.ok)}</td></tr>`).join('')}
-</tbody></table>
-<p class="vet">Trên hệ thống: lập ${e(r.time||'')} bởi ${e(r.by||'')} · duyệt ${e(r.approvedAt||'')} bởi ${e(r.approvedBy||'')}</p>
-${ctKy2('BÊN GIAO','BÊN NHẬN')}</section>`;}
-function ctTongHop(tieuDe,cot,dong){const e=escHtml,per=ctCtx.period;
-  const pham=[ctCtx.plant?plantName(ctCtx.plant):'Tất cả điểm bán',ctCtx.loai==='bep'?'kho bếp':ctCtx.loai==='nh'?'kho nhà hàng':'mọi loại kho'].join(' · ');
-  return `<section class="bia"><div class="cty">${CT_CTY}</div><h1>${tieuDe}</h1>
-<p class="c">Kỳ ${e(periodVN(per))} (${e(kyKhoangVN(per))}) · ${e(pham)} · ${dong.length} chứng từ</p>
-<table class="bang"><thead><tr><th>TT</th>${cot.map(c=>'<th>'+c+'</th>').join('')}</tr></thead><tbody>
-${dong.map((d,i)=>'<tr><td class="c">'+(i+1)+'</td>'+d.map(x=>'<td>'+e(x)+'</td>').join('')+'</tr>').join('')}
-</tbody></table>
-<p class="vet">Xuất từ hệ thống Kiểm kê F&amp;B lúc ${e(new Date().toLocaleString('vi-VN'))} bởi ${e((session&&session.name)||'')}. Các trang sau là từng chứng từ, mỗi chứng từ một trang.</p></section>`;}
-function ctMoIn(ten,html){
-  const w=window.open('','_blank');
-  if(!w){errBox('Trình duyệt đang chặn cửa sổ mới',['Cho phép cửa sổ bật lên (pop-up) cho trang này rồi bấm lại.']);return false;}
-  w.document.open();
-  w.document.write(`<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>${escHtml(ten)}</title><style>
-@page{size:A4;margin:14mm 12mm}
-body{font-family:'Times New Roman',Times,serif;font-size:12pt;color:#000;margin:0}
-section{page-break-after:always;break-after:page}section:last-child{page-break-after:auto;break-after:auto}
-.cty{text-align:center;font-weight:bold}h1{text-align:center;font-size:15pt;margin:8px 0 10px}p{margin:4px 0}.c{text-align:center}
-table.bang{width:100%;border-collapse:collapse;margin:8px 0}table.bang th,table.bang td{border:1px solid #000;padding:3px 5px;vertical-align:top}
-table.bang th{background:#eee}table.bang td.c{text-align:center}table.bang td.r{text-align:right}thead{display:table-header-group}tr{page-break-inside:avoid}
-table.ky{width:100%;margin-top:18px}table.ky td{width:50%;text-align:center;vertical-align:top;height:90px}
-.vet{font-size:10pt;color:#333;font-style:italic}.goiy{font-family:Arial,sans-serif;font-size:13px;background:#FDF1DC;padding:8px 12px;margin-bottom:10px}
-@media print{.goiy{display:none}}
-</style></head><body><div class="goiy">Chọn máy in <b>"Lưu thành PDF" (Save as PDF)</b> để tải file về, rồi đưa file lên SignHub ký.</div>${html}</body></html>`);
-  w.document.close();
-  setTimeout(()=>{try{w.focus();w.print();}catch(e){}},400);
-  return true;
-}
-function ctXuat(loai){
-  const per=ctCtx.period,dd=per.replace('-','');let ds,html,ten,nhan;
-  if(loai==='kk'){ds=ctPhieuKK();nhan='biên bản kiểm kê';ten='BB-kiem-ke-'+dd;
-    html=ctTongHop('TỔNG HỢP BIÊN BẢN KIỂM KÊ',['Kho','Số phiếu','Số mã','Kế toán duyệt'],ds.map(s=>[whName(s.plant,s.sloc)+' ('+s.plant+'-'+s.sloc+')',s.id,String(Object.keys(s.items||{}).length),s.approvedBy||'']))+ds.map(ctBBKK).join('');}
-  else if(loai==='huy'){ds=ctPhieuDC(true);nhan='biên bản hủy hàng';ten='BB-huy-hang-'+dd;
-    html=ctTongHop('TỔNG HỢP BIÊN BẢN HỦY HÀNG',['Số phiếu','Ngày ghi sổ','Kho hủy','Số mã','Kế toán duyệt'],ds.map(r=>[r.id,ctNgayGhiSo(r),whName(r.fromPlant,r.fromSloc),String(ctDongHang(r).length),r.approvedBy||'']))+ds.map(ctBBHuy).join('');}
-  else{ds=ctPhieuDC(false);nhan='phiếu điều chuyển hàng';ten='Phieu-dieu-chuyen-'+dd;
-    html=ctTongHop('TỔNG HỢP PHIẾU ĐIỀU CHUYỂN HÀNG',['Số phiếu','Ngày ghi sổ','Bên giao → Bên nhận','Số mã','Người duyệt'],ds.map(r=>[r.id,ctNgayGhiSo(r),whName(r.fromPlant,r.fromSloc)+' → '+whName(r.toPlant,r.toSloc),String(ctDongHang(r).length),r.approvedBy||'']))+ds.map(ctPhieuDCHtml).join('');}
-  if(!ds.length){toast(L('Kỳ này chưa có '+nhan+' nào đã duyệt'));return;}
-  if(ctMoIn(ten,html))log('Xuất chứng từ ký SignHub',nhan+' kỳ '+periodVN(per)+' — '+ds.length+' chứng từ');
-}
-function kkChungTu(v){
-  if(!ctCtx)ctCtx={period:kyTruoc(curPeriod()),plant:'',loai:''};
-  const c=el('div','card');c.style.cssText='padding:18px';v.appendChild(c);
-  c.appendChild(el('div','','<div style="font-weight:700;margin-bottom:4px">Chứng từ ký SignHub</div>'
-    +'<div style="font-size:13px;color:var(--muted);margin-bottom:12px">Cuối tháng tải về, đưa lên SignHub ký rồi lưu lại làm chứng từ. Mỗi loại gộp một file PDF cho cả tháng: trang đầu là bảng tổng hợp, sau đó mỗi chứng từ một trang. Chỉ lấy phiếu đã duyệt.</div>'));
-  const r=el('div','form-row');r.style.flexWrap='wrap';
-  const fk=el('label','field','<span>Kỳ</span>');const sk=el('select','input');
-  periodOptions(12).forEach(pp=>{const o=el('option',null,kyNhan(pp));o.value=pp;sk.appendChild(o);});sk.value=ctCtx.period;fk.appendChild(sk);r.appendChild(fk);
-  const fp=el('label','field','<span>Điểm bán</span>');const sp=el('select','input');
-  sp.appendChild(Object.assign(el('option',null,'Tất cả điểm bán'),{value:''}));
-  allowedPlants().forEach(x=>{const o=el('option',null,x.name);o.value=x.plant;sp.appendChild(o);});sp.value=ctCtx.plant;fp.appendChild(sp);r.appendChild(fp);
-  const fl=el('label','field','<span>Loại kho</span>');const sl2=el('select','input');
-  [['','Tất cả'],['nh','Nhà hàng'],['bep','Bếp']].forEach(([k,t])=>{const o=el('option',null,t);o.value=k;sl2.appendChild(o);});sl2.value=ctCtx.loai;fl.appendChild(sl2);r.appendChild(fl);
-  c.appendChild(r);
-  const tt=el('div');tt.style.marginTop='10px';c.appendChild(tt);
-  const bar=el('div');bar.style.cssText='display:flex;gap:10px;flex-wrap:wrap;margin-top:12px';c.appendChild(bar);
-  const ve=()=>{const nKK=ctPhieuKK().length,nH=ctPhieuDC(true).length,nD=ctPhieuDC(false).length;
-    const ks=ctKhoDs();const choKK=submissions.filter(x=>x.period===ctCtx.period&&x.status==='Chờ duyệt'&&ks.has(x.plant+'|'+x.sloc)).length;
-    tt.innerHTML='';tt.appendChild(clNote('Đã duyệt: '+nKK+' biên bản kiểm kê · '+nH+' biên bản hủy hàng · '+nD+' phiếu điều chuyển'+(choKK?' · còn '+choKK+' phiếu kiểm kê chờ duyệt (chưa đưa vào file)':'')));
-    bar.innerHTML='';
-    [['kk','🖨 Biên bản kiểm kê',nKK],['huy','🖨 Biên bản hủy hàng',nH],['dc','🖨 Phiếu điều chuyển hàng',nD]].forEach(([k,t,n])=>{
-      const b=el('button','btn '+(n?'btn-brand':'btn-ghost'),t+' ('+n+')');b.disabled=!n;b.onclick=()=>ctXuat(k);bar.appendChild(b);});
-    dichMan(c);};
-  const doi=()=>{ctCtx.period=sk.value;ctCtx.plant=sp.value;ctCtx.loai=sl2.value;ve();};
-  [sk,sp,sl2].forEach(x=>x.onchange=doi);ve();
-  c.appendChild(el('div','list-hint','Hộp In mở ra thì chọn máy in "Lưu thành PDF" (Save as PDF). Máy chặn cửa sổ bật lên thì cho phép rồi bấm lại.'));
 }
 function kkDashList(v){
   // Danh sách tháng lấy từ chính các phiếu đang có (mới nhất trước) — chỉ hiện tháng thật có dữ liệu
