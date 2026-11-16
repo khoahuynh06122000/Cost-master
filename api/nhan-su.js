@@ -99,7 +99,11 @@ module.exports = async (req, res) => {
   const theoMa = new Map(ds.map(r => [r.ma_nv, r]));
 
   try {
-    const cu = await supa('nhan_su?select=' + TRUONG.join(',') + ',quan_ly,so_cap_duoi,dang_lam', { method: 'GET' });
+    let cu;
+    try { cu = await supa('nhan_su?select=' + TRUONG.join(',') + ',quan_ly,so_cap_duoi,dang_lam,nguon', { method: 'GET' }); }
+    catch (e) { cu = await supa('nhan_su?select=' + TRUONG.join(',') + ',quan_ly,so_cap_duoi,dang_lam', { method: 'GET' }); }
+    // Hồ sơ admin KHAI TAY (nguon='app', VD kế toán ngoài MySun) không thuộc danh bạ MySun: không cập nhật, không đánh dấu nghỉ.
+    cu = (cu || []).filter(r => (r.nguon || 'mysun') !== 'app');
     const cuMap = new Map((cu || []).map(r => [r.ma_nv, r]));
     let moi = 0, capNhat = 0;
     const ghi = [];
