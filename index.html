@@ -1697,7 +1697,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1611-19';
+const APP_VER='1611-20';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -2145,6 +2145,7 @@ let _dangTai=0,_flushCho=false;   // _dangTai = số lượt tải đang chạy
    gửi lại bao nhiêu lần cũng trượt, phải báo người dùng. */
 function laLoiMang(e){
   if(!e)return false;
+  if(/PIN_KHOA/.test(String((e&&(e.message||e.hint))||e)))return true;   /* phiên chưa mở khoá PIN: giữ hàng đợi, không coi là bị từ chối */
   if(typeof navigator!=='undefined'&&navigator.onLine===false)return true;
   const m=String(e.message||e.error_description||e||'');
   return /failed to fetch|networkerror|network request failed|load failed|timeout|ERR_INTERNET|ERR_NETWORK|ERR_NAME_NOT_RESOLVED/i.test(m);
@@ -4974,6 +4975,8 @@ let _dangGiaHan=null;
 async function fetchGiaHan(input,init){
   const res=await fetch(input,init);
   try{egDem(input,res);}catch(e){}
+  try{if((res.status===401||res.status===403)&&!_dangKhoaLai){const u0=typeof input==='string'?input:(input&&input.url)||'';
+    if(u0.indexOf('/rest/v1/')>=0){res.clone().text().then(t=>{if(/PIN_KHOA/.test(t))setTimeout(khoaLaiPin,0);}).catch(()=>{});}}}catch(e){}
   try{
     const url=typeof input==='string'?input:(input&&input.url)||'';
     if(res.status!==401||url.indexOf('/auth/v1/')>=0||!sb)return res;
@@ -5765,7 +5768,12 @@ const PIN_LS='kk_pin_v1',PIN_OK_LS='kk_pin_ok_v2',PIN_QUEN_LS='kk_pin_quen_v1',P
 function pinDoc(){try{return JSON.parse(localStorage.getItem(PIN_LS)||'{}')||{};}catch(e){return {};}}
 function pinGhi(o){try{localStorage.setItem(PIN_LS,JSON.stringify(o));}catch(e){}}
 function pinUid(){return String((session&&(session.uid||session.email))||'');}
-function pinCua(uid){const r=pinDoc()[uid];return r&&r.h&&r.s?r:null;}
+const PIN_MAY_HAN=7*86400e3,PIN_MAY_VONG=310000;
+function pinCua(uid){const r=pinDoc()[uid];
+  if(!(r&&r.h&&r.s))return null;
+  if(!(window.crypto&&crypto.subtle&&window.TextEncoder))return null;
+  if(!r.at||Date.now()-r.at>PIN_MAY_HAN)return null;   /* quá 7 ngày chưa mở khoá trực tuyến: phải có mạng */
+  return r;}
 function pinJs(k){try{return JSON.parse(localStorage.getItem(k)||'{}')||{};}catch(e){return {};}}
 function pinJsGhi(k,o){try{localStorage.setItem(k,JSON.stringify(o));}catch(e){}}
 function pinOkCon(uid){const o=pinJs(PIN_OK_LS);return Number(o[uid])>Date.now();}
@@ -5773,14 +5781,15 @@ function pinOkGhi(uid){const o=pinJs(PIN_OK_LS);o[uid]=Date.now()+PIN_GIU_MS;pin
 function pinOkXoa(uid){const o=pinJs(PIN_OK_LS);delete o[uid];pinJsGhi(PIN_OK_LS,o);}
 function pinQuenCo(uid){return !!pinJs(PIN_QUEN_LS)[uid];}
 function pinQuenDat(uid,co){const o=pinJs(PIN_QUEN_LS);if(co)o[uid]=1;else delete o[uid];pinJsGhi(PIN_QUEN_LS,o);}
-async function pinBam(pin,salt){
+async function pinBam(pin,salt,vong){
   const te=new TextEncoder();
   const k=await crypto.subtle.importKey('raw',te.encode(pin),'PBKDF2',false,['deriveBits']);
-  const b=await crypto.subtle.deriveBits({name:'PBKDF2',salt:te.encode(salt),iterations:120000,hash:'SHA-256'},k,256);
+  const b=await crypto.subtle.deriveBits({name:'PBKDF2',salt:te.encode(salt),iterations:vong||120000,hash:'SHA-256'},k,256);
   return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('');}
 async function pinLuuMay(uid,pin){  /* bản kiểm ngoại tuyến trên máy */
   try{const salt=Array.from(crypto.getRandomValues(new Uint8Array(16))).map(x=>x.toString(16).padStart(2,'0')).join('')+uid;
-    const h=await pinBam(pin,salt);const o=pinDoc();o[uid]={h,s:salt,n:0,at:Date.now()};pinGhi(o);}catch(e){}}
+    if(!(window.crypto&&crypto.subtle))return;
+    const h=await pinBam(pin,salt,PIN_MAY_VONG);const o=pinDoc();o[uid]={h,s:salt,i:PIN_MAY_VONG,n:0,at:Date.now()};pinGhi(o);}catch(e){}}
 function pinDeDoan(p){return /^(\d)\1{5}$/.test(p)||'0123456789'.includes(p)||'9876543210'.includes(p);}
 async function pinApi(action,pin){
   let tk='';try{const r=await sb.auth.getSession();tk=r&&r.data&&r.data.session&&r.data.session.access_token||'';}catch(e){}
@@ -5791,35 +5800,45 @@ async function pinApi(action,pin){
   return j;
 }
 let _pinRes=null,_pinBuf='',_pinMode='',_pinB1='',_pinBan=false,_pinNguon='may_chu';
+/* RÀ BẢO MẬT 16/11/2026 (Khoa: PIN là lớp thứ 2, không được có cửa sau). KHÔNG còn nhánh nào "cho qua" khi chưa kiểm:
+   - không có crypto.subtle: vẫn kiểm bằng máy chủ (máy chủ không cần crypto của trình duyệt), chỉ bỏ được bản kiểm ngoại tuyến;
+   - máy chủ trả 401: gia hạn phiên rồi hỏi lại, vẫn 401 thì đăng xuất (trước đây cho vào thẳng);
+   - không gọi được máy chủ + máy chưa có bản kiểm ngoại tuyến: hiện màn "cần có mạng", KHÔNG cho vào (trước đây cho vào thẳng).
+   Lớp chặn thật nằm ở máy chủ: SQL PHẦN 41 — dữ liệu chỉ trả cho phiên đã nhập đúng PIN (lỗi PIN_KHOA → khoaLaiPin). */
 async function pinQua(){
-  try{if(!(window.crypto&&crypto.subtle&&window.TextEncoder))return true;}catch(e){return true;}
-  const uid=pinUid();if(!uid)return true;
+  const uid=pinUid();if(!uid)return false;
   const vuaMK=!!_liVuaBam;               /* vừa đăng nhập bằng mật khẩu */
   /* Khoa 16/11/2026: MỖI LẦN MỞ / TẢI LẠI app (kể cả Ctrl+Shift+R) đều hỏi PIN — bỏ "giữ mở khóa 8 giờ". */
   pinOkXoa(uid);
   let mode=null;
   const matMang=(typeof navigator!=='undefined'&&navigator.onLine===false)||!mangOK;
   if(!matMang){
-    try{const st=await pinApi('trang_thai');_pinNguon='may_chu';
+    try{let st;
+      try{st=await pinApi('trang_thai');}
+      catch(e1){if(!(e1.maLoi==='khong_phien'||e1.st===401))throw e1;
+        try{await sb.auth.refreshSession();}catch(e2){}
+        st=await pinApi('trang_thai');}
+      _pinNguon='may_chu';
       if(st.khoa||(st.coPin&&pinQuenCo(uid)))mode=vuaMK?'dat':'khoa';
       else mode=st.coPin?'nhap':'dat';
     }catch(e){
       if(e.maLoi==='chua_cau_hinh'){_pinNguon='may';mode=pinCua(uid)?'nhap':'dat';}   /* máy chủ chưa bật PIN: dùng PIN trên máy như cũ */
-      else if(e.maLoi==='khong_phien'||e.st===401)return true;   /* phiên hỏng — afterAuth tự xử lý đăng nhập lại */
+      else if(e.maLoi==='khong_phien'||e.st===401){await pinDangXuat();return false;}   /* phiên hỏng hẳn: đăng nhập lại, KHÔNG cho qua */
       else mode=null;   /* lỗi mạng: xuống nhánh ngoại tuyến */
     }
   }
-  if(!mode){_pinNguon='may';if(!pinCua(uid))return true;mode='nhap';}
+  if(!mode){_pinNguon='may';mode=pinCua(uid)?'nhap':'mang';}
   const ok=await pinUI(mode);
   if(ok)_liVuaBam=false;   /* đã có hiệu ứng mở khóa riêng của PIN */
   return ok;
 }
-function pinUI(mode){return new Promise(res=>{_pinRes=res;_pinMode=mode;_pinBuf='';_pinB1='';_pinBan=mode==='khoa';
+function pinUI(mode){return new Promise(res=>{_pinRes=res;_pinMode=mode;_pinBuf='';_pinB1='';_pinBan=mode==='khoa'||mode==='mang';
   showAuth('pin');const st=$('#pinStage');if(st)st.className='pin-stage';pinBao(mode==='khoa'?'Đã nhập sai 5 lần.':'',mode==='khoa');pinVeDau();pinVe();});}
 function pinVeDau(){
   const ten=String((session&&session.name)||'').trim().split(/\s+/).pop();
   const t=$('#pinTitle'),sub=$('#pinSub'),lk=$('#pinLink');
-  if(_pinMode==='khoa'){t.textContent=L('Mã PIN đang bị khóa');sub.textContent=L('Đăng nhập lại bằng mật khẩu để đặt mã PIN mới.');lk.textContent=L('Đăng nhập lại bằng mật khẩu');}
+  if(_pinMode==='mang'){t.textContent=L('Không kết nối được máy chủ');sub.textContent=L('Cần có mạng để mở khóa app trên máy này. Kiểm tra mạng rồi bấm Thử lại.');lk.textContent=L('Thử lại');}
+  else if(_pinMode==='khoa'){t.textContent=L('Mã PIN đang bị khóa');sub.textContent=L('Đăng nhập lại bằng mật khẩu để đặt mã PIN mới.');lk.textContent=L('Đăng nhập lại bằng mật khẩu');}
   else if(_pinMode==='nhap'){t.textContent=L('Nhập mã PIN');sub.textContent=(ten?L('Xin chào')+', '+ten+' — ':'')+L('nhập mã PIN 6 số');lk.textContent=L('Quên mã PIN?');}
   else if(!_pinB1){t.textContent=L('Đặt mã PIN');sub.textContent=L('Chọn 6 số dễ nhớ với bạn — lần sau mở app chỉ cần nhập mã này.');lk.textContent=L('Không phải bạn? Đăng xuất');}
   else{t.textContent=L('Nhập lại mã PIN');sub.textContent=L('Nhập lại 6 số vừa chọn để xác nhận.');}
@@ -5847,7 +5866,8 @@ async function pinMoKhoa(chu){
   const c=$('#loginCard'),h=document.querySelector('.login-hero2');if(c)c.classList.add('leaving');if(h)h.classList.add('leaving');
   await _cho(260);
 }
-async function pinXongMo(uid,chu){pinOkGhi(uid);pinQuenDat(uid,false);await pinMoKhoa(chu);const r=_pinRes;_pinRes=null;r&&r(true);}
+async function pinXongMo(uid,chu){_pinBuf='';_pinB1='';pinQuenDat(uid,false);   /* không giữ số PIN trong bộ nhớ sau khi mở khoá */
+  await pinMoKhoa(chu);const r=_pinRes;_pinRes=null;r&&r(true);}
 async function pinBiKhoa(uid){
   const st=$('#pinStage');st.classList.remove('verify');st.classList.add('sai');
   try{if(navigator.vibrate)navigator.vibrate([120,60,120]);}catch(e){}
@@ -5891,7 +5911,7 @@ async function pinXong(){
     }
   }
   const rec=pinCua(uid);if(!rec){st.classList.remove('verify');await pinSai('Không kết nối được máy chủ — kiểm tra mạng rồi thử lại.');return;}
-  let h='';try{h=await pinBam(pin,rec.s);}catch(e){console.error('pin',e);}
+  let h='';try{h=await pinBam(pin,rec.s,rec.i);}catch(e){console.error('pin',e);}
   await _cho(Math.max(0,750-(Date.now()-t0)));st.classList.remove('verify');
   if(h&&h===rec.h){const o=pinDoc();if(o[uid])o[uid].n=0;pinGhi(o);await pinXongMo(uid,'Đã mở khóa');return;}
   const o=pinDoc();const n=((o[uid]&&o[uid].n)||0)+1;
@@ -5903,6 +5923,7 @@ async function pinXong(){
 async function pinDangXuat(){try{await sb.auth.signOut();}catch(e){}try{location.reload();}catch(e){}}
 function pinLinkBam(){
   const uid=pinUid();
+  if(_pinMode==='mang'){try{location.reload();}catch(e){}return;}
   if(_pinMode==='nhap'||_pinMode==='khoa'){
     if(_pinMode==='nhap'&&!confirm(L('Quên mã PIN: đăng nhập lại bằng email + mật khẩu, sau đó đặt mã PIN mới.')+'\n\n'+L('Tiếp tục?')))return;
     const o=pinDoc();delete o[uid];pinGhi(o);pinOkXoa(uid);pinQuenDat(uid,true);pinDangXuat();return;}
@@ -6242,6 +6263,7 @@ function scFormBaiHoc(h,goc){
   const kn=o('khoa_nhan_dien',L('Dấu hiệu nhận diện (bot canh tái phát)'),r.khoa_nhan_dien,false,L('Chuỗi trong câu lỗi, VD: JWT expired'));
   const doi=()=>{const bh=loai.value==='bai_hoc';[nn,bs,ns,kn].forEach(x=>x.closest('label').hidden=!bh);kt.closest('label').hidden=bh;};loai.onchange=doi;doi();
   f.appendChild(el('div','list-hint sc-full',escHtml(L('Dấu hiệu nhận diện: bot so với câu lỗi người dùng gặp và mã sự cố — khớp thì báo ♻️ TÁI PHÁT kèm bài học này. Để trống nếu không muốn bot canh.'))));
+  f.appendChild(el('div','list-hint sc-full',escHtml(L('Sổ tay được ghi ra file docs/SO-TAY-SU-CO.md trên kho mã nguồn công khai — KHÔNG ghi tên người, số điện thoại, mật khẩu, khóa.'))));
   const luu=el('button','btn btn-primary','💾 '+escHtml(L('Lưu vào sổ tay')));
   luu.onclick=()=>{if(!td.value.trim()){toast(L('Chưa có tiêu đề'));td.focus();return;}
     const bh=loai.value==='bai_hoc';
@@ -6294,7 +6316,7 @@ function renderSuCo(v){
           if(r.trang_thai==='mo'&&!r.da_xu_ly){const b=el('button','btn btn-primary btn-sm','✓ '+escHtml(L('Đánh dấu đã xử lý')));
             b.onclick=async()=>{b.disabled=true;await scGhi('su_co',t=>t.update({da_xu_ly:true}).eq('id',r.id).select('id'),L('Đã đánh dấu đã xử lý'));
               if(confirm(L('Ghi bài học cho sự cố này để bot canh không tái phạm?'))){
-                scSTMo={loai:'bai_hoc',muc:r.muc,tieu_de:String(r.tieu_de||'').replace(/^Tái phát: /,''),trieu_chung:r.anh_huong||'',ma_su_co:r.ma||null,khoa_nhan_dien:scKhoaTuSuCo(r)};
+                scSTMo={loai:'bai_hoc',muc:r.muc,tieu_de:String(r.tieu_de||'').replace(/^Tái phát: /,''),trieu_chung:'',ma_su_co:r.ma||null,khoa_nhan_dien:scKhoaTuSuCo(r)};
                 hubOpen.suco='st';renderView();}};
             const f=el('div','sc-act');f.appendChild(b);c.appendChild(f);}
           h.appendChild(c);
@@ -6473,6 +6495,24 @@ function applyDeepLinkKK(kk){
 }
 /* Vào app bằng ảnh chụp — chỉ mở tab Kiểm kê. Các tab khác cần số liệu tươi
    (điều chuyển, duyệt phiếu) nên không cho vào để tránh thao tác trên số cũ. */
+/* KHOÁ LẠI GIỮA PHIÊN: máy chủ trả PIN_KHOA (hết 12 giờ, mở khoá ngoại tuyến rồi có mạng lại, hoặc ai đó gọi thẳng
+   hàm trong app bằng F12) → che app, hỏi PIN qua máy chủ, đúng thì tải lại số và chạy tiếp. Nháp + hàng đợi vẫn nguyên. */
+let _dangKhoaLai=false;
+async function khoaLaiPin(){
+  if(_dangKhoaLai||!session||$('#app').classList.contains('hidden'))return;
+  _dangKhoaLai=true;
+  try{
+    $('#app').classList.add('hidden');$('#login').classList.remove('hidden');
+    const c=$('#loginCard'),h=document.querySelector('.login-hero2');if(c)c.classList.remove('leaving');if(h)h.classList.remove('leaving');
+    const ok=await pinQua();
+    if(!ok)return;
+    $('#login').classList.add('hidden');$('#app').classList.remove('hidden');
+    if(c)c.classList.remove('leaving');if(h)h.classList.remove('leaving');
+    try{await dbLoadAll();}catch(e){}
+    try{datMang(true);}catch(e){}
+    renderView();try{outboxFlush();}catch(e){}
+  }finally{_dangKhoaLai=false;}
+}
 function vaoAppNgoaiTuyen(){
   stopLoginFX();
   $('#login').classList.add('hidden');$('#app').classList.remove('hidden');
@@ -6548,7 +6588,7 @@ async function doLogout(){
   /* Xoá dữ liệu kho khỏi máy: ảnh chụp và hàng đợi là số liệu của điểm bán,
      máy dùng chung thì người sau không được thấy. */
   try{snapXoa();localStorage.removeItem(OUTBOX_LS);}catch(e){}
-  try{pinOkXoa(pinUid());}catch(e){}
+  try{const u=pinUid();pinOkXoa(u);const o=pinDoc();delete o[u];pinGhi(o);}catch(e){}   /* bỏ cả bản kiểm PIN ngoại tuyến của người này */
   try{await sb.auth.signOut();}catch(e){}
   location.reload();
 }
@@ -17626,7 +17666,8 @@ async function pushToWh(plant,sloc,title,body,tag,truUser){
     // Một người có thể mở app trên nhiều máy -> bỏ endpoint trùng
     const seen=new Set();const subs=[];
     data.forEach(x=>{if(x.endpoint&&!seen.has(x.endpoint)){seen.add(x.endpoint);subs.push(x);}});
-    const r=await fetch('/api/push-send',{method:'POST',headers:{'Content-Type':'application/json'},
+    let tk='';try{const r0=await sb.auth.getSession();tk=(r0&&r0.data&&r0.data.session&&r0.data.session.access_token)||'';}catch(e){}
+    const r=await fetch('/api/push-send',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tk},
       body:JSON.stringify({subs,title,body,url:'/',tag:tag||'kiemke'})});
     const j=await r.json().catch(()=>({}));
     // Máy đã gỡ app / đổi máy -> dọn đăng ký chết cho khỏi phình bảng
