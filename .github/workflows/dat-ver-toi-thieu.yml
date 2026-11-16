@@ -1,0 +1,29 @@
+name: Nang ban toi thieu sau khi day ban moi
+
+# Moi lan day index.html len main: cho Vercel chay ban moi roi nang "ban toi thieu" tren Supabase.
+# Ban cu hon se bi may chu tu choi (SQL PHAN 42); app ban moi tu tai lai.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+  workflow_dispatch: {}
+
+concurrency:
+  group: dat-ver
+  cancel-in-progress: true
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Cho Vercel len ban moi, nang ban toi thieu
+        run: node agent/dat-ver.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
