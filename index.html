@@ -1569,7 +1569,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1611-09';
+const APP_VER='1611-10';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -5682,12 +5682,7 @@ function moHoSoNV(r){
   const top=el('div','nsm-top');top.appendChild(nsAv(r.ho_ten));
   top.appendChild(el('h2','',escHtml(r.ho_ten||'')));
   if(r.chuc_danh)top.appendChild(el('div','jb',escHtml(r.chuc_danh)));
-  const bt=el('div','nsm-btns');
-  if(r.email_cty){const em=encodeURIComponent(r.email_cty);
-    bt.insertAdjacentHTML('beforeend',`<a href="https://teams.microsoft.com/l/chat/0/0?users=${em}" target="_blank" rel="noopener">💬 <span>${escHtml(L('Chat qua Teams'))}</span></a>`);
-    bt.insertAdjacentHTML('beforeend',`<a href="https://teams.microsoft.com/l/call/0/0?users=${em}" target="_blank" rel="noopener">📞 <span>${escHtml(L('Gọi qua Teams'))}</span></a>`);}
-  if(r.sdt)bt.insertAdjacentHTML('beforeend',`<a href="tel:${escHtml(String(r.sdt).replace(/[^\d+]/g,''))}">📱 <span>${escHtml(L('Gọi điện'))}</span></a>`);
-  if(bt.children.length)top.appendChild(bt);
+  /* Bỏ nút Chat / Gọi qua Teams / Gọi điện (Khoa 16/11/2026: app không mở được liên kết) — email, SĐT vẫn hiện ở các dòng bên dưới. */
   l.appendChild(top);
   const rows=el('div','nsm-rows');
   const dong1=(k,v)=>{if(v==null||v==='')return;const d=el('div','r');d.appendChild(el('div','k',escHtml(L(k))));const vv=el('div','v');
