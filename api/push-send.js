@@ -15,6 +15,7 @@
 // Trả:
 //   { sent, failed, gone:[endpoint...] }   gone = subscription đã chết, client nên xoá khỏi DB.
 
+const { bocLoi } = require('../lib/ghi-loi');
 const crypto = require('crypto');
 
 const VAPID_PUBLIC = (process.env.VAPID_PUBLIC_KEY || '').trim();
@@ -134,7 +135,7 @@ async function sendOne(sub, payloadStr) {
 }
 
 /* ---------- handler ---------- */
-module.exports = async (req, res) => {
+const xuLy = async (req, res) => {
   if (req.method === 'GET') {
     // Cho client hỏi khoá công khai + biết máy chủ đã sẵn sàng chưa
     return res.status(200).json({ ready: !!(VAPID_PUBLIC && VAPID_PRIVATE), publicKey: VAPID_PUBLIC });
@@ -177,4 +178,5 @@ module.exports = async (req, res) => {
 };
 
 // Xuất riêng để test cục bộ (không ảnh hưởng khi chạy trên Vercel)
+module.exports = bocLoi('push-send', xuLy);
 module.exports._internal = { encryptPayload, vapidHeader, b64uEnc, b64uDec, publicKeyFromRaw };

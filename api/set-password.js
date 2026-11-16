@@ -16,6 +16,7 @@
 //   Body: { userId, password }
 // Trả: { ok:true, email } hoặc { error }
 
+const { bocLoi } = require('../lib/ghi-loi');
 const SUPA_URL = (process.env.SUPABASE_URL || 'https://jygrdbuwveitrlfuwigs.supabase.co').replace(/\/+$/, '');
 const SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
 
@@ -29,7 +30,7 @@ function doc(req) {
   });
 }
 
-module.exports = async (req, res) => {
+const xuLy = async (req, res) => {
   if (req.method === 'GET') {
     // để kiểm nhanh máy chủ đã cấu hình khóa chưa, KHÔNG trả về khóa
     return res.status(200).json({ ready: !!SERVICE_KEY });
@@ -99,3 +100,4 @@ module.exports = async (req, res) => {
     return res.status(500).json({ error: (e && e.message) || 'Lỗi không rõ' });
   }
 };
+module.exports = bocLoi('set-password', xuLy);

@@ -9,6 +9,7 @@
 //   kiem  {pin}         -> { dung:true } | { dung:false, conLai } | { dung:false, khoa:true }
 //   dat   {pin}         -> { ok:true }   (chưa có PIN, hoặc đang có/đang khóa mà vừa đăng nhập bằng mật khẩu)
 
+const { bocLoi } = require('../lib/ghi-loi');
 const crypto = require('crypto');
 const SUPA_URL = (process.env.SUPABASE_URL || 'https://jygrdbuwveitrlfuwigs.supabase.co').replace(/\/+$/, '');
 const SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
@@ -50,7 +51,7 @@ function vuaDungMatKhau(token) {
 }
 const pinHopLe = p => /^\d{6}$/.test(String(p || ''));
 
-module.exports = async (req, res) => {
+const xuLy = async (req, res) => {
   if (req.method === 'GET') return res.status(200).json({ ready: !!SERVICE_KEY });
   if (req.method !== 'POST') return res.status(405).json({ error: 'Chỉ nhận GET hoặc POST' });
   if (!SERVICE_KEY) return res.status(503).json({ error: 'chua_cau_hinh' });
@@ -101,3 +102,4 @@ module.exports = async (req, res) => {
     return res.status(502).json({ error: String(e.message || e).slice(0, 300) });
   }
 };
+module.exports = bocLoi('pin', xuLy);

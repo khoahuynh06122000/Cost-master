@@ -4,6 +4,7 @@
 //   AI_API_KEY, AI_API_KEY2, AI_API_KEY3  (tương thích cả GEMINI_API_KEY / GEMINI2_API_KEY / GEMINI3_API_KEY của app beer).
 // Client gửi POST { images:["data:image/jpeg;base64,..."] }  -> trả { rows:[{code,name,uom,qty}], raw }.
 
+const { bocLoi } = require('../lib/ghi-loi');
 const AI_KEYS = [
   process.env.AI_API_KEY,  process.env.AI_API_KEY2,  process.env.AI_API_KEY3,
   process.env.GEMINI_API_KEY, process.env.GEMINI2_API_KEY, process.env.GEMINI3_API_KEY,
@@ -48,7 +49,7 @@ const SCHEMA = {
   },
 };
 
-module.exports = async (req, res) => {
+const xuLy = async (req, res) => {
   if (req.method !== 'POST') { res.status(405).json({ error: 'Chỉ nhận POST' }); return; }
 
   try {
@@ -244,3 +245,4 @@ module.exports = async (req, res) => {
     res.status(500).json({ error: 'Lỗi xử lý OCR', detail: String(e && e.message || e).slice(0, 300) });
   }
 };
+module.exports = bocLoi('ocr', xuLy);

@@ -15,8 +15,9 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e89217'/%3E%3Ctext x='32' y='45' font-size='30' font-family='Arial,sans-serif' font-weight='bold' fill='white' text-anchor='middle'%3EBN%3C/text%3E%3C/svg%3E">
 <style>
   :root{/* Nen nhat co ban cho nen toi (dot 21). Dung cho o icon the KPI, badge, the canh bao — nhung cho truoc day ghi cung ma mau sang thang vao inline style. */--t-mint:#EAF1F0;--t-amber:#FDF1DC;--t-amber-soft:#FEF9F0;--t-red:#F3E7E7;--t-mint-line:#A9D8BF;--t-amber-line:#F2DDB2;/* `--accent-600` va `#1C6B44` la mau CHU: tren nen toi phai sang len, dung ho `--brand-ink` (rule dot 3A: lam nen thi dung mau goc, lam chu thi dung ban -ink). */--accent-ink:#C9790A;--ok-ink:#1C6B44;
-    --bg:#EDF0EF; --surface:#FFFFFF; --surface-2:#F7F9F8;
-    --ink:#132320; --ink-soft:#394946; --muted:#6A7773; --faint:#95A09C;
+    /* 16/11/2026 Khoa: chế độ sáng hơi chói -> hạ nhẹ nền (cũ: bg #EDF0EF · surface #FFFFFF · surface-2 #F7F9F8) */
+    --bg:#E5E9E8; --surface:#F9FAF9; --surface-2:#F1F4F3;
+    --ink:#132320; --ink-soft:#394946; --muted:#5F6C68; --faint:#95A09C;
     --brand:#0E5C55; --brand-600:#0B4B45; --brand-700:#083A35;
     --sidebar:#0B2B28; --sidebar-2:#0E332F; --sidebar-line:rgba(255,255,255,.08);
     --accent:#E89217; --accent-600:#C9790A;
@@ -205,7 +206,7 @@
   .f-btn{height:44px;white-space:nowrap}
   @media(max-width:640px){.f-grow,.f-date,.f-qty{width:100%;flex:1 0 100%}}
   .field > span{display:block;font-size:12.5px;font-weight:700;margin-bottom:6px;color:var(--ink-soft)}
-  .input{width:100%;padding:11px 13px;border:1.5px solid var(--line-strong);border-radius:10px;background:#fff;transition:.14s}
+  .input{width:100%;padding:11px 13px;border:1.5px solid var(--line-strong);border-radius:10px;background:var(--surface);transition:.14s}
   .input:hover{border-color:#bcc4c1}
   .input:focus{outline:none;border-color:var(--brand-ink);box-shadow:0 0 0 3px rgba(14,92,85,.13)}
   select.input{cursor:pointer}
@@ -222,7 +223,7 @@
   .btn-primary:hover{background:var(--accent-600)}
   .btn-brand{background:var(--brand);color:#fff}
   .btn-brand:hover{background:var(--brand-600)}
-  .btn-ghost{background:#fff;border:1px solid var(--line-strong);color:var(--ink-soft)}
+  .btn-ghost{background:var(--surface);border:1px solid var(--line-strong);color:var(--ink-soft)}
   .btn-ghost:hover{background:var(--surface-2);border-color:#bcc4c1}
   .btn-sm{padding:7px 12px;font-size:12.5px;border-radius:8px}
   .btn-block{width:100%}
@@ -283,7 +284,7 @@
   .filebar{margin:14px 16px 0;padding:14px;border:1px dashed var(--line-strong);border-radius:12px;background:var(--surface-2);
     display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
   .fb-left{display:flex;align-items:center;gap:12px;min-width:0}
-  .fb-ic{width:40px;height:40px;border-radius:10px;background:#fff;border:1px solid var(--line);display:grid;place-items:center;color:var(--brand-ink);flex:none}
+  .fb-ic{width:40px;height:40px;border-radius:10px;background:var(--surface);border:1px solid var(--line);display:grid;place-items:center;color:var(--brand-ink);flex:none}
   .fb-t{font-weight:700;font-size:14px}
   .fb-s{font-size:12px;color:var(--muted);margin-top:2px}
   .fb-btns{display:flex;gap:8px;flex-wrap:wrap}
@@ -339,11 +340,11 @@
   .bar-val{width:44px;text-align:right;font-size:12.5px;font-weight:700;color:var(--ink)}
   .list-hint{padding:13px 18px;font-size:12.5px;color:var(--muted);text-align:center;background:var(--surface-2)}
   .filter-chips{display:flex;align-items:center;gap:7px;margin-top:10px;flex-wrap:wrap}
-  .chip{padding:6px 13px;border-radius:20px;font-size:12.5px;font-weight:700;border:1px solid var(--line-strong);background:#fff;color:var(--muted)}
+  .chip{padding:6px 13px;border-radius:20px;font-size:12.5px;font-weight:700;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
   .chip.active{background:var(--brand);color:#fff;border-color:var(--brand-ink)}
   .autosave{margin-left:auto;font-size:11.5px;color:var(--green);font-weight:600}
   .qtybox{display:flex;align-items:center;gap:6px}
-  .stepbtn{width:34px;height:38px;border-radius:9px;border:1.5px solid var(--line-strong);background:#fff;font-size:20px;font-weight:700;color:var(--brand-ink);line-height:1;display:grid;place-items:center}
+  .stepbtn{width:34px;height:38px;border-radius:9px;border:1.5px solid var(--line-strong);background:var(--surface);font-size:20px;font-weight:700;color:var(--brand-ink);line-height:1;display:grid;place-items:center}
   .stepbtn:hover{background:var(--surface-2);border-color:var(--brand-ink)}
   .stepbtn:active{transform:translateY(1px)}
   .qty.warn{border-color:var(--accent);background:#FFF6E8}
@@ -354,7 +355,7 @@
 
   /* autocomplete dropdown */
   .ac-wrap{position:relative}
-  .ac-dd{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:40;background:#fff;border:1px solid var(--line-strong);border-radius:12px;box-shadow:var(--shadow);max-height:250px;overflow:auto;display:none}
+  .ac-dd{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:40;background:var(--surface);border:1px solid var(--line-strong);border-radius:12px;box-shadow:var(--shadow);max-height:250px;overflow:auto;display:none}
   .ac-item{padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--line)}
   /* Danh sach ma o man nhap kho: LUON hien, khong phai go moi ra. Chi dung bien
      mau app nen tu dung ca nen sang lan nen toi. */
@@ -1666,7 +1667,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1611-16';
+const APP_VER='1611-17';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -2778,6 +2779,7 @@ function errBox(title,lines,detail){
   /* Tiêu đề mở đầu bằng ✓ là tin TỐT (ví dụ đã lưu phiếu vào máy chờ gửi) — đừng
      dán thêm tam giác cảnh báo vào, đọc "⚠ ✓" vừa mâu thuẫn vừa làm người dùng lo. */
   const _dau=/^\s*✓/.test(title||'')?'':'⚠ ';
+  if(_dau){try{ghiLoiApp('hop_loi',title||'Không lưu được lên máy chủ',null,[...(lines||[]),detail||''].join(' | '));}catch(e){}}
   box.innerHTML=`<div class="errbox-h">${_dau}${title||'Không lưu được lên máy chủ'}</div>
     <div class="errbox-b">
       <ul>${body}</ul>
@@ -4940,6 +4942,7 @@ let sb=null;
 let _dangGiaHan=null;
 async function fetchGiaHan(input,init){
   const res=await fetch(input,init);
+  try{egDem(input,res);}catch(e){}
   try{
     const url=typeof input==='string'?input:(input&&input.url)||'';
     if(res.status!==401||url.indexOf('/auth/v1/')>=0||!sb)return res;
@@ -4953,6 +4956,83 @@ async function fetchGiaHan(input,init){
   }catch(e){return res;}
 }
 try{ sb=window.supabase.createClient(SB_URL,SB_KEY,{global:{fetch:fetchGiaHan}}); }catch(e){ console.error('Supabase init lỗi',e); }
+
+/* ===== THEO DÕI LỖI + ĐẾM EGRESS (16/11/2026, mục A1 "Theo dõi & cảnh báo") =====
+   A1 · Lỗi trên máy người dùng (lỗi JS, hộp lỗi errBox) -> bảng loi_app. Mỗi lỗi giống nhau chỉ gửi MỘT lần mỗi phiên.
+        KHÔNG gửi số liệu kiểm kê / mật khẩu / PIN / khóa; chuỗi trông như khóa bị che. Chưa đăng nhập hoặc mất mạng
+        thì giữ trong localStorage (tối đa 30 lỗi), có phiên + có mạng thì gửi.
+   EG · Đếm byte TẢI VỀ của mọi yêu cầu Supabase (đi qua fetchGiaHan) theo ngày + theo bảng; mỗi máy mỗi người mỗi ngày
+        đúng MỘT dòng egress_ngay (upsert số cộng dồn, gửi ~10 phút/lần và khi app ẩn). Số đếm là byte sau giải nén nên
+        có thể cao hơn số Supabase tính — cân chỉnh một lần với trang Usage.
+   Bảng chưa có (chưa chạy SQL PHẦN 37) thì tự tắt, app chạy như cũ. */
+const LOI_Q='kk_loi_q_v1',EG_LS='kk_egress_v1',MAY_LS='kk_may_v1';
+let _loiTat=false,_egTat=false,_loiDaGui=new Set(),_loiDangGui=false,_egDangGui=false;
+function mayId(){try{let m=localStorage.getItem(MAY_LS);if(!m){m=Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);localStorage.setItem(MAY_LS,m);}return m;}catch(e){return 'khong_luu';}}
+function loaiMay(){const u=navigator.userAgent||'';let cai=false;try{cai=matchMedia('(display-mode: standalone)').matches;}catch(e){}
+  return (/iPhone|iPad/.test(u)?'iOS':/Android/.test(u)?'Android':/Windows/.test(u)?'Windows':/Mac/.test(u)?'Mac':'Khác')+' · '+(/Edg\//.test(u)?'Edge':/CriOS|Chrome\//.test(u)?'Chrome':/Safari\//.test(u)?'Safari':/Firefox/.test(u)?'Firefox':'?')+(cai?' · app cài':'');}
+function cheLoi(s,n){return String(s==null?'':s).replace(/AIza[0-9A-Za-z_\-]{10,}/g,'AIza***').replace(/eyJ[0-9A-Za-z_\-]{10,}\.[0-9A-Za-z_\-.]+/g,'jwt***').replace(/Bearer\s+[^\s"']+/gi,'Bearer ***').replace(/<[^>]*>/g,'').slice(0,n||300);}
+function ngayVN(){return new Date(Date.now()+7*3600e3).toISOString().slice(0,10);}
+function manHienTai(){try{return (activeTab||'dang_nhap')+(hubOpen&&activeTab&&hubOpen[activeTab]?'/'+hubOpen[activeTab]:'');}catch(e){return '';}}
+function ghiLoiApp(loai,thongDiep,ma,chiTiet){
+  try{
+    const td=cheLoi(thongDiep,300);if(!td)return;
+    const k=loai+'|'+td+'|'+(ma||'');if(_loiDaGui.has(k))return;_loiDaGui.add(k);
+    let q=[];try{q=JSON.parse(localStorage.getItem(LOI_Q)||'[]')||[];}catch(e){}
+    const cu=q.find(x=>x.k===k);
+    if(cu)cu.so_lan=(cu.so_lan||1)+1;
+    else q.push({k,at:new Date().toISOString(),nguon:'app',loai,thong_diep:td,ma:ma?String(ma).slice(0,40):null,chi_tiet:cheLoi(chiTiet,1000)||null,
+      ver:APP_VER,man:manHienTai(),may:mayId(),loai_may:loaiMay(),so_lan:1});
+    q=q.slice(-30);try{localStorage.setItem(LOI_Q,JSON.stringify(q));}catch(e){}
+    setTimeout(guiLoiApp,1500);
+  }catch(e){}
+}
+async function guiLoiApp(){
+  if(_loiTat||_loiDangGui||!sb||!session||!session.uid||!mangOK)return;
+  let q=[];try{q=JSON.parse(localStorage.getItem(LOI_Q)||'[]')||[];}catch(e){}
+  if(!q.length)return;_loiDangGui=true;
+  try{
+    const rows=q.map(x=>({at:x.at,nguon:x.nguon,loai:x.loai,thong_diep:x.thong_diep,ma:x.ma,chi_tiet:x.chi_tiet,ver:x.ver,man:x.man,may:x.may,loai_may:x.loai_may,so_lan:x.so_lan,
+      user_id:session.uid,ten:session.name||null,vai:session.role||null}));
+    const {error}=await sb.from('loi_app').insert(rows);
+    if(!error){const da=new Set(q.map(x=>x.k));let c=[];try{c=JSON.parse(localStorage.getItem(LOI_Q)||'[]')||[];}catch(e){}
+      try{localStorage.setItem(LOI_Q,JSON.stringify(c.filter(x=>!da.has(x.k))));}catch(e){}}
+    else if(/42P01|does not exist|schema cache/i.test((error.message||'')+(error.code||'')))_loiTat=true;
+  }catch(e){}finally{_loiDangGui=false;}
+}
+window.addEventListener('error',ev=>{try{if(!ev||!ev.message)return;
+  ghiLoiApp('js',ev.message,null,(ev.filename?String(ev.filename).split('/').pop():'')+':'+(ev.lineno||'')+':'+(ev.colno||'')+(ev.error&&ev.error.stack?' | '+String(ev.error.stack).split('\n').slice(0,3).join(' | '):''));}catch(e){}});
+window.addEventListener('unhandledrejection',ev=>{try{const r=ev&&ev.reason;const m=r&&(r.message||String(r));if(!m)return;
+  if(/Failed to fetch|NetworkError|Load failed|AbortError/i.test(m))return;   /* rớt mạng: đã có xử lý riêng, không phải lỗi app */
+  ghiLoiApp('promise',m,r&&r.code,r&&r.stack?String(r.stack).split('\n').slice(0,3).join(' | '):'');}catch(e){}});
+function egDoc(){try{return JSON.parse(localStorage.getItem(EG_LS)||'{}')||{};}catch(e){return {};}}
+function egBang(url){const m=/\/(rest|auth|storage|functions)\/v1\/([^/?#]+)/.exec(url);if(!m)return 'khac';return m[1]==='rest'?(m[2]==='rpc'?'rpc':m[2]):m[1];}
+function egDem(input,res){
+  if(_egTat)return;
+  const url=typeof input==='string'?input:(input&&input.url)||'';
+  const cong=n=>{try{const o=egDoc(),ng=ngayVN(),u=(session&&session.uid)||'_';const k=ng+'|'+u;
+    const r=o[k]||(o[k]={ngay:ng,uid:u,ten:(session&&session.name)||'',bytes:0,so_yc:0,bang:{}});
+    r.bytes+=n;r.so_yc++;const b=egBang(url);r.bang[b]=(r.bang[b]||0)+n;r.ver=APP_VER;
+    const ks=Object.keys(o).sort();while(ks.length>8)delete o[ks.shift()];   /* máy không đăng nhập lâu ngày: giữ tối đa 8 bản */
+    localStorage.setItem(EG_LS,JSON.stringify(o));}catch(e){}};
+  const cl=res.headers&&res.headers.get('content-length');
+  if(cl&&!isNaN(+cl)){cong(+cl);return;}
+  try{res.clone().arrayBuffer().then(b=>cong(b.byteLength)).catch(()=>{});}catch(e){}
+}
+async function guiEgress(){
+  if(_egTat||_egDangGui||!sb||!session||!session.uid||!mangOK)return;
+  _egDangGui=true;
+  try{
+    const o=egDoc(),may=mayId(),hom=ngayVN();
+    for(const k of Object.keys(o)){
+      const r=o[k];if(r.uid!==session.uid)continue;
+      const {error}=await sb.from('egress_ngay').upsert({ngay:r.ngay,may,user_id:session.uid,ten:r.ten||session.name||null,bytes:Math.round(r.bytes),so_yc:r.so_yc,bang:r.bang,ver:r.ver||APP_VER,loai_may:loaiMay(),cap_nhat:new Date().toISOString()},{onConflict:'ngay,may,user_id'});
+      if(error){if(/42P01|does not exist|schema cache/i.test((error.message||'')+(error.code||'')))_egTat=true;break;}
+      if(r.ngay<hom){const o2=egDoc();delete o2[k];try{localStorage.setItem(EG_LS,JSON.stringify(o2));}catch(e){}}
+    }
+  }catch(e){}finally{_egDangGui=false;}
+}
+setInterval(()=>{guiLoiApp();guiEgress();},10*60*1000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){guiLoiApp();guiEgress();}});
 // chụp URL lúc mở (hash + query) để nhận biết link đặt lại mật khẩu TRƯỚC khi Supabase tự xóa hash
 const _bootAuthUrl=((location.hash||'')+' '+(location.search||'')).toLowerCase();
 // LINK SÂU: ?kk=plant|sloc|period -> sau khi đăng nhập, mở thẳng màn đếm đúng kho/kỳ

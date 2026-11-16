@@ -10,6 +10,7 @@
 // Chặn xóa nhầm: nếu lần này kéo được ÍT HƠN 70% số người đang làm trong bảng (MySun lỗi, kéo dở trang...)
 // thì KHÔNG đánh dấu ai nghỉ việc, chỉ thêm / cập nhật.
 
+const { bocLoi } = require('../lib/ghi-loi');
 const crypto = require('crypto');
 const SUPA_URL = (process.env.SUPABASE_URL || 'https://jygrdbuwveitrlfuwigs.supabase.co').replace(/\/+$/, '');
 const SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
@@ -85,7 +86,7 @@ async function tuGan() {
   return n;
 }
 
-module.exports = async (req, res) => {
+const xuLy = async (req, res) => {
   if (req.method === 'GET') return res.status(200).json({ ready: !!(SERVICE_KEY && AGENT_KEY) });
   if (req.method !== 'POST') return res.status(405).json({ error: 'Chỉ nhận GET hoặc POST' });
   if (!SERVICE_KEY || !AGENT_KEY) return res.status(503).json({ error: 'Máy chủ chưa cấu hình NHAN_SU_AGENT_KEY / SUPABASE_SERVICE_ROLE_KEY' });
@@ -139,3 +140,4 @@ module.exports = async (req, res) => {
     return res.status(502).json({ error: String(e.message || e).slice(0, 400) });
   }
 };
+module.exports = bocLoi('nhan-su', xuLy);
