@@ -1412,7 +1412,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1611-01';
+const APP_VER='1611-02';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -4890,6 +4890,22 @@ async function dbLoadAll(){
     const _tinh=!_lanTinh||Date.now()-_lanTinh>30*60*1000;
     if(_tangDanOK===false)_tangDanOK=null;   /* máy chủ có thể vừa chạy SQL PHẦN 27 — mỗi lượt tải đủ kiểm lại (30/10/2026) */
     const _boQua=Promise.resolve(null);
+    /* TẢI SONG SONG (16/11/2026): các bảng dưới trước đây chờ lần lượt từng bảng sau khối Promise.all —
+       mỗi bảng một lượt đi-về máy chủ, cộng lại vài giây ở màn chờ. Giờ gọi hết NGAY từ đầu, chỗ dùng
+       vẫn await như cũ nên cách xử lý từng bảng không đổi. .catch rỗng chỉ để trình duyệt khỏi báo
+       "lỗi chưa xử lý" — await ở chỗ dùng vẫn nhận được lỗi. */
+    const _pp=f=>{const q=Promise.resolve().then(f);q.catch(()=>{});return q;};
+    const _laAdGs=!!(session&&(session.role==='admin'||session.role==='giam_sat'));
+    const _pRp=_pp(()=>fetchAllRows('receipts','*','created_at'));
+    const _pTq=_pp(()=>fetchAllRows('transfer_requests','*','created_at'));
+    const _pSug=_tinh?_pp(()=>fetchAllRows('sales_usage','*',['plant_code','sloc_code','period'])):null;
+    const _pVn=_tinh?_pp(()=>fetchAllRows('variance_notes','*',['plant_code','sloc_code','period','code'])):null;
+    const _pKd=_pp(()=>sb.from('kho_dong').select('plant_code,sloc_code,dong,ly_do,updated_by,updated_at'));
+    const _pCz=_pp(()=>sb.from('count_zones').select('*'));
+    const _pWk=_pp(()=>fetchAllRows('weekly_counts','*','created_at'));
+    const _pCl2=_pp(()=>fetchAllRows('count_lists','*',['plant_code','sloc_code','period']));
+    const _pPr=_laAdGs?_pp(()=>fetchAllRows('profiles','*','created_at')):null;
+    const _pUp=_laAdGs?_pp(()=>fetchAllRows('user_plants','*',['user_id','plant_code','sloc_code'])):null;
     const [su,tr,sh,op,pm,al,sc,mt,nt,rc]=await Promise.all([
       fetchAllRows('submissions','*','created_at'),
       fetchAllRows('transfers','*','created_at'),
@@ -4927,8 +4943,8 @@ async function dbLoadAll(){
     ghiMoc('spot_checks',sc);if(tot(sc,'spot_checks'))spotChecks=giuMoiTrenMay(spotChecks,_truoc.sc,(sc.data||[]).map(DB_MAP.spot_checks));
     ghiMocTB(nt);if(tot(nt,'notifications'))notifications=(nt&&nt.data?nt.data:[]).map(r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,message:r.message,kind:r.kind,by:r.created_by,read:!!r.read_flag,time:fmt(r.created_at)}));
     ghiMoc('closing_stock',rc);if(tot(rc,'closing_stock'))closings=giuMoiTrenMay(closings,_truoc.cl,(rc&&rc.data?rc.data:[]).map(DB_MAP.closing_stock));
-    try{const rp=await fetchAllRows('receipts','*','created_at');/* tải đủ — .limit(2000) thực ra chỉ nhận 1.000 dòng (19/10/2026) */ghiMoc('receipts',rp);if(tot(rp,'receipts'))receipts=giuMoiTrenMay(receipts,_truoc.rc,(rp.data||[]).map(DB_MAP.receipts));}catch(e){receipts=[];console.warn('Chưa có bảng receipts (nhập kho) — bỏ qua',e&&e.message);}
-    try{const tq=await fetchAllRows('transfer_requests','*','created_at');
+    try{const rp=await _pRp;/* tải đủ — .limit(2000) thực ra chỉ nhận 1.000 dòng (19/10/2026) */ghiMoc('receipts',rp);if(tot(rp,'receipts'))receipts=giuMoiTrenMay(receipts,_truoc.rc,(rp.data||[]).map(DB_MAP.receipts));}catch(e){receipts=[];console.warn('Chưa có bảng receipts (nhập kho) — bỏ qua',e&&e.message);}
+    try{const tq=await _pTq;
       ghiMoc('transfer_requests',tq);if(tot(tq,'transfer_requests'))trReqs=giuMoiTrenMay(trReqs,_truoc.tq,(tq.data||[]).map(DB_MAP.transfer_requests));
     }catch(e){trReqs=[];console.warn('Chưa có bảng transfer_requests — bỏ qua',e&&e.message);}
     // Chênh lệch kho: định lượng món · lượng quy đổi từ doanh thu · giải trình
@@ -4937,36 +4953,36 @@ async function dbLoadAll(){
     const thieuBang=x=>!!(x&&x.error)&&/schema cache|does not exist|42P01|PGRST205/i.test(String(x.error.message||'')+' '+String(x.error.code||''));
     /* Định lượng KHÔNG tải ở đây nữa (26/10/2026): trước đây mọi máy kéo cả bảng mỗi 45 giây và chỉ lấy
        được 1.000 dòng đầu. Giờ tải khi mở tab Chênh lệch, đúng kho đang xem (clTaiBook). */
-    if(_tinh)try{const sug=await fetchAllRows('sales_usage','*',['plant_code','sloc_code','period']);
+    if(_tinh)try{const sug=await _pSug;
       if(thieuBang(sug)){salesUsage={};clTblOK=false;}
       else if(tot(sug,'sales_usage')){salesUsage={};(sug.data||[]).forEach(r=>{salesUsage[clKey(r.plant_code,r.sloc_code,r.period)]={
         usage:r.usage||{},missing:r.missing||[],theoNhom:r.by_group||[],chiFoodBev:!!r.only_fb,
         pct:Number(r.pct)||0,slKhop:Number(r.sl_khop)||0,
         slTong:Number(r.sl_tong)||0,src:r.src||'',by:r.created_by,at:fmt(r.created_at)};});}
     }catch(e){salesUsage={};clTblOK=false;console.warn('Chưa có bảng sales_usage — bỏ qua',e&&e.message);}
-    if(_tinh)try{const vn=await fetchAllRows('variance_notes','*',['plant_code','sloc_code','period','code']);
+    if(_tinh)try{const vn=await _pVn;
       if(thieuBang(vn))varNotes={};
       else if(tot(vn,'variance_notes')){varNotes={};(vn.data||[]).forEach(r=>{varNotes[clNoteKey(r.plant_code,r.sloc_code,r.period,r.code)]={
         note:r.note||'',status:r.status||'',by:r.by_user,at:fmt(r.at_time),
         approvedBy:r.approved_by,approvedAt:r.approved_at?fmt(r.approved_at):null};});}
     }catch(e){varNotes={};console.warn('Chưa có bảng variance_notes — bỏ qua',e&&e.message);}
-    try{const kd=await sb.from('kho_dong').select('plant_code,sloc_code,dong,ly_do,updated_by,updated_at');
+    try{const kd=await _pKd;
       if(thieuBang(kd))khoDongOK=false;
       else if(tot(kd,'kho_dong')){khoDongOK=true;khoDong={};(kd.data||[]).forEach(r=>{if(r&&r.dong)khoDong[r.plant_code+'|'+(r.sloc_code||'')]={ly:r.ly_do||'',by:r.updated_by||'',at:r.updated_at?fmt(r.updated_at):''};});}
     }catch(e){console.warn('kho_dong',e&&e.message);}
-    try{const cz=await sb.from('count_zones').select('*');if(tot(cz,'count_zones')){countZones={};
+    try{const cz=await _pCz;if(tot(cz,'count_zones')){countZones={};
       (cz.data||[]).forEach(r=>{countZones[r.plant_code+'|'+r.sloc_code]=Array.isArray(r.zones)?r.zones:[];});}
     }catch(e){countZones={};console.warn('Chưa có bảng count_zones — bỏ qua',e&&e.message);}
     /* Bảng mới, chưa chạy SQL thì bỏ qua — cả app vẫn chạy như cũ, chỉ tab
        Kiểm kê tuần báo là chưa dùng được. */
-    try{const wk=await fetchAllRows('weekly_counts','*','created_at');
+    try{const wk=await _pWk;
       if(wk&&wk.error&&/schema cache|does not exist|42P01/i.test(String(wk.error.message||'')+' '+String(wk.error.code||''))){weeklyCounts=[];wkTblOK=false;}
       else if(ghiMoc('weekly_counts',wk),tot(wk,'weekly_counts')){weeklyCounts=giuMoiTrenMay(weeklyCounts,_truoc.wk,(wk.data||[]).map(DB_MAP.weekly_counts));
       wkTblOK=true;}
     }catch(e){weeklyCounts=[];wkTblOK=false;console.warn('Chưa có bảng weekly_counts — bỏ qua',e&&e.message);}
-    try{const cl2=await fetchAllRows('count_lists','*',['plant_code','sloc_code','period']);ghiMoc('count_lists',cl2);if(tot(cl2,'count_lists')){countLists={};(cl2.data||[]).forEach(r=>{countLists[r.plant_code+'|'+r.sloc_code+'|'+r.period]={items:r.items||{},by:r.created_by,at:r.created_at?fmt(r.created_at):''};});}}catch(e){countLists={};console.warn('Chưa có bảng count_lists — bỏ qua',e&&e.message);}
-    if(session&&(session.role==='admin'||session.role==='giam_sat')){try{const pr=await fetchAllRows('profiles','*','created_at');if(tot(pr,'profiles'))profiles=pr.data||[];}catch(e){}
-      try{const up=await fetchAllRows('user_plants','*',['user_id','plant_code','sloc_code']);if(tot(up,'user_plants')){userPlants={};userWh={};(up.data||[]).forEach(r=>{
+    try{const cl2=await _pCl2;ghiMoc('count_lists',cl2);if(tot(cl2,'count_lists')){countLists={};(cl2.data||[]).forEach(r=>{countLists[r.plant_code+'|'+r.sloc_code+'|'+r.period]={items:r.items||{},by:r.created_by,at:r.created_at?fmt(r.created_at):''};});}}catch(e){countLists={};console.warn('Chưa có bảng count_lists — bỏ qua',e&&e.message);}
+    if(_laAdGs){try{const pr=await _pPr;if(tot(pr,'profiles'))profiles=pr.data||[];}catch(e){}
+      try{const up=await _pUp;if(tot(up,'user_plants')){userPlants={};userWh={};(up.data||[]).forEach(r=>{
         const arr=(userPlants[r.user_id]=userPlants[r.user_id]||[]);if(!arr.includes(r.plant_code))arr.push(r.plant_code);
         (userWh[r.user_id]=userWh[r.user_id]||[]).push({plant:r.plant_code,sloc:r.sloc_code||null});});}}catch(e){}}
     /* Phiếu / phần bổ sung / bản tuần đang chờ gửi phải nằm lại trên màn sau MỌI lần tải —
@@ -4986,7 +5002,7 @@ async function dbLoadAll(){
     else if(!mangOK)datMang(true);
     /* Kéo khóa AI của tài khoản về máy — CHỈ MỘT LẦN mỗi phiên, vòng đồng bộ 45s
        không cần hỏi lại. */
-    if(!_aiKeyDaKeo){_aiKeyDaKeo=true;try{await aiKeyKeoVe();}catch(e){}}
+    if(!_aiKeyDaKeo){_aiKeyDaKeo=true;try{aiKeyKeoVe().catch(()=>{});}catch(e){}}  /* không bắt màn chờ đợi phần này */
   }catch(e){console.error('dbLoadAll lỗi',e);toast('Lỗi tải dữ liệu từ máy chủ');}
   finally{_dangTai=Math.max(0,_dangTai-1);if(!_dangTai&&_flushCho){_flushCho=false;setTimeout(()=>{try{outboxFlush();}catch(e){}},0);}}
 }
@@ -5287,7 +5303,7 @@ async function liMoKhoa(ten){
   const ho=String(ten||'').trim().split(/\s+/).pop();
   b.appendChild(document.createTextNode(ho?L('Xin chào')+', '+ho:L('Đã xác thực')));
   liBao('');
-  await _cho(420);
+  await _cho(1000);
   c.classList.add('leaving');if(h)h.classList.add('leaving');
   await _cho(260);
 }
