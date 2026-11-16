@@ -32,8 +32,18 @@ function bangNhau(a, b) {
 function sach(r) {
   const o = {};
   TRUONG.forEach(k => { const v = r && r[k] != null ? String(r[k]).trim().slice(0, 300) : ''; o[k] = v || null; });
+  // Sơ đồ vị trí: chuỗi quản lý (tối đa 15 cấp), chỉ 4 trường chữ/số
+  const ql = Array.isArray(r && r.quan_ly) ? r.quan_ly.slice(0, 15).map(m => ({
+    ma_nv: String((m && m.ma_nv) || '').slice(0, 20), ho_ten: String((m && m.ho_ten) || '').slice(0, 120),
+    chuc_danh: String((m && m.chuc_danh) || '').slice(0, 160), so_duoi: Number(m && m.so_duoi) || 0,
+  })) : null;
+  o.quan_ly = ql;
+  o.so_cap_duoi = r && r.so_cap_duoi != null ? Number(r.so_cap_duoi) || 0 : null;
   return o;
 }
+const khac = (c, r) => TRUONG.some(k => (c[k] || null) !== r[k])
+  || JSON.stringify(c.quan_ly || null) !== JSON.stringify(r.quan_ly || null)
+  || (c.so_cap_duoi == null ? null : Number(c.so_cap_duoi)) !== r.so_cap_duoi;
 async function supa(path, opt) {
   const r = await fetch(SUPA_URL + '/rest/v1/' + path, Object.assign({}, opt, {
     headers: Object.assign({ apikey: SERVICE_KEY, Authorization: 'Bearer ' + SERVICE_KEY, 'Content-Type': 'application/json' }, (opt && opt.headers) || {}),
@@ -57,14 +67,14 @@ module.exports = async (req, res) => {
   const theoMa = new Map(ds.map(r => [r.ma_nv, r]));
 
   try {
-    const cu = await supa('nhan_su?select=' + TRUONG.join(',') + ',dang_lam', { method: 'GET' });
+    const cu = await supa('nhan_su?select=' + TRUONG.join(',') + ',quan_ly,so_cap_duoi,dang_lam', { method: 'GET' });
     const cuMap = new Map((cu || []).map(r => [r.ma_nv, r]));
     let moi = 0, capNhat = 0;
     const ghi = [];
     theoMa.forEach((r, ma) => {
       const c = cuMap.get(ma);
       if (!c) { moi++; ghi.push(r); return; }
-      if (!c.dang_lam || TRUONG.some(k => (c[k] || null) !== r[k])) { capNhat++; ghi.push(r); }
+      if (!c.dang_lam || khac(c, r)) { capNhat++; ghi.push(r); }
     });
     const now = new Date().toISOString();
     for (let i = 0; i < ghi.length; i += 500) {
