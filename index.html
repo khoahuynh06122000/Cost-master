@@ -1412,7 +1412,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1411-02';
+const APP_VER='1611-01';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -5287,9 +5287,9 @@ async function liMoKhoa(ten){
   const ho=String(ten||'').trim().split(/\s+/).pop();
   b.appendChild(document.createTextNode(ho?L('Xin chào')+', '+ho:L('Đã xác thực')));
   liBao('');
-  await _cho(650);
+  await _cho(420);
   c.classList.add('leaving');if(h)h.classList.add('leaving');
-  await _cho(320);
+  await _cho(260);
 }
 /* Đặt lại thẻ đăng nhập về trạng thái thường (đăng xuất / về màn đăng nhập). */
 function liDatLai(){const b=$('#liBtn'),c=$('#loginCard'),h=document.querySelector('.login-hero2');
@@ -5371,6 +5371,7 @@ async function afterAuth(){
     if(snap){snapDung(snap);vaoAppNgoaiTuyen();return;}
     showAuth('login');return;
   }
+  const _upP=sb.from('user_plants').select('plant_code,sloc_code').eq('user_id',user.id).then(r=>r,e=>({data:null,error:e}));
   let prof=null;
   try{const {data}=await sb.from('profiles').select('*').eq('id',user.id).maybeSingle();prof=data;}catch(e){console.error(e);}
   const um=user.user_metadata||{};
@@ -5387,7 +5388,7 @@ async function afterAuth(){
   }
   session={role:prof.role,name:prof.full_name||prof.email,plant:prof.plant_code||null,sloc:prof.sloc_code||null,email:prof.email,uid:user.id,plants:[],wh:[]};
   if(prof.role==='admin'||prof.role==='ketoan_vien'){session.plants=['*'];}
-  else{try{const {data}=await sb.from('user_plants').select('plant_code,sloc_code').eq('user_id',user.id);const rows=data||[];
+  else{try{const {data}=await _upP;const rows=data||[];
     session.plants=[...new Set(rows.map(r=>r.plant_code))];session.wh=rows.map(r=>({plant:r.plant_code,sloc:r.sloc_code||null}));}catch(e){session.plants=[];session.wh=[];}}
   enterApp();
 }
@@ -5424,8 +5425,16 @@ function vaoAppNgoaiTuyen(){
 }
 async function enterApp(){
   log('Đăng nhập',ROLES[session.role].label+(session.sloc?` · ${whName(session.plant,session.sloc)}`:''));
+  $('#userName').textContent=session.name;$('#userRole').textContent=ROLES[session.role].label;$('#userAv').textContent=initials(session.name);
+  loadDrafts(); // khôi phục số đang nhập dở (nếu trang bị tải lại)
+  outboxLoad();try{veChipMang();}catch(e){}
+  if(_draftsRestored)setTimeout(()=>toast('↩ Đã khôi phục '+_draftsRestored+' mã đang nhập dở (nháp lưu trên máy)'),900);
+  activeTab=ROLES[session.role].tabs[0];renderNav();
+  $('#view').innerHTML='<div class="empty"><div class="big">Đang tải dữ liệu…</div></div>';
+  /* Tải dữ liệu NGAY, song song với hiệu ứng mở khóa — trước đây chờ hiệu ứng xong (~1s) mới bắt đầu tải. */
+  const _taiP=dbLoadAll().catch(e=>{console.error('dbLoadAll',e);});
   if(_liVuaBam){_liVuaBam=false;try{await liMoKhoa(session.name);}catch(e){}}
-  /* Màn chờ tải (thay cho dòng chữ "Đang tải dữ liệu…" trơn trong trang): logo + vạch chạy. */
+  /* Màn chờ tải: logo + vạch chạy. Dữ liệu về trước khi hiệu ứng xong thì chỉ lướt qua. */
   let _bl=document.getElementById('bootLoad');
   if(!_bl){_bl=document.createElement('div');_bl.id='bootLoad';_bl.className='boot-load';_bl.setAttribute('role','status');
     _bl.innerHTML='<div class="bl-mark"><span class="mark">BN</span><span>Kiểm kê F&amp;B</span></div><div class="bl-line"></div><div class="bl-sub"></div>';
@@ -5433,16 +5442,10 @@ async function enterApp(){
   const _blTu=Date.now();
   const tatCho=()=>{const e=document.getElementById('bootLoad');if(!e)return;
     setTimeout(()=>{e.classList.add('out');const a=$('#app');a.classList.remove('vao');void a.offsetWidth;a.classList.add('vao');
-      setTimeout(()=>{e.remove();a.classList.remove('vao');},320);},Math.max(0,380-(Date.now()-_blTu)));};
+      setTimeout(()=>{e.remove();a.classList.remove('vao');},300);},Math.max(0,200-(Date.now()-_blTu)));};
   stopLoginFX();
   $('#login').classList.add('hidden');$('#app').classList.remove('hidden');
-  $('#userName').textContent=session.name;$('#userRole').textContent=ROLES[session.role].label;$('#userAv').textContent=initials(session.name);
-  loadDrafts(); // khôi phục số đang nhập dở (nếu trang bị tải lại)
-  outboxLoad();try{veChipMang();}catch(e){}
-  if(_draftsRestored)setTimeout(()=>toast('↩ Đã khôi phục '+_draftsRestored+' mã đang nhập dở (nháp lưu trên máy)'),900);
-  activeTab=ROLES[session.role].tabs[0];renderNav();
-  $('#view').innerHTML='<div class="empty"><div class="big">Đang tải dữ liệu…</div></div>';
-  dbLoadAll().catch(e=>{console.error('dbLoadAll',e);}).then(()=>{
+  _taiP.then(()=>{
     tatCho();
     /* dbLoadAll vừa ghi đè submissions bằng dữ liệu máy chủ — nối lại các phiếu
        còn nằm trong hàng đợi, nếu không chúng biến mất khỏi màn hình và rule
