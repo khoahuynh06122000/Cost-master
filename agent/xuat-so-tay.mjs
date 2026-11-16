@@ -17,13 +17,18 @@ const MUC = { S1: '🔴 KHẨN', S2: '🟠 NẶNG', S3: '🟡 NHẸ' };
 const dd = d => d ? String(d).slice(0, 10).split('-').reverse().join('/') : '';
 const gio = ts => { if (!ts) return ''; const d = new Date(Date.parse(ts) + 7 * 3600e3); const p = n => String(n).padStart(2, '0');
   return `${p(d.getUTCHours())}:${p(d.getUTCMinutes())} ${p(d.getUTCDate())}/${p(d.getUTCMonth() + 1)}/${d.getUTCFullYear()}`; };
-const mot = s => String(s || '').replace(/\r?\n/g, ' ').replace(/\|/g, '/').trim();
+const mot = s => String(s || '').replace(/\r?\n/g, ' ').replace(/\|/g, '/').replace(/[<>`*_\[\]]/g, '').trim();
+// Repo CÔNG KHAI: sự cố gốc từ câu lỗi người dùng (loi|...) chỉ ghi loại, không chép câu lỗi tự do (có thể chứa tên, mã kho...).
+const tenSuCo = r => { const id = String(r.id || '');
+  if (id.startsWith('loi|app|')) return 'Nhiều người cùng gặp một lỗi (chi tiết trong app)';
+  if (id.startsWith('loi|api|')) return 'Hàm máy chủ ' + mot(id.split('|')[2]) + ' lỗi liên tục';
+  return mot(r.tieu_de); };
 const dong = (nhan, gt) => gt ? `- **${nhan}:** ${String(gt).trim()}` : null;
 
 let st = [], sc = [];
 try { st = await q('so_tay?select=*&order=loai.asc,cap_nhat_at.desc&limit=1000'); }
 catch (e) { if (/42P01|does not exist|schema cache|PGRST205/i.test(e.message)) { console.log('Chưa có bảng so_tay (PHẦN 40) — bỏ qua'); process.exit(0); } throw e; }
-try { sc = await q(`su_co?select=ma,muc,tieu_de,anh_huong,chi_tiet,mo_at,dong_at,trang_thai,da_xu_ly&id=not.like.tomtat*&trang_thai=neq.nghi&mo_at=gte.${new Date(Date.now() - 30 * 86400e3).toISOString()}&order=mo_at.desc&limit=200`); }
+try { sc = await q(`su_co?select=id,ma,muc,tieu_de,mo_at,dong_at,trang_thai,da_xu_ly&id=not.like.tomtat*&trang_thai=neq.nghi&mo_at=gte.${new Date(Date.now() - 30 * 86400e3).toISOString()}&order=mo_at.desc&limit=200`); }
 catch (e) { console.warn('Không đọc được su_co:', e.message); }
 
 const hd = st.filter(r => r.loai === 'huong_dan');
@@ -54,7 +59,7 @@ L.push('## Sự cố 30 ngày gần đây', '');
 if (!sc.length) L.push('_Không có sự cố._', '');
 else {
   L.push('| Mã | Mức | Sự cố | Mở lúc | Đóng | Trạng thái |', '|---|---|---|---|---|---|');
-  sc.forEach(r => L.push(`| ${mot(r.ma)} | ${MUC[r.muc] || mot(r.muc)} | ${mot(r.tieu_de)} | ${gio(r.mo_at)} | ${gio(r.dong_at)} | ${r.da_xu_ly ? 'Đã xử lý' : r.trang_thai === 'dong' ? 'Đã ổn lại' : '**Đang mở**'} |`));
+  sc.forEach(r => L.push(`| ${mot(r.ma)} | ${MUC[r.muc] || mot(r.muc)} | ${tenSuCo(r)} | ${gio(r.mo_at)} | ${gio(r.dong_at)} | ${r.da_xu_ly ? 'Đã xử lý' : r.trang_thai === 'dong' ? 'Đã ổn lại' : '**Đang mở**'} |`));
   L.push('');
 }
 const md = L.join('\n');
