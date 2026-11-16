@@ -138,7 +138,9 @@ if (sbOK) {
     for (const [k, g] of van) {
       const khoa = 'so_trung|' + k;
       if (g.n > 1 && (g.moi >= moi3 || dangMo.has(khoa))) phat.push({ khoa, muc: 'S1', tieu: 'Sổ điều chuyển bị ghi trùng',
-        anhHuong: `mã ${g.t.code} · SL ${g.t.qty} ghi ${g.n} lần · ${g.t.from_key} → ${g.t.to_key}`, dauHieu: 'lý do sổ: ' + String(g.t.reason || '').slice(0, 120),
+        anhHuong: `Mã ${g.t.code} · SL ${g.t.qty} ghi ${g.n} lần · ${g.t.from_key} → ${g.t.to_key} — kho nguồn bị trừ ${g.n} lần`,
+        lyDo: [`${g.n} dòng sổ giống hệt nhau: cùng ngày ${g.t.date}, cùng mã, cùng số lượng, cùng kho đi / đến`, 'Ghi trên sổ: ' + String(g.t.reason || '').slice(0, 120)],
+        dauHieu: 'sổ ghi trùng',
         viec: 'admin vào Điều chuyển → Theo dõi sổ điều chuyển, xoá dòng đánh dấu "ghi trùng"' });
     }
     const da = await q(`transfer_requests?select=id,kind,items,approved_at,approved_by,from_plant,from_sloc,to_plant,to_sloc&status=eq.${encodeURIComponent('Đã duyệt')}&approved_at=gte.${tu14}&limit=5000`);
@@ -147,7 +149,11 @@ if (sbOK) {
       const can = Object.values(r.items || {}).filter(v => (Number(v && (v.qtyOk ?? v.qtyReq)) || 0) > 0).length;
       const maCan = new Set(Object.entries(r.items || {}).filter(([, v]) => (Number(v && (v.qtyOk ?? v.qtyReq)) || 0) > 0).map(([k]) => k));
       const co = new Set(so.filter(t => { const s = String(t.reason || ''); return (s === r.id || s.endsWith(' · ' + r.id)) && maCan.has(String(t.code)); }).map(t => String(t.code))).size;
+      const daGhi = new Set(so.filter(t => { const s = String(t.reason || ''); return s === r.id || s.endsWith(' · ' + r.id); }).map(t => String(t.code)));
+      const thieuMa = [...maCan].filter(c => !daGhi.has(c));
       if (co < can) phat.push({ khoa: 'so_thieu|' + r.id, muc: 'S1', tieu: 'Phiếu đã duyệt mà sổ thiếu dòng',
+        lyDo: [`Phiếu duyệt ${can} mã nhưng sổ chỉ ghi ${co} mã`, 'Mã chưa vào sổ: ' + thieuMa.slice(0, 6).join(', ') + (thieuMa.length > 6 ? '…' : ''),
+          `Duyệt bởi ${r.approved_by || '?'} lúc ${gioNgay(Date.parse(r.approved_at))}`],
         anhHuong: `phiếu ${r.id} · sổ có ${co}/${can} dòng · ${r.from_plant}-${r.from_sloc} → ${r.to_plant || 'HỦY'}${r.to_sloc ? '-' + r.to_sloc : ''}`,
         dauHieu: `duyệt bởi ${r.approved_by || '?'} lúc ${gioNgay(Date.parse(r.approved_at))}`, viec: 'đối chiếu phiếu với sổ, bổ sung dòng thiếu (câu rà trong CLAUDE.md)' });
     }
@@ -186,6 +192,27 @@ for (const [file, ten, gioToiDa] of [['daily-report.yml', 'Bot báo cáo 8h sán
   } catch (e) { ghiChu.push('kiểm bot ' + file + ': ' + e.message); }
 }
 
+// Việc cần làm + chỗ tra cứu (Khoa 16/11/2026: làm nổi phần xử lý, lý do gạch đầu dòng)
+const HUONG = [
+  ['web_sap', 'Kiểm tra bản build mới nhất có lỗi không; lỗi thì build lại bản trước', 'Vercel → Deployments'],
+  ['deploy_cu', 'Xem bản ' + verRepo + ' build có lỗi không; lỗi thì sửa rồi đẩy lại', 'Vercel → Deployments'],
+  ['sb_sap', null, 'Supabase → Project status · Usage'],
+  ['loi|api|/api/ocr', 'Bật thông báo cho bộ phận (mẫu "quét ảnh") để BP tạm nhập Excel; xem log hàm quét ảnh', 'App → Sự cố hệ thống → Lỗi ghi nhận 24 giờ'],
+  ['loi|api|', 'Xem log của hàm này để biết nguyên nhân', 'App → Sự cố hệ thống → Lỗi ghi nhận 24 giờ'],
+  ['loi|app|', 'Xem ai bị, ở màn nào, bản nào; lỗi kéo dài thì bật thông báo cho bộ phận', 'App → Sự cố hệ thống → Lỗi ghi nhận 24 giờ'],
+  ['so_trung|', 'Xoá dòng có nhãn "ghi trùng" (chỉ admin)', 'App → Nhập kho & ĐC → Theo dõi sổ điều chuyển'],
+  ['so_thieu|', 'Đối chiếu phiếu với sổ, bổ sung các mã chưa vào sổ', 'App → Nhập kho & ĐC → Toàn bộ phiếu yêu cầu → tìm mã phiếu'],
+  ['egress_100', 'Nâng Supabase lên gói Pro trước hạn, hoặc giảm dữ liệu tải lúc mở app', 'Supabase → Usage · bảng egress_ngay'],
+  ['egress_80', 'Xem máy / bảng nào tải nhiều để giảm', 'Supabase → Usage · bảng egress_ngay'],
+  ['bot|', 'Bật lại workflow nếu GitHub đã tự tắt (repo 60 ngày không hoạt động)', 'GitHub → Actions'],
+  ['bot_loi|', 'Mở lượt chạy lỗi, đọc dòng đỏ', 'GitHub → Actions'],
+];
+for (const f of phat) {
+  const h = HUONG.find(([k]) => f.khoa.startsWith(k));
+  if (h) { if (h[1]) f.viec = h[1]; f.traCuu = h[2]; }
+  if (!f.lyDo) f.lyDo = String(f.dauHieu || '').split(' · ').filter(Boolean);
+}
+
 // ---------------------------------------------------------------- 2. MỞ / ĐÓNG / BÁO SỰ CỐ
 const dem = ngayISO(NOW).slice(5).replace('-', '');
 let soMoi = 0;
@@ -209,7 +236,7 @@ if (!sbOK || !suCoOK) {
       if (f.haiLan) { await ghi('POST', 'su_co', { id: f.khoa, muc: f.muc, tieu_de: f.tieu, chi_tiet: f.dauHieu, trang_thai: 'nghi', mo_at: nowIso, cap_nhat_at: nowIso }); continue; }
       const ma = maMoi(); const gioi = coTheGui(f.muc);
       const kq = gioi ? await gui(tinMo(f, ma), f.muc) : { ok: false };
-      await ghi('POST', 'su_co', { id: f.khoa, ma, muc: f.muc, tieu_de: f.tieu, anh_huong: f.anhHuong, chi_tiet: f.dauHieu, viec: f.viec,
+      await ghi('POST', 'su_co', { id: f.khoa, ma, muc: f.muc, tieu_de: f.tieu, anh_huong: f.anhHuong, chi_tiet: (f.lyDo || []).join(' · ') || f.dauHieu, viec: f.viec + (f.traCuu ? ' — tra: ' + f.traCuu : ''),
         trang_thai: 'mo', mo_at: nowIso, cap_nhat_at: nowIso, da_bao_muc: kq.ok ? f.muc : null, so_nguoi: f.nguoi || null });
       continue;
     }
