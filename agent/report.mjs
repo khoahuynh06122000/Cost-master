@@ -266,7 +266,7 @@ try {
         try {
           const subs = await q(`push_subs?select=endpoint,p256dh,auth&plant_code=eq.${x.p}&sloc_code=eq.${x.s}`);
           const uniq = [...new Map(subs.filter(z => z.endpoint).map(z => [z.endpoint, z])).values()];
-          if (uniq.length) await fetch(`${APP}/api/push-send`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          if (uniq.length) await fetch(`${APP}/api/push-send`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-service-key': SB_KEY },
             body: JSON.stringify({ subs: uniq, title: 'Phiếu điều chuyển chờ duyệt', body: msg, url: '/', tag: 'dcnhac' }) });
         } catch (e) { console.warn('Đẩy thông báo nhắc duyệt lỗi', e.message); }
       }

@@ -74,7 +74,9 @@ self.addEventListener('push', e => {
 
 self.addEventListener('notificationclick', e => {
   e.notification.close();
-  const target = (e.notification.data && e.notification.data.url) || '/';
+  // Chỉ mở đường dẫn NỘI BỘ của app — chặn link ra ngoài (rà bảo mật 16/11/2026)
+  let target = (e.notification.data && e.notification.data.url) || '/';
+  try { const u = new URL(target, self.location.origin); target = u.origin === self.location.origin ? u.pathname + u.search + u.hash : '/'; } catch (err) { target = '/'; }
   e.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
     for (const c of list) { if ('focus' in c) { c.navigate(target); return c.focus(); } }
     if (clients.openWindow) return clients.openWindow(target);

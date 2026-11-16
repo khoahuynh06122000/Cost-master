@@ -145,6 +145,22 @@ const xuLy = async (req, res) => {
     return res.status(503).json({ error: 'Máy chủ chưa cấu hình VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY' });
   }
 
+  /* RÀ BẢO MẬT 16/11/2026: trước đây AI CŨNG gửi được thông báo đẩy qua máy chủ này (kèm đường link tuỳ ý → lừa đảo).
+     Nay bắt buộc: phiên đăng nhập hợp lệ (Supabase xác nhận token) HOẶC khoá service role của bot. Link chỉ được là
+     đường dẫn nội bộ của app (bắt đầu bằng "/"), service worker cũng chặn link ra ngoài. */
+  const SUPA_URL = (process.env.SUPABASE_URL || 'https://jygrdbuwveitrlfuwigs.supabase.co').replace(/\/+$/, '');
+  const SVC = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+  const svcHdr = String(req.headers['x-service-key'] || '');
+  let duocPhep = false;
+  if (SVC && svcHdr && svcHdr.length === SVC.length && require('crypto').timingSafeEqual(Buffer.from(svcHdr), Buffer.from(SVC))) duocPhep = true;
+  else {
+    const a = String(req.headers.authorization || ''), tk = a.startsWith('Bearer ') ? a.slice(7).trim() : '';
+    if (tk && SVC) {
+      try { const r0 = await fetch(SUPA_URL + '/auth/v1/user', { headers: { apikey: SVC, Authorization: 'Bearer ' + tk } }); duocPhep = r0.ok; } catch (e) { duocPhep = false; }
+    }
+  }
+  if (!duocPhep) return res.status(401).json({ error: 'Cần đăng nhập' });
+
   let b = req.body;
   if (typeof b === 'string') { try { b = JSON.parse(b); } catch (e) { b = null; } }
   if (!b || !Array.isArray(b.subs) || !b.subs.length) {
@@ -155,7 +171,7 @@ const xuLy = async (req, res) => {
   const payload = JSON.stringify({
     title: String(b.title || 'Kiểm kê F&B').slice(0, 120),
     body: String(b.body || '').slice(0, 400),
-    url: String(b.url || '/').slice(0, 300),
+    url: (/^\/(?!\/)[^\s]*$/.test(String(b.url || '')) ? String(b.url) : '/').slice(0, 300),
     tag: String(b.tag || 'kiemke').slice(0, 60),
   });
 

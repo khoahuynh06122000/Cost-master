@@ -44,7 +44,7 @@ async function bao(p, s, msg, tru) {
   try {
     const subs = await q(`push_subs?select=endpoint,p256dh,auth&plant_code=eq.${p}&sloc_code=eq.${s}`);
     const uniq = [...new Map(subs.filter(z => z.endpoint).map(z => [z.endpoint, z])).values()];
-    if (uniq.length) await fetch(`${APP}/api/push-send`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    if (uniq.length) await fetch(`${APP}/api/push-send`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-service-key': SB_KEY },
       body: JSON.stringify({ subs: uniq, title: 'Phiếu điều chuyển đã quá thời gian duyệt', body: msg, url: '/', tag: 'dchethan' }) });
   } catch (e) { console.warn('Đẩy thông báo lỗi', e.message); }
 }
