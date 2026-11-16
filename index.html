@@ -1182,7 +1182,15 @@
   @keyframes blIn{from{opacity:0}to{opacity:1}}
   @keyframes blSweep{from{transform:translateX(-120%)}to{transform:translateX(260%)}}
   #app.vao .sidebar,#app.vao .topbar{animation:blIn .3s ease both}
-  #view.vao{animation:pageIn .24s cubic-bezier(.16,1,.3,1) both}
+  /* Chuyển mục (Khoa 16/11/2026, theo nhịp MySun): KHÔNG bật cả trang một lượt nữa — từng khối trồi lần lượt
+     (cách nhau 40ms), thẻ việc / dòng bảng / thẻ dữ liệu trượt nhẹ 8px lần lượt (22–45ms), đường cong .16,1,.3,1.
+     Lớp `vao` tự gỡ sau ~0,9s nên vẽ lại cùng màn (đồng bộ, gõ lọc) không nhảy lại. */
+  #view.vao>*{animation:mucIn .34s cubic-bezier(.16,1,.3,1) both;animation-delay:calc(var(--i,0)*40ms)}
+  #view.vao .hub-tile{animation:mucIn .34s cubic-bezier(.16,1,.3,1) both;animation-delay:calc(var(--j,0)*45ms + 60ms)}
+  #view.vao [data-tr]{animation:dongIn .26s cubic-bezier(.16,1,.3,1) both;animation-delay:calc(var(--r,0)*22ms + 90ms)}
+  @keyframes mucIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  @keyframes dongIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){#view.vao>*,#view.vao .hub-tile,#view.vao [data-tr]{animation:none!important}}
   @keyframes pageIn{from{opacity:0;transform:translateY(8px) scale(.998)}to{opacity:1;transform:none}}
   @media (prefers-reduced-motion:reduce){
     .login-card2.leaving,.boot-load,.boot-load .bl-line::before,#app.vao .sidebar,#app.vao .topbar,#view.vao,.lc-ok path{animation:none!important}
@@ -1272,7 +1280,8 @@
     animation:blIn .18s ease both}
   .nsm{position:relative;width:min(1080px,100%);max-height:calc(100vh - 32px);display:grid;grid-template-columns:1fr 1fr;
     background:var(--surface);color:var(--ink);border-radius:22px;box-shadow:var(--shadow-lg);overflow:hidden;
-    animation:pageIn .26s cubic-bezier(.16,1,.3,1) both}
+    animation:nsmIn .24s cubic-bezier(.16,1,.3,1) both}
+  @keyframes nsmIn{from{opacity:0;transform:translateY(8px) scale(.96)}to{opacity:1;transform:none}}
   .nsm-l,.nsm-r{overflow:auto;padding:28px}
   .nsm-r{border-left:1px solid var(--line);background:var(--surface-2)}
   .nsm-x{position:absolute;top:14px;right:14px;width:38px;height:38px;border-radius:50%;border:0;background:var(--surface-2);color:var(--ink);
@@ -1558,7 +1567,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1611-05';
+const APP_VER='1611-06';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -6155,13 +6164,24 @@ function renderPhantich(v){
 function toggleDark(){const d=document.documentElement.classList.toggle('dark');try{localStorage.setItem('appDark',d?'1':'0');}catch(e){}const b=$('#darkToggle');if(b)b.textContent=d?'☀':'🌙';}
 (function(){const b=document.getElementById('darkToggle');if(b)b.textContent=document.documentElement.classList.contains('dark')?'☀':'🌙';})();
 let _veTabCu='';
+/* Đánh số thứ tự trồi cho màn vừa mở: khối lớn (--i), thẻ việc (--j), dòng bảng / thẻ dữ liệu (--r). Chỉ 10–14 cái đầu
+   có độ trễ, phần sau trồi cùng lúc để màn dài không phải chờ. */
+function danhSoTroi(v){
+  [...v.children].forEach((c,i)=>c.style.setProperty('--i',Math.min(i,10)));
+  v.querySelectorAll('.hub-tile').forEach((c,i)=>c.style.setProperty('--j',Math.min(i,10)));
+  v.querySelectorAll('tbody, .ns-grid, .list-scroll, .picklist, .nkk-list').forEach(g=>{
+    [...g.children].slice(0,14).forEach((c,i)=>{c.setAttribute('data-tr','');c.style.setProperty('--r',i);});});
+}
 function renderView(){
   ocrPreviewOpen=false; // vẽ lại màn = preview quét cũ (nếu có) bị bỏ; tránh kẹt cờ chặn polling
   hideFreshPill();      // vẽ lại màn = đã cập nhật -> gỡ nút "có dữ liệu mới" nếu còn
   hideFreshPill();
   const v=$('#view');v.innerHTML='';
-  {const _k=activeTab+'|'+((typeof hubOpen==='object'&&hubOpen&&hubOpen[activeTab])||'');
-    if(_k!==_veTabCu){_veTabCu=_k;v.classList.remove('vao');void v.offsetWidth;v.classList.add('vao');}}
+  {/* khóa = tab + MỌI thẻ việc đang mở (màn kế toán dùng khóa hub khác tên tab, VD dieuchuyenDash) */
+   const _k=activeTab+'|'+(typeof hubOpen==='object'&&hubOpen?JSON.stringify(hubOpen):'');
+    if(_k!==_veTabCu){_veTabCu=_k;v.classList.remove('vao');void v.offsetWidth;v.classList.add('vao');
+      window._vaoDen=Date.now()+950;clearTimeout(window._vaoT);window._vaoT=setTimeout(()=>{v.classList.remove('vao');v.querySelectorAll('[data-tr]').forEach(x=>x.removeAttribute('data-tr'));},950);}
+    else if(!(window._vaoDen>Date.now()))v.classList.remove('vao');}  /* màn tải xong trong lúc đang trồi (VD danh bạ) vẫn trồi tiếp */
   v.classList.toggle('wide',activeTab==='dieuhanh'||activeTab==='phantich'||activeTab==='kiemsoat'||activeTab==='ruiro');
   $('#pageTitle').textContent=TABS[activeTab].title;
   // location chip
@@ -6188,6 +6208,7 @@ function renderView(){
   else if(activeTab==='chenhlech')renderChenhLech(v);
   else if(activeTab==='audit')renderAudit(v);
   try{cardifyTables(v);}catch(e){console.warn('cardify',e);}
+  if(v.classList.contains('vao'))try{danhSoTroi(v);}catch(e){}
   /* Dịch sau cùng, khi mọi thứ đã vẽ xong. Chuỗi không có trong từ điển giữ nguyên
      nên tên hàng / tên kho (dữ liệu SAP) không bao giờ bị đụng. */
   try{dichMan(document.body);}catch(e){console.warn('dich',e);}
