@@ -1666,7 +1666,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1611-15';
+const APP_VER='1611-16';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -5647,7 +5647,7 @@ async function doSignUp(){
    - PIN LƯU & KIỂM TRÊN MÁY CHỦ (/api/pin, bảng user_pin chỉ service role đọc được), gắn theo TÀI KHOẢN — máy nào cũng một PIN.
      Máy chủ đếm số lần sai, sai 5 lần thì KHÓA; đặt lại phải vừa đăng nhập bằng mật khẩu (trong 10 phút).
    - ĐĂNG NHẬP LẠI (bằng mật khẩu) LUÔN PHẢI NHẬP PIN.
-   - Mở khóa xong giữ 8 giờ trên máy này (kk_pin_ok_v2) — trong 8 giờ mở lại app không hỏi lại.
+   - Mỗi lần mở / tải lại app đều hỏi PIN (Khoa 16/11/2026 bỏ giữ mở khóa 8 giờ).
    - Mất mạng: dùng bản kiểm trên máy (kk_pin_v1, cập nhật mỗi lần nhập đúng / đặt PIN) để BP vẫn đếm được ngoại tuyến. */
 const PIN_LS='kk_pin_v1',PIN_OK_LS='kk_pin_ok_v2',PIN_QUEN_LS='kk_pin_quen_v1',PIN_SAI_TOI_DA=5,PIN_GIU_MS=8*3600*1000;
 function pinDoc(){try{return JSON.parse(localStorage.getItem(PIN_LS)||'{}')||{};}catch(e){return {};}}
@@ -5682,9 +5682,9 @@ let _pinRes=null,_pinBuf='',_pinMode='',_pinB1='',_pinBan=false,_pinNguon='may_c
 async function pinQua(){
   try{if(!(window.crypto&&crypto.subtle&&window.TextEncoder))return true;}catch(e){return true;}
   const uid=pinUid();if(!uid)return true;
-  const vuaMK=!!_liVuaBam;               /* vừa đăng nhập bằng mật khẩu -> LUÔN hỏi PIN */
-  if(vuaMK)pinOkXoa(uid);
-  else if(pinOkCon(uid))return true;     /* đã mở khóa trên máy này trong 8 giờ */
+  const vuaMK=!!_liVuaBam;               /* vừa đăng nhập bằng mật khẩu */
+  /* Khoa 16/11/2026: MỖI LẦN MỞ / TẢI LẠI app (kể cả Ctrl+Shift+R) đều hỏi PIN — bỏ "giữ mở khóa 8 giờ". */
+  pinOkXoa(uid);
   let mode=null;
   const matMang=(typeof navigator!=='undefined'&&navigator.onLine===false)||!mangOK;
   if(!matMang){
