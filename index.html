@@ -1332,7 +1332,11 @@
   /* ===== Ô THẺ VIỆC kiểu "route card" (Khoa 16/11/2026, theo banafi-pktactivities) — màu app, đủ sáng/tối =====
      thẻ bo 22px + bóng sâu + vệt sáng mép trên · icon trong vòng tròn · nút mũi tên tròn góc phải · con số to ở chân
      thẻ · rê chuột: nhấc 4px, viền xanh ngọc tỏa sáng, nút mũi tên đổi màu. */
-  .hub-grid{gap:16px;grid-template-columns:repeat(auto-fill,minmax(min(250px,100%),1fr))}
+  /* Lưới thẻ việc chia ĐỀU (Khoa 16/11/2026): số cột tính theo số thẻ (--cot, xem renderHubView), hàng cuối thiếu thì thẻ giãn ra
+     lấp kín hàng — không còn kiểu 4 + 1 thẻ lẻ. */
+  .hub-grid{display:flex;flex-wrap:wrap;gap:16px}
+  .hub-grid>.hub-tile{flex:1 1 calc((100% - (var(--cot,3) - 1)*16px)/var(--cot,3));min-width:min(230px,100%)}
+  @media (max-width:640px){.hub-grid>.hub-tile{flex-basis:100%}}
   .hub-tile{position:relative;overflow:hidden;display:flex;flex-direction:column;gap:6px;padding:20px 20px 16px;border-radius:22px;
     background:var(--surface);border:1px solid var(--line);
     box-shadow:0 18px 40px -22px rgba(19,35,32,.32),inset 0 1px 0 rgba(255,255,255,.7);
@@ -1613,7 +1617,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1611-13';
+const APP_VER='1611-14';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -6550,6 +6554,7 @@ function renderHubView(v,tab,acts){
   const cur=list.find(a=>a.k===hubOpen[tab]);
   if(!cur){
     const g=el('div','hub-grid');
+    {const n=list.filter(a=>!a.phu).length;g.style.setProperty('--cot',n<=4?Math.max(n,1):Math.min(4,Math.ceil(n/2)));}
     /* Việc làm MỘT LẦN (a.phu, VD Cài đặt AI quét ảnh) không đứng ngang hàng việc hằng
        ngày: vẽ thành một dòng nhỏ dưới lưới (Khoa 14/10/2026). */
     const phu=list.filter(a=>a.phu);
