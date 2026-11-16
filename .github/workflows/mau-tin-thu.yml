@@ -1,0 +1,25 @@
+name: Gui tin mau canh bao (cho Khoa duyet)
+
+# Tu chay moi khi day thay doi mau tin len main. Khoa duyet xong thi XOA file nay.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'lib/mau-tin.js'
+      - 'agent/mau-tin-thu.mjs'
+  workflow_dispatch: {}
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Gui 4 tin mau
+        run: node agent/mau-tin-thu.mjs
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}

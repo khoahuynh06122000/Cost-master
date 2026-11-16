@@ -2,7 +2,8 @@ name: Canh bao loi app (Telegram)
 
 on:
   schedule:
-    - cron: '*/15 * * * *'   # 15 phut/lan — GitHub co the cham vai phut luc cao diem
+    - cron: '0 1 * * *'    # 8h sang VN — kem tin tom tat
+    - cron: '0 10 * * *'   # 17h chieu VN
   workflow_dispatch: {}
 
 concurrency:
@@ -16,7 +17,7 @@ permissions:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 6
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

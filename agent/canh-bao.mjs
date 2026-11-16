@@ -1,19 +1,21 @@
 // agent/canh-bao.mjs — BOT THEO DÕI & CẢNH BÁO LỖI APP (16/11/2026, bước 3: A3 + A4 + A5 + A6 + A7).
-// Chạy 15 phút/lần (.github/workflows/canh-bao.yml). Không dùng AI. Báo về Telegram của Khoa (lib/telegram.js).
+// Chạy 2 lần/ngày lúc 8h và 17h giờ VN (.github/workflows/canh-bao.yml — Khoa 16/11/2026: 15 phút/lần là quá dày).
+// Mỗi lượt xét dữ liệu TỪ LƯỢT TRƯỚC tới giờ (dấu mốc lưu ở su_co id 'tomtat_lan_chay'). Không dùng AI. Báo về Telegram của Khoa (lib/telegram.js).
 //
 // Phân mức theo SU-CO-phan-muc-va-mau-tin.md (Khoa duyệt 16/11/2026):
-//   S1 — app/Supabase không trả lời (2 lần liền) · Vercel chạy bản cũ > 15 phút · sổ điều chuyển ghi trùng /
-//        phiếu đã duyệt mà sổ thiếu dòng · >= 10 người cùng một lỗi trong 30 phút · Egress dự báo > 100% và còn <= 3 ngày
-//   S2 — >= 3 người cùng một lỗi trong 30 phút · một hàm /api lỗi >= 5 lần trong 30 phút · bot định kỳ không chạy ·
+//   S1 — app/Supabase không trả lời (thử lại sau 45 giây vẫn không được) · Vercel chạy bản cũ > 15 phút · sổ điều chuyển ghi trùng /
+//        phiếu đã duyệt mà sổ thiếu dòng · >= 10 người cùng một lỗi từ lượt trước · Egress dự báo > 100% và còn <= 3 ngày
+//   S2 — >= 3 người cùng một lỗi · một hàm /api lỗi >= 5 lần (đều tính từ lượt trước) · bot định kỳ không chạy ·
 //        Egress dự báo > 80%
 //   S3 — còn lại: không mở sự cố, chỉ vào tin tóm tắt 8h.
 // Giờ yên lặng 22h → 8h (giờ VN): chỉ S1 được gửi; sự cố S2 mở trong đêm vào tin tóm tắt 8h.
-// Mỗi sự cố: MỘT tin mở + MỘT tin "đã ổn lại" (60 phút không còn dấu hiệu); tăng mức thì báo thêm.
-// Trạng thái lưu ở bảng su_co (SQL PHẦN 38). Supabase sập (không lưu được trạng thái) thì chỉ báo mỗi giờ một lần.
+// Mỗi sự cố: MỘT tin mở + MỘT tin "đã ổn lại" (lượt sau không còn dấu hiệu); tăng mức thì báo thêm.
+// Trạng thái lưu ở bảng su_co (SQL PHẦN 38). Supabase sập (không lưu được trạng thái) thì vẫn báo S1 mỗi lượt.
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
 const require = createRequire(import.meta.url);
 const { guiTelegram, dangNgu, esc } = require('../lib/telegram.js');
+const { tinSuCo, tinOnLai, tinTomTat } = require('../lib/mau-tin.js');
 
 const SB_URL = (process.env.SUPABASE_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY || '';
@@ -38,9 +40,9 @@ async function q(path) {
   if (!r.ok) throw Object.assign(new Error(`${path.split('?')[0]}: HTTP ${r.status} ${(await r.text()).slice(0, 160)}`), { st: r.status });
   return r.json();
 }
-async function ghi(method, path, body) {
+async function ghi(method, path, body, prefer) {
   if (THU) { log('[thử] ' + method + ' ' + path, JSON.stringify(body || '').slice(0, 200)); return; }
-  const r = await fetch(`${SB_URL}/rest/v1/${path}`, { method, headers: { ...H, 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: body ? JSON.stringify(body) : undefined });
+  const r = await fetch(`${SB_URL}/rest/v1/${path}`, { method, headers: { ...H, 'Content-Type': 'application/json', Prefer: prefer || 'return=minimal' }, body: body ? JSON.stringify(body) : undefined });
   if (!r.ok) throw new Error(`${method} ${path.split('?')[0]}: HTTP ${r.status} ${(await r.text()).slice(0, 160)}`);
 }
 async function gui(text, muc) {
@@ -49,6 +51,8 @@ async function gui(text, muc) {
   if (!kq.ok && !kq.hoan) console.warn('Gửi Telegram trượt:', kq.loi);
   return kq;
 }
+const CHO_THU_LAI = Number(process.env.CANH_BAO_CHO ?? 45000);
+const ngu = ms => new Promise(r => setTimeout(r, ms));
 const thieuBang = e => /42P01|does not exist|schema cache|PGRST205/i.test(String(e && e.message));
 
 // ---------------------------------------------------------------- 1. THU DẤU HIỆU
@@ -58,15 +62,19 @@ const ghiChu = []; // lỗi khi chạy chính bot (không làm dừng bot)
 // 1a. App trên Vercel còn mở được + đúng phiên bản
 let verRepo = '', verWeb = '';
 try { verRepo = (/const APP_VER='([^']+)'/.exec(readFileSync(new URL('../index.html', import.meta.url), 'utf8')) || [])[1] || ''; } catch (e) {}
+async function moWeb() {
+  const r = await fetch(APP + '/?_=' + NOW + Math.random(), { headers: { 'Cache-Control': 'no-cache' } });
+  return { r, t: r.ok ? await r.text() : '' };
+}
 try {
-  const r = await fetch(APP + '/?_=' + NOW, { headers: { 'Cache-Control': 'no-cache' } });
-  const t = r.ok ? await r.text() : '';
+  let { r, t } = await moWeb().catch(async () => { await ngu(CHO_THU_LAI); return moWeb(); });
+  if (!r.ok || !/const APP_VER=/.test(t)) { await ngu(CHO_THU_LAI); ({ r, t } = await moWeb()); }
   verWeb = (/const APP_VER='([^']+)'/.exec(t) || [])[1] || '';
-  if (!r.ok || !verWeb) phat.push({ khoa: 'web_sap', muc: 'S1', haiLan: true, tieu: 'Trang app không mở được',
+  if (!r.ok || !verWeb) phat.push({ khoa: 'web_sap', muc: 'S1', tieu: 'Trang app không mở được',
     anhHuong: 'mọi người dùng', dauHieu: 'tải ' + APP + ' → ' + (r.ok ? 'không thấy phiên bản trong trang' : 'HTTP ' + r.status),
     viec: 'mở Vercel → Deployments xem bản mới nhất có lỗi build không' });
 } catch (e) {
-  phat.push({ khoa: 'web_sap', muc: 'S1', haiLan: true, tieu: 'Trang app không mở được', anhHuong: 'mọi người dùng',
+  phat.push({ khoa: 'web_sap', muc: 'S1', tieu: 'Trang app không mở được', anhHuong: 'mọi người dùng',
     dauHieu: 'không kết nối được ' + APP + ' (' + String(e.message).slice(0, 80) + ')', viec: 'mở Vercel → Deployments kiểm tra' });
 }
 if (verRepo && verWeb && verRepo !== verWeb) {
@@ -82,15 +90,18 @@ if (verRepo && verWeb && verRepo !== verWeb) {
 
 // 1b. Supabase còn trả lời
 let sbOK = true;
-try { await q('plants?select=plant_code&limit=1'); }
-catch (e) { sbOK = false; phat.push({ khoa: 'sb_sap', muc: 'S1', haiLan: true, tieu: 'Máy chủ dữ liệu (Supabase) không trả lời',
+try { await q('plants?select=plant_code&limit=1').catch(async () => { await ngu(CHO_THU_LAI); return q('plants?select=plant_code&limit=1'); }); }
+catch (e) { sbOK = false; phat.push({ khoa: 'sb_sap', muc: 'S1', tieu: 'Máy chủ dữ liệu (Supabase) không trả lời',
   anhHuong: 'không ai đăng nhập / gửi phiếu được', dauHieu: String(e.message).slice(0, 160),
   viec: e.st === 402 ? 'Supabase báo vượt hạn mức (402) — nâng gói Pro hoặc chờ kỳ mới' : 'mở Supabase → Project status' }); }
 
 let loiApp = [], suCo = [], suCoOK = true;
 if (sbOK) {
-  // 1c. Lỗi từ máy người dùng + hàm máy chủ trong 30 phút
-  const tu30 = new Date(NOW - 30 * 60000).toISOString();
+  // 1c. Lỗi từ máy người dùng + hàm máy chủ TỪ LƯỢT TRƯỚC (tối đa 24 giờ; chưa có mốc thì 12 giờ)
+  let tuLan = NOW - 12 * 3600e3;
+  try { const m = await q(`su_co?select=cap_nhat_at&id=eq.tomtat_lan_chay`); if (m[0] && m[0].cap_nhat_at) tuLan = Math.max(NOW - 24 * 3600e3, Date.parse(m[0].cap_nhat_at)); } catch (e) {}
+  globalThis.__tuLan = tuLan;
+  const tu30 = new Date(tuLan).toISOString(), tuNhan = 'từ ' + gioNgay(tuLan).slice(0, 5) + ' ' + gioNgay(tuLan).slice(6, 11);
   try { loiApp = await q(`loi_app?select=nguon,loai,thong_diep,ma,man,user_id,may,ten,ver,so_lan&da_xu_ly=eq.false&at=gte.${tu30}&limit=5000`); }
   catch (e) { if (!thieuBang(e)) ghiChu.push('đọc loi_app: ' + e.message); }
   const nhom = new Map();
@@ -104,10 +115,10 @@ if (sbOK) {
     const n = g.nguoi.size, tenDs = [...g.ten].slice(0, 4).join(', ') + (g.ten.size > 4 ? '…' : '');
     if (k.startsWith('api|')) {
       if (g.lan >= 5) phat.push({ khoa: 'loi|' + k, muc: 'S2', tieu: 'Hàm máy chủ ' + g.x.man + ' lỗi liên tục', nguoi: n, lan: g.lan,
-        anhHuong: `${g.lan} lần lỗi / 30 phút · ${n} người`, dauHieu: g.x.thong_diep, viec: g.x.man === '/api/ocr' ? 'xem log Vercel; báo BP tạm nhập Excel / gõ tay' : 'xem log Vercel của hàm này' });
+        anhHuong: `${g.lan} lần lỗi ${tuNhan} · ${n} người`, dauHieu: g.x.thong_diep, viec: g.x.man === '/api/ocr' ? 'xem log Vercel; báo BP tạm nhập Excel / gõ tay' : 'xem log Vercel của hàm này' });
     } else if (n >= 3) {
       phat.push({ khoa: 'loi|' + k, muc: n >= 10 ? 'S1' : 'S2', tieu: 'Nhiều người cùng gặp lỗi: ' + g.x.thong_diep.slice(0, 90), nguoi: n, lan: g.lan,
-        anhHuong: `${n} người trong 30 phút${tenDs ? ' (' + tenDs + ')' : ''}`, dauHieu: `màn ${g.x.man || '?'} · bản ${g.x.ver || '?'}` + (g.x.ma ? ' · mã ' + g.x.ma : ''),
+        anhHuong: `${n} người ${tuNhan}${tenDs ? ' (' + tenDs + ')' : ''}`, dauHieu: `màn ${g.x.man || '?'} · bản ${g.x.ver || '?'}` + (g.x.ma ? ' · mã ' + g.x.ma : ''),
         viec: 'xem chi tiết trong bảng loi_app' });
     }
   }
@@ -180,8 +191,7 @@ const dem = ngayISO(NOW).slice(5).replace('-', '');
 let soMoi = 0;
 if (sbOK && suCoOK) { try { soMoi = (await q(`su_co?select=id&ma=like.SC-${dem.slice(2)}${dem.slice(0, 2)}-*`)).length; } catch (e) {} }
 function maMoi() { const d = vnDate(NOW); soMoi++; return `SC-${p2(d.getUTCDate())}${p2(d.getUTCMonth() + 1)}-${p2(soMoi)}`; }
-const tinMo = (f, ma, tang) => `${ICO[f.muc]} <b>${f.muc} · ${esc(f.tieu)}</b>${tang ? ' (tăng mức)' : ''}\n` +
-  `Lúc: ${esc(gioNgay(NOW))}\nẢnh hưởng: ${esc(f.anhHuong)}\nDấu hiệu: ${esc(f.dauHieu)}\nViệc nên làm: ${esc(f.viec)}\nMã sự cố: ${esc(ma)}`;
+const tinMo = (f, ma, tuMuc) => tinSuCo({ ...f, ma, luc: gioNgay(NOW), tuMuc: tuMuc || null });
 const coTheGui = muc => muc === 'S1' || (muc === 'S2' && !dangNgu(new Date(NOW)));
 
 if (!sbOK || !suCoOK) {
@@ -208,7 +218,7 @@ if (!sbOK || !suCoOK) {
     if (cu.trang_thai === 'nghi') Object.assign(patch, { trang_thai: 'mo', ma, mo_at: nowIso, tieu_de: f.tieu, viec: f.viec });
     const daBao = cu.trang_thai === 'nghi' ? null : cu.da_bao_muc;
     if (!cu.da_xu_ly && coTheGui(f.muc) && (!daBao || RANK[f.muc] > RANK[daBao])) {
-      const kq = await gui(tinMo(f, ma, !!daBao), f.muc);
+      const kq = await gui(tinMo(f, ma, daBao), f.muc);
       if (kq.ok) patch.da_bao_muc = f.muc;
     }
     await ghi('PATCH', 'su_co?id=eq.' + encodeURIComponent(f.khoa), patch);
@@ -217,12 +227,8 @@ if (!sbOK || !suCoOK) {
   for (const r of suCo) {
     if (thay.has(r.id)) continue;
     if (r.trang_thai === 'nghi') { await ghi('DELETE', 'su_co?id=eq.' + encodeURIComponent(r.id)); continue; }
-    const vang = (NOW - Date.parse(r.cap_nhat_at || r.mo_at)) / 60000;
-    if (vang < 60) continue;
-    const keo = Math.round((Date.parse(r.cap_nhat_at || r.mo_at) - Date.parse(r.mo_at)) / 60000);
-    if (r.da_bao_muc && coTheGui(r.muc)) await gui(`✅ <b>Đã ổn lại · ${esc(r.ma || '')} · ${esc(r.tieu_de || '')}</b>\n` +
-      `Kéo dài: ${esc(gioNgay(Date.parse(r.mo_at)))} → ${esc(gioNgay(Date.parse(r.cap_nhat_at || r.mo_at)))} (${keo} phút)` +
-      (r.so_nguoi ? ` · ${r.so_nguoi} người bị` : ''), r.muc);
+    if (r.da_bao_muc && coTheGui(r.muc)) await gui(tinOnLai({ muc: r.muc, tieu: r.tieu_de || '', ma: r.ma || '',
+      tu: gioNgay(Date.parse(r.mo_at)), den: gioNgay(NOW), phut: (NOW - Date.parse(r.mo_at)) / 60000, nguoi: r.so_nguoi }), r.muc);
     await ghi('PATCH', 'su_co?id=eq.' + encodeURIComponent(r.id), { trang_thai: 'dong', dong_at: new Date(NOW).toISOString() });
   }
 }
@@ -237,36 +243,35 @@ if (sbOK && suCoOK && d.getUTCHours() >= 8 && d.getUTCHours() < 22) {
     const homQua = ngayISO(NOW - 86400e3);
     const tuQua = new Date(Date.parse(homQua + 'T00:00:00+07:00')).toISOString(), toiQua = new Date(Date.parse(homQua + 'T22:00:00+07:00')).toISOString();
     const sang = new Date(Date.parse(homNay + 'T08:00:00+07:00')).toISOString();
-    const dong = [];
+    const D = { luc: gioNgay(NOW).slice(0, 5) + ' · ' + homNay.split('-').reverse().join('/'), conMo: [], dem: [], homQua: { S1: 0, S2: 0 }, ghiChu: [...ghiChu] };
     try {
-      const sc = await q(`su_co?select=ma,muc,tieu_de,mo_at,trang_thai,da_bao_muc&mo_at=gte.${tuQua}&id=not.like.tomtat*&order=mo_at.asc&limit=200`);
-      const dem3 = mu => sc.filter(r => r.muc === mu && r.mo_at < sang).length;
-      const dem = sc.filter(r => r.mo_at >= toiQua && r.mo_at < sang);
-      if (dem.length) dong.push('• Trong đêm: ' + dem.map(r => `${ICO[r.muc] || ''} ${esc(r.ma || '')} ${esc(r.tieu_de || '')}${r.trang_thai === 'dong' ? ' (đã ổn)' : ' (CÒN MỞ)'}`).join('\n   '));
-      dong.push(`• Hôm qua: ${dem3('S1')} S1 · ${dem3('S2')} S2` + (sc.some(r => r.trang_thai === 'mo') ? ` · còn mở ${sc.filter(r => r.trang_thai === 'mo').length}` : ''));
-    } catch (e) { dong.push('• (không đọc được sổ sự cố: ' + esc(e.message.slice(0, 80)) + ')'); }
+      const sc = await q(`su_co?select=ma,muc,tieu_de,mo_at,trang_thai,da_xu_ly&mo_at=gte.${tuQua}&id=not.like.tomtat*&order=mo_at.asc&limit=200`);
+      const mo = await q(`su_co?select=ma,muc,tieu_de&trang_thai=eq.mo&da_xu_ly=eq.false&order=mo_at.asc&limit=50`);
+      D.conMo = mo.filter(r => r.ma).map(r => ({ ma: r.ma, muc: r.muc, tieu: r.tieu_de }));
+      ['S1', 'S2'].forEach(mu => { D.homQua[mu] = sc.filter(r => r.muc === mu && r.mo_at < sang).length; });
+      D.dem = sc.filter(r => r.mo_at >= toiQua && r.mo_at < sang).map(r => ({ ma: r.ma, muc: r.muc, tieu: r.tieu_de, daOn: r.trang_thai === 'dong' }));
+    } catch (e) { D.ghiChu.push('sổ sự cố'); }
     try {
-      const la = await q(`loi_app?select=nguon,loai,thong_diep,man,user_id,may,so_lan&at=gte.${tuQua}&at=lt.${sang}&limit=10000`);
-      const g = new Map();
-      for (const x of la) { const k = (x.nguon === 'may_chu' ? x.man + ': ' : '') + x.thong_diep; const v = g.get(k) || { n: new Set(), lan: 0 }; v.n.add(x.user_id || x.may); v.lan += Number(x.so_lan) || 1; g.set(k, v); }
-      const top = [...g].sort((a, b) => b[1].n.size - a[1].n.size || b[1].lan - a[1].lan).slice(0, 5);
-      dong.push(`• Lỗi ghi nhận: ${la.length} lần` + (top.length ? '\n   ' + top.map(([k, v]) => `– ${esc(k.slice(0, 80))} (${v.n.size} người)`).join('\n   ') : ''));
-    } catch (e) { if (!thieuBang(e)) dong.push('• (không đọc được loi_app)'); }
+      const la = await q(`loi_app?select=nguon,thong_diep,man,user_id,may,so_lan&at=gte.${tuQua}&at=lt.${sang}&limit=10000`);
+      const g = new Map(), nguoi = new Set();
+      for (const x of la) { const k = (x.nguon === 'may_chu' ? 'Máy chủ ' + x.man + ': ' : '') + x.thong_diep; const v = g.get(k) || { n: new Set(), lan: 0 };
+        v.n.add(x.user_id || x.may); nguoi.add(x.user_id || x.may); v.lan += Number(x.so_lan) || 1; g.set(k, v); }
+      D.loi = { khoang: 'từ 0h hôm qua', lan: la.reduce((s, x) => s + (Number(x.so_lan) || 1), 0), nguoi: nguoi.size,
+        top: [...g].sort((a, b) => b[1].n.size - a[1].n.size || b[1].lan - a[1].lan).slice(0, 3).map(([k, v]) => ({ k, n: v.n.size, lan: v.lan })) };
+    } catch (e) { if (!thieuBang(e)) D.ghiChu.push('lỗi người dùng'); }
     try {
       const eg = await q(`egress_ngay?select=ten,bytes,ver,bang&ngay=eq.${homQua}&limit=5000`);
-      const mb = eg.reduce((s, r) => s + Number(r.bytes || 0), 0) / 1048576;
       const bang = {}; eg.forEach(r => Object.entries(r.bang || {}).forEach(([k, v]) => { bang[k] = (bang[k] || 0) + Number(v || 0); }));
-      const nang = Object.entries(bang).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, v]) => `${k} ${(v / 1048576).toFixed(0)} MB`).join(', ');
-      const E = globalThis.__eg;
-      dong.push(`• Egress hôm qua ~${mb.toFixed(0)} MB${mb > EG_NGAY_MB ? ' ⚠ quá ' + EG_NGAY_MB + ' MB' : ''}` +
-        (E ? ` · kỳ này ${(E.mb / 1024).toFixed(2)}/${EG_HAN_MB / 1024} GB · dự báo ${(E.duBao / 1024).toFixed(1)} GB` : '') + (nang ? `\n   nặng nhất: ${esc(nang)}` : '') + ' (app tự đếm)');
-      const cu = [...new Set(eg.filter(r => r.ver && verRepo && r.ver !== verRepo).map(r => r.ten || '?'))];
-      if (cu.length) dong.push(`• Còn chạy bản cũ (khác ${esc(verRepo)}): ${cu.length} người — ${esc(cu.slice(0, 8).join(', '))}${cu.length > 8 ? '…' : ''}`);
-    } catch (e) { if (!thieuBang(e)) dong.push('• (không đọc được egress_ngay)'); }
-    if (ghiChu.length) dong.push('• Bot gặp trục trặc khi kiểm: ' + esc(ghiChu.join(' · ').slice(0, 300)));
-    const kq = await gui(`☀️ <b>Tóm tắt ${esc(gioNgay(NOW).slice(0, 5))} ${esc(homNay.split('-').reverse().slice(0, 2).join('/'))}</b>\n` + dong.join('\n'), 'INFO');
+      const E = globalThis.__eg, dd = ms => ngayISO(ms).split('-').reverse().slice(0, 2).join('/');
+      D.eg = { homQuaMB: eg.reduce((s, r) => s + Number(r.bytes || 0), 0) / 1048576, nguongMB: EG_NGAY_MB, hanMB: EG_HAN_MB,
+        kyMB: E ? E.mb : null, duBaoMB: E ? E.duBao : 0, tuKy: E ? dd(E.bd) : '', denKy: E ? dd(E.kt) : '',
+        nang: Object.entries(bang).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, v]) => ({ k, mb: v / 1048576 })) };
+      D.banCu = { ver: verRepo, ten: [...new Set(eg.filter(r => r.ver && verRepo && r.ver !== verRepo).map(r => r.ten || '?'))] };
+    } catch (e) { if (!thieuBang(e)) D.ghiChu.push('Egress'); }
+    const kq = await gui(tinTomTat(D), 'INFO');
     if (kq.ok) await ghi('POST', 'su_co', { id: khoaTT, muc: 'S3', tieu_de: 'Tin tóm tắt ' + homNay, trang_thai: 'dong', mo_at: new Date(NOW).toISOString(), dong_at: new Date(NOW).toISOString() });
   }
 }
 
+if (sbOK && suCoOK) { try { await ghi('POST', 'su_co?on_conflict=id', { id: 'tomtat_lan_chay', muc: 'S3', tieu_de: 'Mốc lượt kiểm gần nhất', trang_thai: 'dong', mo_at: new Date(NOW).toISOString(), cap_nhat_at: new Date(NOW).toISOString() }, 'resolution=merge-duplicates,return=minimal'); } catch (e) { console.warn('ghi mốc', e.message); } }
 log(`Xong · ${phat.length} dấu hiệu (${phat.map(f => f.muc + ':' + f.khoa.slice(0, 40)).join(', ') || 'không có'})` + (ghiChu.length ? ' · ghi chú: ' + ghiChu.join(' | ') : ''));
