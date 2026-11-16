@@ -53,6 +53,38 @@ async function supa(path, opt) {
   return t ? JSON.parse(t) : null;
 }
 
+// TỰ GẮN tài khoản app với nhân viên (Khoa 16/11/2026): email trùng email công ty, hoặc họ tên trùng tuyệt đối với
+// ĐÚNG MỘT người đang làm. Không gắn chồng lên nhân viên đã gắn với tài khoản khác. Cùng luật với nsGoiY() ở app.
+function vnNorm(x) {
+  return String(x == null ? '' : x).normalize('NFD').toLowerCase()
+    .replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/\s+/g, '');
+}
+// Họ tên phải trùng ĐÚNG CẢ DẤU (chỉ bỏ hoa/thường và khoảng trắng thừa): "Lê Thị Ly" ≠ "Lê Thị Lý".
+function tenChuan(x) { return String(x == null ? '' : x).normalize('NFC').toLowerCase().replace(/\s+/g, ' ').trim(); }
+async function tuGan() {
+  const pf = await supa('profiles?select=id,full_name,email,ma_nv,status', { method: 'GET' });
+  const ns = (await supa('nhan_su?select=ma_nv,ho_ten,email_cty&dang_lam=eq.true', { method: 'GET' })) || [];
+  const daDung = new Set((pf || []).filter(p => p.ma_nv).map(p => String(p.ma_nv)));
+  const theoEmail = new Map(), theoTen = new Map();
+  ns.forEach(r => {
+    const e = String(r.email_cty || '').toLowerCase().trim();
+    if (e) theoEmail.set(e, theoEmail.has(e) ? null : r.ma_nv);
+    const t = tenChuan(r.ho_ten);
+    if (t) theoTen.set(t, theoTen.has(t) ? null : r.ma_nv);
+  });
+  let n = 0;
+  for (const p of (pf || [])) {
+    if (p.ma_nv || p.status !== 'active') continue;
+    const ma = theoEmail.get(String(p.email || '').toLowerCase().trim()) || theoTen.get(tenChuan(p.full_name)) || null;
+    if (!ma || daDung.has(String(ma))) continue;
+    await supa('profiles?id=eq.' + encodeURIComponent(p.id) + '&ma_nv=is.null', {
+      method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ ma_nv: ma }),
+    });
+    daDung.add(String(ma)); n++;
+  }
+  return n;
+}
+
 module.exports = async (req, res) => {
   if (req.method === 'GET') return res.status(200).json({ ready: !!(SERVICE_KEY && AGENT_KEY) });
   if (req.method !== 'POST') return res.status(405).json({ error: 'Chỉ nhận GET hoặc POST' });
@@ -96,7 +128,9 @@ module.exports = async (req, res) => {
         ngung += vang.slice(i, i + 100).length;
       }
     }
-    return res.status(200).json({ ok: true, moi, capNhat, ngung, boQuaNgung, conLam: theoMa.size });
+    let daGan = 0, loiGan = '';
+    try { daGan = await tuGan(); } catch (e) { loiGan = String(e.message || e).slice(0, 200); }
+    return res.status(200).json({ ok: true, moi, capNhat, ngung, boQuaNgung, conLam: theoMa.size, daGan, loiGan });
   } catch (e) {
     return res.status(502).json({ error: String(e.message || e).slice(0, 400) });
   }
