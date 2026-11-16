@@ -1453,6 +1453,9 @@
   .sc-nd{resize:vertical;min-height:90px;font:inherit}
   .sc-sub{font-weight:800;margin:18px 0 8px;color:var(--ink-soft)}
   html.dark .tba-x:hover{background:rgba(255,255,255,.08)}
+  .sc-form .sc-full{grid-column:1/-1}
+  .sc-form label[hidden]{display:none}
+  .sc-head .input[type=search]{flex:1;min-width:min(220px,100%)}
 </style>
 <script>try{if(localStorage.getItem('appDark')==='1')document.documentElement.classList.add('dark');}catch(e){}</script>
 </head>
@@ -1694,7 +1697,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1611-18';
+const APP_VER='1611-19';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -6199,7 +6202,7 @@ let scDuLieu=null,scLoi='',scForm={loai:'quet',kieu:'loi',gio:'',ten:''};
 async function scTai(){
   scLoi='';
   const tu=new Date(Date.now()-24*3600e3).toISOString(),tu7=new Date(Date.now()-7*86400e3).toISOString();
-  const out={su:[],loi:[],tba:[],thieu:[]};
+  const out={su:[],loi:[],tba:[],st:[],thieu:[]};
   const thieu=e=>/42P01|does not exist|schema cache|PGRST205/i.test(((e&&e.message)||'')+((e&&e.code)||''));
   try{const r=await sb.from('su_co').select('*').neq('trang_thai','nghi').gte('mo_at',tu7).not('id','like','tomtat%').order('mo_at',{ascending:false}).limit(100);
     if(r.error){if(thieu(r.error))out.thieu.push('su_co (PHẦN 38)');else throw r.error;}else out.su=r.data||[];}catch(e){scLoi=String(e.message||e);}
@@ -6207,7 +6210,50 @@ async function scTai(){
     if(r.error){if(thieu(r.error))out.thieu.push('loi_app (PHẦN 37)');else throw r.error;}else out.loi=r.data||[];}catch(e){scLoi=String(e.message||e);}
   try{const r=await sb.from('thong_bao_app').select('*').order('tao_at',{ascending:false}).limit(20);
     if(r.error){if(thieu(r.error))out.thieu.push('thong_bao_app (PHẦN 39)');else throw r.error;}else out.tba=r.data||[];}catch(e){scLoi=String(e.message||e);}
+  try{const r=await sb.from('so_tay').select('*').order('cap_nhat_at',{ascending:false}).limit(500);
+    if(r.error){if(thieu(r.error))out.thieu.push('so_tay (PHẦN 40)');else throw r.error;}else out.st=r.data||[];}catch(e){scLoi=String(e.message||e);}
   scDuLieu=out;
+}
+/* SỔ TAY & BÀI HỌC (16/11/2026): bảng so_tay — 'huong_dan' (gặp lỗi X thì làm gì) + 'bai_hoc' (lỗi đã sửa).
+   Bài học có khoa_nhan_dien: bot 8h/17h nhận ra lỗi QUAY LẠI và báo ♻️ TÁI PHÁT. Bot cũng tự xuất ra docs/SO-TAY-SU-CO.md. */
+let scSTMo=null,scSTTim='';
+function scKhoaTuSuCo(r){const id=String(r.id||'');
+  if(/^loi\|app\|/.test(id))return id.split('|')[3]||'';
+  if(/^loi\|api\|/.test(id))return id.split('|')[2]||'';
+  if(/^tai_phat\|/.test(id))return '';
+  const i=id.indexOf('|');return i>0?id.slice(0,i+1):id;}
+function scFormBaiHoc(h,goc){
+  const r=goc||{};const laMoi=!r.id;
+  const f=el('div','sc-form sc-bh');
+  const o=(id,nhan,val,dai,ph)=>{const x=el(dai?'textarea':'input','input'+(dai?' sc-nd':''));if(dai)x.rows=3;x.value=val||'';if(ph)x.placeholder=ph;x.dataset.k=id;
+    const w=el('label','sc-lbl'+(dai?' sc-full':''));w.appendChild(el('span','',escHtml(nhan)));w.appendChild(x);f.appendChild(w);return x;};
+  const loai=el('select','input');[['bai_hoc',L('Bài học đã sửa')],['huong_dan',L('Hướng dẫn xử lý')]].forEach(([k,t])=>{const op=document.createElement('option');op.value=k;op.textContent=t;loai.appendChild(op);});loai.value=r.loai||'bai_hoc';
+  const muc=el('select','input');['S1','S2','S3'].forEach(k=>{const op=document.createElement('option');op.value=k;op.textContent=k+' · '+({S1:'KHẨN',S2:'NẶNG',S3:'NHẸ'})[k];muc.appendChild(op);});muc.value=r.muc||'S2';
+  const lw=(t,x)=>{const w=el('label','sc-lbl');w.appendChild(el('span','',escHtml(t)));w.appendChild(x);f.appendChild(w);};
+  lw(L('Loại'),loai);lw(L('Mức'),muc);
+  const td=o('tieu_de',L('Tiêu đề'),r.tieu_de,false,L('VD: Sổ điều chuyển ghi trùng'));
+  const tc=o('trieu_chung',L('Triệu chứng (người dùng thấy gì)'),r.trieu_chung,true);
+  const kt=o('kiem_tra',L('Kiểm tra gì'),r.kiem_tra,true);
+  const nn=o('nguyen_nhan',L('Nguyên nhân gốc'),r.nguyen_nhan,true);
+  const xl=o('xu_ly',L('Cách xử lý / cách đã sửa'),r.xu_ly,true);
+  const ch=o('chan_tai_phat',L('Chặn tái phát (quy tắc rút ra)'),r.chan_tai_phat,true);
+  const bs=o('ban_sua',L('Bản sửa'),r.ban_sua||(laMoi?APP_VER:''),false);
+  const ns=o('ngay_sua',L('Ngày sửa'),r.ngay_sua||(laMoi?new Date(Date.now()+7*3600e3).toISOString().slice(0,10):''),false);ns.type='date';
+  const kn=o('khoa_nhan_dien',L('Dấu hiệu nhận diện (bot canh tái phát)'),r.khoa_nhan_dien,false,L('Chuỗi trong câu lỗi, VD: JWT expired'));
+  const doi=()=>{const bh=loai.value==='bai_hoc';[nn,bs,ns,kn].forEach(x=>x.closest('label').hidden=!bh);kt.closest('label').hidden=bh;};loai.onchange=doi;doi();
+  f.appendChild(el('div','list-hint sc-full',escHtml(L('Dấu hiệu nhận diện: bot so với câu lỗi người dùng gặp và mã sự cố — khớp thì báo ♻️ TÁI PHÁT kèm bài học này. Để trống nếu không muốn bot canh.'))));
+  const luu=el('button','btn btn-primary','💾 '+escHtml(L('Lưu vào sổ tay')));
+  luu.onclick=()=>{if(!td.value.trim()){toast(L('Chưa có tiêu đề'));td.focus();return;}
+    const bh=loai.value==='bai_hoc';
+    const row={id:r.id||((bh?'bh-':'hd-')+Date.now().toString(36)),loai:loai.value,muc:muc.value,tieu_de:td.value.trim(),trieu_chung:tc.value.trim()||null,
+      kiem_tra:bh?(r.kiem_tra||null):(kt.value.trim()||null),nguyen_nhan:bh?(nn.value.trim()||null):null,xu_ly:xl.value.trim()||null,chan_tai_phat:ch.value.trim()||null,
+      ban_sua:bh?(bs.value.trim()||null):null,ngay_sua:bh?(ns.value||null):null,khoa_nhan_dien:bh?(kn.value.trim()||null):null,
+      ma_su_co:r.ma_su_co||null,cap_nhat_at:new Date().toISOString(),cap_nhat_boi:session.name||null};
+    luu.disabled=true;scSTMo=null;
+    scGhi('so_tay',q=>q.upsert(row,{onConflict:'id'}).select('id'),L('Đã lưu vào sổ tay'));};
+  const huy=el('button','btn btn-ghost',escHtml(L('Huỷ')));huy.onclick=()=>{scSTMo=null;renderView();};
+  const a=el('div','sc-act sc-full');a.appendChild(huy);a.appendChild(luu);f.appendChild(a);
+  h.appendChild(f);setTimeout(()=>td.focus(),50);
 }
 function scSoanTin(){
   const f=scForm,lo=SC_LOAI.find(x=>x.k===f.loai)||SC_LOAI[0];const phan=f.loai==='khac'?(f.ten||'…'):lo.ten;
@@ -6246,7 +6292,10 @@ function renderSuCo(v){
             +(r.chi_tiet?'<div class="sc-dong">'+escHtml(L('Dấu hiệu'))+': '+escHtml(r.chi_tiet)+'</div>':'')
             +(r.viec?'<div class="sc-dong">'+escHtml(L('Việc nên làm'))+': '+escHtml(r.viec)+'</div>':'');
           if(r.trang_thai==='mo'&&!r.da_xu_ly){const b=el('button','btn btn-primary btn-sm','✓ '+escHtml(L('Đánh dấu đã xử lý')));
-            b.onclick=()=>{b.disabled=true;scGhi('su_co',t=>t.update({da_xu_ly:true}).eq('id',r.id).select('id'),L('Đã đánh dấu đã xử lý'));};
+            b.onclick=async()=>{b.disabled=true;await scGhi('su_co',t=>t.update({da_xu_ly:true}).eq('id',r.id).select('id'),L('Đã đánh dấu đã xử lý'));
+              if(confirm(L('Ghi bài học cho sự cố này để bot canh không tái phạm?'))){
+                scSTMo={loai:'bai_hoc',muc:r.muc,tieu_de:String(r.tieu_de||'').replace(/^Tái phát: /,''),trieu_chung:r.anh_huong||'',ma_su_co:r.ma||null,khoa_nhan_dien:scKhoaTuSuCo(r)};
+                hubOpen.suco='st';renderView();}};
             const f=el('div','sc-act');f.appendChild(b);c.appendChild(f);}
           h.appendChild(c);
         });
@@ -6297,6 +6346,31 @@ function renderSuCo(v){
             b.onclick=()=>{b.disabled=true;scGhi('thong_bao_app',q=>q.update({bat:false,tat_at:new Date().toISOString()}).eq('id',r.id).select('id'),L('Đã tắt thông báo')).then(tbaTai);};
             const a=el('div','sc-act');a.appendChild(b);c.appendChild(a);}
           h.appendChild(c);});
+      }},
+    {k:'st',title:L('Sổ tay & bài học'),sub:L('Gặp lỗi gì thì làm gì · lỗi đã sửa và quy tắc chặn tái phát. Bot tự lưu ra file docs/SO-TAY-SU-CO.md.'),
+      n:D.st.filter(r=>r.loai==='bai_hoc').length+' '+L('bài học'),warm:D.st.some(r=>r.tai_phat_lan>0),ico:HIC.sheet,
+      render:h=>{
+        if(scSTMo){h.appendChild(el('div','sc-sub',escHtml(scSTMo.id?L('Sửa mục sổ tay'):L('Thêm mục sổ tay'))));scFormBaiHoc(h,scSTMo.id?scSTMo:Object.assign({},scSTMo));return;}
+        const hd=el('div','sc-head');const tim=el('input','input');tim.type='search';tim.placeholder=L('Tìm trong sổ tay…');tim.value=scSTTim;hd.appendChild(tim);
+        const them=el('button','btn btn-primary btn-sm','＋ '+escHtml(L('Thêm mục')));them.onclick=()=>{scSTMo={};renderView();};hd.appendChild(them);h.appendChild(hd);
+        const ds=el('div');h.appendChild(ds);
+        const ve=()=>{ds.innerHTML='';const q=vnTerms(scSTTim);
+          [['bai_hoc',L('Bài học đã sửa')],['huong_dan',L('Hướng dẫn xử lý')]].forEach(([lo,ten])=>{
+            const rows=D.st.filter(r=>r.loai===lo&&(!q.length||vnAll(vnNorm([r.tieu_de,r.trieu_chung,r.nguyen_nhan,r.xu_ly,r.chan_tai_phat,r.khoa_nhan_dien].join(' ')),q)))
+              .sort((a,b)=>(b.tai_phat_lan||0)-(a.tai_phat_lan||0)||String(b.ngay_sua||b.cap_nhat_at||'').localeCompare(String(a.ngay_sua||a.cap_nhat_at||'')));
+            ds.appendChild(el('div','sc-sub',escHtml(ten)+' · '+rows.length));
+            rows.forEach(r=>{const c=el('details','sc-card sc-'+String(r.muc||'').toLowerCase());
+              const ly=(t,v)=>v?'<div class="sc-dong"><b>'+escHtml(t)+':</b> '+escHtml(v)+'</div>':'';
+              c.innerHTML='<summary><div class="sc-top"><span class="sc-muc">'+escHtml(r.muc||'')+'</span><b>'+escHtml(r.tieu_de)+'</b>'
+                +(r.tai_phat_lan?'<span class="badge badge-red">♻ '+escHtml(L('tái phát'))+' '+r.tai_phat_lan+'</span>':'')
+                +(r.ban_sua?'<span class="badge">'+escHtml(L('bản'))+' '+escHtml(r.ban_sua)+'</span>':'')+'</div></summary>'
+                +ly(L('Triệu chứng'),r.trieu_chung)+ly(L('Kiểm tra'),r.kiem_tra)+ly(L('Nguyên nhân gốc'),r.nguyen_nhan)+ly(L('Xử lý'),r.xu_ly)
+                +ly(L('Chặn tái phát'),r.chan_tai_phat)+ly(L('Dấu hiệu nhận diện'),r.khoa_nhan_dien)
+                +ly(L('Tái phát gần nhất'),r.tai_phat_cuoi?fmt(r.tai_phat_cuoi):'')+ly(L('Sự cố'),r.ma_su_co);
+              const s2=el('button','btn btn-ghost btn-sm','✎ '+escHtml(L('Sửa')));s2.onclick=()=>{scSTMo=Object.assign({},r);renderView();};
+              const a=el('div','sc-act');a.appendChild(s2);c.appendChild(a);ds.appendChild(c);});
+          });};
+        tim.oninput=()=>{scSTTim=tim.value;ve();};ve();
       }},
   ]);
 }

@@ -11,15 +11,17 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: read
+  contents: write    # de commit docs/SO-TAY-SU-CO.md
   actions: read
 
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # doc lich su commit sua loi -> bai hoc
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -31,3 +33,25 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Hoc tu lich su sua loi (commit co dong Sua-loi)
+        if: always()
+        run: node agent/hoc-tu-git.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+      - name: Xuat so tay ra docs/SO-TAY-SU-CO.md
+        if: always()
+        run: node agent/xuat-so-tay.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+      - name: Commit so tay neu doi
+        if: always()
+        run: |
+          if [ -n "$(git status --porcelain docs/)" ]; then
+            git config user.name "bot-canh-bao"
+            git config user.email "bot-canh-bao@users.noreply.github.com"
+            git add docs/SO-TAY-SU-CO.md
+            git commit -m "So tay su co: cap nhat tu dong [skip ci]"
+            git pull --rebase -q && git push -q
+          fi

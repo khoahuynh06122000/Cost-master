@@ -102,7 +102,7 @@ if (sbOK) {
   try { const m = await q(`su_co?select=cap_nhat_at&id=eq.tomtat_lan_chay`); if (m[0] && m[0].cap_nhat_at) tuLan = Math.max(NOW - 24 * 3600e3, Date.parse(m[0].cap_nhat_at)); } catch (e) {}
   globalThis.__tuLan = tuLan;
   const tu30 = new Date(tuLan).toISOString(), tuNhan = 'từ ' + gioNgay(tuLan).slice(0, 5) + ' ' + gioNgay(tuLan).slice(6, 11);
-  try { loiApp = await q(`loi_app?select=nguon,loai,thong_diep,ma,man,user_id,may,ten,ver,so_lan&da_xu_ly=eq.false&at=gte.${tu30}&limit=5000`); }
+  try { loiApp = await q(`loi_app?select=nguon,loai,thong_diep,ma,chi_tiet,man,user_id,may,ten,ver,so_lan&da_xu_ly=eq.false&at=gte.${tu30}&limit=5000`); }
   catch (e) { if (!thieuBang(e)) ghiChu.push('đọc loi_app: ' + e.message); }
   const nhom = new Map();
   for (const x of loiApp) {
@@ -192,6 +192,29 @@ for (const [file, ten, gioToiDa] of [['daily-report.yml', 'Bot báo cáo 8h sán
   } catch (e) { ghiChu.push('kiểm bot ' + file + ': ' + e.message); }
 }
 
+// TÁI PHÁT (Khoa 16/11/2026): lỗi đã sửa phải được nhớ để không tái phạm. Bảng so_tay (PHẦN 40) loại 'bai_hoc' có
+// khoa_nhan_dien: dấu hiệu nào khớp (đầu mã su_co, hoặc chuỗi trong câu lỗi) thì gắn nhãn TÁI PHÁT + dẫn bài học.
+// Lỗi người dùng khớp bài học mà chưa đủ ngưỡng mở sự cố (1–2 người) vẫn mở sự cố S2 "tái phát".
+let baiHoc = [];
+if (sbOK) {
+  try { baiHoc = (await q(`so_tay?select=id,tieu_de,muc,ban_sua,ngay_sua,chan_tai_phat,khoa_nhan_dien&loai=eq.bai_hoc&khoa_nhan_dien=not.is.null&limit=500`)).filter(b => String(b.khoa_nhan_dien || '').trim()); }
+  catch (e) { if (!thieuBang(e)) ghiChu.push('đọc sổ tay: ' + e.message); }
+}
+const khopBH = (b, txt) => String(txt || '').toLowerCase().includes(String(b.khoa_nhan_dien).trim().toLowerCase());
+for (const b of baiHoc) {
+  const k = String(b.khoa_nhan_dien).trim();
+  const trung = phat.filter(f => f.khoa.startsWith(k) || khopBH(b, f.tieu) || khopBH(b, f.dauHieu) || (f.lyDo || []).some(x => khopBH(b, x)));
+  trung.forEach(f => { if (!f.baiHoc) f.baiHoc = b; });
+  if (trung.length) continue;
+  const gap = loiApp.filter(x => khopBH(b, x.thong_diep) || khopBH(b, x.ma) || khopBH(b, x.chi_tiet));
+  if (!gap.length) continue;
+  const nguoi = new Set(gap.map(x => x.user_id || x.may)), ten = [...new Set(gap.map(x => x.ten).filter(Boolean))];
+  phat.push({ khoa: 'tai_phat|' + b.id, muc: (b.muc === 'S1' ? 'S1' : 'S2'), tieu: 'Tái phát: ' + b.tieu_de, baiHoc: b, nguoi: nguoi.size,
+    anhHuong: `${nguoi.size} người gặp lại${ten.length ? ' (' + ten.slice(0, 4).join(', ') + ')' : ''}`,
+    lyDo: [`Câu lỗi khớp dấu hiệu "${String(b.khoa_nhan_dien).trim()}" của bài học đã sửa`, `Gần nhất: ${String(gap[0].thong_diep || '').slice(0, 90)} · màn ${gap[0].man || '?'} · bản ${gap[0].ver || '?'}`],
+    dauHieu: 'tái phát' });
+}
+
 // Việc cần làm + chỗ tra cứu (Khoa 16/11/2026: làm nổi phần xử lý, lý do gạch đầu dòng)
 const HUONG = [
   ['web_sap', 'Kiểm tra bản build mới nhất có lỗi không; lỗi thì build lại bản trước', 'Vercel → Deployments'],
@@ -206,6 +229,7 @@ const HUONG = [
   ['egress_80', 'Xem máy / bảng nào tải nhiều để giảm', 'Supabase → Usage · bảng egress_ngay'],
   ['bot|', 'Bật lại workflow nếu GitHub đã tự tắt (repo 60 ngày không hoạt động)', 'GitHub → Actions'],
   ['bot_loi|', 'Mở lượt chạy lỗi, đọc dòng đỏ', 'GitHub → Actions'],
+  ['tai_phat|', 'Đối chiếu với bản sửa cũ xem bị gỡ / hỏng ở đâu; sửa lại rồi bổ sung bài học', 'App → Sự cố hệ thống → Sổ tay & bài học'],
 ];
 for (const f of phat) {
   const h = HUONG.find(([k]) => f.khoa.startsWith(k));
@@ -235,6 +259,8 @@ if (!sbOK || !suCoOK) {
     if (!cu) {
       if (f.haiLan) { await ghi('POST', 'su_co', { id: f.khoa, muc: f.muc, tieu_de: f.tieu, chi_tiet: f.dauHieu, trang_thai: 'nghi', mo_at: nowIso, cap_nhat_at: nowIso }); continue; }
       const ma = maMoi(); const gioi = coTheGui(f.muc);
+      if (f.baiHoc) { try { const b = (await q(`so_tay?select=tai_phat_lan&id=eq.${encodeURIComponent(f.baiHoc.id)}`))[0] || {};
+        await ghi('PATCH', 'so_tay?id=eq.' + encodeURIComponent(f.baiHoc.id), { tai_phat_lan: (Number(b.tai_phat_lan) || 0) + 1, tai_phat_cuoi: new Date(NOW).toISOString() }); } catch (e) { ghiChu.push('ghi tái phát: ' + e.message); } }
       const kq = gioi ? await gui(tinMo(f, ma), f.muc) : { ok: false };
       await ghi('POST', 'su_co', { id: f.khoa, ma, muc: f.muc, tieu_de: f.tieu, anh_huong: f.anhHuong, chi_tiet: (f.lyDo || []).join(' · ') || f.dauHieu, viec: f.viec + (f.traCuu ? ' — tra: ' + f.traCuu : ''),
         trang_thai: 'mo', mo_at: nowIso, cap_nhat_at: nowIso, da_bao_muc: kq.ok ? f.muc : null, so_nguoi: f.nguoi || null });
