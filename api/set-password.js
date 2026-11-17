@@ -13,8 +13,8 @@
 //
 // Client gửi POST:
 //   Headers: Authorization: Bearer <access_token>
-//   Body: { userId, password }
-// Trả: { ok:true, email } hoặc { error }
+//   Body: { userId, password, datLaiPin? (mặc định true) }
+// Trả: { ok:true, email, datLaiPin: 'da_dat_lai' | 'chua_co_pin' | 'loi' } hoặc { error }
 
 const { bocLoi } = require('../lib/ghi-loi');
 const SUPA_URL = (process.env.SUPABASE_URL || 'https://jygrdbuwveitrlfuwigs.supabase.co').replace(/\/+$/, '');
@@ -81,6 +81,23 @@ const xuLy = async (req, res) => {
       return res.status(rSet.status).json({ error: (kq && (kq.msg || kq.message || kq.error_description)) || 'Supabase từ chối đổi mật khẩu' });
     }
 
+    // --- Bước 5 (Khoa 17/11/2026): ĐẶT LẠI MÃ PIN cùng lúc với mật khẩu ---
+    // Không xoá dòng PIN (xoá thì máy nào còn phiên cũ cũng tự "đặt PIN lần đầu" được mà không cần mật khẩu). Thay vào đó
+    // KHOÁ PIN với so_sai = 0 (dấu hiệu "admin đặt lại", khác khoá do sai 5 lần) → app hiện màn "đăng nhập lại bằng mật
+    // khẩu"; chỉ người đăng nhập bằng MẬT KHẨU MỚI (trong 10 phút) mới đặt được PIN mới (api/pin.js, action dat).
+    // Đồng thời xoá mọi phiên đã mở khoá PIN của người đó → máy đang mở app bị khoá ngay ở lần lấy dữ liệu tiếp theo.
+    let datLaiPin = 'khong_yeu_cau';
+    if (b.datLaiPin !== false) {
+      try {
+        const H = { apikey: SERVICE_KEY, Authorization: 'Bearer ' + SERVICE_KEY, 'Content-Type': 'application/json' };
+        const rp = await fetch(SUPA_URL + '/rest/v1/user_pin?user_id=eq.' + encodeURIComponent(userId) + '&select=user_id', {
+          method: 'PATCH', headers: { ...H, Prefer: 'return=representation' }, body: JSON.stringify({ khoa: true, so_sai: 0 }) });
+        const dong = rp.ok ? await rp.json().catch(() => []) : [];
+        datLaiPin = !rp.ok ? 'loi' : (dong.length ? 'da_dat_lai' : 'chua_co_pin');
+        await fetch(SUPA_URL + '/rest/v1/user_pin_mo?user_id=eq.' + encodeURIComponent(userId), { method: 'DELETE', headers: { ...H, Prefer: 'return=minimal' } });
+      } catch (e) { datLaiPin = 'loi'; }
+    }
+
     // Ghi nhật ký để còn truy được ai cấp lại cho ai
     try {
       await fetch(SUPA_URL + '/rest/v1/audit_log', {
@@ -90,12 +107,12 @@ const xuLy = async (req, res) => {
           user_name: p.full_name || me.email || 'admin',
           role: 'admin',
           action: 'Cấp lại mật khẩu',
-          detail: 'Cho tài khoản: ' + (kq.email || userId),
+          detail: 'Cho tài khoản: ' + (kq.email || userId) + (datLaiPin === 'da_dat_lai' ? ' · đã đặt lại mã PIN' : ''),
         }),
       });
     } catch (e) { /* ghi log hỏng thì thôi, không chặn việc chính */ }
 
-    return res.status(200).json({ ok: true, email: kq.email || '' });
+    return res.status(200).json({ ok: true, email: kq.email || '', datLaiPin });
   } catch (e) {
     return res.status(500).json({ error: (e && e.message) || 'Lỗi không rõ' });
   }

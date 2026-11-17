@@ -100,7 +100,8 @@ const xuLy = async (req, res) => {
   catch (e) { if (thieuBang(e)) return res.status(503).json({ error: 'chua_cau_hinh' }); throw e; }
 
   const action = String(b.action || '');
-  if (action === 'trang_thai') return res.status(200).json({ coPin: !!row, khoa: !!(row && row.khoa), mo: !!row && !row.khoa && await phienDangMo(sid) });
+  // datLai: admin cấp lại mật khẩu đã khoá PIN (khoá với so_sai = 0; khoá do sai 5 lần thì so_sai = 5)
+  if (action === 'trang_thai') return res.status(200).json({ coPin: !!row, khoa: !!(row && row.khoa), datLai: !!(row && row.khoa && !Number(row.so_sai)), mo: !!row && !row.khoa && await phienDangMo(sid) });
 
   if (action === 'kiem') {
     if (!pinHopLe(b.pin)) return res.status(400).json({ error: 'PIN phải đủ 6 số' });
