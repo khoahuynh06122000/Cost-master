@@ -3,7 +3,7 @@
 > File này do bot **tự xuất** từ bảng `so_tay` + `su_co` sau mỗi lượt kiểm (8h, 17h). **Đừng sửa tay** — sửa trong app:
 > *Sự cố hệ thống → Sổ tay & bài học* (chỉ admin). Bài học có **dấu hiệu nhận diện** thì bot tự báo ♻️ TÁI PHÁT khi lỗi quay lại.
 
-Cập nhật: 03:00 17/11/2026 · 10 hướng dẫn · 12 bài học · 19 sự cố 30 ngày
+Cập nhật: 15:46 17/11/2026 · 10 hướng dẫn · 15 bài học · 19 sự cố 30 ngày
 
 ## Mục lục
 - [Hướng dẫn xử lý](#hướng-dẫn-xử-lý)
@@ -11,30 +11,6 @@ Cập nhật: 03:00 17/11/2026 · 10 hướng dẫn · 12 bài học · 19 sự 
 - [Sự cố 30 ngày gần đây](#sự-cố-30-ngày-gần-đây)
 
 ## Hướng dẫn xử lý
-
-### Không gửi được phiếu: "JWT expired" / phiên hết hạn
-
-- **Mức:** 🟠 NẶNG
-- **Triệu chứng:** Hộp lỗi có chữ JWT expired hoặc PGRST301, thường sau khi máy khoá màn lâu.
-- **Kiểm tra:** Lỗi ghi nhận 24 giờ: có nhiều người cùng lỗi không; họ đang chạy bản nào (bản cũ trước 3010-06 chưa có tự gia hạn).
-- **Xử lý:** Bảo BP đóng hẳn app mở lại (số vẫn ở nháp, đừng nhập lại). Nếu vẫn lỗi: đăng xuất rồi đăng nhập lại.
-- **Chặn tái phát:** fetchGiaHan tự gia hạn phiên một lần rồi gửi lại — đừng gỡ khi sửa phần kết nối Supabase.
-
-### Không ai đăng nhập được / Supabase trả 402
-
-- **Mức:** 🔴 KHẨN
-- **Triệu chứng:** Mọi người cùng lỗi; tin S1 "Máy chủ dữ liệu không trả lời"; Supabase báo vượt hạn mức.
-- **Kiểm tra:** Supabase → Usage: Egress kỳ này. Tin tóm tắt 8h mục Egress (dự báo, bảng tải nhiều nhất).
-- **Xử lý:** Nâng gói Pro ngay (có hiệu lực tức thì). Bật thông báo cho bộ phận mẫu "đăng nhập".
-- **Chặn tái phát:** Theo dõi dự báo Egress mỗi sáng; >80% thì xem bảng egress_ngay để giảm tải trước khi vượt.
-
-### Vercel vẫn chạy bản cũ / trang không mở được
-
-- **Mức:** 🔴 KHẨN
-- **Triệu chứng:** Tin S1 "Vercel vẫn chạy bản cũ" hoặc "Trang app không mở được".
-- **Kiểm tra:** Vercel → Deployments: bản mới nhất có trạng thái Error không, đọc log build.
-- **Xử lý:** Lỗi build: sửa rồi đẩy lại. Cần gấp: Vercel → bản trước đó → Promote to Production (quay lại bản chạy được).
-- **Chặn tái phát:** Trước khi đẩy luôn chạy kiểm cú pháp (ck.js) cho index.html và node --check cho api/*.js.
 
 ### Quét ảnh nhập kho không chạy
 
@@ -84,6 +60,22 @@ Cập nhật: 03:00 17/11/2026 · 10 hướng dẫn · 12 bài học · 19 sự 
 - **Xử lý:** Vercel → Deployments → bản chạy ổn → Promote to Production. Nếu bản lỗi có chạy SQL mới: chạy câu hoàn tác ghi kèm trong SQL-tong-hop.sql. Bật thông báo cho bộ phận.
 - **Chặn tái phát:** Bản có SQL: ghi sẵn câu hoàn tác và dấu hiệu phải quay bản trước khi đẩy.
 
+### Không ai đăng nhập được / Supabase trả 402
+
+- **Mức:** 🔴 KHẨN
+- **Triệu chứng:** Mọi người cùng lỗi; tin S1 "Máy chủ dữ liệu không trả lời"; Supabase báo vượt hạn mức.
+- **Kiểm tra:** Supabase → Usage: Egress kỳ này. Tin tóm tắt 8h mục Egress (dự báo, bảng tải nhiều nhất).
+- **Xử lý:** Nâng gói Pro ngay (có hiệu lực tức thì). Bật thông báo cho bộ phận mẫu "đăng nhập".
+- **Chặn tái phát:** Theo dõi dự báo Egress mỗi sáng; >80% thì xem bảng egress_ngay để giảm tải trước khi vượt.
+
+### Không gửi được phiếu: "JWT expired" / phiên hết hạn
+
+- **Mức:** 🟠 NẶNG
+- **Triệu chứng:** Hộp lỗi có chữ JWT expired hoặc PGRST301, thường sau khi máy khoá màn lâu.
+- **Kiểm tra:** Lỗi ghi nhận 24 giờ: có nhiều người cùng lỗi không; họ đang chạy bản nào (bản cũ trước 3010-06 chưa có tự gia hạn).
+- **Xử lý:** Bảo BP đóng hẳn app mở lại (số vẫn ở nháp, đừng nhập lại). Nếu vẫn lỗi: đăng xuất rồi đăng nhập lại.
+- **Chặn tái phát:** fetchGiaHan tự gia hạn phiên một lần rồi gửi lại — đừng gỡ khi sửa phần kết nối Supabase.
+
 ### Bộ phận báo lỗi đã sửa rồi mà vẫn gặp
 
 - **Mức:** 🟡 NHẸ
@@ -92,7 +84,42 @@ Cập nhật: 03:00 17/11/2026 · 10 hướng dẫn · 12 bài học · 19 sự 
 - **Xử lý:** Điện thoại: vuốt tắt hẳn app rồi mở lại. Máy tính: Ctrl+Shift+R. Vẫn không lên thì xem Vercel đã deploy xong chưa (1–2 phút sau khi đẩy).
 - **Chặn tái phát:** Mỗi lần đẩy phải tăng APP_VER. Bật thông báo cho bộ phận mẫu "phiên bản app" khi có bản sửa quan trọng.
 
+### Vercel vẫn chạy bản cũ / trang không mở được
+
+- **Mức:** 🔴 KHẨN
+- **Triệu chứng:** Tin S1 "Vercel vẫn chạy bản cũ" hoặc "Trang app không mở được".
+- **Kiểm tra:** Vercel → Deployments: bản mới nhất có trạng thái Error không, đọc log build.
+- **Xử lý:** Lỗi build: sửa rồi đẩy lại. Cần gấp: Vercel → bản trước đó → Promote to Production (quay lại bản chạy được).
+- **Chặn tái phát:** Trước khi đẩy luôn chạy kiểm cú pháp (ck.js) cho index.html và node --check cho api/*.js.
+
 ## Bài học đã sửa
+
+### Bot báo 18 phiếu sổ thiếu dòng oan vì chỉ đọc 1.000 dòng sổ
+
+- **Sửa:** 17/11/2026 · bản `1611-22`
+- **Mức:** 🟠 NẶNG
+- **Triệu chứng:** Tin KHẨN 18 phiếu đã duyệt mà sổ thiếu dòng cùng lúc; tin bot tự huỷ phiếu không chạy
+- **Nguyên nhân gốc:** Bot đọc transfers một lần — Supabase chỉ trả tối đa 1.000 dòng nên phần sổ còn lại bị coi là thiếu; GitHub chạy lịch mỗi giờ thực tế 5–9 tiếng một lần nhưng ngưỡng báo là 3 tiếng
+- **Cách sửa:** Hàm qDu đọc đủ mọi trang (limit 1000 + offset, sắp theo khoá ổn định) cho sổ, phiếu, lỗi, Egress; ngưỡng bot tự huỷ phiếu 14 giờ
+- **Chặn tái phát:** Mọi truy vấn bảng có thể quá 1.000 dòng — kể cả trong bot / agent — phải phân trang; ngưỡng giám sát lịch GitHub phải tính độ trễ thực tế
+
+### Bot cảnh báo báo lúc 3h sáng, một phiếu báo thành nhiều tin, gắn nhầm nhãn tái phát
+
+- **Sửa:** 17/11/2026 · bản `1611-22`
+- **Mức:** 🟠 NẶNG
+- **Triệu chứng:** Telegram nhận tin lúc 3h sáng; một phiếu ghi trùng nhiều mã thành nhiều tin KHẨN; tin ghi đã sửa ở bản 2409-11 mà vẫn báo khẩn; bot học từ commit lỗi All object keys must match
+- **Nguyên nhân gốc:** GitHub chạy lịch trễ (lịch 17h chạy lúc 3h); sổ trùng gom theo từng dòng mã thay vì theo phiếu; bài học khớp theo đầu mã dấu hiệu (so_trung|, so_thieu|) nên mọi sổ trùng / thiếu đều bị gắn tái phát; sổ lấy theo ngày ghi sổ nên phiếu ghi lùi kỳ cũ bị coi là thiếu dòng; insert nhiều bài học thiếu khoá
+- **Cách sửa:** Lượt chạy theo lịch ngoài khung 7–12h và 16–21h thì bỏ qua; gom sổ trùng theo phiếu (một tin, liệt kê các mã); lấy sổ theo lúc ghi + hỏi lại sổ của đúng phiếu trước khi báo thiếu; bài học chỉ khớp câu lỗi người dùng; chuẩn hoá đủ khoá khi ghi bài học
+- **Chặn tái phát:** Báo động phải gom theo đối tượng nghiệp vụ (phiếu, kho), không theo từng dòng; nhãn tái phát chỉ dùng khi đúng câu lỗi cũ quay lại; bot theo lịch phải tự kiểm khung giờ
+
+### Bản kiểm PIN lưu trên máy có thể bị dò offline
+
+- **Sửa:** 16/11/2026 · bản `1611-21`
+- **Mức:** 🟠 NẶNG
+- **Triệu chứng:** Mất mạng vẫn mở app được bằng PIN kiểm trên máy; ai lấy được dữ liệu trình duyệt có thể dò ra PIN 6 số
+- **Nguyên nhân gốc:** Để BP mở app lúc mất sóng, app lưu bản băm PIN trong localStorage
+- **Cách sửa:** Bỏ hẳn bản kiểm trên máy (xoá kk_pin_v1 khi mở app); mất mạng hiện màn Chưa kết nối mạng, có mạng tự mở màn PIN; app đang mở rớt mạng vẫn đếm tiếp
+- **Chặn tái phát:** Không lưu bất kỳ dạng nào của PIN / mật khẩu trên máy người dùng; mọi lần mở khoá phải qua máy chủ
 
 ### Mã PIN dò được bằng nhiều yêu cầu song song
 
@@ -188,7 +215,6 @@ Cập nhật: 03:00 17/11/2026 · 10 hướng dẫn · 12 bài học · 19 sự 
 - **Nguyên nhân gốc:** Tìm dòng sổ bằng reason.includes(id) — mã gốc nằm trọn trong mã -2.
 - **Cách sửa:** Helper dcLaDongSoCua khớp đuôi chính xác, thay 6 chỗ; máy chủ dùng like '%'||id rồi lọc lại.
 - **Chặn tái phát:** Mã có hậu tố -2/-3: không so khớp bằng includes / like '%…%' / replace.
-- **Dấu hiệu nhận diện (bot canh):** `so_thieu|`
 - **Tái phát gần nhất:** 03:00 17/11/2026
 
 ### Hai điểm bán trùng mã phiếu điều chuyển
@@ -209,28 +235,27 @@ Cập nhật: 03:00 17/11/2026 · 10 hướng dẫn · 12 bài học · 19 sự 
 - **Nguyên nhân gốc:** Nút Duyệt không khoá trong lúc ghi; ghi từng mã mất vài giây, người duyệt bấm lại.
 - **Cách sửa:** Khoá nút + cờ _dangDuyet + kiểm phiếu đã duyệt / sổ đã có dòng trước khi ghi.
 - **Chặn tái phát:** Mọi nút ghi dữ liệu phải khoá trong lúc chạy; kiểm trạng thái trên máy chủ trước khi ghi.
-- **Dấu hiệu nhận diện (bot canh):** `so_trung|`
 
 ## Sự cố 30 ngày gần đây
 
 | Mã | Mức | Sự cố | Mở lúc | Đóng | Trạng thái |
 |---|---|---|---|---|---|
-| SC-1711-01 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 |  | **Đang mở** |
-| SC-1711-02 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 |  | **Đang mở** |
-| SC-1711-03 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 |  | **Đang mở** |
-| SC-1711-04 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 |  | **Đang mở** |
-| SC-1711-05 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 |  | **Đang mở** |
-| SC-1711-06 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 |  | **Đang mở** |
-| SC-1711-07 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 |  | **Đang mở** |
-| SC-1711-08 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 |  | **Đang mở** |
-| SC-1711-09 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 |  | **Đang mở** |
-| SC-1711-10 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 |  | **Đang mở** |
-| SC-1711-11 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 |  | **Đang mở** |
-| SC-1711-12 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 |  | **Đang mở** |
-| SC-1711-13 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 |  | **Đang mở** |
-| SC-1711-14 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 |  | **Đang mở** |
-| SC-1711-15 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 |  | **Đang mở** |
-| SC-1711-16 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 |  | **Đang mở** |
-| SC-1711-17 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 |  | **Đang mở** |
-| SC-1711-18 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 |  | **Đang mở** |
-| SC-1711-19 | 🟠 NẶNG | Bot tự huỷ phiếu quá hạn không chạy | 03:00 17/11/2026 |  | **Đang mở** |
+| SC-1711-01 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
+| SC-1711-02 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
+| SC-1711-03 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
+| SC-1711-04 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
+| SC-1711-05 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
+| SC-1711-06 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
+| SC-1711-07 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
+| SC-1711-08 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
+| SC-1711-09 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
+| SC-1711-10 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
+| SC-1711-19 | 🟠 NẶNG | Bot tự huỷ phiếu quá hạn không chạy | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
+| SC-1711-11 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
+| SC-1711-12 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
+| SC-1711-13 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
+| SC-1711-14 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
+| SC-1711-15 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
+| SC-1711-16 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
+| SC-1711-17 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
+| SC-1711-18 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
