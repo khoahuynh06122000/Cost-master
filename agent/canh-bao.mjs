@@ -44,6 +44,15 @@ async function q(path) {
   if (!r.ok) throw Object.assign(new Error(`${path.split('?')[0]}: HTTP ${r.status} ${(await r.text()).slice(0, 160)}`), { st: r.status });
   return r.json();
 }
+// Đọc ĐỦ mọi trang: Supabase chỉ trả tối đa 1.000 dòng mỗi lần (17/11/2026: đọc một lần → 18 phiếu bị báo "thiếu dòng" oan).
+async function qDu(path, khoa) {
+  const out = [];
+  for (let off = 0; off < 200000; off += 1000) {
+    const t = await q(`${path}&order=${khoa || 'id'}.asc&limit=1000&offset=${off}`);
+    out.push(...t); if (t.length < 1000) break;
+  }
+  return out;
+}
 async function ghi(method, path, body, prefer) {
   if (THU) { log('[thử] ' + method + ' ' + path, JSON.stringify(body || '').slice(0, 200)); return; }
   const r = await fetch(`${SB_URL}/rest/v1/${path}`, { method, headers: { ...H, 'Content-Type': 'application/json', Prefer: prefer || 'return=minimal' }, body: body ? JSON.stringify(body) : undefined });
@@ -106,7 +115,7 @@ if (sbOK) {
   try { const m = await q(`su_co?select=cap_nhat_at&id=eq.tomtat_lan_chay`); if (m[0] && m[0].cap_nhat_at) tuLan = Math.max(NOW - 24 * 3600e3, Date.parse(m[0].cap_nhat_at)); } catch (e) {}
   globalThis.__tuLan = tuLan;
   const tu30 = new Date(tuLan).toISOString(), tuNhan = 'từ ' + gioNgay(tuLan).slice(0, 5) + ' ' + gioNgay(tuLan).slice(6, 11);
-  try { loiApp = await q(`loi_app?select=nguon,loai,thong_diep,ma,chi_tiet,man,user_id,may,ten,ver,so_lan&da_xu_ly=eq.false&at=gte.${tu30}&limit=5000`); }
+  try { loiApp = await qDu(`loi_app?select=id,nguon,loai,thong_diep,ma,chi_tiet,man,user_id,may,ten,ver,so_lan&da_xu_ly=eq.false&at=gte.${tu30}`); }
   catch (e) { if (!thieuBang(e)) ghiChu.push('đọc loi_app: ' + e.message); }
   const nhom = new Map();
   for (const x of loiApp) {
@@ -136,7 +145,7 @@ if (sbOK) {
     // hôm nay nhưng ghi sổ vào kỳ cũ (ngày sổ lùi xa) KHÔNG được coi là "sổ thiếu dòng" — lấy sổ theo lúc GHI (created_at),
     // và trước khi báo thiếu thì hỏi lại sổ của đúng phiếu đó, không giới hạn ngày.
     const tu14 = ngayISO(NOW - 14 * 86400e3), tu14ts = new Date(NOW - 14 * 86400e3).toISOString(), moi3 = NOW - 3 * 86400e3;
-    const so = await q(`transfers?select=id,date,code,qty,from_key,to_key,reason,created_at&or=(created_at.gte.${tu14ts},date.gte.${tu14})&limit=20000`);
+    const so = await qDu(`transfers?select=id,date,code,qty,from_key,to_key,reason,created_at&or=(created_at.gte.${tu14ts},date.gte.${tu14})`);
     const van = new Map();
     for (const t of so) {
       const k = [t.date, t.code, Number(t.qty), t.from_key, t.to_key, t.reason].join('|');
@@ -158,7 +167,7 @@ if (sbOK) {
         lyDo: [`Mã bị ghi lặp: ${ds.slice(0, 6).join(', ')}${ds.length > 6 ? '…' : ''}`, `Các dòng giống hệt nhau: cùng ngày ${x.t.date}, cùng mã, cùng số lượng, cùng kho đi / đến`],
         dauHieu: 'sổ ghi trùng' });
     }
-    const da = await q(`transfer_requests?select=id,kind,items,approved_at,approved_by,from_plant,from_sloc,to_plant,to_sloc&status=eq.${encodeURIComponent('Đã duyệt')}&approved_at=gte.${tu14ts}&limit=5000`);
+    const da = await qDu(`transfer_requests?select=id,kind,items,approved_at,approved_by,from_plant,from_sloc,to_plant,to_sloc&status=eq.${encodeURIComponent('Đã duyệt')}&approved_at=gte.${tu14ts}`);
     for (const r of da) {
       if (NOW - Date.parse(r.approved_at || 0) < 5 * 60000) continue;
       const maCan = new Set(Object.entries(r.items || {}).filter(([, v]) => (Number(v && (v.qtyOk ?? v.qtyReq)) || 0) > 0).map(([k]) => k));
@@ -167,7 +176,7 @@ if (sbOK) {
       if ([...maCan].some(c => !daGhi.has(c))) {
         // Hỏi lại sổ của đúng phiếu này, không giới hạn ngày (phiếu ghi sổ lùi vào kỳ cũ).
         try {
-          const lai = await q(`transfers?select=code,reason&reason=like.${encodeURIComponent('*' + r.id)}&limit=500`);
+          const lai = await qDu(`transfers?select=id,code,reason&reason=like.${encodeURIComponent('*' + r.id)}`);
           daGhi = new Set(lai.filter(cuaPhieu).map(t => String(t.code)));
         } catch (e) { ghiChu.push('hỏi lại sổ phiếu ' + r.id + ': ' + e.message); continue; }
       }
@@ -186,7 +195,7 @@ if (sbOK) {
     const d = vnDate(NOW); let y = d.getUTCFullYear(), m = d.getUTCMonth();
     if (d.getUTCDate() < KY_EG_NGAY) { m--; if (m < 0) { m = 11; y--; } }
     const bd = Date.UTC(y, m, KY_EG_NGAY) - 7 * 3600e3, kt = Date.UTC(y, m + 1, KY_EG_NGAY) - 7 * 3600e3;
-    const eg = await q(`egress_ngay?select=ngay,bytes&ngay=gte.${ngayISO(bd)}&limit=20000`);
+    const eg = await qDu(`egress_ngay?select=ngay,may,user_id,bytes&ngay=gte.${ngayISO(bd)}`, 'ngay.asc,may.asc,user_id');
     const mb = eg.reduce((s, r) => s + Number(r.bytes || 0), 0) / 1048576;
     const ngayQua = Math.max(1, (NOW - bd) / 86400e3), duBao = mb / ngayQua * ((kt - bd) / 86400e3);
     globalThis.__eg = { mb, duBao, bd, kt };
@@ -201,7 +210,7 @@ if (sbOK) {
 }
 
 // 1f. Bot định kỳ có chạy đúng lịch không (A6)
-for (const [file, ten, gioToiDa] of [['daily-report.yml', 'Bot báo cáo 8h sáng', 27], ['het-han-dc.yml', 'Bot tự huỷ phiếu quá hạn', 3]]) {
+for (const [file, ten, gioToiDa] of [['daily-report.yml', 'Bot báo cáo 8h sáng', 27], ['het-han-dc.yml', 'Bot tự huỷ phiếu quá hạn', 14]]) {
   try {
     const r = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/${file}/runs?per_page=1`, { headers: GH_TOKEN ? { Authorization: 'Bearer ' + GH_TOKEN } : {} });
     const run = ((await r.json()).workflow_runs || [])[0];
@@ -327,7 +336,7 @@ if (sbOK && suCoOK && d.getUTCHours() >= 8 && d.getUTCHours() < 22) {
       D.dem = sc.filter(r => r.mo_at >= toiQua && r.mo_at < sang).map(r => ({ ma: r.ma, muc: r.muc, tieu: r.tieu_de, daOn: r.trang_thai === 'dong' }));
     } catch (e) { D.ghiChu.push('sổ sự cố'); }
     try {
-      const la = await q(`loi_app?select=nguon,thong_diep,man,user_id,may,so_lan&at=gte.${tuQua}&at=lt.${sang}&limit=10000`);
+      const la = await qDu(`loi_app?select=id,nguon,thong_diep,man,user_id,may,so_lan&at=gte.${tuQua}&at=lt.${sang}`);
       const g = new Map(), nguoi = new Set();
       for (const x of la) { const k = (x.nguon === 'may_chu' ? 'Máy chủ ' + x.man + ': ' : '') + x.thong_diep; const v = g.get(k) || { n: new Set(), lan: 0 };
         v.n.add(x.user_id || x.may); nguoi.add(x.user_id || x.may); v.lan += Number(x.so_lan) || 1; g.set(k, v); }
@@ -335,7 +344,7 @@ if (sbOK && suCoOK && d.getUTCHours() >= 8 && d.getUTCHours() < 22) {
         top: [...g].sort((a, b) => b[1].n.size - a[1].n.size || b[1].lan - a[1].lan).slice(0, 3).map(([k, v]) => ({ k, n: v.n.size, lan: v.lan })) };
     } catch (e) { if (!thieuBang(e)) D.ghiChu.push('lỗi người dùng'); }
     try {
-      const eg = await q(`egress_ngay?select=ten,bytes,ver,bang&ngay=eq.${homQua}&limit=5000`);
+      const eg = await qDu(`egress_ngay?select=ngay,may,user_id,ten,bytes,ver,bang&ngay=eq.${homQua}`, 'ngay.asc,may.asc,user_id');
       const bang = {}; eg.forEach(r => Object.entries(r.bang || {}).forEach(([k, v]) => { bang[k] = (bang[k] || 0) + Number(v || 0); }));
       const E = globalThis.__eg, dd = ms => ngayISO(ms).split('-').reverse().slice(0, 2).join('/');
       D.eg = { homQuaMB: eg.reduce((s, r) => s + Number(r.bytes || 0), 0) / 1048576, nguongMB: EG_NGAY_MB, hanMB: EG_HAN_MB,
