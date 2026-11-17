@@ -52,7 +52,8 @@ if (!bai.length || THU) { if (THU) console.log(JSON.stringify(bai, null, 1)); pr
 const r = await fetch(`${SB_URL}/rest/v1/so_tay?on_conflict=id`, {
   method: 'POST',
   headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', Prefer: 'resolution=ignore-duplicates,return=minimal' },
-  body: JSON.stringify(bai),
+  body: JSON.stringify(bai.map(b => Object.fromEntries(['id', 'loai', 'ngay_sua', 'tieu_de', 'muc', 'trieu_chung', 'nguyen_nhan', 'xu_ly', 'chan_tai_phat',
+    'khoa_nhan_dien', 'ma_su_co', 'ban_sua', 'cap_nhat_boi'].map(k => [k, b[k] ?? null])))),
 });
 if (!r.ok) {
   const t = await r.text();

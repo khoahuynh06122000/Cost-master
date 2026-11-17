@@ -27,6 +27,10 @@ const NOW = Number(process.env.CANH_BAO_NOW || Date.now());
 const HAN_AN_HAN = Date.parse(process.env.EGRESS_AN_HAN || '2026-11-29T23:59:00+07:00');
 const EG_HAN_MB = Number(process.env.EGRESS_HAN_MB || 5120), EG_NGAY_MB = 160, KY_EG_NGAY = 5;  // kỳ Supabase bắt đầu ngày 5
 const H = { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY };
+{ const gio = new Date(NOW + 7 * 3600e3).getUTCHours();
+  if (process.env.GITHUB_EVENT_NAME === 'schedule' && !((gio >= 7 && gio < 12) || (gio >= 16 && gio < 21))) {
+    console.log(`Lịch chạy rơi vào ${gio}h (GitHub chạy trễ) — ngoài khung 8h / 17h, bỏ qua lượt này.`); process.exit(0);
+  } }
 const RANK = { S3: 1, S2: 2, S1: 3 };
 const ICO = { S1: '🔴', S2: '🟠', S3: '🟡' };
 const vnDate = ms => new Date(ms + 7 * 3600e3);
@@ -128,34 +132,52 @@ if (sbOK) {
   catch (e) { suCoOK = false; ghiChu.push(thieuBang(e) ? 'chưa có bảng su_co — chạy SQL PHẦN 38' : 'đọc su_co: ' + e.message); }
   const dangMo = new Set(suCo.map(r => r.id));
   try {
-    const tu14 = ngayISO(NOW - 14 * 86400e3), moi3 = NOW - 3 * 86400e3;
-    const so = await q(`transfers?select=id,date,code,qty,from_key,to_key,reason,created_at&date=gte.${tu14}&limit=20000`);
+    // Khoa 17/11/2026: (1) một phiếu ghi trùng nhiều mã chỉ được báo MỘT tin — gom theo phiếu (reason); (2) phiếu duyệt
+    // hôm nay nhưng ghi sổ vào kỳ cũ (ngày sổ lùi xa) KHÔNG được coi là "sổ thiếu dòng" — lấy sổ theo lúc GHI (created_at),
+    // và trước khi báo thiếu thì hỏi lại sổ của đúng phiếu đó, không giới hạn ngày.
+    const tu14 = ngayISO(NOW - 14 * 86400e3), tu14ts = new Date(NOW - 14 * 86400e3).toISOString(), moi3 = NOW - 3 * 86400e3;
+    const so = await q(`transfers?select=id,date,code,qty,from_key,to_key,reason,created_at&or=(created_at.gte.${tu14ts},date.gte.${tu14})&limit=20000`);
     const van = new Map();
     for (const t of so) {
       const k = [t.date, t.code, Number(t.qty), t.from_key, t.to_key, t.reason].join('|');
       const g = van.get(k) || { n: 0, moi: 0, t }; g.n++; g.moi = Math.max(g.moi, Date.parse(t.created_at || 0) || 0); van.set(k, g);
     }
-    for (const [k, g] of van) {
-      const khoa = 'so_trung|' + k;
-      if (g.n > 1 && (g.moi >= moi3 || dangMo.has(khoa))) phat.push({ khoa, muc: 'S1', tieu: 'Sổ điều chuyển bị ghi trùng',
-        anhHuong: `Mã ${g.t.code} · SL ${g.t.qty} ghi ${g.n} lần · ${g.t.from_key} → ${g.t.to_key} — kho nguồn bị trừ ${g.n} lần`,
-        lyDo: [`${g.n} dòng sổ giống hệt nhau: cùng ngày ${g.t.date}, cùng mã, cùng số lượng, cùng kho đi / đến`, 'Ghi trên sổ: ' + String(g.t.reason || '').slice(0, 120)],
-        dauHieu: 'sổ ghi trùng',
-        viec: 'admin vào Điều chuyển → Theo dõi sổ điều chuyển, xoá dòng đánh dấu "ghi trùng"' });
+    const theoPhieu = new Map();   // reason -> các dòng bị ghi trùng
+    for (const [, g] of van) {
+      if (g.n < 2) continue;
+      const r = String(g.t.reason || ''); const pk = r || ('khong-ly-do|' + g.t.date + '|' + g.t.from_key + '|' + g.t.to_key);
+      const x = theoPhieu.get(pk) || { ma: [], moi: 0, t: g.t }; x.ma.push(g); x.moi = Math.max(x.moi, g.moi); theoPhieu.set(pk, x);
     }
-    const da = await q(`transfer_requests?select=id,kind,items,approved_at,approved_by,from_plant,from_sloc,to_plant,to_sloc&status=eq.${encodeURIComponent('Đã duyệt')}&approved_at=gte.${tu14}&limit=5000`);
+    for (const [pk, x] of theoPhieu) {
+      const mp = (/·\s*([A-Za-z0-9][A-Za-z0-9-]+)\s*$/.exec(pk) || [])[1] || '';
+      const khoa = 'so_trung|' + (mp || pk).slice(0, 120);
+      if (!(x.moi >= moi3 || dangMo.has(khoa))) continue;
+      const ds = x.ma.map(g => `${g.t.code} (SL ${g.t.qty} × ${g.n})`);
+      phat.push({ khoa, muc: 'S1', tieu: 'Sổ điều chuyển bị ghi trùng' + (mp ? ' · phiếu ' + mp : ''),
+        anhHuong: `${x.ma.length} mã bị ghi lặp · ${x.t.from_key} → ${x.t.to_key} — kho nguồn bị trừ thêm`,
+        lyDo: [`Mã bị ghi lặp: ${ds.slice(0, 6).join(', ')}${ds.length > 6 ? '…' : ''}`, `Các dòng giống hệt nhau: cùng ngày ${x.t.date}, cùng mã, cùng số lượng, cùng kho đi / đến`],
+        dauHieu: 'sổ ghi trùng' });
+    }
+    const da = await q(`transfer_requests?select=id,kind,items,approved_at,approved_by,from_plant,from_sloc,to_plant,to_sloc&status=eq.${encodeURIComponent('Đã duyệt')}&approved_at=gte.${tu14ts}&limit=5000`);
     for (const r of da) {
       if (NOW - Date.parse(r.approved_at || 0) < 5 * 60000) continue;
-      const can = Object.values(r.items || {}).filter(v => (Number(v && (v.qtyOk ?? v.qtyReq)) || 0) > 0).length;
       const maCan = new Set(Object.entries(r.items || {}).filter(([, v]) => (Number(v && (v.qtyOk ?? v.qtyReq)) || 0) > 0).map(([k]) => k));
-      const co = new Set(so.filter(t => { const s = String(t.reason || ''); return (s === r.id || s.endsWith(' · ' + r.id)) && maCan.has(String(t.code)); }).map(t => String(t.code))).size;
-      const daGhi = new Set(so.filter(t => { const s = String(t.reason || ''); return s === r.id || s.endsWith(' · ' + r.id); }).map(t => String(t.code)));
+      const cuaPhieu = t => { const s0 = String(t.reason || ''); return s0 === r.id || s0.endsWith(' · ' + r.id); };
+      let daGhi = new Set(so.filter(cuaPhieu).map(t => String(t.code)));
+      if ([...maCan].some(c => !daGhi.has(c))) {
+        // Hỏi lại sổ của đúng phiếu này, không giới hạn ngày (phiếu ghi sổ lùi vào kỳ cũ).
+        try {
+          const lai = await q(`transfers?select=code,reason&reason=like.${encodeURIComponent('*' + r.id)}&limit=500`);
+          daGhi = new Set(lai.filter(cuaPhieu).map(t => String(t.code)));
+        } catch (e) { ghiChu.push('hỏi lại sổ phiếu ' + r.id + ': ' + e.message); continue; }
+      }
       const thieuMa = [...maCan].filter(c => !daGhi.has(c));
-      if (co < can) phat.push({ khoa: 'so_thieu|' + r.id, muc: 'S1', tieu: 'Phiếu đã duyệt mà sổ thiếu dòng',
-        lyDo: [`Phiếu duyệt ${can} mã nhưng sổ chỉ ghi ${co} mã`, 'Mã chưa vào sổ: ' + thieuMa.slice(0, 6).join(', ') + (thieuMa.length > 6 ? '…' : ''),
+      if (!thieuMa.length) continue;
+      phat.push({ khoa: 'so_thieu|' + r.id, muc: 'S1', tieu: 'Phiếu đã duyệt mà sổ thiếu dòng · phiếu ' + r.id,
+        lyDo: [`Phiếu duyệt ${maCan.size} mã nhưng sổ chỉ ghi ${maCan.size - thieuMa.length} mã`, 'Mã chưa vào sổ: ' + thieuMa.slice(0, 6).join(', ') + (thieuMa.length > 6 ? '…' : ''),
           `Duyệt bởi ${r.approved_by || '?'} lúc ${gioNgay(Date.parse(r.approved_at))}`],
-        anhHuong: `phiếu ${r.id} · sổ có ${co}/${can} dòng · ${r.from_plant}-${r.from_sloc} → ${r.to_plant || 'HỦY'}${r.to_sloc ? '-' + r.to_sloc : ''}`,
-        dauHieu: `duyệt bởi ${r.approved_by || '?'} lúc ${gioNgay(Date.parse(r.approved_at))}`, viec: 'đối chiếu phiếu với sổ, bổ sung dòng thiếu (câu rà trong CLAUDE.md)' });
+        anhHuong: `${r.from_plant}-${r.from_sloc} → ${r.to_plant || 'HỦY'}${r.to_sloc ? '-' + r.to_sloc : ''} · ${thieuMa.length} mã chưa trừ / cộng kho`,
+        dauHieu: 'sổ thiếu dòng' });
     }
   } catch (e) { ghiChu.push('kiểm sổ điều chuyển: ' + e.message); }
 
@@ -203,7 +225,7 @@ if (sbOK) {
 const khopBH = (b, txt) => String(txt || '').toLowerCase().includes(String(b.khoa_nhan_dien).trim().toLowerCase());
 for (const b of baiHoc) {
   const k = String(b.khoa_nhan_dien).trim();
-  const trung = phat.filter(f => f.khoa.startsWith(k) || khopBH(b, f.tieu) || khopBH(b, f.dauHieu) || (f.lyDo || []).some(x => khopBH(b, x)));
+  const trung = phat.filter(f => f.khoa.startsWith('loi|') && (khopBH(b, f.tieu) || khopBH(b, f.dauHieu)));
   trung.forEach(f => { if (!f.baiHoc) f.baiHoc = b; });
   if (trung.length) continue;
   const gap = loiApp.filter(x => khopBH(b, x.thong_diep) || khopBH(b, x.ma) || khopBH(b, x.chi_tiet));
