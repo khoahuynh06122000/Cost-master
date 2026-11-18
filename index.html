@@ -1254,6 +1254,14 @@
     .pin-stage.verify .pin-dots,.pin-stage.verify .pin-dots i,.pin-stage.verify .pin-ring,.pin-stage.verify .pin-core,.pin-stage.sai .pin-dots{animation:none!important}
     .pin-stage.ok .pin-ok path{animation:none;stroke-dashoffset:0}
   }
+  /* Lời chào sau khi PIN đúng (Khoa 18/11/2026): chữ lộ dần từ trái sang phải trong 2 giây */
+  .pin-chao{display:inline-block;font-size:18px;font-weight:800;color:#9fe6d8;letter-spacing:.2px;
+    clip-path:inset(0 100% 0 0);animation:pinChao 2s cubic-bezier(.45,.05,.35,1) forwards;
+    text-shadow:0 0 18px rgba(127,220,169,.35)}
+  @keyframes pinChao{0%{clip-path:inset(0 100% 0 0);opacity:.2;filter:blur(2px)}
+    60%{opacity:1;filter:blur(0)}100%{clip-path:inset(0 0 0 0);opacity:1;filter:blur(0)}}
+  #authPin.mo .pin-pad,#authPin.mo .auth-switch{opacity:.25;pointer-events:none;transition:opacity .4s}
+  @media (prefers-reduced-motion:reduce){.pin-chao{animation:none;clip-path:none}}
 
   /* ===== DANH BẠ NHÂN VIÊN + HỒ SƠ (Khoa 16/11/2026) — dữ liệu MySun "Vp Bà Nà" ===== */
   .ns-head{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
@@ -1697,7 +1705,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='1711-01';
+const APP_VER='1811-01';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -5896,15 +5904,34 @@ async function pinSai(t){
   try{if(navigator.vibrate)navigator.vibrate([60,40,60]);}catch(e){}
   pinBao(t,true);await _cho(520);st.classList.remove('sai');_pinBuf='';_pinBan=false;pinVe();
 }
-async function pinMoKhoa(chu){
-  const st=$('#pinStage');st.classList.add('ok');pinBao(chu);
-  if(_itDong())return;
-  await _cho(620);
+/* Khoa 18/11/2026: PIN đúng → TẢI DỮ LIỆU NGAY (máy chủ đã mở khoá phiên), song song với hiệu ứng:
+   vòng xác minh đủ 2 giây → tích xanh + "Xin chào <tên>" lộ dần 2 giây → chờ 0,5 giây → vào app.
+   Trong ~4,5 giây đó dữ liệu đã tải xong nên màn "Đang tải dữ liệu…" gần như không còn. */
+let _taiTruoc=null;
+function pinTaiTruoc(){
+  if(_taiTruoc||_pinNguon!=='may_chu'||!session||!ROLES[session.role])return;
+  if(!activeTab)activeTab=ROLES[session.role].tabs[0];
+  _taiTruoc=dbLoadAll().catch(e=>{console.error('dbLoadAll',e);});
+}
+function layTaiTruoc(){const p=_taiTruoc;_taiTruoc=null;return p;}
+async function pinMoKhoa(chu,t0){
+  const st=$('#pinStage'),m=$('#pinMsg');
+  if(_itDong()){st.classList.remove('verify');st.classList.add('ok');pinBao(chu);return;}
+  await _cho(Math.max(0,2000-(Date.now()-(t0||Date.now()))));   /* vòng xác minh chạy đủ 2 giây */
+  st.classList.remove('verify');st.classList.add('ok');
+  const box=$('#authPin');if(box)box.classList.add('mo');
+  const ten=String((session&&session.name)||'').trim();
+  if(m){m.classList.remove('err');m.textContent='';const sp=document.createElement('span');sp.className='pin-chao';
+    sp.textContent=ten?L('Xin chào')+', '+ten:L(chu);m.appendChild(sp);}
+  await _cho(2000);      /* lời chào lộ dần từ trái sang phải */
+  await _cho(240);       /* chờ thêm ~0,5 giây (gồm lúc thẻ rời đi) */
   const c=$('#loginCard'),h=document.querySelector('.login-hero2');if(c)c.classList.add('leaving');if(h)h.classList.add('leaving');
   await _cho(260);
+  if(box)box.classList.remove('mo');
 }
-async function pinXongMo(uid,chu){_pinBuf='';_pinB1='';pinQuenDat(uid,false);   /* không giữ số PIN trong bộ nhớ sau khi mở khoá */
-  await pinMoKhoa(chu);const r=_pinRes;_pinRes=null;r&&r(true);}
+async function pinXongMo(uid,chu,t0){_pinBuf='';_pinB1='';pinQuenDat(uid,false);   /* không giữ số PIN trong bộ nhớ sau khi mở khoá */
+  pinTaiTruoc();
+  await pinMoKhoa(chu,t0);const r=_pinRes;_pinRes=null;r&&r(true);}
 async function pinBiKhoa(uid){
   const st=$('#pinStage');st.classList.remove('verify');st.classList.add('sai');
   try{if(navigator.vibrate)navigator.vibrate([120,60,120]);}catch(e){}
@@ -5928,8 +5955,7 @@ async function pinXong(){
         await pinSai(laLoiMang(e)?'Chưa kết nối mạng — bật Wi-Fi hoặc 4G rồi đặt lại mã PIN.':'Chưa lưu được mã PIN — thử lại.');return;}
     }
     await pinLuuMay(uid,pin);
-    await _cho(Math.max(0,700-(Date.now()-t0)));st.classList.remove('verify');
-    await pinXongMo(uid,'Đã đặt mã PIN');return;
+    await pinXongMo(uid,'Đã đặt mã PIN',t0);return;
   }
   /* nhập PIN */
   st.classList.add('verify');pinBao('Đang xác minh mã PIN…');const t0=Date.now();
@@ -5939,8 +5965,8 @@ async function pinXong(){
     catch(e){if(!laLoiMang(e)){st.classList.remove('verify');await pinSai('Chưa kiểm được mã PIN — thử lại.');return;}
       st.classList.remove('verify');await pinSai('Chưa kết nối mạng — bật Wi-Fi hoặc 4G rồi nhập lại mã PIN.');return;}
     if(kq){
+      if(kq.dung){pinTaiTruoc();await pinLuuMay(uid,pin);await pinXongMo(uid,'Đã mở khóa',t0);return;}
       await _cho(Math.max(0,750-(Date.now()-t0)));st.classList.remove('verify');
-      if(kq.dung){await pinLuuMay(uid,pin);await pinXongMo(uid,'Đã mở khóa');return;}
       if(kq.chuaCo){_pinMode='dat';_pinB1='';_pinBuf='';_pinBan=false;pinBao('');pinVeDau();pinVe();return;}
       if(kq.khoa){await pinBiKhoa(uid);return;}
       await pinSai(L('Sai mã PIN — còn')+' '+(kq.conLai)+' '+L('lần thử'));return;
@@ -5948,8 +5974,8 @@ async function pinXong(){
   }
   const rec=pinCua(uid);if(!rec){st.classList.remove('verify');await pinSai('Chưa kết nối mạng — bật Wi-Fi hoặc 4G rồi nhập lại mã PIN.');return;}
   let h='';try{h=await pinBam(pin,rec.s,rec.i);}catch(e){console.error('pin',e);}
+  if(h&&h===rec.h){const o=pinDoc();if(o[uid])o[uid].n=0;pinGhi(o);await pinXongMo(uid,'Đã mở khóa',t0);return;}
   await _cho(Math.max(0,750-(Date.now()-t0)));st.classList.remove('verify');
-  if(h&&h===rec.h){const o=pinDoc();if(o[uid])o[uid].n=0;pinGhi(o);await pinXongMo(uid,'Đã mở khóa');return;}
   const o=pinDoc();const n=((o[uid]&&o[uid].n)||0)+1;
   if(n>=PIN_SAI_TOI_DA){await pinBiKhoa(uid);return;}
   if(o[uid])o[uid].n=n;pinGhi(o);
@@ -6545,7 +6571,7 @@ async function khoaLaiPin(){
     if(!ok)return;
     $('#login').classList.add('hidden');$('#app').classList.remove('hidden');
     if(c)c.classList.remove('leaving');if(h)h.classList.remove('leaving');
-    try{await dbLoadAll();}catch(e){}
+    try{await (layTaiTruoc()||dbLoadAll());}catch(e){}
     try{datMang(true);}catch(e){}
     renderView();try{outboxFlush();}catch(e){}
   }finally{_dangKhoaLai=false;}
@@ -6575,19 +6601,22 @@ async function enterApp(){
   activeTab=ROLES[session.role].tabs[0];renderNav();
   $('#view').innerHTML='<div class="empty"><div class="big">Đang tải dữ liệu…</div></div>';
   /* Tải dữ liệu NGAY, song song với hiệu ứng mở khóa — trước đây chờ hiệu ứng xong (~1s) mới bắt đầu tải. */
-  const _taiP=dbLoadAll().catch(e=>{console.error('dbLoadAll',e);});
+  let _daVe=false;
+  const _taiP=(layTaiTruoc()||dbLoadAll().catch(e=>{console.error('dbLoadAll',e);})).then(()=>{_daVe=true;});
   if(_liVuaBam){_liVuaBam=false;try{await liMoKhoa(session.name);}catch(e){}}
   /* Màn chờ tải: logo + vạch chạy. Dữ liệu về trước khi hiệu ứng xong thì chỉ lướt qua. */
-  let _bl=document.getElementById('bootLoad');
-  if(!_bl){_bl=document.createElement('div');_bl.id='bootLoad';_bl.className='boot-load';_bl.setAttribute('role','status');
+  await Promise.race([_taiP,_cho(0)]);   /* dữ liệu đã về trong lúc chạy hiệu ứng → vào thẳng, không màn chờ */
+  let _bl=_daVe?null:document.getElementById('bootLoad');
+  if(!_daVe&&!_bl){_bl=document.createElement('div');_bl.id='bootLoad';_bl.className='boot-load';_bl.setAttribute('role','status');
     _bl.innerHTML='<div class="bl-mark"><span class="mark">BN</span><span>Kiểm kê F&amp;B</span></div><div class="bl-line"></div><div class="bl-sub"></div>';
     _bl.querySelector('.bl-sub').textContent=L('Đang tải dữ liệu…');document.body.appendChild(_bl);}
   const _blTu=Date.now();
   const tatCho=()=>{const e=document.getElementById('bootLoad');if(!e)return;
     setTimeout(()=>{e.classList.add('out');const a=$('#app');a.classList.remove('vao');void a.offsetWidth;a.classList.add('vao');
-      setTimeout(()=>{e.remove();a.classList.remove('vao');},300);},Math.max(0,200-(Date.now()-_blTu)));};
+      setTimeout(()=>{e.remove();a.classList.remove('vao');},300);},Math.max(0,120-(Date.now()-_blTu)));};
   stopLoginFX();
   $('#login').classList.add('hidden');$('#app').classList.remove('hidden');
+  if(_daVe){const a=$('#app');a.classList.remove('vao');void a.offsetWidth;a.classList.add('vao');setTimeout(()=>a.classList.remove('vao'),300);}
   _taiP.then(()=>{
     tatCho();
     /* dbLoadAll vừa ghi đè submissions bằng dữ liệu máy chủ — nối lại các phiếu
