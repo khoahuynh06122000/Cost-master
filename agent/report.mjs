@@ -62,8 +62,36 @@ function khoangTuan(W) {
 
 // Teams hiển thị tin dạng HTML: ký tự xuống dòng bị gộp thành một đoạn dài (Khoa báo 09/11/2026)
 // -> đổi xuống dòng thành <br>, thoát < > để chữ không bị hiểu nhầm thành thẻ.
-async function postTeams(url, text) {
-  const html = String(text).replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\r?\n/g, '<br>');
+// @ GIÁM SÁT (Khoa 18/11/2026). Trong tin, chỗ cần @ ghi dạng ⟦@email|Họ tên⟧.
+//  - TEAMS_THE=1 (flow đã đổi sang "Post card in a chat or channel"): gửi Adaptive Card, chỗ đó thành @ THẬT
+//    (Teams báo về đúng người, khai bằng email công ty).
+//  - Chưa bật: gửi chữ như cũ, chỗ đó chỉ ghi tên (không @ được — chữ trơn qua flow không tạo mention).
+const THE = process.env.TEAMS_THE === '1';
+const MEN_RE = /⟦@([^|⟧]+)\|([^⟧]+)⟧/g;
+function theTeams(text) {
+  const ent = new Map();
+  const dong = String(text).split(/\r?\n/);
+  const body = [];
+  let cach = false;
+  for (const d of dong) {
+    if (!d.trim()) { cach = true; continue; }
+    const t = d.replace(MEN_RE, (_, mail, ten) => {
+      const at = `<at>${ten}</at>`;
+      if (!ent.has(at)) ent.set(at, { type: 'mention', text: at, mentioned: { id: mail, name: ten } });
+      return at;
+    });
+    body.push({ type: 'TextBlock', text: t, wrap: true, spacing: cach ? 'Medium' : 'None',
+      weight: /^(⏰|📦|🧾|📋|🗓|━)/.test(d) ? 'Bolder' : 'Default' });
+    cach = false;
+  }
+  return { type: 'message', attachments: [{ contentType: 'application/vnd.microsoft.card.adaptive', contentUrl: null,
+    content: { $schema: 'http://adaptivecards.io/schemas/adaptive-card.json', type: 'AdaptiveCard', version: '1.4', body,
+      msteams: { width: 'Full', entities: [...ent.values()] } } }] };
+}
+async function postTeams(url, text, the) {
+  if (the && THE) return fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(theTeams(text)) });
+  const html = String(text).replace(MEN_RE, (_, mail, ten) => ten)
+    .replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\r?\n/g, '<br>');
   return fetch(url, { method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'}, body: html });
 }
 
@@ -275,6 +303,35 @@ try {
     return out;
   }
   const nhac = await nhacDuyetDC();
+  // Người duyệt của từng kho để @ trong tin: giám sát được gán kho đó (gán cả điểm bán = mọi kho); kho không có
+  // giám sát thì @ bếp trưởng. Email = email công ty ở danh bạ (nhan_su.email_cty qua profiles.ma_nv); chưa gắn
+  // danh bạ thì dùng email đăng nhập nếu là email công ty; không có email công ty thì chỉ ghi tên.
+  const nguoiDuyet = {};
+  try {
+    const pf = await q('profiles?select=id,full_name,email,ma_nv,role&status=eq.active&role=in.(giam_sat,bep_truong)');
+    if (pf.length) {
+      const ids = pf.map(x => x.id);
+      const up = await q('user_plants?select=user_id,plant_code,sloc_code&user_id=in.(' + ids.join(',') + ')');
+      const mas = [...new Set(pf.map(x => x.ma_nv).filter(Boolean))];
+      let ns = [];
+      if (mas.length) { try { ns = await q('nhan_su?select=ma_nv,ho_ten,email_cty&ma_nv=in.(' + mas.map(encodeURIComponent).join(',') + ')'); } catch (e) {} }
+      const nsMa = new Map(ns.map(x => [x.ma_nv, x]));
+      const laMailCty = m => /@(banahills|sungroup)\.com\.vn$/i.test(String(m || '').trim());
+      const tt = Object.fromEntries(pf.map(x => {
+        const n = x.ma_nv && nsMa.get(x.ma_nv);
+        const mail = (n && n.email_cty) || (laMailCty(x.email) ? x.email : '');
+        return [x.id, { ten: (n && n.ho_ten) || x.full_name || x.email, mail: String(mail || '').trim(), role: x.role }];
+      }));
+      up.forEach(u => { const a = tt[u.user_id]; if (!a) return; (nguoiDuyet[u.plant_code + '|' + (u.sloc_code || '*')] ||= []).push(a); });
+    }
+  } catch (e) { console.warn('Đọc giám sát để @ lỗi (bỏ qua @):', e.message); }
+  const tagKho = (p, s) => {
+    const ds = [...(nguoiDuyet[p + '|' + s] || []), ...(nguoiDuyet[p + '|*'] || [])];
+    const gs = ds.filter(a => a.role === 'giam_sat');
+    const chon = [...new Map((gs.length ? gs : ds).map(a => [a.mail || a.ten, a])).values()];
+    if (!chon.length) return '';
+    return ' ' + chon.map(a => a.mail ? `⟦@${a.mail}|${a.ten}⟧` : a.ten).join(', ');
+  };
   // Tin Teams: liệt kê TỪNG PHIẾU chờ duyệt, gom theo kho phải duyệt, phiếu cũ nhất lên trước (Khoa 09/11/2026)
   // Rút gọn (Khoa 09/11/2026): mỗi phiếu chỉ còn ĐIỂM TẠO + TẠO BAO LÂU + CÒN BAO LÂU tới hạn 48 giờ.
   // Hạn tính y hệt dcHan() của app và agent/het-han-dc.mjs.
@@ -290,7 +347,7 @@ try {
     ks = ks.slice().sort((a, b) => String(a.cu).localeCompare(String(b.cu)));
     const tong = ks.reduce((a, x) => a + x.ds.length, 0);
     return `⏰ ${tong} PHIẾU ĐIỀU CHUYỂN CHƯA DUYỆT (hạn duyệt 48 giờ, quá hạn tự hủy)\n\n` +
-      ks.map(x => `📦 Chờ ${sname(x.p, x.s)} duyệt:\n` +
+      ks.map(x => `📦 Chờ ${sname(x.p, x.s)} duyệt:${tagKho(x.p, x.s)}\n` +
         x.ds.slice().sort((a, b) => String(a.created_at).localeCompare(String(b.created_at))).map(dongPhieu).join('\n')).join('\n\n');
   };
 
@@ -305,7 +362,7 @@ try {
     if (!msg) { console.log(`✅ ${g.ten}: không có gì cần báo — không gửi tin.`); continue; }
     if (!g.url) { console.warn(`⚠ ${g.ten}: chưa đặt TEAMS_FLOW_URL_BEP — bỏ qua phần này.`); console.log(msg); continue; }
     await withRetry(`Gửi cảnh báo ${g.ten} về Teams`, async () => {
-      const r = await postTeams(g.url, msg);
+      const r = await postTeams(g.url, msg, true);
       if (!r.ok && r.status !== 0) throw new Error(`Teams HTTP ${r.status}`);
     });
     console.log(`Đã gửi cảnh báo ${g.ten}.`); console.log(msg);

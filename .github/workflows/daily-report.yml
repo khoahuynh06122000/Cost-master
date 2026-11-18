@@ -21,4 +21,5 @@ jobs:
           TEAMS_FLOW_URL: ${{ secrets.TEAMS_FLOW_URL }}
           TEAMS_FLOW_URL_BEP: ${{ secrets.TEAMS_FLOW_URL_BEP }}
           TEAMS_PERSONAL_URL: ${{ secrets.TEAMS_PERSONAL_URL }}
+          TEAMS_THE: ${{ vars.TEAMS_THE }}
           AI_API_KEY: ${{ secrets.AI_API_KEY }}
