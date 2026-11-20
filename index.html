@@ -1712,7 +1712,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2011-01';
+const APP_VER='2011-02';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -3509,6 +3509,7 @@ async function syncAllMaterials(){
    kho đều đọc chung mấy mảng này nên chỉ cần một chỗ. Máy chủ vẫn trả đủ — đây là rào
    ở màn hình, không thay quyền trên Supabase. */
 function locTheoKho(){
+  sapLocThu();
   if(!isScoped())return;
   const kho=new Set((session.wh||[]).map(w=>w.plant+'|'+(w.sloc||'')));
   const pl=new Set((session.plants||[]).filter(x=>x&&x!=='*'));
@@ -9634,8 +9635,8 @@ function renderDieuchuyenDash(v){
    - không có số phiếu → gom theo người nhập + lượt lưu (các dòng lưu cách nhau ≤ 3 phút là một lượt). */
 let nkDsKy=null,nkDsNgay='',nkDsP='',nkDsKho='',nkDsTim='';
 function nkTenHang(r){const m=masterByCode[r.code];return (m&&m.name&&m.name!=='?'&&m.name!==r.code)?m.name:(r.name&&r.name!==r.code?r.name:'');}
-function nkNguon(r){const n=String(r.note||'');return n.includes('[quét ảnh]')?'Quét ảnh':(n.includes('[Excel]')?'Excel':'Gõ tay');}
-function nkSoPhieu(r){return String(r.note||'').replace(/\[[^\]]*\]/g,' ').replace(/\s+/g,' ').trim();}
+function nkNguon(r){if(r.sapCt)return 'SAP';const n=String(r.note||'');return n.includes('[quét ảnh]')?'Quét ảnh':(n.includes('[Excel]')?'Excel':'Gõ tay');}
+function nkSoPhieu(r){if(r.sapCt)return 'CT SAP '+r.sapCt;return String(r.note||'').replace(/\[[^\]]*\]/g,' ').replace(/\s+/g,' ').trim();}
 function nkLuc(r){const m=String(r.time||'').match(/(\d{1,2}):(\d{2})(?::\d{2})?\s+(\d{1,2})\/(\d{1,2})\/(\d{4})/);
   return m?new Date(+m[5],+m[4]-1,+m[3],+m[1],+m[2]).getTime():0;}
 function nkGomPhieu(rows){
@@ -13504,7 +13505,12 @@ function nkPhanLoai(dong,dsCo,plant,sloc){
    Kho đã có số SAP thì ảnh phiếu BP quét KHÔNG cộng vào tồn nữa — chỉ để đối chiếu (bảng doi_chieu_nhap):
    khớp thì thôi · lệch thì BP chọn số thực nhận (sửa qty dòng SAP, giữ sapSl) · ảnh có mà SAP không có thì BP
    chọn ghi vào nhập kho hay bỏ · số SAP chưa về thì máy chủ tự đối chiếu khi agent đẩy số lên. */
-function khoCoSap(p,s){const moc=Date.now()-45*864e5;return (receipts||[]).some(r=>r.sapCt&&r.plant===p&&r.sloc===s&&Date.parse(r.date)>=moc);}
+/* GIAI ĐOẠN THỬ (Khoa 20/11/2026): số SAP chỉ ADMIN thấy. Vai khác: dòng SAP bị bỏ khỏi bộ nhớ (không cộng tồn,
+   không hiện), nút quét ảnh giữ như cũ, không có khung đối chiếu. Mở cho mọi người: đặt SAP_THU=false. */
+const SAP_THU=true;
+function sapMo(){return !SAP_THU||!!(session&&session.role==='admin');}
+function sapLocThu(){if(!sapMo())receipts=(receipts||[]).filter(r=>!r.sapCt);}
+function khoCoSap(p,s){if(!sapMo())return false;const moc=Date.now()-45*864e5;return (receipts||[]).some(r=>r.sapCt&&r.plant===p&&r.sloc===s&&Date.parse(r.date)>=moc);}
 function sapDongNgay(p,s,d){return (receipts||[]).filter(r=>r.sapCt&&r.plant===p&&r.sloc===s&&r.date===d);}
 const _dcnCache={};
 const _dcnThieuBang=e=>/42P01|does not exist|schema cache|PGRST205/i.test(String((e&&(e.message||e.code))||e||''));
@@ -13651,7 +13657,7 @@ function dcNhapKho(v){
   const bXls=el('button','btn btn-ghost btn-sm','📥 Nạp file Excel');
   seg.appendChild(bTay);seg.appendChild(bAnh);seg.appendChild(bXls);b.appendChild(seg);
   const dcnHost=el('div');b.appendChild(dcnHost);
-  function veDcn(){dcnPanel(dcnHost,plantSel.value,slocSel.value,()=>{try{renderList();}catch(e){}});}
+  function veDcn(){if(!sapMo()){dcnHost.innerHTML='';return;}dcnPanel(dcnHost,plantSel.value,slocSel.value,()=>{try{renderList();}catch(e){}});}
   setTimeout(veDcn,0);
   const formWrap=el('div');b.appendChild(formWrap);
   let xlsWrap=null;
