@@ -1712,7 +1712,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2011-02';
+const APP_VER='2111-01';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -9655,6 +9655,24 @@ function nkGomPhieu(rows){
     p.chuaTen=p.rows.filter(r=>!nkTenHang(r)).length;});
   return out.sort((a,b)=>String(b.date).localeCompare(String(a.date))||b.tMax-a.tMax);
 }
+/* Đối chiếu số SAP với số BP tự nhập (quét ảnh / Excel / gõ tay) — Khoa 21/11/2026, admin thử.
+   Gom theo NGÀY + MÃ: SAP = tổng dòng có sapCt; BP = tổng dòng còn lại. Trả mỗi cặp ngày+mã một dòng. */
+function nkDoiChieu(rows){
+  const g={};
+  rows.forEach(r=>{const k=r.date+'|'+r.code;const o=g[k]||(g[k]={date:r.date,code:r.code,sap:0,bp:0,coSap:false,coBp:false,uSap:new Set(),uBp:new Set(),nguon:new Set(),ten:''});
+    const q=Number(r.qty)||0;
+    if(r.sapCt){o.sap+=q;o.coSap=true;if(r.uom)o.uSap.add(String(r.uom).trim().toUpperCase());}
+    else{o.bp+=q;o.coBp=true;if(r.uom)o.uBp.add(String(r.uom).trim().toUpperCase());o.nguon.add(nkNguon(r));}
+    if(!o.ten)o.ten=nkTenHang(r);});
+  return Object.values(g).map(o=>{
+    const ch=o.bp-o.sap,khop=Math.abs(ch)<=Math.max(0.001,Math.abs(o.sap)*1e-6);
+    const tt=!o.coBp?'chiSap':(!o.coSap?'chiBp':(khop?'khop':'lech'));
+    const lechDvt=o.coSap&&o.coBp&&o.uSap.size&&o.uBp.size&&![...o.uBp].every(u=>o.uSap.has(u));
+    return Object.assign(o,{ch,tt,lechDvt,uom:[...o.uSap][0]||[...o.uBp][0]||'',nguon:[...o.nguon].join(', ')});
+  }).sort((a,b)=>String(b.date).localeCompare(String(a.date))||({lech:0,chiSap:1,chiBp:2,khop:3}[a.tt]-{lech:0,chiSap:1,chiBp:2,khop:3}[b.tt])||String(a.code).localeCompare(String(b.code)));
+}
+function nkDemDoiChieu(ds){const n={khop:0,lech:0,chiSap:0,chiBp:0};ds.forEach(o=>n[o.tt]++);return n;}
+let nkDcLoc='chuaKhop';
 function dcNhapKhoBP(v){
   const dmy=d=>{const m=String(d||'').match(/^(\d{4})-(\d{2})-(\d{2})/);return m?m[3]+'/'+m[2]+'/'+m[1]:String(d||'');};
   const fmtN=x=>(Number(x)||0).toLocaleString('vi-VN',{maximumFractionDigits:3});
@@ -9704,7 +9722,8 @@ function dcNhapKhoBP(v){
       const bX=el('button','btn btn-ghost btn-sm','📥 Tải Excel');bX.onclick=()=>xuatExcel(rowsLoc,'NhapKho_'+(nkDsNgay||ky||'tat-ca')+'.xlsx');hd.appendChild(bX);
       card.appendChild(hd);
       const body=el('div','card-b');card.appendChild(body);host.appendChild(card);
-      const ks=Object.keys(g).map(k=>{const ph=nkGomPhieu(g[k]);return {k,rows:g[k],ph,tMax:Math.max(0,...ph.map(p=>p.tMax)),chuaTen:g[k].filter(r=>!nkTenHang(r)).length};})
+      const ks=Object.keys(g).map(k=>{const ph=nkGomPhieu(g[k]);const dc=g[k].some(r=>r.sapCt)?nkDemDoiChieu(nkDoiChieu(g[k])):null;
+          return {k,rows:g[k],ph,dc,tMax:Math.max(0,...ph.map(p=>p.tMax)),chuaTen:g[k].filter(r=>!nkTenHang(r)).length};})
         .sort((a,b)=>b.tMax-a.tMax);
       if(!ks.length){body.appendChild(el('div','empty',`<div class="big">Chưa có dòng nhập kho</div><div>Không có dòng nào khớp bộ lọc này.</div>`));dichMan(host);return;}
       const lst=el('div','nkk-list');
@@ -9713,6 +9732,7 @@ function dcNhapKhoBP(v){
         b.innerHTML=`<div class="nkk-t"><b>${escHtml(whName(p,s))}</b><span>${escHtml(plantName(p))}</span></div>`
           +`<div class="nkk-m"><span class="badge badge-soft">${x.ph.length} phiếu</span><span class="badge badge-soft">${x.rows.length} dòng</span>`
           +(x.chuaTen?`<span class="badge badge-wait">${x.chuaTen} dòng chưa có tên</span>`:'')
+          +(x.dc?`<span class="badge ${x.dc.lech+x.dc.chiSap+x.dc.chiBp?'badge-wait':'badge-done'}">${x.dc.lech+x.dc.chiSap+x.dc.chiBp?('SAP: '+(x.dc.lech+x.dc.chiSap+x.dc.chiBp)+' mã chưa khớp'):'SAP: khớp hết'}</span>`:'')
           +`<span class="nkk-g">Mới nhất: ${escHtml(x.rows.slice().sort((a,b)=>nkLuc(b)-nkLuc(a))[0].time||'')}</span></div>`;
         b.onclick=()=>{nkDsKho=x.k;ve();window.scrollTo(0,0);};lst.appendChild(b);});
       body.appendChild(lst);dichMan(host);return;
@@ -9727,6 +9747,7 @@ function dcNhapKhoBP(v){
     const bX=el('button','btn btn-ghost btn-sm','📥 Tải Excel');bX.onclick=()=>xuatExcel(rows,'NhapKho_'+p+'_'+s+'_'+(nkDsNgay||ky||'tat-ca')+'.xlsx');hd.appendChild(bX);
     card.appendChild(hd);const body=el('div','card-b');card.appendChild(body);host.appendChild(card);
     if(!ph.length){body.appendChild(el('div','empty',`<div class="big">Chưa có dòng nhập kho</div><div>Không có dòng nào khớp bộ lọc này.</div>`));dichMan(host);return;}
+    if(rows.some(r=>r.sapCt))host.insertBefore(veDoiChieu(rows),card);
     let ngayTruoc='';
     ph.forEach(x=>{
       if(x.date!==ngayTruoc){ngayTruoc=x.date;body.appendChild(el('div','nkk-ngay',dmy(x.date)));}
@@ -9750,6 +9771,47 @@ function dcNhapKhoBP(v){
       body.appendChild(d);
     });
     dichMan(host);
+  }
+  function veDoiChieu(rows){
+    const ds=nkDoiChieu(rows),n=nkDemDoiChieu(ds);
+    const c=el('div','card');
+    const hd=el('div','card-h',`<div><span class="ct">🔍 Đối chiếu SAP với số bộ phận nhập</span><div class="cs">So theo ngày + mã: tổng số SAP với tổng số bộ phận quét ảnh / nạp Excel / gõ tay.</div></div>`);
+    c.appendChild(hd);const b=el('div','card-b');c.appendChild(b);
+    const st=el('div','stats kt-st');
+    [['khop','Khớp','✓','var(--green-bg)','var(--green)'],['lech','Lệch số','≠','var(--t-red)','var(--red)'],['chiSap','Chỉ có SAP','S','var(--t-amber)','var(--accent-ink)'],['chiBp','Chỉ có BP nhập','B','var(--t-amber)','var(--accent-ink)']].forEach(([k,t,ic,bg,fg])=>{
+      const x=el('div','stat');x.innerHTML=`<div class="ic" style="background:${bg};color:${fg}">${ic}</div><div><div class="n tnum">${n[k]}</div><div class="l">${t}</div></div>`;st.appendChild(x);});
+    b.appendChild(st);
+    b.appendChild(el('div','note','<div>Chỉ có SAP = SAP đã ghi nhưng bộ phận chưa quét / chưa nhập mã đó ngày đó. Chỉ có BP nhập = bộ phận nhập mà SAP không có (hoặc SAP ghi sổ ngày khác). Hiện tại cả hai đều đang cộng vào tồn của admin — đây là bảng để kiểm số, không đổi dữ liệu.</div>'));
+    const chips=el('div','filter-chips chips');chips.style.margin='10px 0';
+    [['chuaKhop','Chưa khớp ('+(n.lech+n.chiSap+n.chiBp)+')'],['lech','Lệch số ('+n.lech+')'],['chiSap','Chỉ SAP ('+n.chiSap+')'],['chiBp','Chỉ BP ('+n.chiBp+')'],['khop','Khớp ('+n.khop+')'],['tatCa','Tất cả ('+ds.length+')']].forEach(([k,t])=>{
+      const ch=el('button','chip'+(nkDcLoc===k?' on':''),t);ch.type='button';ch.onclick=()=>{nkDcLoc=k;c.replaceWith(veDoiChieu(rows));};chips.appendChild(ch);});
+    b.appendChild(chips);
+    const loc=ds.filter(o=>nkDcLoc==='tatCa'||(nkDcLoc==='chuaKhop'?o.tt!=='khop':o.tt===nkDcLoc));
+    if(!loc.length){b.appendChild(el('div','empty',`<div>Không có mã nào ở nhóm này.</div>`));dichMan(c);return c;}
+    const nhieuNgay=new Set(loc.map(o=>o.date)).size>1;
+    const w=el('div','tbl-wrap'),t=el('table');
+    t.innerHTML='<thead><tr><th>Tên hàng</th><th>Mã</th>'+(nhieuNgay?'<th>Ngày</th>':'')+'<th style="text-align:right">SAP</th><th style="text-align:right">BP nhập</th><th style="text-align:right">Chênh (BP − SAP)</th><th>Kết quả</th></tr></thead>';
+    const tb=el('tbody');
+    const NHAN={khop:['Khớp','badge-done'],lech:['Lệch số','badge-none'],chiSap:['Chỉ có SAP','badge-wait'],chiBp:['Chỉ có BP nhập','badge-wait']};
+    loc.slice(0,300).forEach(o=>{const tr=el('tr');const [nh,cl]=NHAN[o.tt];
+      tr.innerHTML=`<td>${o.ten?escHtml(o.ten):'<span class="badge badge-wait">chưa có tên</span>'}</td><td class="tnum">${escHtml(o.code)}</td>`
+        +(nhieuNgay?`<td class="tnum">${dmy(o.date)}</td>`:'')
+        +`<td class="tnum" style="text-align:right">${o.coSap?fmtN(o.sap):'—'}</td>`
+        +`<td class="tnum" style="text-align:right">${o.coBp?fmtN(o.bp):'—'}${o.nguon?'<div class="muted" style="font-size:11.5px">'+escHtml(o.nguon)+'</div>':''}</td>`
+        +`<td class="tnum" style="text-align:right;font-weight:700;color:${o.tt==='lech'?'var(--red)':'inherit'}">${o.tt==='lech'?(o.ch>0?'+':'')+fmtN(o.ch):'—'}</td>`
+        +`<td><span class="badge ${cl}">${nh}</span>${o.lechDvt?' <span class="badge badge-wait">ĐVT khác nhau</span>':''}<span class="muted" style="font-size:11.5px"> ${escHtml(o.uom)}</span></td>`;
+      tb.appendChild(tr);});
+    t.appendChild(tb);w.appendChild(t);b.appendChild(w);
+    if(loc.length>300)b.appendChild(el('div','muted','Hiện 300 / '+loc.length+' mã — tải Excel để xem đủ.'));
+    const bX=el('button','btn btn-ghost btn-sm','📥 Tải Excel đối chiếu');bX.style.marginTop='10px';
+    bX.onclick=()=>{const aoa=[['Ngày','Mã hàng','Tên hàng','ĐVT','SAP','BP nhập','Nguồn BP','Chênh (BP − SAP)','Kết quả','ĐVT khác nhau']]
+      .concat(ds.map(o=>[dmy(o.date),String(o.code),o.ten,o.uom,o.coSap?o.sap:'',o.coBp?o.bp:'',o.nguon,o.coSap&&o.coBp?o.ch:'',NHAN[o.tt][0],o.lechDvt?'Có':'']));
+      const ws=XLSX.utils.aoa_to_sheet(aoa);for(let i=1;i<aoa.length;i++){const x=ws[XLSX.utils.encode_cell({r:i,c:1})];if(x){x.t='s';x.z='@';}}
+      ws['!cols']=[12,12,40,8,10,10,18,14,14,12].map(x=>({wch:x}));ws['!autofilter']={ref:ws['!ref']};
+      const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'DoiChieuSAP');
+      XLSX.writeFile(wb,'DoiChieuSAP_'+nkDsKho.replace('|','_')+'_'+(nkDsNgay||ky||'tat-ca')+'.xlsx');};
+    b.appendChild(bX);
+    cardifyTables(c);dichMan(c);return c;
   }
   let _h=0;timI.oninput=()=>{clearTimeout(_h);_h=setTimeout(()=>{nkDsTim=timI.value;loc();ve();},200);};
   loc();ve();
