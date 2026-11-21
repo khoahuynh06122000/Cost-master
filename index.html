@@ -56,7 +56,7 @@
     transform-origin:52% 46%;
     animation:loginReveal .85s cubic-bezier(.2,.8,.2,1) both,loginKenBurns 16s ease-in-out infinite alternate;
     will-change:transform,opacity}
-  .login-aurora{position:absolute;inset:-10% -12% 42% -12%;z-index:2;pointer-events:none;mix-blend-mode:screen;filter:blur(34px);
+  .login-aurora{will-change:transform;position:absolute;inset:-10% -12% 42% -12%;z-index:2;pointer-events:none;
     transform:translate3d(calc(var(--login-mx) * .55),calc(var(--login-my) * .45),0)}
   .login-aurora-a{position:absolute;inset:0;
     background:
@@ -69,16 +69,17 @@
       radial-gradient(38% 52% at 52% 24%,rgba(130,210,255,.22),transparent 70%),
       radial-gradient(34% 48% at 18% 52%,rgba(255,196,118,.20),transparent 72%);
     animation:loginAuroraB 16s ease-in-out -5s infinite alternate}
-  .login-beams{position:absolute;inset:0;z-index:2;pointer-events:none;overflow:hidden;mix-blend-mode:screen;
+  .login-beams{will-change:transform;position:absolute;inset:0;z-index:2;pointer-events:none;overflow:hidden;
     transform:translate3d(calc(var(--login-mx) * 1.1),calc(var(--login-my) * .9),0)}
-  .login-beam{position:absolute;bottom:48%;width:140px;height:66%;transform-origin:bottom center;filter:blur(16px);will-change:transform,opacity}
+  .login-beam{position:absolute;bottom:48%;width:140px;height:66%;transform-origin:bottom center;will-change:transform,opacity;
+    -webkit-mask-image:linear-gradient(90deg,transparent,#000 35%,#000 65%,transparent);mask-image:linear-gradient(90deg,transparent,#000 35%,#000 65%,transparent)}
   .login-beam-1{left:49%;
     background:linear-gradient(0deg,rgba(255,214,132,.34) 0%,rgba(245,199,122,.14) 44%,transparent 90%);
     animation:loginBeamA 8.5s ease-in-out infinite alternate}
   .login-beam-2{left:63%;width:120px;
     background:linear-gradient(0deg,rgba(150,234,226,.28) 0%,rgba(182,166,255,.12) 48%,transparent 90%);
     animation:loginBeamB 11.5s ease-in-out -4s infinite alternate}
-  .login-stars{position:absolute;inset:0 0 46% 0;z-index:2;pointer-events:none;overflow:hidden;
+  .login-stars{will-change:transform;position:absolute;inset:0 0 46% 0;z-index:2;pointer-events:none;overflow:hidden;
     transform:translate3d(calc(var(--login-mx) * .35),calc(var(--login-my) * .35),0)}
   .login-star{position:absolute;border-radius:50%;background:#F6FBFF;
     box-shadow:0 0 8px 1.5px rgba(215,240,255,.82);
@@ -109,7 +110,7 @@
   .login-st20{left:91%;top:31%;width:2.4px;height:2.4px;--ls-d:2.9s;--ls-t:-1.7s}
   .login-meteor{position:absolute;height:2px;border-radius:99px;opacity:0;
     background:linear-gradient(90deg,#FFFFFF 0%,rgba(220,244,255,.88) 18%,rgba(165,222,255,.35) 52%,transparent 100%);
-    filter:drop-shadow(0 0 6px rgba(215,244,255,.95));will-change:transform,opacity}
+    will-change:transform,opacity}
   .login-meteor::before{content:'';position:absolute;left:-2px;top:50%;width:6px;height:6px;border-radius:50%;
     transform:translateY(-50%);background:#FFFFFF;box-shadow:0 0 12px 3px rgba(255,242,204,.95)}
   .login-meteor-1{top:6%;left:52%;width:155px;animation:loginMeteorFast 5.2s cubic-bezier(.12,.68,.28,1) -.8s infinite}
@@ -124,21 +125,21 @@
   .login-meteor-wish{top:var(--wy,18%);left:var(--wx,62%);width:190px;opacity:0;
     background:linear-gradient(90deg,#FFFDF0 0%,rgba(255,222,148,.90) 22%,rgba(180,236,255,.35) 56%,transparent 100%)}
   .login-meteor-wish.login-fire{animation:loginMeteorWish 1.15s cubic-bezier(.1,.72,.28,1) forwards}
-  .login-dusk{position:absolute;inset:0;z-index:2;pointer-events:none;mix-blend-mode:screen;
+  .login-dusk{position:absolute;inset:0;z-index:2;pointer-events:none;
     background:
       radial-gradient(48% 34% at 14% 44%,rgba(255,184,96,.24),transparent 68%),
       radial-gradient(50% 38% at 78% 18%,rgba(140,188,240,.18),transparent 70%);
     animation:loginBreath 6.5s ease-in-out infinite alternate}
-  .login-cityglow{position:absolute;inset:0;z-index:2;pointer-events:none;mix-blend-mode:screen;
+  .login-cityglow{position:absolute;inset:0;z-index:2;pointer-events:none;
     background:
       radial-gradient(38% 30% at 54% 48%,rgba(255,204,104,.28),rgba(232,146,23,.10) 48%,transparent 74%),
       radial-gradient(30% 22% at 42% 82%,rgba(255,218,140,.22),transparent 70%);
     animation:loginLampGlow 4.4s ease-in-out infinite alternate}
-  .login-clouds{position:absolute;inset:-4% -6%;z-index:2;pointer-events:none;overflow:hidden;
+  .login-clouds{will-change:transform;position:absolute;inset:-4% -6%;z-index:2;pointer-events:none;overflow:hidden;
     transform:translate3d(calc(var(--login-mx) * 1.9),calc(var(--login-my) * 1.3),0)}
-  .login-cloud-band{position:absolute;left:0;width:200%;display:flex;mix-blend-mode:screen;will-change:transform}
+  .login-cloud-band{position:absolute;left:0;width:200%;display:flex;will-change:transform}
   .login-cloud-seg{flex:0 0 50%;width:50%;height:100%}
-  .login-cloud-sky{top:-4%;height:48%;opacity:.66;filter:blur(18px);
+  .login-cloud-sky{top:-4%;height:48%;opacity:.66;
     animation:loginCloudScroll 26s linear infinite}
   .login-cloud-sky .login-cloud-seg{
     background:
@@ -146,7 +147,7 @@
       radial-gradient(26% 52% at 42% 38%,rgba(248,214,240,.36),transparent 68%),
       radial-gradient(20% 44% at 70% 58%,rgba(190,220,255,.40),transparent 70%),
       radial-gradient(20% 40% at 90% 42%,rgba(255,218,170,.32),transparent 68%)}
-  .login-cloud-mid{top:38%;height:44%;opacity:.70;filter:blur(22px);
+  .login-cloud-mid{top:38%;height:44%;opacity:.70;
     animation:loginCloudScroll 17s linear -5s infinite}
   .login-cloud-mid .login-cloud-seg{
     background:
@@ -154,18 +155,17 @@
       radial-gradient(24% 44% at 38% 66%,rgba(255,226,172,.38),transparent 68%),
       radial-gradient(28% 52% at 64% 52%,rgba(214,234,255,.40),transparent 70%),
       radial-gradient(22% 46% at 88% 64%,rgba(255,216,154,.36),transparent 68%)}
-  .login-cloud-near{bottom:-8%;height:38%;opacity:.62;filter:blur(24px);
+  .login-cloud-near{bottom:-8%;height:38%;opacity:.62;
     animation:loginCloudScrollRev 12.5s linear -2s infinite}
   .login-cloud-near .login-cloud-seg{
     background:
       radial-gradient(26% 56% at 16% 64%,rgba(236,245,255,.46),transparent 70%),
       radial-gradient(26% 52% at 50% 72%,rgba(255,232,186,.36),transparent 68%),
       radial-gradient(24% 54% at 82% 62%,rgba(220,238,255,.44),transparent 70%)}
-  .login-cloud-sheen{position:absolute;inset:0;z-index:2;pointer-events:none;mix-blend-mode:screen;
+  .login-cloud-sheen{position:absolute;top:0;bottom:0;left:-70%;width:240%;z-index:2;pointer-events:none;will-change:transform,opacity;
     background:linear-gradient(106deg,transparent 24%,rgba(255,226,166,.20) 46%,rgba(182,232,255,.18) 54%,transparent 76%);
-    background-size:240% 100%;
     animation:loginCloudSheen 8.5s ease-in-out infinite}
-  .login-glints{position:absolute;inset:0;z-index:2;pointer-events:none;
+  .login-glints{will-change:transform;position:absolute;inset:0;z-index:2;pointer-events:none;
     transform:translate3d(var(--login-mx),var(--login-my),0)}
   .login-glint{position:absolute;width:16px;height:16px;margin:-8px 0 0 -8px;opacity:0;
     animation:loginGlint var(--lg-d,2.8s) ease-in-out var(--lg-t,0s) infinite;will-change:transform,opacity}
@@ -186,7 +186,7 @@
   .login-g10{left:52.0%;top:31%;--lg-d:3.4s;--lg-t:-1.5s}
   .login-g11{left:39.0%;top:44%;--lg-d:2.8s;--lg-t:-2.2s}
   .login-g12{left:59.5%;top:52%;--lg-d:3.2s;--lg-t:-.7s}
-  .login-cursor-glow{position:absolute;inset:0;z-index:2;pointer-events:none;mix-blend-mode:screen;
+  .login-cursor-glow{position:absolute;inset:0;z-index:2;pointer-events:none;
     opacity:var(--login-co);transition:opacity .45s ease;
     background:radial-gradient(280px 280px at var(--login-cx) var(--login-cy),rgba(255,228,168,.18),rgba(155,228,245,.08) 44%,transparent 74%)}
   .login-overlay{position:absolute;inset:0;z-index:3;pointer-events:none;
@@ -256,9 +256,9 @@
     100%{transform:translate3d(0,0,0)}
   }
   @keyframes loginCloudSheen{
-    0%{background-position:130% 0;opacity:.32}
-    50%{background-position:-30% 0;opacity:.92}
-    100%{background-position:-130% 0;opacity:.32}
+    0%{transform:translate3d(-30%,0,0);opacity:.32}
+    50%{transform:translate3d(12%,0,0);opacity:.92}
+    100%{transform:translate3d(30%,0,0);opacity:.32}
   }
   @keyframes loginGlint{
     0%,100%{opacity:.08;transform:scale(.4) rotate(0deg)}
@@ -2015,7 +2015,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2111-03';
+const APP_VER='2111-04';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -17960,17 +17960,19 @@ initAuth();
   }
   if(!window.matchMedia('(hover:hover) and (pointer:fine)').matches)return;
   var tx=0,ty=0,cx=0,cy=0,raf=0;
+  var LOP=[['.login-scene',1,1],['.login-aurora',.55,.45],['.login-beams',1.1,.9],['.login-stars',.35,.35],['.login-clouds',1.9,1.3],['.login-glints',1,1]]
+    .map(function(x){return [el.querySelector(x[0]),x[1],x[2]];}).filter(function(x){return x[0];});
+  var glow=el.querySelector('.login-cursor-glow');
+  function dat(x,y){for(var i=0;i<LOP.length;i++){var o=LOP[i];o[0].style.transform='translate3d('+(x*o[1]).toFixed(2)+'px,'+(y*o[2]).toFixed(2)+'px,0)';}}
   function tick(){
     if(el.classList.contains('hidden')){raf=0;return;}
     cx+=(tx-cx)*0.08;
     cy+=(ty-cy)*0.08;
-    el.style.setProperty('--login-mx',cx.toFixed(2)+'px');
-    el.style.setProperty('--login-my',cy.toFixed(2)+'px');
     if(Math.abs(tx-cx)>0.06||Math.abs(ty-cy)>0.06){
+      dat(cx,cy);
       raf=requestAnimationFrame(tick);
     }else{
-      el.style.setProperty('--login-mx',tx.toFixed(2)+'px');
-      el.style.setProperty('--login-my',ty.toFixed(2)+'px');
+      cx=tx;cy=ty;dat(cx,cy);
       raf=0;
     }
   }
@@ -17983,14 +17985,14 @@ initAuth();
     var ny=(e.clientY-r.top)/r.height-0.5;
     tx=-nx*26;
     ty=-ny*16;
-    el.style.setProperty('--login-cx',((e.clientX-r.left)/r.width*100).toFixed(1)+'%');
-    el.style.setProperty('--login-cy',((e.clientY-r.top)/r.height*100).toFixed(1)+'%');
-    el.style.setProperty('--login-co','1');
+    if(glow){glow.style.setProperty('--login-cx',((e.clientX-r.left)/r.width*100).toFixed(1)+'%');
+      glow.style.setProperty('--login-cy',((e.clientY-r.top)/r.height*100).toFixed(1)+'%');
+      glow.style.setProperty('--login-co','1');}
     kick();
   },{passive:true});
   el.addEventListener('pointerleave',function(){
     tx=0;ty=0;
-    el.style.setProperty('--login-co','0');
+    if(glow)glow.style.setProperty('--login-co','0');
     kick();
   },{passive:true});
 })();
