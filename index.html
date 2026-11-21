@@ -295,6 +295,9 @@
     .login-star{opacity:.55}
     .login-photo{opacity:1}
   }
+  #login.login-nhe .login-aurora-a,#login.login-nhe .login-aurora-b,#login.login-nhe .login-beam,#login.login-nhe .login-dusk,
+  #login.login-nhe .login-cityglow,#login.login-nhe .login-cloud-band,#login.login-nhe .login-glint{animation-play-state:paused}
+  #login.login-nhe .login-cloud-sheen,#login.login-nhe .login-cloud-near,#login.login-nhe .login-cursor-glow{display:none}
   /* <<< VUNG-ANTI:CSS KET-THUC <<< */
   .lh-title .ul span:last-child{position:relative;color:var(--accent);font-weight:800}
 
@@ -2015,7 +2018,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2111-04';
+const APP_VER='2111-05';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -17942,6 +17945,22 @@ initAuth();
   var el=document.getElementById('login');
   if(!el||!window.matchMedia)return;
   if(window.matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+  var nhe=function(){el.classList.add('login-nhe');};
+  if((navigator.deviceMemory&&navigator.deviceMemory<=4)||(navigator.hardwareConcurrency&&navigator.hardwareConcurrency<=4))nhe();
+  else setTimeout(function(){
+    if(el.classList.contains('hidden')||document.hidden)return;
+    var ds=[],t0=0,n=0;
+    function do_(t){
+      if(t0)ds.push(t-t0);t0=t;
+      if(++n<90&&!el.classList.contains('hidden'))requestAnimationFrame(do_);
+      else if(ds.length>30&&!document.hidden){
+        ds.sort(function(a,b){return a-b;});
+        var tb=ds.reduce(function(a,b){return a+b;},0)/ds.length,p90=ds[Math.floor(ds.length*.9)];
+        if(tb>22||p90>34)nhe();
+      }
+    }
+    requestAnimationFrame(do_);
+  },1400);
   var wish=document.getElementById('login-wish');
   if(wish){
     el.addEventListener('click',function(e){
