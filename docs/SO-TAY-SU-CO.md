@@ -3,7 +3,7 @@
 > File này do bot **tự xuất** từ bảng `so_tay` + `su_co` sau mỗi lượt kiểm (8h, 17h). **Đừng sửa tay** — sửa trong app:
 > *Sự cố hệ thống → Sổ tay & bài học* (chỉ admin). Bài học có **dấu hiệu nhận diện** thì bot tự báo ♻️ TÁI PHÁT khi lỗi quay lại.
 
-Cập nhật: 15:46 17/11/2026 · 10 hướng dẫn · 15 bài học · 19 sự cố 30 ngày
+Cập nhật: 00:07 22/11/2026 · 10 hướng dẫn · 16 bài học · 19 sự cố 30 ngày
 
 ## Mục lục
 - [Hướng dẫn xử lý](#hướng-dẫn-xử-lý)
@@ -11,14 +11,6 @@ Cập nhật: 15:46 17/11/2026 · 10 hướng dẫn · 15 bài học · 19 sự 
 - [Sự cố 30 ngày gần đây](#sự-cố-30-ngày-gần-đây)
 
 ## Hướng dẫn xử lý
-
-### Quét ảnh nhập kho không chạy
-
-- **Mức:** 🟠 NẶNG
-- **Triệu chứng:** BP báo quét ảnh lỗi; tin "Hàm máy chủ /api/ocr lỗi liên tục".
-- **Kiểm tra:** Nhờ BP bấm "📋 Sao chép chi tiết lỗi". Đọc mã: chưa có khóa → khai khóa; Gemini 400/401/403 → khóa sai; 429 → hết lượt ngày; 503 → Google quá tải; 504 → ảnh quá nhiều / quá lâu.
-- **Xử lý:** Bật thông báo cho bộ phận mẫu "quét ảnh" (tạm nhập Excel / gõ tay). Sửa theo đúng mã lỗi ở trên.
-- **Chặn tái phát:** Không ghi cứng tên model Gemini; giữ cơ chế tự tìm model và giới hạn 54 giây trong api/ocr.js.
 
 ### Sổ điều chuyển ghi trùng
 
@@ -60,6 +52,14 @@ Cập nhật: 15:46 17/11/2026 · 10 hướng dẫn · 15 bài học · 19 sự 
 - **Xử lý:** Vercel → Deployments → bản chạy ổn → Promote to Production. Nếu bản lỗi có chạy SQL mới: chạy câu hoàn tác ghi kèm trong SQL-tong-hop.sql. Bật thông báo cho bộ phận.
 - **Chặn tái phát:** Bản có SQL: ghi sẵn câu hoàn tác và dấu hiệu phải quay bản trước khi đẩy.
 
+### Vercel vẫn chạy bản cũ / trang không mở được
+
+- **Mức:** 🔴 KHẨN
+- **Triệu chứng:** Tin S1 "Vercel vẫn chạy bản cũ" hoặc "Trang app không mở được".
+- **Kiểm tra:** Vercel → Deployments: bản mới nhất có trạng thái Error không, đọc log build.
+- **Xử lý:** Lỗi build: sửa rồi đẩy lại. Cần gấp: Vercel → bản trước đó → Promote to Production (quay lại bản chạy được).
+- **Chặn tái phát:** Trước khi đẩy luôn chạy kiểm cú pháp (ck.js) cho index.html và node --check cho api/*.js.
+
 ### Không ai đăng nhập được / Supabase trả 402
 
 - **Mức:** 🔴 KHẨN
@@ -84,15 +84,24 @@ Cập nhật: 15:46 17/11/2026 · 10 hướng dẫn · 15 bài học · 19 sự 
 - **Xử lý:** Điện thoại: vuốt tắt hẳn app rồi mở lại. Máy tính: Ctrl+Shift+R. Vẫn không lên thì xem Vercel đã deploy xong chưa (1–2 phút sau khi đẩy).
 - **Chặn tái phát:** Mỗi lần đẩy phải tăng APP_VER. Bật thông báo cho bộ phận mẫu "phiên bản app" khi có bản sửa quan trọng.
 
-### Vercel vẫn chạy bản cũ / trang không mở được
+### Quét ảnh nhập kho không chạy
 
-- **Mức:** 🔴 KHẨN
-- **Triệu chứng:** Tin S1 "Vercel vẫn chạy bản cũ" hoặc "Trang app không mở được".
-- **Kiểm tra:** Vercel → Deployments: bản mới nhất có trạng thái Error không, đọc log build.
-- **Xử lý:** Lỗi build: sửa rồi đẩy lại. Cần gấp: Vercel → bản trước đó → Promote to Production (quay lại bản chạy được).
-- **Chặn tái phát:** Trước khi đẩy luôn chạy kiểm cú pháp (ck.js) cho index.html và node --check cho api/*.js.
+- **Mức:** 🟠 NẶNG
+- **Triệu chứng:** BP báo quét ảnh lỗi; tin "Hàm máy chủ /api/ocr lỗi liên tục".
+- **Kiểm tra:** Nhờ BP bấm "📋 Sao chép chi tiết lỗi". Đọc mã: chưa có khóa → khai khóa; Gemini 400/401/403 → khóa sai; 429 → hết lượt ngày; 503 → Google quá tải; 504 → ảnh quá nhiều / quá lâu.
+- **Xử lý:** Bật thông báo cho bộ phận mẫu "quét ảnh" (tạm nhập Excel / gõ tay). Sửa theo đúng mã lỗi ở trên.
+- **Chặn tái phát:** Không ghi cứng tên model Gemini; giữ cơ chế tự tìm model và giới hạn 54 giây trong api/ocr.js.
 
 ## Bài học đã sửa
+
+### Màn đăng nhập giật, không mượt sau khi thay nền ảnh Bà Nà
+
+- **Sửa:** 21/11/2026 · bản `2111-04`
+- **Mức:** 🟡 NHẸ
+- **Triệu chứng:** Màn đăng nhập bản 2111-03 giật từng nhịp, hiệu ứng mây/sao không mượt
+- **Nguyên nhân gốc:** 7 lớp phủ toàn màn dùng mix-blend-mode:screen và 5 lớp có filter blur 16-34px vẫn chạy animation nên GPU phải trộn + làm mờ lại cả màn mỗi khung hình; vệt sáng mây animate background-position (vẽ lại toàn màn mỗi khung); rê chuột đổi biến CSS trên #login làm tính lại kiểu cả khung đăng nhập mỗi khung hình
+- **Cách sửa:** Bỏ mix-blend-mode và filter blur/drop-shadow trên lớp chuyển động (gradient vốn đã mờ; cột sáng dùng mask), vệt sáng chạy bằng transform, will-change cho lớp dịch theo chuột, JS đặt transform thẳng lên 6 lớp nền và biến đèn chuột lên đúng phần tử đèn
+- **Chặn tái phát:** Hiệu ứng chạy liên tục chỉ animate transform/opacity; không đặt mix-blend-mode hay filter blur lên lớp toàn màn đang chuyển động; không đổi biến CSS trên phần tử cha lớn mỗi khung hình
 
 ### Bot báo 18 phiếu sổ thiếu dòng oan vì chỉ đọc 1.000 dòng sổ
 
@@ -187,16 +196,6 @@ Cập nhật: 15:46 17/11/2026 · 10 hướng dẫn · 15 bài học · 19 sự 
 - **Cách sửa:** Sửa uid + phân trang; thêm cột Người nhập để truy ai quét lúc nào; dọn 1.639 dòng (có bảng sao lưu).
 - **Chặn tái phát:** Báo lỗi phải nói đúng phần nào đã lên máy chủ, phần nào chưa — báo sai làm người dùng nhập lại.
 
-### Lưu phân quyền làm người dùng mất sạch kho
-
-- **Sửa:** 16/10/2026 · bản `1610-08`
-- **Mức:** 🔴 KHẨN
-- **Triệu chứng:** Gán kho mới cho người dùng thì họ mất cả kho cũ, app vẫn báo "Đã lưu".
-- **Nguyên nhân gốc:** Lưu bằng xoá rồi chèn, không kiểm lỗi chèn; kho mới chưa có trong bảng plants (khoá ngoại) nên chèn trượt.
-- **Cách sửa:** Chèn phần thêm trước, lỗi thì dừng; chèn được mới gỡ phần bỏ tick. SQL thêm plants/slocs cho kho mới.
-- **Chặn tái phát:** Thao tác "xoá rồi ghi lại" phải đảo thành "ghi trước, xoá sau" và kiểm error từng bước. Thêm kho vào DATA thì thêm cả plants/slocs.
-- **Dấu hiệu nhận diện (bot canh):** `user_plants_plant_code_fkey`
-
 ### Lưu nhập kho lỗi trùng khoá receipts_pkey
 
 - **Sửa:** 16/10/2026 · bản `1610-02`
@@ -206,6 +205,16 @@ Cập nhật: 15:46 17/11/2026 · 10 hướng dẫn · 15 bài học · 19 sự 
 - **Cách sửa:** uid mới: thời gian đầy đủ + bộ đếm + 3 ký tự ngẫu nhiên; ghi từng dòng, dòng trượt ở lại bảng xem trước.
 - **Chặn tái phát:** Mã sinh ở client phải có bộ đếm tăng dần, không chỉ dựa thời gian + ngẫu nhiên ngắn.
 - **Dấu hiệu nhận diện (bot canh):** `receipts_pkey`
+
+### Lưu phân quyền làm người dùng mất sạch kho
+
+- **Sửa:** 16/10/2026 · bản `1610-08`
+- **Mức:** 🔴 KHẨN
+- **Triệu chứng:** Gán kho mới cho người dùng thì họ mất cả kho cũ, app vẫn báo "Đã lưu".
+- **Nguyên nhân gốc:** Lưu bằng xoá rồi chèn, không kiểm lỗi chèn; kho mới chưa có trong bảng plants (khoá ngoại) nên chèn trượt.
+- **Cách sửa:** Chèn phần thêm trước, lỗi thì dừng; chèn được mới gỡ phần bỏ tick. SQL thêm plants/slocs cho kho mới.
+- **Chặn tái phát:** Thao tác "xoá rồi ghi lại" phải đảo thành "ghi trước, xoá sau" và kiểm error từng bước. Thêm kho vào DATA thì thêm cả plants/slocs.
+- **Dấu hiệu nhận diện (bot canh):** `user_plants_plant_code_fkey`
 
 ### Phiếu gốc và phiếu -2 dính dòng sổ của nhau — ♻️ tái phát 18 lần
 
