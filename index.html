@@ -307,7 +307,7 @@
   .login-nav .ln-tag{font-size:12.5px;color:rgba(255,255,255,.5);font-weight:600}
 
   .login-stage{position:relative;z-index:5;display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:48px;
-    max-width:1160px;margin:0 auto;padding:2vh 40px 4vh;min-height:calc(100vh - 78px)}
+    max-width:1440px;margin:0 auto;padding:2vh clamp(40px,4vw,72px) 4vh;min-height:calc(100vh - 78px)}
   .login-hero2{animation:fadeUp .9s ease-out both;max-width:480px;flex:1 1 auto}
   .lh-eyebrow{font-size:12.5px;font-weight:700;letter-spacing:.5px;color:rgba(255,255,255,.7);margin-bottom:12px;text-transform:uppercase}
   .lh-title{font-size:clamp(26px,3.4vw,40px);line-height:1.1;font-weight:800;color:#fff;letter-spacing:-.6px;text-shadow:0 2px 24px rgba(0,0,0,.4)}
@@ -1332,10 +1332,9 @@
 
   /* ===== Thẻ đăng nhập "kính phát sáng" (Khoa 14/11/2026) — theo màu app: nền xanh ngọc thẫm, viền ngọc, nhấn cam ===== */
   .login-card2{position:relative;max-width:360px;padding:26px 24px 22px;border-radius:22px;
-    background:linear-gradient(165deg,rgba(16,58,53,.9),rgba(5,20,18,.92));
+    background:linear-gradient(165deg,rgba(16,58,53,.93),rgba(5,20,18,.95));
     border:1.5px solid rgba(159,230,216,.34);
     box-shadow:0 0 0 1px rgba(14,92,85,.35),0 0 44px -8px rgba(46,170,150,.42),0 30px 70px -22px rgba(0,0,0,.75),inset 0 1px 0 rgba(255,255,255,.1);
-    backdrop-filter:blur(20px) saturate(150%);-webkit-backdrop-filter:blur(20px) saturate(150%);
     animation:lcRise .55s cubic-bezier(.2,.9,.3,1.2) .15s both}
   .login-card2.shake{animation:lcRise .55s cubic-bezier(.2,.9,.3,1.2) .15s both,lcShake .45s ease}
   .lc-corner{position:absolute;width:24px;height:24px;pointer-events:none;animation:lcCorner .6s cubic-bezier(.2,.9,.3,1) .5s both}
@@ -2018,7 +2017,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2111-05';
+const APP_VER='2111-06';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -17956,7 +17955,7 @@ initAuth();
       else if(ds.length>30&&!document.hidden){
         ds.sort(function(a,b){return a-b;});
         var tb=ds.reduce(function(a,b){return a+b;},0)/ds.length,p90=ds[Math.floor(ds.length*.9)];
-        if(tb>22||p90>34)nhe();
+        if(tb>19||p90>28)nhe();
       }
     }
     requestAnimationFrame(do_);
