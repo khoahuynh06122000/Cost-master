@@ -1,0 +1,25 @@
+name: Dong bo cau hinh Teams sang Supabase
+
+on:
+  push:
+    branches: [main]
+    paths: ['agent/dong-bo-cau-hinh.mjs', '.github/workflows/dong-bo-cau-hinh.yml']
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  chep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node agent/dong-bo-cau-hinh.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          TEAMS_FLOW_URL: ${{ secrets.TEAMS_FLOW_URL }}
+          TEAMS_FLOW_URL_BEP: ${{ secrets.TEAMS_FLOW_URL_BEP }}
+          TEAMS_THE: ${{ vars.TEAMS_THE }}
