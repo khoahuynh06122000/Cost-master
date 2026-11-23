@@ -175,6 +175,26 @@ const xuLy = async (req, res) => {
     const q = await supa('materials?select=code,name&code=in.' + enc(inList(ma.slice(k, k + 200))), { method: 'GET' });
     (q || []).forEach(x => { const n = String(x.name || '').trim(); if (n && n !== '?' && n !== x.code) coTen.add(x.code); });
   }
+  // ---- 4b. SAP LÀ CHUẨN (Khoa 23/11/2026): mã chưa có tên trong danh mục tổng thì TỰ KHAI tên + ĐVT theo SAP,
+  // không chờ kế toán duyệt. Chỉ điền mã thiếu tên (trống / "?" / bằng chính mã) — KHÔNG ghi đè tên kế toán đã đặt.
+  // Kèm học mã vào danh mục KHO (plant_materials). Ghi trượt thì bỏ qua, dòng nhập kho vẫn ghi như cũ (kèm tên đề xuất).
+  const maTuKhai = [];
+  try {
+    const can = new Map();
+    ds.forEach(r => { if (!coTen.has(r.ma) && r.ten && !can.has(r.ma)) can.set(r.ma, { code: r.ma, name: r.ten.slice(0, 200), uom: r.dvt || null }); });
+    const dsMa = [...can.values()];
+    for (let k = 0; k < dsMa.length; k += 200) {
+      await supa('materials?on_conflict=code', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(dsMa.slice(k, k + 200)) });
+    }
+    dsMa.forEach(m => { coTen.add(m.code); maTuKhai.push({ ma: m.code, ten: m.name, dvt: m.uom }); });
+  } catch (e) { console.warn('Tự khai mã SAP lỗi:', e.message); }
+  try {
+    const pm = [...new Map(ds.map(r => [r.plant + '|' + r.ma, { plant_code: r.plant, code: r.ma }])).values()];
+    for (let k = 0; k < pm.length; k += 300) {
+      await supa('plant_materials?on_conflict=plant_code,code', { method: 'POST', headers: { Prefer: 'resolution=ignore-duplicates,return=minimal' }, body: JSON.stringify(pm.slice(k, k + 300)) });
+    }
+  } catch (e) { console.warn('Học mã vào danh mục kho lỗi:', e.message); }
+
   const moi = [], capNhat = [], giuSoBP = [];
   let khongDoi = 0;
   ds.forEach(r => {
