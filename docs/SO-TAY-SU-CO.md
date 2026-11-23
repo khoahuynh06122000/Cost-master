@@ -3,7 +3,7 @@
 > File này do bot **tự xuất** từ bảng `so_tay` + `su_co` sau mỗi lượt kiểm (8h, 17h). **Đừng sửa tay** — sửa trong app:
 > *Sự cố hệ thống → Sổ tay & bài học* (chỉ admin). Bài học có **dấu hiệu nhận diện** thì bot tự báo ♻️ TÁI PHÁT khi lỗi quay lại.
 
-Cập nhật: 00:07 22/11/2026 · 10 hướng dẫn · 16 bài học · 19 sự cố 30 ngày
+Cập nhật: 15:32 23/11/2026 · 10 hướng dẫn · 17 bài học · 19 sự cố 30 ngày
 
 ## Mục lục
 - [Hướng dẫn xử lý](#hướng-dẫn-xử-lý)
@@ -11,14 +11,6 @@ Cập nhật: 00:07 22/11/2026 · 10 hướng dẫn · 16 bài học · 19 sự 
 - [Sự cố 30 ngày gần đây](#sự-cố-30-ngày-gần-đây)
 
 ## Hướng dẫn xử lý
-
-### Sổ điều chuyển ghi trùng
-
-- **Mức:** 🔴 KHẨN
-- **Triệu chứng:** Tin S1 "Sổ điều chuyển bị ghi trùng"; kho nguồn bị trừ hai lần.
-- **Kiểm tra:** App → Nhập kho & ĐC → Theo dõi sổ điều chuyển: dòng có nhãn "ghi trùng".
-- **Xử lý:** Admin xoá đúng dòng thừa (nút 🗑 trên dòng ghi trùng). KHÔNG mở lại rồi duyệt lại phiếu — làm vậy ghi lại cả phiếu với ngày mới.
-- **Chặn tái phát:** Nút duyệt phải khoá trong lúc ghi; ghi sổ một lệnh cả phiếu; kiểm phiếu đã duyệt / sổ đã có dòng trước khi ghi.
 
 ### Phiếu đã duyệt mà sổ thiếu dòng
 
@@ -52,6 +44,38 @@ Cập nhật: 00:07 22/11/2026 · 10 hướng dẫn · 16 bài học · 19 sự 
 - **Xử lý:** Vercel → Deployments → bản chạy ổn → Promote to Production. Nếu bản lỗi có chạy SQL mới: chạy câu hoàn tác ghi kèm trong SQL-tong-hop.sql. Bật thông báo cho bộ phận.
 - **Chặn tái phát:** Bản có SQL: ghi sẵn câu hoàn tác và dấu hiệu phải quay bản trước khi đẩy.
 
+### Không gửi được phiếu: "JWT expired" / phiên hết hạn
+
+- **Mức:** 🟠 NẶNG
+- **Triệu chứng:** Hộp lỗi có chữ JWT expired hoặc PGRST301, thường sau khi máy khoá màn lâu.
+- **Kiểm tra:** Lỗi ghi nhận 24 giờ: có nhiều người cùng lỗi không; họ đang chạy bản nào (bản cũ trước 3010-06 chưa có tự gia hạn).
+- **Xử lý:** Bảo BP đóng hẳn app mở lại (số vẫn ở nháp, đừng nhập lại). Nếu vẫn lỗi: đăng xuất rồi đăng nhập lại.
+- **Chặn tái phát:** fetchGiaHan tự gia hạn phiên một lần rồi gửi lại — đừng gỡ khi sửa phần kết nối Supabase.
+
+### Sổ điều chuyển ghi trùng
+
+- **Mức:** 🔴 KHẨN
+- **Triệu chứng:** Tin S1 "Sổ điều chuyển bị ghi trùng"; kho nguồn bị trừ hai lần.
+- **Kiểm tra:** App → Nhập kho & ĐC → Theo dõi sổ điều chuyển: dòng có nhãn "ghi trùng".
+- **Xử lý:** Admin xoá đúng dòng thừa (nút 🗑 trên dòng ghi trùng). KHÔNG mở lại rồi duyệt lại phiếu — làm vậy ghi lại cả phiếu với ngày mới.
+- **Chặn tái phát:** Nút duyệt phải khoá trong lúc ghi; ghi sổ một lệnh cả phiếu; kiểm phiếu đã duyệt / sổ đã có dòng trước khi ghi.
+
+### Quét ảnh nhập kho không chạy
+
+- **Mức:** 🟠 NẶNG
+- **Triệu chứng:** BP báo quét ảnh lỗi; tin "Hàm máy chủ /api/ocr lỗi liên tục".
+- **Kiểm tra:** Nhờ BP bấm "📋 Sao chép chi tiết lỗi". Đọc mã: chưa có khóa → khai khóa; Gemini 400/401/403 → khóa sai; 429 → hết lượt ngày; 503 → Google quá tải; 504 → ảnh quá nhiều / quá lâu.
+- **Xử lý:** Bật thông báo cho bộ phận mẫu "quét ảnh" (tạm nhập Excel / gõ tay). Sửa theo đúng mã lỗi ở trên.
+- **Chặn tái phát:** Không ghi cứng tên model Gemini; giữ cơ chế tự tìm model và giới hạn 54 giây trong api/ocr.js.
+
+### Bộ phận báo lỗi đã sửa rồi mà vẫn gặp
+
+- **Mức:** 🟡 NHẸ
+- **Triệu chứng:** BP báo đúng lỗi đã sửa; câu chữ trên màn khác với bản hiện tại.
+- **Kiểm tra:** Hỏi số "Phiên bản" cuối thanh bên; so với APP_VER mới nhất. Tin tóm tắt 8h có mục "Phiên bản" liệt kê ai còn bản cũ.
+- **Xử lý:** Điện thoại: vuốt tắt hẳn app rồi mở lại. Máy tính: Ctrl+Shift+R. Vẫn không lên thì xem Vercel đã deploy xong chưa (1–2 phút sau khi đẩy).
+- **Chặn tái phát:** Mỗi lần đẩy phải tăng APP_VER. Bật thông báo cho bộ phận mẫu "phiên bản app" khi có bản sửa quan trọng.
+
 ### Vercel vẫn chạy bản cũ / trang không mở được
 
 - **Mức:** 🔴 KHẨN
@@ -68,31 +92,17 @@ Cập nhật: 00:07 22/11/2026 · 10 hướng dẫn · 16 bài học · 19 sự 
 - **Xử lý:** Nâng gói Pro ngay (có hiệu lực tức thì). Bật thông báo cho bộ phận mẫu "đăng nhập".
 - **Chặn tái phát:** Theo dõi dự báo Egress mỗi sáng; >80% thì xem bảng egress_ngay để giảm tải trước khi vượt.
 
-### Không gửi được phiếu: "JWT expired" / phiên hết hạn
-
-- **Mức:** 🟠 NẶNG
-- **Triệu chứng:** Hộp lỗi có chữ JWT expired hoặc PGRST301, thường sau khi máy khoá màn lâu.
-- **Kiểm tra:** Lỗi ghi nhận 24 giờ: có nhiều người cùng lỗi không; họ đang chạy bản nào (bản cũ trước 3010-06 chưa có tự gia hạn).
-- **Xử lý:** Bảo BP đóng hẳn app mở lại (số vẫn ở nháp, đừng nhập lại). Nếu vẫn lỗi: đăng xuất rồi đăng nhập lại.
-- **Chặn tái phát:** fetchGiaHan tự gia hạn phiên một lần rồi gửi lại — đừng gỡ khi sửa phần kết nối Supabase.
-
-### Bộ phận báo lỗi đã sửa rồi mà vẫn gặp
-
-- **Mức:** 🟡 NHẸ
-- **Triệu chứng:** BP báo đúng lỗi đã sửa; câu chữ trên màn khác với bản hiện tại.
-- **Kiểm tra:** Hỏi số "Phiên bản" cuối thanh bên; so với APP_VER mới nhất. Tin tóm tắt 8h có mục "Phiên bản" liệt kê ai còn bản cũ.
-- **Xử lý:** Điện thoại: vuốt tắt hẳn app rồi mở lại. Máy tính: Ctrl+Shift+R. Vẫn không lên thì xem Vercel đã deploy xong chưa (1–2 phút sau khi đẩy).
-- **Chặn tái phát:** Mỗi lần đẩy phải tăng APP_VER. Bật thông báo cho bộ phận mẫu "phiên bản app" khi có bản sửa quan trọng.
-
-### Quét ảnh nhập kho không chạy
-
-- **Mức:** 🟠 NẶNG
-- **Triệu chứng:** BP báo quét ảnh lỗi; tin "Hàm máy chủ /api/ocr lỗi liên tục".
-- **Kiểm tra:** Nhờ BP bấm "📋 Sao chép chi tiết lỗi". Đọc mã: chưa có khóa → khai khóa; Gemini 400/401/403 → khóa sai; 429 → hết lượt ngày; 503 → Google quá tải; 504 → ảnh quá nhiều / quá lâu.
-- **Xử lý:** Bật thông báo cho bộ phận mẫu "quét ảnh" (tạm nhập Excel / gõ tay). Sửa theo đúng mã lỗi ở trên.
-- **Chặn tái phát:** Không ghi cứng tên model Gemini; giữ cơ chế tự tìm model và giới hạn 54 giây trong api/ocr.js.
-
 ## Bài học đã sửa
+
+### Tin kiểm tra app tuần báo sai và lọt vào nhóm Teams Bếp
+
+- **Sửa:** 23/11/2026 · bản `2311-01`
+- **Mức:** 🟡 NHẸ
+- **Triệu chứng:** Nhóm Teams Bếp nhận tin 'KIỂM TRA APP TUẦN… receipts vượt ngưỡng 2000' và danh sách phiếu kiểm kê cũ
+- **Nguyên nhân gốc:** kiem-tuan.mjs còn so số dòng với ngưỡng 1.000/2.000 dù app đã phân trang (fetchAllRows) từ 1910-02; mục ≥30% mã bằng 0 báo lại cả phiếu đã duyệt; tin gửi qua TEAMS_PERSONAL_URL mà link đó đổ vào nhóm Bếp
+- **Cách sửa:** Kiểm app có tải bảng lớn bằng fetchAllRows thay cho đếm ngưỡng; chỉ soát phiếu Chờ duyệt; tin kiểm tra tuần + báo lỗi bot 8h gửi Telegram của Khoa
+- **Chặn tái phát:** Tin kỹ thuật chỉ gửi Telegram của Khoa, không qua link Teams; luật kiểm của bot phải sửa theo khi app đã sửa gốc
+- **Dấu hiệu nhận diện (bot canh):** `VƯỢT ngưỡng app tải được`
 
 ### Màn đăng nhập giật, không mượt sau khi thay nền ảnh Bà Nà
 
