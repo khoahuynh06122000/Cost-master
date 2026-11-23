@@ -2017,7 +2017,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2111-06';
+const APP_VER='2311-01';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -5585,10 +5585,20 @@ async function dbLoadDelta(){
 }
 /* Một lượt đồng bộ (Khoa 02/11/2026, giảm Egress): TẢI TOÀN BỘ chỉ lúc mở / tải lại app. Giữa chừng chỉ kéo phần
    thay đổi (tăng dần, rất nhẹ); cần tải toàn bộ thì KHÔNG tự tải mà hiện nút "Có dữ liệu cần đồng bộ" để người dùng bấm. */
+// Tự hủy phiếu điều chuyển quá hạn 48 giờ (23/11/2026): lịch GitHub trễ nhiều giờ nên máy đang mở app gọi máy chủ làm thay,
+// tối đa 5 phút/lần mỗi máy; máy chủ tự giãn chung (api/het-han-dc.js). Lỗi thì bỏ qua — không ảnh hưởng đồng bộ.
+let _lanHetHan=0;
+async function goiHetHan(){
+  if(!mangOK||Date.now()-_lanHetHan<5*60e3)return;
+  _lanHetHan=Date.now();
+  try{const c=new AbortController(),t=setTimeout(()=>c.abort(),8000);
+    await fetch('/api/het-han-dc',{method:'POST',signal:c.signal});clearTimeout(t);}catch(e){}
+}
 async function dbDongBo(){
   _lanDongBo=Date.now();
   try{kiemPhienBan();}catch(e){}
   try{tbaTai();}catch(e){}
+  try{await goiHetHan();}catch(e){}
   if(_tangDanOK!==true||_xoaMoc==null){showSyncPill();return;}
   const kq=await dbLoadDelta();
   if(kq==='du')showSyncPill();
