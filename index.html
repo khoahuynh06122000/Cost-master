@@ -2017,7 +2017,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2311-03';
+const APP_VER='2311-04';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -13960,7 +13960,9 @@ function nkPhanLoai(dong,dsCo,plant,sloc){
 const SAP_THU=true;
 function sapMo(){return !SAP_THU||!!(session&&session.role==='admin');}
 function sapLocThu(){if(!sapMo())receipts=(receipts||[]).filter(r=>!r.sapCt);}
-function khoCoSap(p,s){if(!sapMo())return false;const moc=Date.now()-45*864e5;return (receipts||[]).some(r=>r.sapCt&&r.plant===p&&r.sloc===s&&Date.parse(r.date)>=moc);}
+/* Agent SAP đẩy số nhập của MỌI kho trên app lúc 17h hằng ngày (23/11/2026) → khi mở SAP thì kho nào cũng ở chế độ đối chiếu,
+   kể cả hôm kho chưa có dòng SAP nào (trước đây xét 45 ngày gần nhất → BP quét trước 17h ở kho mới về hàng lần đầu bị cộng 2 lần). */
+function khoCoSap(p,s){return sapMo();}
 function sapDongNgay(p,s,d){return (receipts||[]).filter(r=>r.sapCt&&r.plant===p&&r.sloc===s&&r.date===d);}
 const _dcnCache={};
 const _dcnThieuBang=e=>/42P01|does not exist|schema cache|PGRST205/i.test(String((e&&(e.message||e.code))||e||''));
@@ -14257,7 +14259,8 @@ function dcNhapKho(v){
        Chỉ mở rộng danh mục của kho, KHÔNG tạo mã mới trong master data. */
     const _ky=nkKyTheoNgay(iDate.value,perSel.value);if(!_ky)return;
     if(!nhapKhoDuocKy(plantSel.value,slocSel.value,_ky))return;
-    if(sapDongNgay(plantSel.value,slocSel.value,iDate.value).length&&!confirm(L('Ngày này kho đã có số nhập từ SAP. Hàng kho tổng chuyển về đã nằm trong số SAP — ghi thêm tay sẽ tính 2 lần nếu cùng chuyến hàng.')+'\n\n'+L('Vẫn ghi thêm?')))return;
+    if(sapDongNgay(plantSel.value,slocSel.value,iDate.value).length){if(!confirm(L('Ngày này kho đã có số nhập từ SAP. Hàng kho tổng chuyển về đã nằm trong số SAP — ghi thêm tay sẽ tính 2 lần nếu cùng chuyến hàng.')+'\n\n'+L('Vẫn ghi thêm?')))return;}
+    else if(sapMo()&&!confirm(L('Hàng kho tổng chuyển về được SAP tự đẩy vào app lúc 17h mỗi ngày — không cần ghi tay. Chỉ ghi tay hàng KHÔNG đi qua SAP.')+'\n\n'+L('Vẫn ghi thêm?')))return;
     {const pl=plantSel.value;plantMaterials[pl]=plantMaterials[pl]||[];
      if(!plantMaterials[pl].includes(chosen.code)){plantMaterials[pl].push(chosen.code);
        const _pmRow={plant_code:pl,code:chosen.code};
@@ -14351,7 +14354,8 @@ function dcNhapKho(v){
     if(kq.gop)dongs.push(kq.gop+' dòng trùng mã trong cùng phiếu (đã cộng dồn)');
     if(kq.boKhongMa)dongs.push(kq.boKhongMa+' dòng không có mã (bỏ)');
     if(kq.boSoLoi)dongs.push(kq.boSoLoi+' dòng số lượng trống/lỗi (bỏ)');
-    {const ns=pl.moi.filter(d=>sapDongNgay(plantSel.value,slocSel.value,d.date).length).length;if(ns)dongs.push(ns+' dòng rơi vào ngày kho đã có số nhập từ SAP — nạp thêm sẽ tính 2 lần nếu cùng chuyến hàng');}
+    {const ns=pl.moi.filter(d=>sapDongNgay(plantSel.value,slocSel.value,d.date).length).length;if(ns)dongs.push(ns+' dòng rơi vào ngày kho đã có số nhập từ SAP — nạp thêm sẽ tính 2 lần nếu cùng chuyến hàng');
+     else if(sapMo()&&pl.moi.length)dongs.push('SAP tự đẩy số nhập kho tổng vào app lúc 17h mỗi ngày — chỉ nạp file cho hàng KHÔNG đi qua SAP, không thì tính 2 lần');}
     const soLa=kq.dong.filter(d=>d.maLa).length;if(soLa)dongs.push(soLa+' dòng mã chưa có trong master data (vẫn nạp số, chờ kế toán khai báo tên)');
     {const kn=pl.moi.filter(d=>d.khongNgay);if(kn.length)dongs.push(kn.length+' dòng file để trống ngày — sẽ ghi ngày '+kn[0].date.split('-').reverse().join('/')+' (ngày nạp file)');}
     {const dn=pl.lech.filter(d=>d.ngayCu).length;if(dn)dongs.push(dn+' dòng đã nạp trước với NGÀY khác (thay thì sửa ngày theo file)');}
