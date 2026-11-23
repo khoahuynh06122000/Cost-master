@@ -2017,7 +2017,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2311-04';
+const APP_VER='2311-05';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -10136,6 +10136,8 @@ function dcNhapKhoBP(v){
     card.appendChild(hd);const body=el('div','card-b');card.appendChild(body);host.appendChild(card);
     if(!ph.length){body.appendChild(el('div','empty',`<div class="big">Chưa có dòng nhập kho</div><div>Không có dòng nào khớp bộ lọc này.</div>`));dichMan(host);return;}
     if(rows.some(r=>r.sapCt))host.insertBefore(veDoiChieu(rows),card);
+    /* Chuẩn 23/11/2026: từng ngày có số SAP -> có ảnh đối chiếu (khớp / lệch) hay không có ảnh (100% theo SAP) */
+    if(rows.some(r=>r.sapCt)&&sapMo()){const dh=el('div');dh.style.marginBottom='14px';host.insertBefore(dh,card);dcnPanel(dh,p,s,()=>{try{ve();}catch(e){}});}
     let ngayTruoc='';
     ph.forEach(x=>{
       if(x.date!==ngayTruoc){ngayTruoc=x.date;body.appendChild(el('div','nkk-ngay',dmy(x.date)));}
@@ -13971,7 +13973,7 @@ async function dcnTai(p,s,moi){
   if(!moi&&c&&Date.now()-c.t<60000)return c;
   if(!sb)return {ok:false,ds:[]};
   const tu=_isoNgay(new Date(Date.now()-60*864e5));
-  let q;try{q=await sb.from('doi_chieu_nhap').select('*').eq('plant_code',p).eq('sloc_code',s).in('trang_thai',['cho_sap','lech','chi_anh']).gte('date',tu).order('date',{ascending:false}).limit(500);}catch(e){q={error:e};}
+  let q;try{q=await sb.from('doi_chieu_nhap').select('*').eq('plant_code',p).eq('sloc_code',s).gte('date',tu).order('date',{ascending:false}).limit(1000);}catch(e){q={error:e};}
   if(q.error){if(_dcnThieuBang(q.error))return {ok:false,thieu:true,ds:[]};if(laLoiMang(q.error))datMang(false);return c||{ok:false,ds:[]};}
   return (_dcnCache[k]={ok:true,t:Date.now(),ds:q.data||[]});
 }
@@ -14042,17 +14044,32 @@ async function dcnGhiNhap(it,xong){
   await dcnDoiTT(Object.assign({},it),'xong',null);
   toast(L('Đã ghi vào nhập kho'));xong&&xong();
 }
+(function(){const st=document.createElement('style');st.textContent='.dcn-ngay{display:flex;flex-wrap:wrap;gap:2px 4px;align-items:baseline;font-size:13px;padding:5px 0;border-top:1px dashed var(--line)}.dcn-ngay:first-of-type{border-top:0}';document.head.appendChild(st);})();
 function dcnPanel(host,p,s,khiDoi){
   host.innerHTML='';
   if(!p||!s)return;
   dcnTai(p,s).then(kq=>{
     host.innerHTML='';
-    if(!kq.ok||!kq.ds.length)return;
-    const lech=kq.ds.filter(x=>x.trang_thai==='lech'),chi=kq.ds.filter(x=>x.trang_thai==='chi_anh'),cho=kq.ds.filter(x=>x.trang_thai==='cho_sap');
+    const _ds=(kq.ok&&kq.ds)||[];
+    const ngaySap=dcnNgaySap(p,s);
+    if(!_ds.length&&!ngaySap.length)return;
+    const lech=_ds.filter(x=>x.trang_thai==='lech'),chi=_ds.filter(x=>x.trang_thai==='chi_anh'),cho=_ds.filter(x=>x.trang_thai==='cho_sap');
     const box=el('div','dcn');
     const h=el('div','dcn-h');const h1=el('span');h1.textContent=L('🔍 Đối chiếu SAP');h.appendChild(h1);
     const hn=el('span','badge '+(lech.length+chi.length?'badge-wait':'badge-none'));hn.textContent=String(lech.length+chi.length+cho.length);h.appendChild(hn);box.appendChild(h);
-    const sub=el('div','cell-sub');sub.textContent=L('Số SAP đã cộng vào nhập kho. Ảnh phiếu quét dùng để kiểm lại: mã lệch thì chọn số thực nhận.');box.appendChild(sub);
+    const sub=el('div','cell-sub');sub.textContent=L('Số nhập kho lấy theo SAP (agent đẩy lên 17h mỗi ngày). Ảnh phiếu quét chỉ để đối chiếu: mã khớp bỏ qua, mã lệch thì chọn số thực nhận.');box.appendChild(sub);
+    if(ngaySap.length){const g=el('div','dcn-g');const t=el('div','dcn-t');t.textContent=L('Từng ngày có số SAP');g.appendChild(t);
+      ngaySap.forEach(d=>{const tt=dcnTomTatNgay(p,s,d,_ds);const r0=el('div','dcn-ngay');
+        const a=el('b','tnum');a.textContent=d.split('-').reverse().join('/');r0.appendChild(a);
+        const b0=el('span','tnum');b0.textContent=' · '+tt.soMaSap+' '+L('mã SAP')+' · ';r0.appendChild(b0);
+        const c0=el('span');
+        if(!tt.coAnh){c0.textContent=L('Không có ảnh đối chiếu — số lấy 100% theo SAP');c0.className='cell-sub';}
+        else{const ps=[];if(tt.khop)ps.push(tt.khop+' '+L('khớp'));if(tt.lech)ps.push(tt.lech+' '+L('lệch'));if(tt.chiAnh)ps.push(tt.chiAnh+' '+L('chỉ có trên ảnh'));
+          if(tt.chiSap)ps.push(tt.chiSap+' '+L('chỉ có SAP'));if(tt.xong)ps.push(tt.xong+' '+L('đã xử lý'));
+          c0.textContent=L('Đã có ảnh đối chiếu')+(tt.tuBP?' ('+L('số BP tự nhập')+')':'')+': '+(ps.join(' · ')||'—');
+          c0.style.color=(tt.lech||tt.chiAnh)?'var(--accent-ink)':'var(--ok-ink)';}
+        r0.appendChild(c0);g.appendChild(r0);});
+      box.appendChild(g);}
     const ve=()=>{khiDoi&&khiDoi();dcnPanel(host,p,s,khiDoi);};
     const ten=x=>{const m=masterByCode[x.code];return (m&&m.name&&m.name!==x.code)?m.name:(x.name||x.code);};
     const ng=x=>String(x.date).slice(0,10).split('-').reverse().join('/');
@@ -14085,6 +14102,23 @@ function dcnPanel(host,p,s,khiDoi){
     host.appendChild(box);try{dichMan(host);}catch(e){}
   });
 }
+/* Ngày có số SAP của kho, 14 ngày gần nhất (mới trước) */
+function dcnNgaySap(p,s){const moc=_isoNgay(new Date(Date.now()-14*864e5));
+  return [...new Set((receipts||[]).filter(r=>r.sapCt&&r.plant===p&&r.sloc===s&&r.date>=moc).map(r=>r.date))].sort().reverse();}
+/* Tóm tắt đối chiếu của một ngày. Nguồn "ảnh": bảng doi_chieu_nhap; ngày chưa có thì lấy số BP tự nhập (quét ảnh /
+   Excel / gõ tay, trừ dòng "ngoài SAP") — đúng tình trạng giai đoạn thử, khi bộ phận còn nhập thẳng vào sổ. */
+function dcnTomTatNgay(p,s,d,dcn){
+  const sap={};(receipts||[]).forEach(r=>{if(r.sapCt&&r.plant===p&&r.sloc===s&&r.date===d)sap[r.code]=(sap[r.code]||0)+Number(r.sapSl!=null?r.sapSl:r.qty);});
+  const tt={soMaSap:Object.keys(sap).length,coAnh:false,tuBP:false,khop:0,lech:0,chiAnh:0,chiSap:0,xong:0};
+  const dc=(dcn||[]).filter(x=>String(x.date).slice(0,10)===d);
+  if(dc.length){tt.coAnh=true;const co=new Set();
+    dc.forEach(x=>{co.add(x.code);if(x.trang_thai==='khop')tt.khop++;else if(x.trang_thai==='lech')tt.lech++;else if(x.trang_thai==='chi_anh')tt.chiAnh++;else if(x.trang_thai==='xong'||x.trang_thai==='bo')tt.xong++;});
+    tt.chiSap=Object.keys(sap).filter(c=>!co.has(c)).length;return tt;}
+  const bp={};(receipts||[]).forEach(r=>{if(!r.sapCt&&r.plant===p&&r.sloc===s&&r.date===d&&!/\[ngoài SAP\]/.test(r.note||''))bp[r.code]=(bp[r.code]||0)+Number(r.qty);});
+  if(!Object.keys(bp).length)return tt;
+  tt.coAnh=true;tt.tuBP=true;
+  Object.keys(bp).forEach(c=>{if(sap[c]==null)tt.chiAnh++;else if(Math.abs(sap[c]-bp[c])<1e-6)tt.khop++;else tt.lech++;});
+  tt.chiSap=Object.keys(sap).filter(c=>bp[c]==null).length;return tt;}
 function fmtSL(v){const n=Number(v);return isFinite(n)?String(Math.round(n*1000)/1000).replace('.',','):'—';}
 // ---- Nhận hàng từ kho tổng: gõ tay hoặc quét ảnh — dùng kho/kỳ đã ghim ----
 function dcNhapKho(v){
@@ -14378,8 +14412,18 @@ function dcNhapKho(v){
     bHuy.onclick=()=>{xPrev.innerHTML='';xIn.value='';};
     br.appendChild(bLuu);br.appendChild(bHuy);xPrev.appendChild(br);try{dichMan(xPrev);}catch(e){}
     if(!pl.moi.length&&!pl.lech.length){bLuu.disabled=true;bLuu.style.opacity='.5';}
+    if(khoCoSap(plantSel.value,slocSel.value)){bLuu.disabled=false;bLuu.style.opacity='';bLuu.textContent=L('🔍 Đối chiếu với số SAP');
+      const ns=el('div','note');ns.style.cssText='display:block;margin-top:8px';ns.textContent=L('Số nhập kho lấy theo SAP — file này chỉ dùng để đối chiếu, không cộng thêm vào tồn.');xPrev.insertBefore(ns,br);}
     bLuu.onclick=async()=>{
       if(_khoXT!==plantSel.value+'|'+slocSel.value){xPrev.innerHTML='';xIn.value='';toast(L('Đã đổi kho / kỳ — nạp lại file cho kho đang chọn'));return;}
+      if(khoCoSap(plantSel.value,slocSel.value)){
+        bLuu.disabled=true;bHuy.disabled=true;bLuu.textContent=L('Đang đối chiếu…');let dem=null;
+        try{dem=await dcnGhiAnh(kq.dong.map(d=>({code:d.code,name:d.maLa?(d.tenFile||d.code):d.name,uom:d.uom,qty:Number(d.qty),ngay:d.date})),plantSel.value,slocSel.value);}
+        finally{bLuu.disabled=false;bHuy.disabled=false;bLuu.textContent=L('🔍 Đối chiếu với số SAP');}
+        if(!dem)return;
+        xPrev.innerHTML='';xIn.value='';
+        toast(L('Đã đối chiếu file với SAP')+': '+dem.khop+' '+L('khớp')+' · '+dem.lech+' '+L('lệch')+' · '+dem.chi_anh+' '+L('chỉ có trên file')+' · '+dem.cho_sap+' '+L('chờ số SAP'));
+        try{veDcn();}catch(e){}return;}
       if(_khacKho.length&&!confirm('File này ĐÃ ĐƯỢC NẠP vào kho khác:\n'+_khacKho.slice(0,5).map(g=>nkCauDaNap(g,kq.dong.length)).join('\n')
         +'\n\nBạn đang nạp vào: '+whName(plantSel.value,slocSel.value)+'.\nNếu nạp nhầm kho, hàng sẽ bị tính ở CẢ HAI kho.\n\nOK = vẫn lưu vào kho này · Cancel = dừng lại'))return;
       /* File để trống ngày: HỎI trước khi lưu, nói rõ sẽ ghi vào ngày nào (23/10/2026). */
