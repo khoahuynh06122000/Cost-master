@@ -253,109 +253,14 @@ try {
     return m;
   }
 
-  // ===== NHẮC DUYỆT PHIẾU ĐIỀU CHUYỂN MỖI NGÀY (Khoa 29/10/2026) =====
-  // Nhiều kho xuất hàng rồi quên duyệt -> sổ không trừ kho, kiểm kê cuối tháng lệch. Mỗi sáng: mỗi kho đang có
-  // phiếu chờ CHÍNH MÌNH duyệt nhận 1 thông báo (chuông trong app + đẩy về máy), kèm quy định phải duyệt.
-  // Bên duyệt: xin/đẩy -> kho CHO hàng; hàng dư -> bếp NHẬN; hủy -> kế toán (không nhắc ở đây).
-  // Lỗi ở phần này KHÔNG làm hỏng tin Teams.
-  async function nhacDuyetDC() {
-    const out = { bep: [], nh: [] };
-    try {
-      const ds = await q('transfer_requests?select=id,kind,from_plant,from_sloc,to_plant,to_sloc,items,created_by,created_at&status=eq.' + encodeURIComponent('Chờ duyệt'));
-      const g = {};
-      ds.forEach(r => {
-        if (r.kind === 'huy') return;
-        const [p, s] = r.kind === 'du' ? [r.to_plant, r.to_sloc] : [r.from_plant, r.from_sloc];
-        if (!p) return;
-        const k = p + '|' + s; (g[k] = g[k] || { p, s, n: 0, cu: r.created_at, ds: [] }).n++;
-        g[k].ds.push(r);
-        if (String(r.created_at) < String(g[k].cu)) g[k].cu = r.created_at;
-      });
-      const ks = Object.values(g);
-      if (!ks.length) { console.log('✅ Không có phiếu điều chuyển nào chờ duyệt.'); return out; }
-      const h = gioVN();
-      const dauNgay = new Date(Date.UTC(h.getUTCFullYear(), h.getUTCMonth(), h.getUTCDate()) - 7 * 3600e3).toISOString();
-      let daNhac = [];
-      try { daNhac = await q(`notifications?select=plant_code,sloc_code&kind=eq.dcnhac&created_at=gte.${dauNgay}`); } catch (e) {}
-      const APP = process.env.APP_URL || 'https://cost-master-sigma.vercel.app';
-      for (const x of ks) {
-        const ngay = Math.floor((Date.now() - new Date(x.cu).getTime()) / 864e5);
-        const _v = new Date(new Date(x.cu).getTime() + 7 * 3600e3), ngayLap = String(_v.getUTCDate()).padStart(2, '0') + '/' + String(_v.getUTCMonth() + 1).padStart(2, '0');
-        (laBep(x.p, x.s) ? out.bep : out.nh).push(x);
-        if (daNhac.some(d => d.plant_code === x.p && d.sloc_code === x.s)) continue;   // chạy lại trong ngày: không nhắc 2 lần
-        const msg = `⏰ ${whLabel(x.p, x.s)} đang có ${x.n} phiếu điều chuyển Chờ tôi duyệt (cũ nhất lập ${ngayLap} — ${ngay} ngày). ⚠ Quy định: đã xuất hàng cho kho khác thì PHẢI duyệt phiếu ngay trong ngày — chưa duyệt thì sổ chưa trừ kho, kiểm kê cuối tháng sẽ lệch. Phiếu quá 48 giờ chưa duyệt sẽ bị hệ thống tự hủy. Vào Nhập kho & ĐC → Chờ tôi duyệt.`;
-        try {
-          const r = await fetch(`${SB_URL}/rest/v1/notifications`, { method: 'POST',
-            headers: { ...H, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-            body: JSON.stringify({ id: 'NTB' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), plant_code: x.p, sloc_code: x.s,
-              message: msg, kind: 'dcnhac', created_by: 'Hệ thống', read_flag: false }) });
-          if (!r.ok) console.warn('Không ghi được thông báo nhắc duyệt', x.p, x.s, r.status, await r.text());
-        } catch (e) { console.warn('Ghi thông báo nhắc duyệt lỗi', e.message); }
-        try {
-          const subs = await q(`push_subs?select=endpoint,p256dh,auth&plant_code=eq.${x.p}&sloc_code=eq.${x.s}`);
-          const uniq = [...new Map(subs.filter(z => z.endpoint).map(z => [z.endpoint, z])).values()];
-          if (uniq.length) await fetch(`${APP}/api/push-send`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-service-key': SB_KEY },
-            body: JSON.stringify({ subs: uniq, title: 'Phiếu điều chuyển chờ duyệt', body: msg, url: '/', tag: 'dcnhac' }) });
-        } catch (e) { console.warn('Đẩy thông báo nhắc duyệt lỗi', e.message); }
-      }
-      console.log(`Đã nhắc duyệt điều chuyển: ${ks.length} kho.`);
-    } catch (e) { console.warn('Nhắc duyệt điều chuyển lỗi (bỏ qua):', e.message); }
-    return out;
-  }
-  const nhac = await nhacDuyetDC();
-  // Người duyệt của từng kho để @ trong tin: giám sát được gán kho đó (gán cả điểm bán = mọi kho); kho không có
-  // giám sát thì @ bếp trưởng. Email = email công ty ở danh bạ (nhan_su.email_cty qua profiles.ma_nv); chưa gắn
-  // danh bạ thì dùng email đăng nhập nếu là email công ty; không có email công ty thì chỉ ghi tên.
-  const nguoiDuyet = {};
-  try {
-    const pf = await q('profiles?select=id,full_name,email,ma_nv,role&status=eq.active&role=in.(giam_sat,bep_truong)');
-    if (pf.length) {
-      const ids = pf.map(x => x.id);
-      const up = await q('user_plants?select=user_id,plant_code,sloc_code&user_id=in.(' + ids.join(',') + ')');
-      const mas = [...new Set(pf.map(x => x.ma_nv).filter(Boolean))];
-      let ns = [];
-      if (mas.length) { try { ns = await q('nhan_su?select=ma_nv,ho_ten,email_cty&ma_nv=in.(' + mas.map(encodeURIComponent).join(',') + ')'); } catch (e) {} }
-      const nsMa = new Map(ns.map(x => [x.ma_nv, x]));
-      const laMailCty = m => /@(banahills|sungroup)\.com\.vn$/i.test(String(m || '').trim());
-      const tt = Object.fromEntries(pf.map(x => {
-        const n = x.ma_nv && nsMa.get(x.ma_nv);
-        const mail = (n && n.email_cty) || (laMailCty(x.email) ? x.email : '');
-        return [x.id, { ten: (n && n.ho_ten) || x.full_name || x.email, mail: String(mail || '').trim(), role: x.role }];
-      }));
-      up.forEach(u => { const a = tt[u.user_id]; if (!a) return; (nguoiDuyet[u.plant_code + '|' + (u.sloc_code || '*')] ||= []).push(a); });
-    }
-  } catch (e) { console.warn('Đọc giám sát để @ lỗi (bỏ qua @):', e.message); }
-  const tagKho = (p, s) => {
-    const ds = [...(nguoiDuyet[p + '|' + s] || []), ...(nguoiDuyet[p + '|*'] || [])];
-    const gs = ds.filter(a => a.role === 'giam_sat');
-    const chon = [...new Map((gs.length ? gs : ds).map(a => [a.mail || a.ten, a])).values()];
-    if (!chon.length) return '';
-    return ' ' + chon.map(a => a.mail ? `⟦@${a.mail}|${a.ten}⟧` : a.ten).join(', ');
-  };
-  // Tin Teams: liệt kê TỪNG PHIẾU chờ duyệt, gom theo kho phải duyệt, phiếu cũ nhất lên trước (Khoa 09/11/2026)
-  // Rút gọn (Khoa 09/11/2026): mỗi phiếu chỉ còn ĐIỂM TẠO + TẠO BAO LÂU + CÒN BAO LÂU tới hạn 48 giờ.
-  // Hạn tính y hệt dcHan() của app và agent/het-han-dc.mjs.
-  const HAN_MOC = Date.parse('2026-11-09T12:00:00+07:00');
-  const baoLau = ms => { const g = Math.max(0, Math.floor(ms / 3600e3)); return g < 24 ? `${g} giờ` : `${Math.floor(g / 24)} ngày${g % 24 ? ' ' + (g % 24) + ' giờ' : ''}`; };
-  const dongPhieu = r => {
-    const t = Date.parse(r.created_at), con = Math.ceil((Math.max(t, HAN_MOC) + 48 * 3600e3 - Date.now()) / 3600e3);
-    const diem = r.kind === 'du' ? sname(r.from_plant, r.from_sloc) : sname(r.to_plant, r.to_sloc);
-    return `• ${diem} — tạo ${baoLau(Date.now() - t)} trước · ${con > 0 ? 'còn ' + con + ' giờ' : 'quá hạn, sắp tự hủy'}`;
-  };
-  const phanDC = ks => {
-    if (!ks.length) return null;
-    ks = ks.slice().sort((a, b) => String(a.cu).localeCompare(String(b.cu)));
-    const tong = ks.reduce((a, x) => a + x.ds.length, 0);
-    return `⏰ ${tong} PHIẾU ĐIỀU CHUYỂN CHƯA DUYỆT (hạn duyệt 48 giờ, quá hạn tự hủy)\n\n` +
-      ks.map(x => `📦 Chờ ${sname(x.p, x.s)} duyệt:${tagKho(x.p, x.s)}\n` +
-        x.ds.slice().sort((a, b) => String(a.created_at).localeCompare(String(b.created_at))).map(dongPhieu).join('\n')).join('\n\n');
-  };
+  // Nhắc duyệt phiếu điều chuyển ĐÃ CHUYỂN sang 17h (Vercel Cron -> api/nhac-dc.js + lib/nhac-dc.js, Khoa 23/11/2026):
+  // lịch GitHub trễ 6–8 tiếng nên tin 8h thực tế tới 14h30–15h30 và tag cả phiếu vừa lập vài phút.
 
   // Bếp chỉ báo bếp, NH chỉ báo NH — mỗi nhóm một link Teams.
   const tuanBep = await phanTuan();
   const nhom = [
-    { ten: 'BẾP',      url: FLOW_BEP, ds: units.filter(u =>  laBep(u.p, u.s)), them: [tuanBep, phanDC(nhac.bep)] },
-    { ten: 'NHÀ HÀNG', url: FLOW,     ds: units.filter(u => !laBep(u.p, u.s)), them: [phanDC(nhac.nh)] },
+    { ten: 'BẾP',      url: FLOW_BEP, ds: units.filter(u =>  laBep(u.p, u.s)), them: [tuanBep] },
+    { ten: 'NHÀ HÀNG', url: FLOW,     ds: units.filter(u => !laBep(u.p, u.s)), them: [] },
   ];
   for (const g of nhom) {
     const msg = [dungTin(g.ten, g.ds), ...g.them].filter(Boolean).join('\n\n━━━━━━━━━━━━\n\n');

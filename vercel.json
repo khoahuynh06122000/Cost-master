@@ -5,6 +5,9 @@
       "destination": "https://jygrdbuwveitrlfuwigs.supabase.co/:path*"
     }
   ],
+  "crons": [
+    { "path": "/api/nhac-dc", "schedule": "0 10 * * *" }
+  ],
   "functions": {
     "api/*.js": {
       "maxDuration": 60
