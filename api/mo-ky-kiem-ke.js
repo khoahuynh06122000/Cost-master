@@ -56,6 +56,20 @@ function kyMacDinh() {
   return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0');
 }
 
+// Phiên đăng nhập là admin đang hoạt động? Trả tên người dùng, không thì null.
+async function laAdmin(token) {
+  try {
+    if (!/^eyJ/.test(token)) return null;
+    const u = await fetch(SUPA_URL + '/auth/v1/user', { headers: { apikey: SVC, Authorization: 'Bearer ' + token } });
+    if (!u.ok) return null;
+    const id = (await u.json()).id;
+    if (!/^[0-9a-f-]{36}$/i.test(String(id || ''))) return null;
+    const p = await supa('profiles?select=full_name,email,role,status&id=eq.' + id);
+    const x = p && p[0];
+    return x && x.role === 'admin' && x.status === 'active' ? (x.full_name || x.email || 'admin') : null;
+  } catch (e) { return null; }
+}
+
 async function baoKho(appUrl, plant, sloc, ten, ky) {
   const [y, m] = ky.split('-');
   const msg = 'Đã mở kỳ kiểm kê tháng ' + m + '/' + y + ' cho kho ' + ten + '. Vào app → tab Kiểm kê → chọn kho → "Kiểm đếm trực tiếp" để đếm.';
@@ -75,9 +89,15 @@ async function baoKho(appUrl, plant, sloc, ten, ky) {
 async function xuLy(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Chỉ nhận POST' });
   if (!SVC) return res.status(503).json({ error: 'Máy chủ chưa cấu hình SUPABASE_SERVICE_ROLE_KEY' });
-  if (!KHOA.length) return res.status(503).json({ error: 'Máy chủ chưa cấu hình khóa agent (NHAP_KHO_AGENT_KEY)' });
   const au = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
-  if (!au || !KHOA.some(k => bangNhau(au, k))) return res.status(401).json({ error: 'Sai khóa API' });
+  // Hai cách vào: khóa agent (máy chạy agent SAP) HOẶC phiên đăng nhập của ADMIN trên app (thẻ "Mở kỳ qua API" — 23/11/2026)
+  let nguoiGoi = NGUOI;
+  if (!au) return res.status(401).json({ error: 'Thiếu khóa' });
+  if (!(KHOA.length && KHOA.some(k => bangNhau(au, k)))) {
+    const ad = await laAdmin(au);
+    if (!ad) return res.status(401).json({ error: 'Sai khóa API hoặc tài khoản không phải admin' });
+    nguoiGoi = NGUOI + ' (thử: ' + ad + ')';
+  }
 
   const b = await doc(req);
   const ky = chu(b.period || b.ky, 7) || kyMacDinh();
@@ -86,7 +106,7 @@ async function xuLy(req, res) {
   if (!rows || !rows.length) return res.status(400).json({ error: 'Thiếu records' });
   if (rows.length > TOI_DA) return res.status(413).json({ error: 'Tối đa ' + TOI_DA + ' dòng mỗi lần — chia lô, cùng data_hash' });
   const hash = chu(b.data_hash, 64).replace(/[^\w\-]/g, '') || crypto.createHash('sha256').update(JSON.stringify(rows)).digest('hex').slice(0, 16);
-  const dau = NGUOI + ' · ' + hash;
+  const dau = nguoiGoi + ' · ' + hash;
   const thu = b.thu === true || b.thu === 1 || b.thu === '1';
   const ghiDe = b.ghi_de === true || b.ghi_de === 1 || b.ghi_de === '1';
 

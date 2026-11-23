@@ -2017,7 +2017,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2311-02';
+const APP_VER='2311-03';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -8799,7 +8799,80 @@ function renderKiemkeDash(v){
     {k:'upxls',ico:HIC.box,title:'Nhập số kiểm kê từ Excel',sub:'Nhập thay điểm bán khi giám sát không tự đếm được',render:v2=>renderKKUpload(v2)},
     {k:'theodoi',ico:HIC.list,title:'Theo dõi & duyệt phiếu',sub:'Bộ lọc, thống kê, danh sách phiếu kiểm kê',n:_cho?_cho+' phiếu chờ duyệt':'',warm:!!_cho,render:kkDashList},
     {k:'nxt',ico:HIC.sheet,title:'Nhập – Xuất – Tồn',sub:'Xem số lượng theo kỳ, điểm bán, kho: tồn đầu kỳ, nhập, điều chuyển, tồn kiểm kê, xuất thực tế — tải Excel',render:kkNXT},
-  ]);
+  ].concat(session&&session.role==='admin'?[{k:'mokyapi',ico:HIC.sheet,title:'Mở kỳ qua API (thử)',sub:'Nạp file mẫu agent dùng, gửi qua cổng API mở kỳ — chạy thử hoặc ghi thật',render:kkMoKyApi}]:[]));
+}
+/* ===== MỞ KỲ QUA API — CHỈ ADMIN (23/11/2026) =====
+   Gọi đúng cổng /api/mo-ky-kiem-ke mà agent SAP dùng ngày 25, bằng phiên đăng nhập admin — để thử file trước khi giao agent.
+   File: sheet đầu, cột Plant | Sloc | Mã vật tư | Tên vật tư | ĐVT (giống "Mở kỳ kiểm kê - mẫu.xlsx"). */
+function kkMoKyApi(v){
+  const card=el('div','card');const b=el('div','card-b');card.appendChild(b);v.appendChild(card);
+  b.innerHTML='<div class="section-eyebrow"><span class="step">🧪</span>Mở kỳ kiểm kê qua API</div>'
+    +'<div class="note"><div>Gửi file qua đúng cổng API agent dùng ngày 25. <b>Chạy thử</b> chỉ cho xem kết quả từng kho, không ghi gì. Bỏ tick để mở kỳ thật — giám sát kho nhận thông báo và kho bị khóa điều chuyển.</div></div>';
+  const row=el('div','form-row');row.style.cssText='flex-wrap:wrap;gap:10px;margin-top:10px;align-items:center';
+  const ky=el('select','input');ky.style.maxWidth='280px';
+  periodOptions(6).forEach(p=>{const o=el('option',null,kyNhan(p));o.value=p;ky.appendChild(o);});
+  const bMau=el('button','btn btn-ghost btn-sm','⬇ Tải file mẫu');
+  const fin=el('input');fin.type='file';fin.accept='.xlsx,.xls,.csv';fin.style.maxWidth='100%';
+  row.append(ky,fin,bMau);b.appendChild(row);
+  const opt=el('div');opt.style.cssText='display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;font-size:13.5px';
+  opt.innerHTML='<label><input type="checkbox" id="mkThu" checked> Chạy thử (không ghi)</label><label><input type="checkbox" id="mkGhiDe"> Thay cả danh sách kế toán đã mở tay</label>';
+  b.appendChild(opt);
+  const info=el('div');info.style.cssText='margin-top:10px;font-size:13.5px';b.appendChild(info);
+  const bGui=el('button','btn btn-primary','Gửi lên API');bGui.hidden=true;bGui.style.marginTop='10px';b.appendChild(bGui);
+  const out=el('div');out.style.marginTop='12px';b.appendChild(out);
+  let recs=[];
+  bMau.onclick=()=>{
+    const ws=XLSX.utils.aoa_to_sheet([['Plant','Sloc','Mã vật tư','Tên vật tư','ĐVT']]);
+    ws['!cols']=[{wch:9},{wch:9},{wch:14},{wch:44},{wch:9}];
+    const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'MoKy');XLSX.writeFile(wb,'Mo-ky-kiem-ke-mau.xlsx');
+  };
+  const chu=x=>{let t=String(x==null?'':x).trim();if(/^\d+\.0+$/.test(t))t=t.replace(/\.0+$/,'');return t;};
+  fin.onchange=()=>{
+    const f=fin.files[0];out.innerHTML='';bGui.hidden=true;recs=[];if(!f)return;
+    readSheetRows(f,rows=>{
+      const hi=rows.findIndex(r=>r.some(c=>/plant/i.test(String(c)))&&r.some(c=>/sloc/i.test(String(c))));
+      if(hi<0){info.textContent='Không thấy dòng tiêu đề có cột Plant và Sloc — dùng đúng file mẫu.';return;}
+      const h=rows[hi].map(c=>vnNorm(c));const ix=(...k)=>h.findIndex(c=>k.some(x=>c.includes(x)));
+      const cp=ix('plant'),cs=ix('sloc'),cm=ix('mavattu','mavt','mahang','material'),ct=ix('tenvattu','tenhang','ten','description'),cd=ix('dvt','unit');
+      if(cm<0){info.textContent='Không thấy cột Mã vật tư.';return;}
+      rows.slice(hi+1).forEach(r=>{const ma=chu(r[cm]);if(!ma)return;
+        recs.push({plant:chu(r[cp]),sloc:chu(r[cs]),material:ma,material_description:ct>=0?chu(r[ct]):'',unit:cd>=0?chu(r[cd]):''});});
+      const kho=new Set(recs.map(x=>x.plant+'|'+x.sloc));
+      info.textContent=recs.length?('Đọc được '+recs.length+' dòng · '+kho.size+' kho.'):'File không có dòng dữ liệu nào.';
+      bGui.hidden=!recs.length;
+    },e=>{info.textContent='Không đọc được file: '+(e&&e.message||e);});
+  };
+  bGui.onclick=async()=>{
+    if(!recs.length)return;
+    const thu=document.getElementById('mkThu').checked,ghiDe=document.getElementById('mkGhiDe').checked;
+    if(!thu&&!confirm('MỞ KỲ THẬT kỳ '+periodVN(ky.value)+' cho '+new Set(recs.map(x=>x.plant+'|'+x.sloc)).size+' kho?\nGiám sát kho sẽ nhận thông báo và kho bị khóa điều chuyển.'))return;
+    if(!mangOK){toast('Cần có mạng');return;}
+    bGui.disabled=true;bGui.textContent='Đang gửi…';out.innerHTML='';
+    try{
+      let tk='';try{const r=await sb.auth.getSession();tk=r&&r.data&&r.data.session&&r.data.session.access_token||'';}catch(e){}
+      const txt=ky.value+JSON.stringify(recs);let hh=0;for(let i=0;i<txt.length;i++)hh=(hh*31+txt.charCodeAt(i))|0;
+      const hash='ad'+(hh>>>0).toString(36)+recs.length.toString(36);
+      const LO=2000,lo=[];for(let i=0;i<recs.length;i+=LO)lo.push(recs.slice(i,i+LO));
+      const kq={},loi=[];let boQua=0;
+      for(let i=0;i<lo.length;i++){
+        const r=await fetch('/api/mo-ky-kiem-ke',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tk},
+          body:JSON.stringify({period:ky.value,data_hash:hash,batch_index:i+1,total_batches:lo.length,thu,ghi_de:ghiDe,records:lo[i]})});
+        const j=await r.json().catch(()=>({}));
+        if(!r.ok&&r.status!==207){loi.push('Lô '+(i+1)+': HTTP '+r.status+' '+(j.error||''));continue;}
+        (j.kho||[]).forEach(k=>{kq[k.plant+'|'+k.sloc]=k;});boQua+=j.soDongBoQua||0;
+      }
+      const NH={mo_moi:'MỞ MỚI',thay:'THAY',cong_don:'MỞ',khong_doi:'KHÔNG ĐỔI',bo_qua:'BỎ QUA'};
+      const ds=Object.values(kq).sort((a,b)=>(a.ket_qua==='bo_qua')-(b.ket_qua==='bo_qua')||String(a.plant+a.sloc).localeCompare(b.plant+b.sloc));
+      let html='<div style="font-weight:700;margin-bottom:6px">'+(thu?'Kết quả CHẠY THỬ (chưa ghi gì)':'Đã gửi — kết quả ghi thật')+' · '+ds.length+' kho'+(boQua?' · '+boQua+' dòng bị bỏ (mã không hợp lệ / thiếu plant, sloc)':'')+'</div>';
+      html+='<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Kho</th><th>Tên kho</th><th>Số mã</th><th>Kết quả</th><th>Lý do</th></tr></thead><tbody>'
+        +ds.map(k=>'<tr><td>'+escHtml(k.plant+'-'+k.sloc)+'</td><td>'+escHtml(k.ten||'')+'</td><td>'+k.so_ma+'</td><td><span class="badge '+(k.ket_qua==='bo_qua'?'badge-pending':'badge-ok')+'">'+(NH[k.ket_qua]||k.ket_qua)+'</span></td><td>'+escHtml(k.ly_do||'')+'</td></tr>').join('')
+        +'</tbody></table></div>';
+      if(loi.length)html+='<div class="note" style="margin-top:8px"><div>'+loi.map(escHtml).join('<br>')+'</div></div>';
+      out.innerHTML=html;cardifyTables&&cardifyTables(out);
+      if(!thu){log('Mở kỳ qua API (admin)','kỳ '+periodVN(ky.value)+' · '+ds.filter(k=>k.ket_qua!=='bo_qua').length+' kho');try{await dbLoadAll();}catch(e){}}
+    }catch(e){out.innerHTML='';errBox('Không gửi được',['Gửi lên cổng API mở kỳ không thành công.'],String(e&&e.message||e));}
+    finally{bGui.disabled=false;bGui.textContent='Gửi lên API';}
+  };
 }
 /* ===== NHẬP – XUẤT – TỒN (26/10/2026) =====
    Mỗi kho + kỳ: Tồn đầu kỳ + Nhập mua + ĐC đến − ĐC đi − Tồn kiểm kê = Xuất thực tế (đúng inventoryFlow).
