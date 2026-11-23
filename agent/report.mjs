@@ -278,6 +278,13 @@ try {
   console.error('LỖI:', e.message||e);
   const diag = (await aiDiagnose(e.message||String(e))) || ruleDiagnose(e);
   const report = `🔧 AGENT LỖI (đã tự thử lại ${e.attempts||3} lần không được)\nThời điểm: ${new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })}\n\nChi tiết lỗi: ${(e.message||String(e)).slice(0,300)}\n\n🤖 Chẩn đoán:\n${diag}`;
+  // Báo lỗi kỹ thuật về TELEGRAM của Khoa (23/11/2026) — TEAMS_PERSONAL_URL đang đổ vào nhóm Teams Bếp, BP không được thấy tin này.
+  try {
+    const { guiTelegram, esc } = (await import('node:module')).createRequire(import.meta.url)('../lib/telegram.js');
+    const g = await guiTelegram(esc(report), { muc: 'S2', boQuaGioNgu: true });
+    if (g.ok) { console.log('Đã gửi báo lỗi về Telegram Khoa.'); process.exit(1); }
+    console.error('Telegram không gửi được:', g.loi);
+  } catch (e3) { console.error('Telegram lỗi:', e3.message); }
   try { await postTeams(PERSONAL, report); console.log('Đã gửi báo lỗi + chẩn đoán về chat riêng Khoa.'); }
   catch (e2) { console.error('Không gửi được báo lỗi về Teams:', e2.message||e2); }
   console.log(report);

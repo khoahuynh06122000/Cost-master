@@ -7,7 +7,7 @@
 // CHỈ ĐỌC: không ghi, không xoá gì trên Supabase. Không POST tới API đổi mật khẩu / gửi push.
 // Bí mật lấy từ GitHub Secrets (giống agent/report.mjs). Chạy tay: node kiem-tra/kiem-tuan.mjs
 //
-// Kết quả gửi RIÊNG Khoa (TEAMS_PERSONAL_URL); có lỗi đỏ thì job GitHub báo thất bại.
+// Kết quả gửi RIÊNG Khoa qua TELEGRAM (23/11/2026); có lỗi đỏ thì job GitHub báo thất bại.
 
 import fs from 'fs';
 import vm from 'vm';
@@ -25,7 +25,9 @@ const SB_URL = (process.env.SUPABASE_URL || (HTML.match(/SB_DIRECT='([^']+)'/) |
 const SERVICE = process.env.SUPABASE_SERVICE_KEY || '';
 const SB_KEY = SERVICE || (HTML.match(/SB_KEY='([^']+)'/) || [])[1] || '';
 const H = { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY };
-const TEAMS = process.env.TEAMS_PERSONAL_URL || process.env.TEAMS_FLOW_URL || '';
+// Gửi về TELEGRAM của Khoa (23/11/2026): TEAMS_PERSONAL_URL đang đổ vào nhóm Teams Bếp — tin kỹ thuật không được lọt sang BP.
+import { createRequire } from 'node:module';
+const { guiTelegram, esc } = createRequire(import.meta.url)('../lib/telegram.js');
 
 const KQ = [];   // {nhom, muc:'ok'|'vang'|'do', ten, chi}
 const ghi = (nhom, muc, ten, chi = '') => KQ.push({ nhom, muc, ten, chi });
@@ -134,12 +136,11 @@ async function kiemSoLieu() {
   const su = await tatCa('submissions', 'id,status,user_name,items');
   const rc = await tatCa('receipts', 'id');
 
-  // 4a. Ngưỡng 1.000 dòng: app tải các bảng này KHÔNG phân trang (rà soát 05/10, mục B5)
-  for (const [t, n] of [['transfers', tr.length], ['submissions', su.length], ['receipts', rc.length]]) {
-    const gh = t === 'receipts' ? 2000 : 1000;
-    if (n >= gh) ghi('Số liệu', 'do', `Bảng ${t} đã ${n} dòng — VƯỢT ngưỡng app tải được (${gh})`, 'dòng cũ đang rơi khỏi công thức Xuất (tính) / tồn ước tính');
-    else if (n >= gh * 0.8) ghi('Số liệu', 'vang', `Bảng ${t} đã ${n}/${gh} dòng — sắp chạm ngưỡng`, 'cần sửa phân trang trước khi vượt');
-  }
+  // 4a. App phải tải các bảng lớn bằng fetchAllRows (phân trang 1.000 dòng/lần — bản 1910-02, 2610-13).
+  // Trước đây đếm số dòng rồi so ngưỡng 1.000/2.000 — ngưỡng đó đã hết ý nghĩa từ khi app phân trang, báo đỏ OAN (23/11/2026).
+  const thieuPT = ['transfers', 'submissions', 'receipts'].filter(t => !HTML.includes("fetchAllRows('" + t + "'"));
+  if (thieuPT.length) ghi('Số liệu', 'do', 'App tải bảng ' + thieuPT.join(', ') + ' KHÔNG phân trang', 'quá 1.000 dòng là mất dữ liệu cũ khỏi Xuất (tính) / tồn ước tính');
+  else ghi('Số liệu', 'ok', `App tải đủ các bảng lớn (receipts ${rc.length}, sổ ĐC ${tr.length}, phiếu KK ${su.length} dòng)`);
   // 4b. Phiếu đã duyệt mà sổ thiếu / thừa dòng (khớp ĐUÔI CHÍNH XÁC mã phiếu — bài học 24/09)
   const laCua = (t, id) => t.reason === id || String(t.reason || '').endsWith(' · ' + id);
   const lech = [];
@@ -156,7 +157,8 @@ async function kiemSoLieu() {
   if (trung.length) ghi('Số liệu', 'do', trung.length + ' nhóm dòng sổ bị ghi trùng', trung.slice(0, 5).map(([k, n]) => k.split('|').slice(0, 3).join(' ') + ' ×' + n).join(' · '));
   else ghi('Số liệu', 'ok', 'Sổ điều chuyển không có dòng ghi trùng');
   // 4d. Phiếu kiểm kê nạp từ Excel có nhiều mã bằng 0 (hậu quả lỗi ô trống → 0, đã sửa 05/10)
-  const nghi = su.filter(s => /nhập từ Excel/.test(s.user_name || '')).map(s => {
+  // Chỉ phiếu CHỜ DUYỆT — phiếu đã duyệt kế toán đã xem xong, báo lại mỗi tuần chỉ là nhiễu (23/11/2026).
+  const nghi = su.filter(s => s.status === 'Chờ duyệt' && /nhập từ Excel/.test(s.user_name || '')).map(s => {
     const v = Object.values(s.items || {}); const z = v.filter(x => Number(x) === 0).length; return { s, z, n: v.length };
   }).filter(x => x.n >= 10 && x.z / x.n >= 0.3);
   if (nghi.length) ghi('Số liệu', 'vang', nghi.length + ' phiếu nạp từ Excel có ≥30% mã bằng 0 — soát xem có phải ô bỏ trống không',
@@ -275,5 +277,6 @@ const than = KQ.filter(x => x.muc !== 'ok').map(x => `${NHAN[x.muc]} [${x.nhom}]
   .concat([`(${dem('ok')} hạng mục đạt: ` + KQ.filter(x => x.muc === 'ok').map(x => x.nhom).filter((v, i, a) => a.indexOf(v) === i).join(', ') + ')']);
 const tin = [dau, ...than].join('\n');
 console.log(tin);
-if (TEAMS) { try { await fetch(TEAMS, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: tin }); } catch (e) { console.error('Không gửi được Teams:', e.message); } }
+try { const g = await guiTelegram(esc(tin), { muc: dem('do') ? 'S2' : 'INFO', boQuaGioNgu: true }); if (!g.ok) console.error('Không gửi được Telegram:', g.loi); }
+catch (e) { console.error('Không gửi được Telegram:', e.message); }
 process.exit(dem('do') ? 1 : 0);
