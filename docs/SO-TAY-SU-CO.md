@@ -3,7 +3,7 @@
 > File này do bot **tự xuất** từ bảng `so_tay` + `su_co` sau mỗi lượt kiểm (8h, 17h). **Đừng sửa tay** — sửa trong app:
 > *Sự cố hệ thống → Sổ tay & bài học* (chỉ admin). Bài học có **dấu hiệu nhận diện** thì bot tự báo ♻️ TÁI PHÁT khi lỗi quay lại.
 
-Cập nhật: 15:32 23/11/2026 · 10 hướng dẫn · 17 bài học · 19 sự cố 30 ngày
+Cập nhật: 17:38 24/11/2026 · 10 hướng dẫn · 17 bài học · 20 sự cố 30 ngày
 
 ## Mục lục
 - [Hướng dẫn xử lý](#hướng-dẫn-xử-lý)
@@ -177,7 +177,7 @@ Cập nhật: 15:32 23/11/2026 · 10 hướng dẫn · 17 bài học · 19 sự 
 - **Chặn tái phát:** Không gỡ fetchGiaHan khi sửa phần khởi tạo Supabase.
 - **Dấu hiệu nhận diện (bot canh):** `JWT expired`
 
-### Quét ảnh lỗi 504 vì quá giờ
+### Quét ảnh lỗi 504 vì quá giờ — ♻️ tái phát 1 lần
 
 - **Sửa:** 20/10/2026 · bản `2010-01`
 - **Mức:** 🟠 NẶNG
@@ -186,6 +186,7 @@ Cập nhật: 15:32 23/11/2026 · 10 hướng dẫn · 17 bài học · 19 sự 
 - **Cách sửa:** Hạ mức suy nghĩ theo model; mỗi lượt gọi có hạn giờ, tự trả 504 kèm lý do trước mốc 54 giây.
 - **Chặn tái phát:** Giữ thinkCfg và giới hạn giờ trong api/ocr.js; phiếu dài thì chụp từng tờ.
 - **Dấu hiệu nhận diện (bot canh):** `Đọc ảnh quá lâu`
+- **Tái phát gần nhất:** 17:38 24/11/2026
 
 ### Danh mục kho / nhập kho thiếu dữ liệu vì giới hạn 1.000 dòng
 
@@ -259,7 +260,7 @@ Cập nhật: 15:32 23/11/2026 · 10 hướng dẫn · 17 bài học · 19 sự 
 
 | Mã | Mức | Sự cố | Mở lúc | Đóng | Trạng thái |
 |---|---|---|---|---|---|
-| SC-1711-01 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
+| SC-2411-01 | 🟠 NẶNG | Tái phát: Quét ảnh lỗi 504 vì quá giờ | 17:38 24/11/2026 |  | **Đang mở** |
 | SC-1711-02 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
 | SC-1711-03 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
 | SC-1711-04 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
@@ -269,7 +270,7 @@ Cập nhật: 15:32 23/11/2026 · 10 hướng dẫn · 17 bài học · 19 sự 
 | SC-1711-08 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
 | SC-1711-09 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
 | SC-1711-10 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
-| SC-1711-19 | 🟠 NẶNG | Bot tự huỷ phiếu quá hạn không chạy | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
+| SC-1711-01 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
 | SC-1711-11 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
 | SC-1711-12 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
 | SC-1711-13 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
@@ -278,3 +279,4 @@ Cập nhật: 15:32 23/11/2026 · 10 hướng dẫn · 17 bài học · 19 sự 
 | SC-1711-16 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
 | SC-1711-17 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
 | SC-1711-18 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
+| SC-1711-19 | 🟠 NẶNG | Bot tự huỷ phiếu quá hạn không chạy | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
