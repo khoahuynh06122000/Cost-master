@@ -1,8 +1,7 @@
 name: Canh bao lech cap nhat
 
 on:
-  schedule:
-    - cron: '0 1 * * *'   # kiem tra ngam moi sang 8h VN — CHI GUI TIN KHI CO CANH BAO
+  # Lich tu chay da chuyen sang Vercel Cron (api/bot.js?viec=sang, 25/11/2026) vi lich GitHub tre 4-10 tieng.
   workflow_dispatch: {}    # bam chay tay de test
 
 jobs:

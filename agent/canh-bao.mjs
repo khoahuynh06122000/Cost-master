@@ -74,7 +74,12 @@ const ghiChu = []; // lỗi khi chạy chính bot (không làm dừng bot)
 
 // 1a. App trên Vercel còn mở được + đúng phiên bản
 let verRepo = '', verWeb = '';
-try { verRepo = (/const APP_VER='([^']+)'/.exec(readFileSync(new URL('../index.html', import.meta.url), 'utf8')) || [])[1] || ''; } catch (e) {}
+// Chạy trên Vercel (api/bot.js) thì index.html cạnh script là CHÍNH bản đang chạy -> đọc bản trong repo GitHub để so.
+if (process.env.BOT_NOI_CHAY === 'vercel') {
+  try { const r = await fetch(`https://raw.githubusercontent.com/${REPO}/main/index.html?_=${NOW}`); if (r.ok) verRepo = (/const APP_VER='([^']+)'/.exec(await r.text()) || [])[1] || ''; } catch (e) {}
+} else {
+  try { verRepo = (/const APP_VER='([^']+)'/.exec(readFileSync(new URL('../index.html', import.meta.url), 'utf8')) || [])[1] || ''; } catch (e) {}
+}
 async function moWeb() {
   const r = await fetch(APP + '/?_=' + NOW + Math.random(), { headers: { 'Cache-Control': 'no-cache' } });
   return { r, t: r.ok ? await r.text() : '' };
@@ -209,18 +214,19 @@ if (sbOK) {
   } catch (e) { if (!thieuBang(e)) ghiChu.push('đọc egress_ngay: ' + e.message); }
 }
 
-// 1f. Bot định kỳ có chạy đúng lịch không (A6)
-for (const [file, ten, gioToiDa] of [['daily-report.yml', 'Bot báo cáo 8h sáng', 27], ['het-han-dc.yml', 'Bot tự huỷ phiếu quá hạn', 14]]) {
-  try {
-    const r = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/${file}/runs?per_page=1`, { headers: GH_TOKEN ? { Authorization: 'Bearer ' + GH_TOKEN } : {} });
-    const run = ((await r.json()).workflow_runs || [])[0];
-    if (!run) continue;
-    const tuoi = (NOW - Date.parse(run.created_at)) / 3600e3;
-    if (tuoi > gioToiDa) phat.push({ khoa: 'bot|' + file, muc: 'S2', tieu: ten + ' không chạy', anhHuong: 'việc tự động của bot bị bỏ lỡ',
-      dauHieu: `lần chạy gần nhất cách đây ${tuoi.toFixed(1)} giờ`, viec: 'GitHub → Actions xem workflow có bị tắt (GitHub tự tắt sau 60 ngày repo không hoạt động)' });
-    else if (run.status === 'completed' && run.conclusion === 'failure') phat.push({ khoa: 'bot_loi|' + file, muc: 'S2', tieu: ten + ' chạy bị lỗi',
-      anhHuong: 'việc tự động của bot bị bỏ lỡ', dauHieu: `lần chạy lúc ${gioNgay(Date.parse(run.created_at))} kết thúc lỗi`, viec: 'GitHub → Actions mở lượt chạy đó xem dòng đỏ' });
-  } catch (e) { ghiChu.push('kiểm bot ' + file + ': ' + e.message); }
+// 1f. Bot định kỳ có chạy đúng lịch không (A6). Từ 25/11/2026 các bot chạy trên Vercel Cron, mỗi lượt tự ghi giờ chạy
+// vào bảng kín bao_mat_cau_hinh: 'bot_report_luc' (agent/report.mjs) · 'hethan_luc' (lib/het-han-dc.js).
+if (sbOK) {
+  let moc = {};
+  try { moc = Object.fromEntries((await q('bao_mat_cau_hinh?select=k,gia_tri&k=in.(bot_report_luc,hethan_luc)')).map(x => [x.k, x.gia_tri])); }
+  catch (e) { ghiChu.push('đọc giờ chạy bot: ' + e.message); }
+  for (const [k, ten, gioToiDa] of [['bot_report_luc', 'Bot báo cáo kiểm kê 8h sáng', 27], ['hethan_luc', 'Bot tự huỷ phiếu quá hạn', 14]]) {
+    const t = Date.parse(moc[k] || '');
+    if (!t) continue;   // chưa từng ghi (lần đầu sau khi đổi) -> chưa xét
+    const tuoi = (NOW - t) / 3600e3;
+    if (tuoi > gioToiDa) phat.push({ khoa: 'bot|' + k, muc: 'S2', tieu: ten + ' không chạy', anhHuong: 'việc tự động của bot bị bỏ lỡ',
+      dauHieu: `lần chạy gần nhất cách đây ${tuoi.toFixed(1)} giờ`, viec: 'Vercel → Logs xem hàm /api/bot hoặc /api/het-han-dc' });
+  }
 }
 
 // TÁI PHÁT (Khoa 16/11/2026): lỗi đã sửa phải được nhớ để không tái phạm. Bảng so_tay (PHẦN 40) loại 'bai_hoc' có

@@ -2,8 +2,8 @@ name: Canh bao loi app (Telegram)
 
 on:
   schedule:
-    - cron: '0 1 * * *'    # 8h sang VN — kem tin tom tat
-    - cron: '0 10 * * *'   # 17h chieu VN
+    - cron: '0 20 * * *'   # chi cap nhat so tay (docs/SO-TAY-SU-CO.md); tre bao lau cung duoc
+    # Kiem tra & bao Telegram 8h/17h da chuyen sang Vercel Cron (api/bot.js, 25/11/2026) vi lich GitHub tre 4-10 tieng.
   workflow_dispatch: {}
 
 concurrency:
@@ -25,7 +25,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Kiem tra & bao Telegram
+      - name: Kiem tra & bao Telegram (chi khi bam chay tay)
+        if: github.event_name == 'workflow_dispatch'
         run: node agent/canh-bao.mjs
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}

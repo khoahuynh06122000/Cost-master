@@ -272,6 +272,12 @@ try {
     });
     console.log(`Đã gửi cảnh báo ${g.ten}.`); console.log(msg);
   }
+  // Ghi giờ chạy xong để bot canh-bao biết bot này còn chạy (thay cho việc đọc lịch sử GitHub Actions)
+  try {
+    await fetch(`${SB_URL}/rest/v1/bao_mat_cau_hinh?on_conflict=k`, { method: 'POST',
+      headers: { ...H, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify({ k: 'bot_report_luc', bat: true, gia_tri: new Date().toISOString() }) });
+  } catch (e) { console.warn('Không ghi được giờ chạy:', e.message); }
 
 } catch (e) {
   // ===== AUTO-HEALING: đã thử lại nhưng vẫn lỗi -> AI chẩn đoán -> báo RIÊNG Khoa =====
