@@ -19,6 +19,7 @@
 //   ket_qua: 'mo_moi' | 'thay' | 'cong_don' | 'khong_doi' | 'bo_qua'
 
 const { bocLoi } = require('../lib/ghi-loi');
+const { APP_URL } = require('../lib/app-url');
 const crypto = require('crypto');
 const SUPA_URL = (process.env.SUPABASE_URL || 'https://jygrdbuwveitrlfuwigs.supabase.co').replace(/\/+$/, '');
 const SVC = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
@@ -136,8 +137,7 @@ async function xuLy(req, res) {
   const tenKho = new Map((slocs || []).map(s => [s.plant_code + '|' + s.sloc_code, s.sloc_name]));
   const clMap = new Map((cls || []).map(c => [c.plant_code + '|' + c.sloc_code, c]));
   const daDuyet = new Set((subs || []).map(s => s.plant_code + '|' + s.sloc_code));
-  const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').replace(/[^a-z0-9.\-:]/gi, '');
-  const appUrl = (process.env.APP_URL || (host ? 'https://' + host : 'https://cost-master-sigma.vercel.app')).replace(/\/+$/, '');
+  const appUrl = APP_URL;
 
   const kq = [];
   for (const x of khos) {

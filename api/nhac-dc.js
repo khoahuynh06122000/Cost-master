@@ -5,6 +5,7 @@
 // Nếu có đặt CRON_SECRET thì bắt buộc đúng header (Vercel Cron tự gửi). ?thu=1 (chỉ xem tin) cần CRON_SECRET.
 
 const { bocLoi } = require('../lib/ghi-loi');
+const { APP_URL } = require('../lib/app-url');
 const { nhacDuyetDC } = require('../lib/nhac-dc');
 
 async function xuLy(req, res) {
@@ -15,8 +16,7 @@ async function xuLy(req, res) {
   if (thu && !dungBi) return res.status(401).json({ error: 'Chế độ thử cần CRON_SECRET' });
   const gio = new Date(Date.now() + 7 * 3600e3).getUTCHours();
   if (!thu && (gio < 17 || gio > 18)) return res.status(200).json({ boQua: 'Chỉ chạy 17:00–18:59 giờ VN' });
-  const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').replace(/[^a-z0-9.\-:]/gi, '');
-  const appUrl = (process.env.APP_URL || (host ? 'https://' + host : 'https://cost-master-sigma.vercel.app')).replace(/\/+$/, '');
+  const appUrl = APP_URL;
   const kq = await nhacDuyetDC({ appUrl, thu, motLanNgay: !thu });
   return res.status(200).json({ phieu: kq.phieu, kho: kq.kho, thongBao: kq.thongBao, boQua: kq.boQua, loi: kq.loi, tin: thu ? kq.tin : undefined });
 }
