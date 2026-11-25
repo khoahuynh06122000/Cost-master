@@ -14,6 +14,7 @@
 //   Nhận cả tên trường tiếng Việt: ma_diem_ban / ma_kho / ma_vat_tu / ten_vat_tu / dvt.
 // Lô của cùng một lần chạy (cùng data_hash) được CỘNG DỒN vào danh sách của kho → chia lô giữa chừng một kho vẫn đúng.
 // Chạy lại y nguyên (cùng data_hash) không đổi gì. Lần chạy MỚI (data_hash khác) thì THAY danh sách cũ do agent mở.
+// Đẩy TỪNG KHO một lần là cách nhẹ nhất. Một kho tách nhiều lần mà không kèm data_hash: trong 30 phút vẫn được cộng dồn.
 // Không bao giờ đụng: kho + kỳ đã có biên bản kiểm kê ĐÃ DUYỆT; danh sách kế toán mở TAY (trừ khi ghi_de=true).
 // Trả: { ok, ky, thu, kho:[{plant,sloc,ten,so_ma,ket_qua,ly_do}], boQua:[{i,lyDo}] }
 //   ket_qua: 'mo_moi' | 'thay' | 'cong_don' | 'khong_doi' | 'bo_qua'
@@ -106,6 +107,7 @@ async function xuLy(req, res) {
   const rows = Array.isArray(b.records) ? b.records : Array.isArray(b.rows) ? b.rows : null;
   if (!rows || !rows.length) return res.status(400).json({ error: 'Thiếu records' });
   if (rows.length > TOI_DA) return res.status(413).json({ error: 'Tối đa ' + TOI_DA + ' dòng mỗi lần — chia lô, cùng data_hash' });
+  const coHash = !!chu(b.data_hash, 64).replace(/[^\w\-]/g, '');
   const hash = chu(b.data_hash, 64).replace(/[^\w\-]/g, '') || crypto.createHash('sha256').update(JSON.stringify(rows)).digest('hex').slice(0, 16);
   const dau = nguoiGoi + ' · ' + hash;
   const thu = b.thu === true || b.thu === 1 || b.thu === '1';
@@ -131,7 +133,7 @@ async function xuLy(req, res) {
   const plants = [...new Set(khos.map(x => x.plant))].map(encodeURIComponent).join(',');
   const [slocs, cls, subs] = await Promise.all([
     supa('slocs?select=plant_code,sloc_code,sloc_name&plant_code=in.(' + plants + ')'),
-    supa('count_lists?select=plant_code,sloc_code,items,created_by&period=eq.' + ky + '&plant_code=in.(' + plants + ')'),
+    supa('count_lists?select=plant_code,sloc_code,items,created_by,created_at&period=eq.' + ky + '&plant_code=in.(' + plants + ')'),
     supa('submissions?select=plant_code,sloc_code&status=eq.' + encodeURIComponent('Đã duyệt') + '&period=eq.' + ky + '&plant_code=in.(' + plants + ')'),
   ]);
   const tenKho = new Map((slocs || []).map(s => [s.plant_code + '|' + s.sloc_code, s.sloc_name]));
@@ -147,7 +149,10 @@ async function xuLy(req, res) {
     if (daDuyet.has(k)) return Object.assign(dong, { ket_qua: 'bo_qua', ly_do: 'Kỳ này đã duyệt biên bản kiểm kê' });
     const cuAgent = cu && String(cu.created_by || '').startsWith(NGUOI);
     if (cu && !cuAgent && !ghiDe) return Object.assign(dong, { ket_qua: 'bo_qua', ly_do: 'Kế toán đã mở kỳ tay (' + (cu.created_by || '?') + ') — gửi ghi_de=true để thay' });
-    const cungLan = cu && cu.created_by === dau;
+    // 25/11/2026: agent đẩy TỪNG KHO một. Gửi một kho thành nhiều lần mà KHÔNG kèm data_hash thì mỗi lần một mã băm khác →
+    // lần sau sẽ THAY mất lần trước. Không có data_hash + agent vừa mở kho này trong 30 phút → coi là cùng lần chạy, CỘNG DỒN.
+    const ganDay = cuAgent && !coHash && cu.created_at && (Date.now() - Date.parse(cu.created_at)) < 30 * 60e3;
+    const cungLan = cu && (cu.created_by === dau || ganDay);
     const items = cungLan ? Object.assign({}, cu.items || {}, x.items) : x.items;
     if (cungLan && JSON.stringify(items) === JSON.stringify(cu.items || {})) return Object.assign(dong, { so_ma: Object.keys(items).length, ket_qua: 'khong_doi' });
     const loai = cungLan ? 'cong_don' : (cu ? 'thay' : 'mo_moi');
