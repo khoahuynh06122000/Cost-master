@@ -139,20 +139,20 @@ async function xuLy(req, res) {
   const daDuyet = new Set((subs || []).map(s => s.plant_code + '|' + s.sloc_code));
   const appUrl = APP_URL;
 
-  const kq = [];
-  for (const x of khos) {
+  // 25/11/2026: chạy 6 kho cùng lúc — chạy lần lượt ~87 kho × 4 lượt gọi máy chủ có thể vượt hạn 60 giây của Vercel.
+  async function motKho(x) {
     const k = x.plant + '|' + x.sloc, ten = tenKho.get(k) || '', cu = clMap.get(k), n = Object.keys(x.items).length;
     const dong = { plant: x.plant, sloc: x.sloc, ten, so_ma: n };
-    if (!ten) { kq.push(Object.assign(dong, { ket_qua: 'bo_qua', ly_do: 'Kho chưa có trên hệ thống (bảng slocs)' })); continue; }
-    if (daDuyet.has(k)) { kq.push(Object.assign(dong, { ket_qua: 'bo_qua', ly_do: 'Kỳ này đã duyệt biên bản kiểm kê' })); continue; }
+    if (!ten) return Object.assign(dong, { ket_qua: 'bo_qua', ly_do: 'Kho chưa có trên hệ thống (bảng slocs)' });
+    if (daDuyet.has(k)) return Object.assign(dong, { ket_qua: 'bo_qua', ly_do: 'Kỳ này đã duyệt biên bản kiểm kê' });
     const cuAgent = cu && String(cu.created_by || '').startsWith(NGUOI);
-    if (cu && !cuAgent && !ghiDe) { kq.push(Object.assign(dong, { ket_qua: 'bo_qua', ly_do: 'Kế toán đã mở kỳ tay (' + (cu.created_by || '?') + ') — gửi ghi_de=true để thay' })); continue; }
+    if (cu && !cuAgent && !ghiDe) return Object.assign(dong, { ket_qua: 'bo_qua', ly_do: 'Kế toán đã mở kỳ tay (' + (cu.created_by || '?') + ') — gửi ghi_de=true để thay' });
     const cungLan = cu && cu.created_by === dau;
     const items = cungLan ? Object.assign({}, cu.items || {}, x.items) : x.items;
-    if (cungLan && JSON.stringify(items) === JSON.stringify(cu.items || {})) { kq.push(Object.assign(dong, { so_ma: Object.keys(items).length, ket_qua: 'khong_doi' })); continue; }
+    if (cungLan && JSON.stringify(items) === JSON.stringify(cu.items || {})) return Object.assign(dong, { so_ma: Object.keys(items).length, ket_qua: 'khong_doi' });
     const loai = cungLan ? 'cong_don' : (cu ? 'thay' : 'mo_moi');
     Object.assign(dong, { so_ma: Object.keys(items).length, ket_qua: loai });
-    if (thu) { kq.push(dong); continue; }
+    if (thu) return dong;
     try {
       const w = await supa('count_lists?on_conflict=plant_code,sloc_code,period', { method: 'POST',
         headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
@@ -160,8 +160,13 @@ async function xuLy(req, res) {
       if (!Array.isArray(w) || !w.length) throw new Error('Máy chủ không ghi dòng nào');
       if (!cungLan) await baoKho(appUrl, x.plant, x.sloc, ten, ky);   // báo một lần mỗi lần chạy
     } catch (e) { dong.ket_qua = 'bo_qua'; dong.ly_do = 'Ghi lỗi: ' + e.message.slice(0, 200); }
-    kq.push(dong);
+    return dong;
   }
+  const kq = new Array(khos.length);
+  let vt = 0;
+  await Promise.all(Array.from({ length: Math.min(6, khos.length) }, async () => {
+    while (vt < khos.length) { const i = vt++; kq[i] = await motKho(khos[i]); }
+  }));
   const loi = kq.filter(x => x.ket_qua === 'bo_qua' && /^Ghi lỗi/.test(x.ly_do || '')).length;
   return res.status(loi ? 207 : 200).json({ ok: !loi, ky, thu, batch: b.batch_index ? b.batch_index + '/' + (b.total_batches || '?') : undefined,
     kho: kq, boQua: boQua.slice(0, 100), soDongBoQua: boQua.length });
