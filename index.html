@@ -386,6 +386,7 @@
   .sb-user .un{font-weight:700;color:#fff;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .sb-user .ur{font-size:11.5px;opacity:.6}
   .sb-user .sb-acts{margin-left:auto;display:flex;align-items:center;gap:2px;flex:none}
+  #sbDoiKho{position:relative}#sbDoiKho.co-cho::after{content:'';position:absolute;top:4px;right:4px;width:7px;height:7px;border-radius:50%;background:var(--accent)}
   .sb-user button{color:#9fb4b0;padding:6px;border-radius:8px;flex:none}
   .sb-user button:hover{background:rgba(255,255,255,.08);color:#fff}
 
@@ -1884,6 +1885,9 @@
       <div class="av" id="userAv" onclick="moHoSoCuaToi()" title="Hồ sơ của tôi">K</div>
       <div style="min-width:0"><div class="un" id="userName" onclick="moHoSoCuaToi()">—</div><div class="ur" id="userRole">—</div></div>
       <div class="sb-acts">
+        <button id="sbDoiKho" onclick="moDoiKho()" title="Đổi kho phụ trách" hidden>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+        </button>
         <button onclick="moDoiMatKhau()" title="Đổi mật khẩu">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="M21 2l-9.6 9.6"/><path d="M15.5 7.5l3 3L22 7l-3-3"/></svg>
         </button>
@@ -2017,7 +2021,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2311-05';
+const APP_VER='2511-01';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -5598,6 +5602,7 @@ async function dbDongBo(){
   _lanDongBo=Date.now();
   try{kiemPhienBan();}catch(e){}
   try{tbaTai();}catch(e){}
+  try{ycdkTai();}catch(e){}
   try{await goiHetHan();}catch(e){}
   if(_tangDanOK!==true||_xoaMoc==null){showSyncPill();return;}
   const kq=await dbLoadDelta();
@@ -6948,6 +6953,7 @@ async function enterApp(){
        "mỗi kho mỗi kỳ một phiếu" hết tác dụng. */
     outboxGan();outboxFlush();try{snapSave();}catch(e){}
     try{tbaTai();}catch(e){}
+    try{ycdkTai();}catch(e){}
     if(pendingKK){try{applyDeepLinkKK(pendingKK);}catch(e){console.error(e);}pendingKK=null;}renderView();dbSubscribe();
     try{_notifSeen=new Set(myNotifs().map(x=>x.id));paintBell();}catch(e){}
     // Đã cho phép thông báo từ trước -> đăng ký lại máy này với máy chủ đẩy tin.
@@ -7015,11 +7021,13 @@ function renderNav(){
     if(!coKhoBep())mine=mine.filter(t=>t!=='kiemketuan');
     else if(toanKhoBep())mine=mine.filter(t=>t!=='shift');
   }catch(e){}
+  try{const bk=document.getElementById('sbDoiKho');if(bk){bk.hidden=!(session&&_ufield(session.role));
+    bk.classList.toggle('co-cho',!!(session&&ycdkCuaToi()));}}catch(e){}
   const used=new Set();
   const addItem=k=>{
     // Tab Người dùng: hiện số tài khoản đang chờ CHÍNH MÌNH duyệt để giám sát không bỏ sót
     let extra='';
-    if(k==='users'){const c=pendingUsersForMe().length;if(c)extra=`<span class="badge badge-wait" style="margin-left:auto;font-size:10px">${c}</span>`;}
+    if(k==='users'){let c=pendingUsersForMe().length;try{c+=ycdkChoToi().length;}catch(e){}if(c)extra=`<span class="badge badge-wait" style="margin-left:auto;font-size:10px">${c}</span>`;}
     if(k==='catalog'&&isPrivileged()){let c=0;try{c=maChoDuyetBP().size;}catch(e){}if(c)extra=`<span class="badge badge-wait" style="margin-left:auto;font-size:10px">${c}</span>`;}
     const b=el('button','nav-item'+(k===activeTab?' active':''),`${TABS[k].ico}<span>${TABS[k].label}</span>${extra}`);
     b.onclick=()=>{activeTab=k;closeNav();renderNav();renderView();};n.appendChild(b);};
@@ -16772,6 +16780,261 @@ function _uav(p){const k=(p.id||p.email||'x');const c=USR_AVC[Math.abs([...k].re
 // vai phải gán kho cụ thể. Kế toán định lượng nằm đây: họ là kế toán, nhưng phạm vi
 // là mấy kho bếp được tick — không gán kho thì vào app không thấy gì.
 function _ufield(r){return r==='giam_sat'||r==='bep_truong'||r==='nhan_vien'||r==='ketoan_dl';}
+/* ===== YÊU CẦU ĐỔI KHO PHỤ TRÁCH (25/11/2026, bản 2511-01, SQL PHẦN 45) =====
+   Người được điều chuyển tự gửi danh sách kho MỚI (đầy đủ) trên app — không phải nhắn admin.
+   Duyệt (Khoa chọn cách b): nhân viên / bếp trưởng → giám sát đang phụ trách TẤT CẢ kho mới, hoặc admin;
+   giám sát / KT định lượng → chỉ admin. Kế toán viên không duyệt.
+   Duyệt chạy hàm máy chủ duyet_doi_kho: gán kho mới + gỡ kho cũ trong MỘT giao dịch.
+   Phiếu điều chuyển gắn theo KHO nên tự sang người mới, tin Teams 17h tự tag đúng người. */
+let ycdkDs=[],_ycdkTat=false;
+const YCDK_SEEN='kk_ycdk_seen_v1';
+const ycdkK=w=>w.plant+'|'+(w.sloc||'');
+function ycdkTenKho(w){return w.sloc?(whName(w.plant,w.sloc)+' · '+plantName(w.plant)):(plantName(w.plant)+' (cả điểm bán)');}
+function ycdkVai(r){return (ROLES[r]&&ROLES[r].label)||r||'';}
+function ycdkGio(t){try{return new Date(t).toLocaleString('vi-VN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit',year:'numeric'});}catch(e){return '';}}
+function ycdkThieuBang(e){return /42P01|42883|does not exist|schema cache|PGRST20[25]/i.test(((e&&e.message)||'')+((e&&e.code)||''));}
+async function ycdkTai(){
+  if(_ycdkTat||!sb||!session||!mangOK)return;
+  try{
+    const tu=new Date(Date.now()-30*864e5).toISOString();
+    const {data,error}=await sb.from('yeu_cau_doi_kho').select('*')
+      .or('trang_thai.eq.cho,and(user_id.eq.'+session.uid+',created_at.gte.'+tu+')')
+      .order('created_at',{ascending:false}).limit(200);
+    if(error){if(ycdkThieuBang(error))_ycdkTat=true;return;}
+    ycdkDs=data||[];
+    ycdkKetQuaCuaToi();
+    try{renderNav();}catch(e){}
+  }catch(e){}
+}
+/* Duyệt / từ chối yêu cầu của CHÍNH MÌNH → báo một lần; được duyệt thì nạp lại kho phụ trách ngay, không bắt tải lại app */
+async function ycdkKetQuaCuaToi(){
+  let seen=[];try{seen=JSON.parse(localStorage.getItem(YCDK_SEEN)||'[]');}catch(e){}
+  const moi=ycdkDs.filter(r=>r.user_id===session.uid&&(r.trang_thai==='duyet'||r.trang_thai==='tu_choi')&&seen.indexOf(r.id)<0);
+  if(!moi.length)return;
+  seen=seen.concat(moi.map(r=>r.id)).slice(-30);
+  try{localStorage.setItem(YCDK_SEEN,JSON.stringify(seen));}catch(e){}
+  const r=moi[0];
+  if(r.trang_thai==='tu_choi'){toast('Yêu cầu đổi kho bị từ chối'+(r.ly_do_tc?' — '+r.ly_do_tc:'')+' ('+(r.nguoi_duyet||'')+')');return;}
+  try{
+    const {data,error}=await sb.from('user_plants').select('plant_code,sloc_code').eq('user_id',session.uid);
+    if(error)throw error;
+    const rows=data||[];
+    session.plants=[...new Set(rows.map(x=>x.plant_code))];
+    session.wh=rows.map(x=>({plant:x.plant_code,sloc:x.sloc_code||null}));
+    const d=rows[0];if(d){session.plant=d.plant_code;session.sloc=d.sloc_code||null;}
+    toast('✓ '+(r.nguoi_duyet||'')+' đã duyệt yêu cầu đổi kho — app đã chuyển sang kho mới');
+    renderNav();renderView();
+  }catch(e){toast('Yêu cầu đổi kho đã được duyệt — đóng hẳn app rồi mở lại để nhận kho mới');}
+}
+function ycdkCuaToi(){return ycdkDs.find(r=>r.user_id===session.uid&&r.trang_thai==='cho')||null;}
+/* Mình có duyệt được yêu cầu này không — app chỉ để ẩn/hiện; máy chủ kiểm lại trong duyet_doi_kho */
+function ycdkTrongPhamVi(kho){
+  const wh=(session.wh||[]);
+  return kho.length>0&&kho.every(k=>wh.some(w=>w.plant===k.plant&&(!w.sloc||w.sloc===k.sloc)));
+}
+function ycdkDuyetDuoc(r){
+  if(!session||r.trang_thai!=='cho'||r.user_id===session.uid)return false;
+  if(session.role==='admin')return true;
+  if(session.role!=='giam_sat')return false;
+  const p=(profiles||[]).find(x=>x.id===r.user_id);const vai=(p&&p.role)||r.vai;
+  return (vai==='nhan_vien'||vai==='bep_truong')&&ycdkTrongPhamVi(r.kho_moi||[]);
+}
+function ycdkChoToi(){return session?ycdkDs.filter(ycdkDuyetDuoc):[];}
+
+/* ---------- Người được điều chuyển: gửi yêu cầu ---------- */
+function moDoiKho(){
+  if(!session||!_ufield(session.role)){toast('Vai này không gán theo kho');return;}
+  const old=document.getElementById('errBox');if(old)old.remove();
+  const oldS=document.getElementById('errBoxScrim');if(oldS)oldS.remove();
+  const scrim=document.createElement('div');scrim.className='errbox-scrim';scrim.id='errBoxScrim';
+  const box=document.createElement('div');box.className='errbox dlg';box.id='errBox';box.style.maxWidth='560px';
+  document.body.appendChild(scrim);document.body.appendChild(box);
+  const dong=()=>{box.remove();scrim.remove();};
+  const cuaToi=ycdkCuaToi();
+  const nguoiDuyet=(session.role==='nhan_vien'||session.role==='bep_truong')?'Giám sát của kho mới (hoặc admin) sẽ duyệt.':'Admin sẽ duyệt.';
+  if(_ycdkTat){
+    box.innerHTML='<div class="errbox-h"><span>🔁</span><span>Đổi kho phụ trách</span></div><div class="errbox-b"><div>Tính năng này chưa được bật. Liên hệ admin để được đổi kho.</div></div><div class="errbox-f"><button class="btn btn-primary btn-sm" id="dkDong">Đóng</button></div>';
+    box.querySelector('#dkDong').onclick=dong;try{dichMan(box);}catch(e){}return;
+  }
+  if(cuaToi){
+    const moi=(cuaToi.kho_moi||[]);
+    box.innerHTML='<div class="errbox-h"><span>🔁</span><span>Đổi kho phụ trách</span></div><div class="errbox-b">'
+      +'<div style="font-weight:700;margin-bottom:6px">Đang chờ duyệt</div>'
+      +'<div class="cell-sub">Gửi lúc '+escHtml(ycdkGio(cuaToi.created_at))+'. '+escHtml(nguoiDuyet)+'</div>'
+      +'<div style="margin-top:10px;font-size:13.5px"><b>Kho xin phụ trách ('+moi.length+'):</b><br>'+moi.map(k=>'· '+escHtml(ycdkTenKho(k))).join('<br>')+'</div>'
+      +(cuaToi.ly_do?'<div class="cell-sub" style="margin-top:8px">Lý do: '+escHtml(cuaToi.ly_do)+'</div>':'')
+      +'<div class="dlg-msg" id="dkMsg"></div></div>'
+      +'<div class="errbox-f"><button class="btn btn-ghost btn-sm" id="dkHuyYc" style="color:var(--red)">Huỷ yêu cầu</button><button class="btn btn-primary btn-sm" id="dkDong">Đóng</button></div>';
+    box.querySelector('#dkDong').onclick=dong;
+    box.querySelector('#dkHuyYc').onclick=async e=>{
+      if(!confirm('Huỷ yêu cầu đổi kho đang chờ duyệt?'))return;
+      if(!mangOK){toast('Cần có mạng');return;}
+      e.target.disabled=true;
+      const {data,error}=await sb.from('yeu_cau_doi_kho').update({trang_thai:'huy',updated_at:new Date().toISOString()}).eq('id',cuaToi.id).eq('trang_thai','cho').select('id');
+      if(error||!data||!data.length){e.target.disabled=false;box.querySelector('#dkMsg').textContent=L('Không huỷ được — yêu cầu có thể vừa được xử lý. Đóng rồi mở lại để xem.');if(error)console.error('ycdk huy',error);return;}
+      cuaToi.trang_thai='huy';log('Huỷ yêu cầu đổi kho','');dong();toast('Đã huỷ yêu cầu đổi kho');renderNav();
+    };
+    try{dichMan(box);}catch(e){}return;
+  }
+  const truoc=ycdkDs.find(r=>r.user_id===session.uid&&r.trang_thai!=='cho');
+  const cu=(session.wh||[]).map(w=>({plant:w.plant,sloc:w.sloc||null}));
+  // Kho cả điểm bán (sloc trống) → tick sẵn mọi kho của điểm bán đó
+  const chon=new Set();
+  cu.forEach(w=>{if(w.sloc)chon.add(w.plant+'|'+w.sloc);else DATA.warehouses.filter(x=>x.plant===w.plant).forEach(x=>chon.add(x.plant+'|'+x.sloc));});
+  const cuSet=new Set(chon);
+  box.innerHTML='<div class="errbox-h"><span>🔁</span><span>Đổi kho phụ trách</span></div><div class="errbox-b">'
+    +(truoc?'<div class="cell-sub" style="margin-bottom:8px">Yêu cầu trước: '+(truoc.trang_thai==='duyet'?'đã duyệt':truoc.trang_thai==='tu_choi'?'bị từ chối':'đã huỷ')+(truoc.nguoi_duyet?' · '+escHtml(truoc.nguoi_duyet):'')+(truoc.ly_do_tc?' · '+escHtml(truoc.ly_do_tc):'')+'</div>':'')
+    +'<div class="cell-sub" style="margin-bottom:10px">Khi được điều chuyển chỗ làm: tick ĐÚNG các kho mình phụ trách từ nay (bỏ tick kho đã bàn giao), rồi gửi. '+escHtml(nguoiDuyet)+' Trong lúc chờ duyệt, quyền cũ vẫn giữ nguyên.</div>'
+    +'<label class="field"><span>Lý do / quyết định điều chuyển</span><input id="dkLyDo" class="input" maxlength="200" placeholder="VD: Quyết định điều chuyển về khu Vực đỉnh"></label>'
+    +'<input id="dkTim" class="input" placeholder="Tìm kho hoặc điểm bán…" style="margin-top:4px">'
+    +'<div id="dkDem" class="cell-sub" style="margin:8px 0 4px"></div>'
+    +'<div id="dkList" style="max-height:min(46vh,420px);overflow:auto;border:1px solid var(--line);border-radius:10px;padding:4px 6px"></div>'
+    +'<div class="dlg-msg" id="dkMsg"></div></div>'
+    +'<div class="errbox-f"><button class="btn btn-ghost btn-sm" id="dkHuy">Đóng</button><button class="btn btn-primary btn-sm" id="dkGui">Gửi yêu cầu</button></div>';
+  const lst=box.querySelector('#dkList'),dem=box.querySelector('#dkDem'),tim=box.querySelector('#dkTim'),msg=box.querySelector('#dkMsg'),bGui=box.querySelector('#dkGui');
+  box.querySelector('#dkHuy').onclick=dong;
+  const nhom={};DATA.warehouses.forEach(w=>{(nhom[w.plant]=nhom[w.plant]||[]).push(w);});
+  const veDem=()=>{
+    const them=[...chon].filter(k=>!cuSet.has(k)).length,bo=[...cuSet].filter(k=>!chon.has(k)).length;
+    dem.textContent=L('Đã chọn')+' '+chon.size+' '+L('kho')+' · '+L('thêm')+' '+them+' · '+L('bỏ')+' '+bo;
+  };
+  const ve=()=>{
+    const q=vnTerms(tim.value);lst.innerHTML='';
+    // Kho đang chọn lên đầu, cho người dùng thấy ngay mình đang giữ những kho nào
+    const plants=Object.keys(nhom).sort((a,b)=>{const ca=nhom[a].some(w=>chon.has(a+'|'+w.sloc)),cb=nhom[b].some(w=>chon.has(b+'|'+w.sloc));return (cb-ca)||plantName(a).localeCompare(plantName(b));});
+    let co=0;
+    plants.forEach(p=>{
+      const ws=nhom[p].filter(w=>!q.length||vnAll(vnNorm(w.plant_name+' '+w.sloc_name+' '+w.plant+' '+w.sloc),q));
+      if(!ws.length)return;co++;
+      const gh=el('div',null,escHtml(plantName(p))+' · '+p);
+      gh.style.cssText='font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);padding:9px 4px 3px';
+      lst.appendChild(gh);
+      ws.forEach(w=>{const k=p+'|'+w.sloc;
+        const it=el('label');it.style.cssText='display:flex;gap:8px;align-items:center;padding:6px 4px;font-size:14px;cursor:pointer';
+        const cb=el('input');cb.type='checkbox';cb.checked=chon.has(k);
+        cb.onchange=()=>{cb.checked?chon.add(k):chon.delete(k);veDem();};
+        const t=el('span');t.textContent=w.sloc_name+' ('+w.sloc+')'+(cuSet.has(k)?' — '+L('đang phụ trách'):'');
+        it.appendChild(cb);it.appendChild(t);lst.appendChild(it);});
+    });
+    if(!co)lst.appendChild(el('div','cell-sub',L('Không có kho nào khớp')));
+  };
+  tim.oninput=ve;ve();veDem();
+  bGui.onclick=async()=>{
+    const moi=[...chon].map(k=>{const a=k.split('|');return {plant:a[0],sloc:a[1]};});
+    const bao=t=>{msg.className='dlg-msg bad';msg.textContent=L(t);};
+    if(!moi.length){bao('Chọn ít nhất một kho.');return;}
+    const them=moi.filter(k=>!cuSet.has(ycdkK(k))),bo=[...cuSet].filter(k=>!chon.has(k));
+    if(!them.length&&!bo.length){bao('Danh sách kho chưa thay đổi gì.');return;}
+    const lyDo=box.querySelector('#dkLyDo').value.trim();
+    if(!lyDo){bao('Ghi lý do / quyết định điều chuyển để người duyệt biết.');return;}
+    if(!mangOK){bao('Cần có mạng để gửi yêu cầu.');return;}
+    const NLc=String.fromCharCode(10);
+    const ten=k=>{const a=k.split('|');return ycdkTenKho({plant:a[0],sloc:a[1]});};
+    if(!confirm('GỬI YÊU CẦU ĐỔI KHO'+NLc+NLc+(them.length?'Nhận thêm '+them.length+' kho:'+NLc+them.map(k=>'+ '+ycdkTenKho(k)).join(NLc)+NLc+NLc:'')
+      +(bo.length?'Bỏ '+bo.length+' kho:'+NLc+bo.map(k=>'− '+ten(k)).join(NLc)+NLc+NLc:'')+nguoiDuyet))return;
+    bGui.disabled=true;bGui.textContent=L('Đang gửi…');
+    try{
+      const {data,error}=await sb.from('yeu_cau_doi_kho').insert({user_id:session.uid,ho_ten:session.name||null,vai:session.role,
+        kho_cu:cu,kho_moi:moi,ly_do:lyDo}).select('*');
+      if(error){
+        if(error.code==='23505')bao('Bạn đã có một yêu cầu đang chờ duyệt — đóng rồi mở lại để xem.');
+        else if(ycdkThieuBang(error)){_ycdkTat=true;bao('Tính năng này chưa được bật. Liên hệ admin để được đổi kho.');}
+        else{bao('Chưa gửi được. Thử lại sau ít phút.');console.error('ycdk gui',error);}
+        return;
+      }
+      const r=(data&&data[0])||null;if(r)ycdkDs.unshift(r);
+      // Báo về kho MỚI: giám sát kho đó thấy trên chuông (+ điện thoại); admin thấy mọi thông báo
+      const cho=(session.role==='nhan_vien'||session.role==='bep_truong');
+      const msgTB=(session.name||'')+' ('+ycdkVai(session.role)+') xin đổi kho phụ trách: nhận '+(them.map(k=>whName(k.plant,k.sloc)).join(', ')||'—')
+        +(bo.length?' · bỏ '+bo.map(k=>{const a=k.split('|');return whName(a[0],a[1]);}).join(', '):'')+' · lý do: '+lyDo
+        +(cho?' — Chờ tôi duyệt':' — chờ admin duyệt');
+      const daBao=new Set();
+      (them.length?them:moi).forEach(k=>{if(daBao.has(k.plant))return;daBao.add(k.plant);
+        try{notifyWh(k.plant,k.sloc,msgTB,'doikho','Yêu cầu đổi kho',session.name);}catch(e){}});
+      log('Gửi yêu cầu đổi kho','nhận '+them.length+' · bỏ '+bo.length+' · '+lyDo);
+      dong();toast('✓ Đã gửi yêu cầu đổi kho — '+nguoiDuyet);renderNav();
+    }finally{bGui.disabled=false;bGui.textContent=L('Gửi yêu cầu');}
+  };
+  try{dichMan(box);}catch(e){}
+  setTimeout(()=>{try{box.querySelector('#dkLyDo').focus();}catch(e){}},30);
+}
+
+/* ---------- Người duyệt: giám sát (màn Duyệt nhân viên) + admin (thẻ việc Yêu cầu đổi kho) ---------- */
+function ycdkVeDuyet(view,luonHien){
+  const ds=ycdkChoToi();
+  if(!ds.length&&!luonHien)return;
+  const card=el('div','card');
+  card.appendChild(el('div','card-h','<div><span class="ct">'+L('Yêu cầu đổi kho phụ trách')+'</span><div class="cs">'+L('Người được điều chuyển chỗ làm tự gửi danh sách kho mới. Duyệt là gán kho mới và gỡ kho cũ cùng lúc.')+'</div></div><span class="badge '+(ds.length?'badge-wait':'badge-soft')+'">'+ds.length+'</span>'));
+  const body=el('div');card.appendChild(body);view.appendChild(card);
+  if(_ycdkTat){body.appendChild(el('div','empty','<div class="big">Chưa bật tính năng</div><div>Chạy SQL PHẦN 45 để bật yêu cầu đổi kho.</div>'));return;}
+  if(!ds.length){body.appendChild(el('div','empty','<div class="big">Không có yêu cầu nào chờ duyệt</div><div>Khi có người xin đổi kho, yêu cầu hiện ở đây kèm số đếm trên thanh menu.</div>'));return;}
+  ds.forEach(r=>{
+    const w=el('div','card-b');w.style.borderTop='1px solid var(--line)';
+    const p=(profiles||[]).find(x=>x.id===r.user_id);
+    const cu=(userWh&&userWh[r.user_id])||r.kho_cu||[];
+    const cuK=new Set();cu.forEach(x=>{if(x.sloc)cuK.add(x.plant+'|'+x.sloc);else DATA.warehouses.filter(z=>z.plant===x.plant).forEach(z=>cuK.add(z.plant+'|'+z.sloc));});
+    const moi=r.kho_moi||[];const moiK=new Set(moi.map(ycdkK));
+    const them=moi.filter(k=>!cuK.has(ycdkK(k))),giu=moi.filter(k=>cuK.has(ycdkK(k))),bo=[...cuK].filter(k=>!moiK.has(k)).map(k=>{const a=k.split('|');return {plant:a[0],sloc:a[1]};});
+    const dong=(nhan,ds2,mau)=>ds2.length?'<div style="margin-top:6px;font-size:13.5px"><b style="color:'+mau+'">'+nhan+' ('+ds2.length+')</b><br>'+ds2.map(k=>escHtml(ycdkTenKho(k))).join('<br>')+'</div>':'';
+    w.innerHTML='<div style="font-weight:800;font-size:14px">'+escHtml(r.ho_ten||(p&&p.full_name)||'—')+'</div>'
+      +'<div class="cell-sub">'+escHtml(ycdkVai((p&&p.role)||r.vai))+' · '+escHtml((p&&p.email)||'')+' · gửi lúc '+escHtml(ycdkGio(r.created_at))+'</div>'
+      +(r.ly_do?'<div style="margin-top:6px;font-size:13.5px">Lý do: '+escHtml(r.ly_do)+'</div>':'')
+      +dong('+ Nhận thêm',them,'var(--ok-ink)')+dong('− Bỏ (bàn giao)',bo,'var(--red)')+dong('Giữ nguyên',giu,'var(--muted)');
+    const row=el('div');row.style.cssText='display:flex;gap:10px;flex-wrap:wrap;margin-top:10px';
+    const bOk=el('button','btn btn-primary btn-sm','✓ Duyệt đổi kho'),bNo=el('button','btn btn-ghost btn-sm','✕ Từ chối');bNo.style.color='var(--red)';
+    bOk.onclick=()=>ycdkXuLy(r,true,{them,bo},[bOk,bNo]);
+    bNo.onclick=()=>ycdkXuLy(r,false,null,[bOk,bNo]);
+    row.appendChild(bOk);row.appendChild(bNo);w.appendChild(row);body.appendChild(w);
+  });
+  try{dichMan(card);}catch(e){}
+}
+const YCDK_LOI={khong_quyen:'Bạn không có quyền duyệt yêu cầu này — kho mới nằm ngoài phạm vi bạn phụ trách, hoặc người này là giám sát (admin duyệt).',
+  da_xu_ly:'Yêu cầu này đã được người khác xử lý.',khong_thay:'Không tìm thấy yêu cầu — có thể người gửi vừa huỷ.',
+  tu_duyet:'Không tự duyệt yêu cầu của chính mình.',khong_thay_nguoi:'Không tìm thấy tài khoản người gửi.'};
+async function ycdkXuLy(r,dongY,kq,nuts){
+  const NLc=String.fromCharCode(10);const ten=r.ho_ten||'';
+  let lyDo=null;
+  if(dongY){
+    if(!confirm('DUYỆT ĐỔI KHO'+NLc+ten+NLc+NLc+(kq.them.length?'Nhận thêm '+kq.them.length+' kho:'+NLc+kq.them.map(k=>'+ '+ycdkTenKho(k)).join(NLc)+NLc+NLc:'')
+      +(kq.bo.length?'Gỡ '+kq.bo.length+' kho:'+NLc+kq.bo.map(k=>'− '+ycdkTenKho(k)).join(NLc)+NLc+NLc:'')
+      +'Duyệt xong người này thấy và duyệt phiếu của kho mới ngay; kho bị gỡ không còn thấy nữa.'))return;
+  }else{
+    lyDo=prompt('Lý do từ chối (người gửi sẽ thấy):');
+    if(lyDo===null)return;
+  }
+  if(!mangOK){toast('Cần có mạng');return;}
+  nuts.forEach(b=>b.disabled=true);
+  try{
+    const {data,error}=await sb.rpc('duyet_doi_kho',{p_id:r.id,p_dong_y:dongY,p_ly_do:lyDo||null});
+    if(error){
+      if(ycdkThieuBang(error))errBox('Chưa bật tính năng đổi kho',['Cần chạy SQL PHẦN 45 trước.'],'duyet_doi_kho'+NL+(error.message||''));
+      else errBox('Chưa xử lý được yêu cầu',['<b>Chưa đổi gì</b> — quyền kho của người này giữ nguyên.','Thử lại sau ít phút.'],'duyet_doi_kho'+NL+(error.message||'')+(error.code?NL+'Mã lỗi: '+error.code:''));
+      return;
+    }
+    if(!data||!data.ok){toast(YCDK_LOI[data&&data.loi]||'Chưa xử lý được yêu cầu');await ycdkTai();renderView();return;}
+    r.trang_thai=dongY?'duyet':'tu_choi';
+    if(dongY){
+      const moi=r.kho_moi||[];
+      userWh[r.user_id]=moi.map(k=>({plant:k.plant,sloc:k.sloc||null}));
+      userPlants[r.user_id]=[...new Set(moi.map(k=>k.plant))];
+      const p=(profiles||[]).find(x=>x.id===r.user_id);if(p&&moi[0]){p.plant_code=moi[0].plant;p.sloc_code=moi[0].sloc||null;}
+      log('Duyệt đổi kho',ten+' · nhận '+kq.them.length+' · gỡ '+kq.bo.length+' kho');
+      // Báo về kho mới (người được duyệt + giám sát khu mới) và kho bị gỡ (giám sát khu cũ biết người đã chuyển đi)
+      const msg=(session.name||'')+' đã duyệt '+ten+' đổi kho phụ trách: nhận '+(kq.them.map(k=>whName(k.plant,k.sloc)).join(', ')||'—')
+        +(kq.bo.length?' · bàn giao '+kq.bo.map(k=>whName(k.plant,k.sloc)).join(', '):'');
+      const daBao=new Set();
+      [].concat(kq.them.length?kq.them:moi,kq.bo).forEach(k=>{if(daBao.has(k.plant))return;daBao.add(k.plant);
+        try{notifyWh(k.plant,k.sloc,msg,'doikho','Đã duyệt đổi kho',session.name);}catch(e){}});
+      toast('✓ Đã duyệt — '+ten+' nhận '+kq.them.length+' kho, gỡ '+kq.bo.length+' kho');
+    }else{
+      log('Từ chối đổi kho',ten+(lyDo?' · '+lyDo:''));
+      const k0=(r.kho_moi||[])[0];
+      if(k0)try{notifyWh(k0.plant,k0.sloc,(session.name||'')+' đã từ chối yêu cầu đổi kho của '+ten+(lyDo?' · lý do: '+lyDo:''),'doikho','Yêu cầu đổi kho bị từ chối',session.name);}catch(e){}
+      toast('Đã từ chối yêu cầu của '+ten);
+    }
+    renderNav();renderView();
+  }finally{nuts.forEach(b=>b.disabled=false);}
+}
 /* ===== DUYỆT NHÂN VIÊN ĐĂNG KÝ (giám sát điểm bán) =====
    Giám sát chỉ thấy và chỉ duyệt được người đăng ký vào ĐÚNG điểm bán mình phụ trách.
    Giám sát điểm khác không thấy, không duyệt được. Admin vẫn thấy toàn bộ ở màn quản trị. */
@@ -16787,6 +17050,7 @@ function renderUserApprove(view){
   const list=pendingUsersForMe();
   const mine=allowedPlants();
   view.appendChild(el('div','page-head','<div><h1>Duyệt nhân viên</h1><div class="ph-sub">Người đăng ký vào điểm bán mình phụ trách. Giám sát điểm khác không thấy danh sách này.</div></div>'));
+  try{ycdkVeDuyet(view,false);}catch(e){console.error(e);}
   const card=el('div','card');
   card.appendChild(el('div','card-h','<div><span class="ct">Chờ tôi duyệt</span><div class="cs">Điểm bán: '+(mine.map(p=>p.name).join(' · ')||'chưa được gán')+'</div></div><span class="badge '+(list.length?'badge-wait':'badge-soft')+'">'+list.length+'</span>'));
   const body=el('div');card.appendChild(body);view.appendChild(card);
@@ -16888,15 +17152,17 @@ function renderUsers(view){
     renderHubView(view,'users',[
       {k:'list',ico:HIC.list,title:'Danh sách & phân quyền',sub:'Tìm người dùng, gán vai trò và điểm bán',n:pend?pend+' tài khoản chờ duyệt/khóa':'',warm:!!pend,render:()=>{}},
       {k:'tree',ico:HIC.eye,title:'Sơ đồ tổ chức',sub:'Xem ai phụ trách điểm bán nào theo cây',render:()=>{}},
+      {k:'doikho',ico:HIC.list,title:'Yêu cầu đổi kho',sub:'Người được điều chuyển chỗ làm tự xin kho mới — duyệt là gán kho mới, gỡ kho cũ',n:(()=>{const c=ycdkChoToi().length;return c?c+' yêu cầu chờ duyệt':'';})(),warm:ycdkChoToi().length>0,render:()=>{}},
     ]);
     return;
   }
   const bar=el('div','hub-bar');
   const back=el('button','btn btn-ghost btn-sm','← Chọn việc khác');
   back.onclick=()=>{hubOpen['users']=null;userEdit=null;renderView();};
-  bar.appendChild(back);bar.appendChild(el('div','ht',hubOpen['users']==='tree'?'Sơ đồ tổ chức':'Danh sách & phân quyền'));
+  bar.appendChild(back);bar.appendChild(el('div','ht',hubOpen['users']==='tree'?'Sơ đồ tổ chức':hubOpen['users']==='doikho'?'Yêu cầu đổi kho':'Danh sách & phân quyền'));
   view.appendChild(bar);
   if(hubOpen['users']==='tree'){renderUsersTree(view);return;}
+  if(hubOpen['users']==='doikho'){ycdkVeDuyet(view,true);return;}
   // ---- toolbar ----
   const tb=el('div','usr-toolbar');
   tb.innerHTML=`<div class="usr-search"><span>🔍</span><input id="uSearch" placeholder="Tìm theo tên hoặc email…"></div>
@@ -18262,8 +18528,8 @@ function myNotifs(){
   return arr.slice(0,80);
 }
 function unreadNotifs(){const st=notifReadSet();return myNotifs().filter(x=>!st.has(x.id));}
-const NOTIF_ICO={sapdc:'🔍',kkxoa:'🗑',dcnhac:'⏰',transfer:'🔄',reject:'⚠️',countlist:'🗂',reconcile:'🔁',mala:'🏷'};
-const NOTIF_TITLE={sapdc:'Đối chiếu nhập kho với SAP',kkxoa:'Phiếu kiểm kê đã bị xóa',dcnhac:'Phiếu điều chuyển chờ duyệt',transfer:'Phiếu điều chuyển',reject:'Biên bản kiểm kê bị từ chối',mala:'Mã chưa có trong master data',
+const NOTIF_ICO={doikho:'🔁',sapdc:'🔍',kkxoa:'🗑',dcnhac:'⏰',transfer:'🔄',reject:'⚠️',countlist:'🗂',reconcile:'🔁',mala:'🏷'};
+const NOTIF_TITLE={doikho:'Yêu cầu đổi kho',sapdc:'Đối chiếu nhập kho với SAP',kkxoa:'Phiếu kiểm kê đã bị xóa',dcnhac:'Phiếu điều chuyển chờ duyệt',transfer:'Phiếu điều chuyển',reject:'Biên bản kiểm kê bị từ chối',mala:'Mã chưa có trong master data',
   countlist:'Kế toán đã mở kỳ kiểm kê',reconcile:'Kết quả đối chiếu chốt tồn',
   late:'Kho chưa cập nhật kiểm kê'};
 function paintBell(){
@@ -18345,7 +18611,9 @@ function gotoNotif(x){
   if(x.kind==='reject'||x.kind==='countlist'||x.kind==='kkxoa'){if(go('kiemke',null))return;}
   if(x.kind==='reconcile'){if(go('opening',null))return;}
   if(x.kind==='mala'){if(go('catalog','thieu'))return;}
-  if(x.kind==='sapdc'){if(go('dieuchuyen','nk'))return;}   // kế toán/admin: mở thẳng "Mã chưa khai báo tên"
+  if(x.kind==='sapdc'){if(go('dieuchuyen','nk'))return;}
+  if(x.kind==='doikho'){if(String(x.message||'').indexOf('Chờ tôi duyệt')>=0||session.role==='admin'){if(go('users',session.role==='admin'?'doikho':null))return;}
+    if(session&&_ufield(session.role)){moDoiKho();return;}}   // kế toán/admin: mở thẳng "Mã chưa khai báo tên"
   renderView();
 }
 function markAllNotifRead(){
@@ -18498,6 +18766,7 @@ function myTodoCount(){
     let n=0;
     if(typeof pendingForMe==='function')n+=pendingForMe().length;
     if(typeof pendingUsersForMe==='function')n+=pendingUsersForMe().length;
+    if(typeof ycdkChoToi==='function')n+=ycdkChoToi().length;
     if(session&&(session.role==='ketoan_vien'||session.role==='admin'))
       n+=submissions.filter(s=>s.status==='Chờ duyệt').length;
     if(session&&session.wh&&session.wh.length){
