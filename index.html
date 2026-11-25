@@ -2021,7 +2021,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2511-02';
+const APP_VER='2511-03';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -7525,8 +7525,174 @@ function renderChenhLech(v){
   acts.push({k:'bang',title:kt?'Xem chênh lệch & duyệt giải trình':'Chênh lệch kho của tôi',
     sub:kt?'Chỉ hiện mã lệch — bộ phận giải trình, kế toán duyệt':'Mã lệch của kho bạn — ghi giải trình ngay trên từng dòng',
     ico:HIC.list,render:clBang});
+  if(session&&session.role==='admin')acts.push({k:'sapnxt',title:'Đối chiếu nhập–xuất–tồn SAP',
+    sub:'Admin nạp file NXT của SAP — so từng mã với app trước khi chốt số tính chênh lệch',ico:HIC.sheet,render:clDoiChieuSAP});
   v.appendChild(clNote('Định lượng chỉ áp cho kho nhà hàng — kho bếp không nạp định lượng, không đối chiếu chênh lệch.'));
   renderHubView(v,'chenhlech',acts);
+}
+
+/* ===== ĐỐI CHIẾU NHẬP–XUẤT–TỒN SAP VỚI APP (Khoa 25/11/2026, chỉ admin) =====
+   Admin nạp file nhập–xuất–tồn của SAP (cột Plant · Material · Material Description · Base Unit of Measure · From Date · To Date ·
+   Opening Stock · Total Receipt Qties · Total Issue Quantities · Closing Stock) cho MỘT kho nhà hàng + kỳ, app so từng mã với số trên app:
+     Tồn đầu SAP  ↔ tồn đầu kỳ của app (tonDauKy)
+     Nhập SAP     ↔ nhập kho + điều chuyển đến
+     Xuất SAP     ↔ điều chuyển đi (kể cả hủy) — SAP chưa có xuất bán cho tới khi upload phiếu xuất cuối kỳ
+     Tồn cuối SAP ↔ tồn đầu + nhập + ĐC đến − ĐC đi
+   Bản SAP lưu ở bảng sap_nxt (SQL PHẦN 46) để làm sổ kho khi tính chênh lệch. File SAP không có cột kho (chỉ Plant)
+   nên admin chọn kho trên màn; dòng của plant khác trong file bị bỏ và đếm ra. */
+let sapNxtTblOK=true;
+const _sapNxt={};          // khóa 'kỳ|plant|sloc' -> bản đã lưu (null = chưa có) | 'loi'
+let _sapNxtXem=null;       // bản vừa đọc từ file, chưa lưu
+let _sapNxtLoc='lech';
+const sapN=x=>(Number(x)||0).toLocaleString('vi-VN',{maximumFractionDigits:3});
+const sapNxtKey=(per,p,s)=>per+'|'+p+'|'+s;
+function sapSo(x){if(x==null||x==='')return 0;if(typeof x==='number')return isFinite(x)?x:0;
+  let t=String(x).replace(/\s/g,'').replace(/,/g,'');let am=false;if(/^\(.*\)$/.test(t)){am=true;t=t.slice(1,-1);}
+  if(/-$/.test(t)){am=true;t=t.slice(0,-1);}const n=parseFloat(t);return isFinite(n)?(am?-Math.abs(n):n):0;}
+function sapNgay(x){if(x==null||x==='')return '';if(x instanceof Date)return _isoNgay(x);
+  if(typeof x==='number'){const d=new Date(Math.round((Math.floor(x)-25569)*864e5));return d.toISOString().slice(0,10);}
+  const d=docNgayO(String(x).trim());return /^\d{4}-\d{2}-\d{2}$/.test(d)?d:'';}
+const sapMa=x=>String(x==null?'':x).trim().replace(/^0+(?=\d{6,})/,'').replace(/\.0+$/,'');
+/* Đọc file -> {plant, tu, den, items:{mã:{ten,dvt,dau,nhap,xuat,cuoi}}, khacPlant, boDong, gop} */
+function sapNxtDoc(rows,plant){
+  let h=-1;
+  for(let i=0;i<Math.min(rows.length,15);i++){const l=(rows[i]||[]).map(vnNorm).join('|');if(l.includes('material')&&(l.includes('opening')||l.includes('closing'))){h=i;break;}}
+  if(h<0)throw new Error('Không thấy dòng tiêu đề của file nhập–xuất–tồn SAP (cần các cột Material, Opening Stock, Closing Stock).');
+  const H=rows[h].map(vnNorm),tim=ks=>H.findIndex(c=>ks.some(k=>c===k||c.includes(k)));
+  const cP=tim(['plant','plnt']),cM=H.findIndex(c=>c==='material'||c==='materialnumber'),cT=tim(['materialdescription','description']),
+        cU=tim(['baseunitofmeasure','bun','unit']),cF=tim(['fromdate']),cTo=tim(['todate']),
+        cO=tim(['openingstock']),cR=tim(['totalreceipt','receipt']),cI=tim(['totalissue','issue']),cC=tim(['closingstock']);
+  if(cM<0||cO<0||cC<0)throw new Error('File thiếu cột Material / Opening Stock / Closing Stock.');
+  const items={};let khacPlant=0,boDong=0,gop=0,tu='',den='';
+  for(let i=h+1;i<rows.length;i++){const r=rows[i]||[];const ma=sapMa(r[cM]);
+    if(!ma){if(r.some(x=>String(x).trim()))boDong++;continue;}
+    if(!/^[0-9A-Za-z._\-]{2,20}$/.test(ma)){boDong++;continue;}
+    if(cP>=0&&String(r[cP]).trim()&&String(r[cP]).trim()!==String(plant)){khacPlant++;continue;}
+    if(!tu&&cF>=0)tu=sapNgay(r[cF]);if(!den&&cTo>=0)den=sapNgay(r[cTo]);
+    const o=items[ma]||(items[ma]={ten:String(cT>=0?r[cT]:'').replace(/^[﻿​]+/,'').trim(),dvt:String(cU>=0?r[cU]:'').trim(),dau:0,nhap:0,xuat:0,cuoi:0});
+    if(o!==items[ma]||o.dau||o.nhap||o.xuat||o.cuoi)gop++;
+    o.dau+=sapSo(r[cO]);if(cR>=0)o.nhap+=sapSo(r[cR]);if(cI>=0)o.xuat+=sapSo(r[cI]);o.cuoi+=sapSo(r[cC]);}
+  return {plant,tu,den,items,khacPlant,boDong,gop};
+}
+/* So từng mã với app. Xuất SAP mang dấu âm (Total Issue) -> so bằng trị tuyệt đối với ĐC đi của app */
+function sapNxtSo(ban,p,s,per){
+  const dk=(tonDauKy(p,s,per).items)||{},mv=movementsOf(p,s,per),it=ban.items||{};
+  const codes=new Set([...Object.keys(it),...Object.keys(dk),...Object.keys(mv.buy),...Object.keys(mv.tin),...Object.keys(mv.tout)]);
+  const r6=x=>Math.round(x*1e6)/1e6,out=[];
+  codes.forEach(c=>{const a=it[c],m=masterByCode[c]||{};
+    const app={dau:+(dk[c]||0),nhap:+(mv.buy[c]||0)+ +(mv.tin[c]||0),xuat:+(mv.tout[c]||0)};app.cuoi=app.dau+app.nhap-app.xuat;
+    const sap=a?{dau:a.dau,nhap:a.nhap,xuat:Math.abs(a.xuat),cuoi:a.cuoi}:null;
+    if(!sap&&!app.dau&&!app.nhap&&!app.xuat)return;
+    const l=k=>r6((sap?sap[k]:0)-app[k]);
+    const lech={dau:l('dau'),nhap:l('nhap'),xuat:l('xuat'),cuoi:l('cuoi')};
+    const dvtApp=String(m.uom||'').trim(),dvtSap=a?a.dvt:'';
+    out.push({code:c,ten:(a&&a.ten)||String(m.name||c).replace(/^[﻿​]+/,''),dvt:dvtSap||dvtApp,sap,app,lech,
+      coLech:Object.values(lech).some(x=>Math.abs(x)>1e-6),chiSap:!!sap&&!dk[c]&&!mv.buy[c]&&!mv.tin[c]&&!mv.tout[c],chiApp:!sap,
+      lechDvt:!!(dvtSap&&dvtApp&&vnNorm(dvtSap)!==vnNorm(dvtApp))});});
+  return out.sort((x,y)=>(y.coLech-x.coLech)||String(x.ten).localeCompare(String(y.ten),'vi'));
+}
+async function sapNxtTai(per,p,s){
+  const k=sapNxtKey(per,p,s);
+  if(!sb||!sapNxtTblOK){_sapNxt[k]=null;return;}
+  let q;try{q=await sb.from('sap_nxt').select('*').eq('id',k).maybeSingle();}catch(e){q={error:e};}
+  if(q.error){if(/schema cache|does not exist|42P01/i.test(String(q.error.message||q.error))){sapNxtTblOK=false;_sapNxt[k]=null;}
+    else{console.error('sap_nxt',q.error);_sapNxt[k]='loi';}return;}
+  const x=q.data;_sapNxt[k]=x?{plant:x.plant_code,sloc:x.sloc_code,tu:x.tu||'',den:x.den||'',items:x.items||{},tenFile:x.ten_file||'',by:x.nap_by||'',at:x.nap_at?fmt(x.nap_at):''}:null;
+}
+async function sapNxtLuu(ban,per,p,s){
+  if(!sapNxtTblOK){toast(L('Máy chủ chưa có bảng lưu bản SAP — chạy SQL PHẦN 46 rồi thử lại'));return false;}
+  if(!mangOK){toast(L('Cần có mạng để lưu'));return false;}
+  const k=sapNxtKey(per,p,s);
+  const row={id:k,period:per,plant_code:p,sloc_code:s,tu:ban.tu||null,den:ban.den||null,items:ban.items,ten_file:ban.tenFile||null,
+    nap_by:session.name,nap_at:new Date().toISOString()};
+  let w;try{w=await sb.from('sap_nxt').upsert(row,{onConflict:'id'}).select('id');}catch(e){w={error:e};}
+  if(w.error||!(w.data||[]).length){console.error('sap_nxt ghi',w.error);
+    errBox('Chưa lưu được bản SAP',['Bản nhập–xuất–tồn SAP của kho này CHƯA được lưu.','Thử lại sau ít phút.'],'sap_nxt · '+String((w.error&&(w.error.code||w.error.message))||'0 dòng'));return false;}
+  _sapNxt[k]=Object.assign({},ban,{by:session.name,at:fmt(row.nap_at)});
+  log('Nạp nhập–xuất–tồn SAP',whName(p,s)+' · kỳ '+periodVN(per)+' · '+Object.keys(ban.items).length+' mã');
+  return true;
+}
+function sapNxtXuatExcel(ds,per,p,s){
+  const H=['Mã hàng','Tên hàng','ĐVT','Tồn đầu SAP','Tồn đầu app','Lệch','Nhập SAP','Nhập + ĐC đến app','Lệch','Xuất SAP','ĐC đi app','Lệch','Tồn cuối SAP','Tồn cuối app','Lệch','Ghi chú'];
+  const rows=[H];ds.forEach(r=>{const S=r.sap||{dau:'',nhap:'',xuat:'',cuoi:''};
+    rows.push([r.code,r.ten,r.dvt,S.dau,r.app.dau,r.lech.dau,S.nhap,r.app.nhap,r.lech.nhap,S.xuat,r.app.xuat,r.lech.xuat,S.cuoi,r.app.cuoi,r.lech.cuoi,
+      [r.chiApp?'Không có trong file SAP':'',r.chiSap?'Chỉ có trên SAP':'',r.lechDvt?'ĐVT SAP khác ĐVT app':''].filter(Boolean).join(' · ')]);});
+  const ws=XLSX.utils.aoa_to_sheet([['ĐỐI CHIẾU NHẬP–XUẤT–TỒN SAP ↔ APP · '+whName(p,s)+' · Kỳ '+periodVN(per)],[]].concat(rows));
+  for(let r=3;r<rows.length+2;r++){const c=ws[XLSX.utils.encode_cell({r,c:0})];if(c){c.t='s';c.z='@';}}
+  ws['!cols']=[{wch:11},{wch:40},{wch:6}].concat(Array(12).fill({wch:11}),[{wch:30}]);
+  ws['!autofilter']={ref:'A3:P'+(rows.length+2)};
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Doi chieu '+per);
+  XLSX.writeFile(wb,'Doi_chieu_NXT_SAP_'+p+'-'+s+'_'+per+'.xlsx');
+}
+function clDoiChieuSAP(host){
+  if(!session||session.role!=='admin'){host.appendChild(clNote('Chỉ admin dùng được màn này.'));return;}
+  const ctx=ensureClCtx();
+  ctxBar(host,ctx,{period:true,plants:clPlantsNH(),slocs:clSlocNH},()=>{_sapNxtXem=null;renderView();});
+  const p=ctx.plant,s=ctx.sloc,per=ctx.period,k=sapNxtKey(per,p,s);
+  if(!(k in _sapNxt)){_sapNxt[k]=undefined;host.appendChild(el('div','empty',L('Đang tải bản SAP đã lưu…')));
+    sapNxtTai(per,p,s).then(()=>{if(activeTab==='chenhlech')renderView();});return;}
+  if(_sapNxt[k]===undefined){host.appendChild(el('div','empty',L('Đang tải bản SAP đã lưu…')));return;}
+  if(!sapNxtTblOK)host.appendChild(clNote('Máy chủ chưa có bảng lưu bản SAP (SQL PHẦN 46). Vẫn xem đối chiếu được, nhưng chưa lưu được.','var(--red)'));
+  if(_sapNxt[k]==='loi'){host.appendChild(clNote('Không tải được bản SAP đã lưu — thử tải lại app.','var(--red)'));}
+  const kh=kyKhoang(per);
+  host.appendChild(clNote('Nạp file nhập–xuất–tồn SAP của kho này cho kỳ '+periodVN(per)+' ('+kyKhoangVN(per)+'). App so từng mã: tồn đầu · nhập (gồm điều chuyển đến) · xuất (điều chuyển đi, hủy) · tồn cuối. Số SAP chưa có xuất bán cho tới khi upload phiếu xuất cuối kỳ.'));
+  const card=el('div','card');card.style.padding='14px';
+  const daLuu=_sapNxt[k]&&_sapNxt[k]!=='loi'?_sapNxt[k]:null;
+  const ban=_sapNxtXem&&_sapNxtXem.key===k?_sapNxtXem:daLuu;
+  const dong=el('div','form-row');dong.style.cssText='display:flex;flex-wrap:wrap;gap:8px;align-items:center';
+  const inp=document.createElement('input');inp.type='file';inp.accept='.xlsx,.xls,.csv,.txt';inp.id='sapNxtFile';inp.hidden=true;
+  const bChon=el('button','btn btn-brand btn-sm',daLuu?L('📥 Nạp lại file SAP'):L('📥 Chọn file nhập–xuất–tồn SAP'));bChon.onclick=()=>inp.click();
+  dong.appendChild(bChon);dong.appendChild(inp);
+  if(daLuu){const t=el('span','muted',L('Đã lưu')+': '+Object.keys(daLuu.items).length+' '+L('mã')+(daLuu.tenFile?' · '+daLuu.tenFile:'')+(daLuu.by?' · '+daLuu.by:'')+(daLuu.at?' · '+daLuu.at:''));
+    t.style.fontSize='13px';dong.appendChild(t);}
+  card.appendChild(dong);
+  inp.onchange=()=>{const f=inp.files&&inp.files[0];if(!f)return;
+    readSheetRows(f,rows=>{
+      try{const b=sapNxtDoc(rows,p);b.key=k;b.tenFile=f.name;
+        if(!Object.keys(b.items).length){toast(b.khacPlant?L('File không có dòng nào của plant')+' '+p:L('Không đọc được mã nào trong file'));return;}
+        _sapNxtXem=b;renderView();}
+      catch(e){errBox('Không đọc được file SAP',[String(e.message||e)],'');}
+    },e=>errBox('Không đọc được file SAP',[String(e.message||e)],''));};
+  if(ban){
+    const ds=sapNxtSo(ban,p,s,per),nLech=ds.filter(r=>r.coLech).length,nDvt=ds.filter(r=>r.lechDvt).length;
+    const tb=[];
+    if(_sapNxtXem&&ban===_sapNxtXem){
+      tb.push(L('Vừa đọc')+': '+Object.keys(ban.items).length+' '+L('mã')+' · '+ban.tenFile);
+      if(ban.khacPlant)tb.push(L('Bỏ')+' '+ban.khacPlant+' '+L('dòng của plant khác'));
+      if(ban.gop)tb.push(L('Gộp')+' '+ban.gop+' '+L('dòng trùng mã'));
+      if(ban.boDong)tb.push(L('Bỏ')+' '+ban.boDong+' '+L('dòng không có mã'));}
+    if(ban.tu&&ban.den&&(ban.tu!==kh.tu||ban.den!==kh.den))tb.push(L('⚠ Khoảng ngày trong file')+' '+ban.tu.split('-').reverse().join('/')+' → '+ban.den.split('-').reverse().join('/')+' '+L('khác khoảng kỳ của app'));
+    if(tb.length){const n=el('div','muted');n.style.cssText='font-size:13px;margin-top:8px';n.textContent=tb.join(' · ');card.appendChild(n);}
+    const kpi=el('div','stats');kpi.style.marginTop='10px';
+    [[L('Mã đối chiếu'),ds.length],[L('Mã lệch'),nLech],[L('Mã khớp'),ds.length-nLech],[L('Khác ĐVT'),nDvt]].forEach(([a,b])=>{
+      const c=el('div','stat');c.innerHTML='<div><div class="n tnum">'+b+'</div><div class="l">'+escHtml(a)+'</div></div>';kpi.appendChild(c);});
+    card.appendChild(kpi);
+    const nut=el('div');nut.style.cssText='display:flex;flex-wrap:wrap;gap:8px;margin-top:10px';
+    if(_sapNxtXem&&ban===_sapNxtXem){const bL=el('button','btn btn-brand btn-sm',L('💾 Lưu bản SAP này'));
+      bL.onclick=async()=>{bL.disabled=true;const ok=await sapNxtLuu(ban,per,p,s);bL.disabled=false;if(ok){_sapNxtXem=null;toast(L('Đã lưu bản SAP'));renderView();}};nut.appendChild(bL);
+      const bH=el('button','btn btn-ghost btn-sm',L('Bỏ file vừa đọc'));bH.onclick=()=>{_sapNxtXem=null;renderView();};nut.appendChild(bH);}
+    const bX=el('button','btn btn-ghost btn-sm',L('⬇ Tải Excel đối chiếu'));bX.onclick=()=>sapNxtXuatExcel(ds,per,p,s);nut.appendChild(bX);
+    card.appendChild(nut);
+    const chips=el('div');chips.style.cssText='display:flex;gap:6px;margin-top:12px;flex-wrap:wrap';
+    [['lech',L('Chỉ mã lệch')+' ('+nLech+')'],['tat',L('Tất cả')+' ('+ds.length+')']].forEach(([v,t])=>{
+      const c=el('button','chip'+(_sapNxtLoc===v?' on':''),t);c.onclick=()=>{_sapNxtLoc=v;renderView();};chips.appendChild(c);});
+    card.appendChild(chips);
+    const xem=_sapNxtLoc==='lech'?ds.filter(r=>r.coLech||r.lechDvt):ds;
+    if(!xem.length){card.appendChild(el('div','empty',L('Mọi mã khớp giữa SAP và app.')));}
+    else{
+      const f=v=>v===''||v==null?'':sapN(v),lc=v=>Math.abs(v)>1e-6?'<td class="num" style="color:var(--red);font-weight:700">'+sapN(v)+'</td>':'<td class="num" style="color:var(--muted)">0</td>';
+      let h='<table class="tbl"><thead><tr><th>Mã · Tên hàng</th><th>ĐVT</th><th>Tồn đầu SAP</th><th>Tồn đầu app</th><th>Lệch</th><th>Nhập SAP</th><th>Nhập + ĐC đến app</th><th>Lệch</th><th>Xuất SAP</th><th>ĐC đi app</th><th>Lệch</th><th>Tồn cuối SAP</th><th>Tồn cuối app</th><th>Lệch</th></tr></thead><tbody>';
+      xem.forEach(r=>{const S=r.sap||{};
+        h+='<tr><td><b>'+escHtml(r.ten)+'</b><div class="muted" style="font-size:12px">'+escHtml(r.code)+(r.chiApp?' · '+escHtml(L('không có trong file SAP')):'')+(r.chiSap?' · '+escHtml(L('chỉ có trên SAP')):'')+'</div></td>'
+          +'<td>'+escHtml(r.dvt)+(r.lechDvt?' <span class="badge badge-wait">'+escHtml(L('khác ĐVT app'))+'</span>':'')+'</td>'
+          +'<td class="num">'+f(S.dau)+'</td><td class="num">'+sapN(r.app.dau)+'</td>'+lc(r.lech.dau)
+          +'<td class="num">'+f(S.nhap)+'</td><td class="num">'+sapN(r.app.nhap)+'</td>'+lc(r.lech.nhap)
+          +'<td class="num">'+f(S.xuat)+'</td><td class="num">'+sapN(r.app.xuat)+'</td>'+lc(r.lech.xuat)
+          +'<td class="num">'+f(S.cuoi)+'</td><td class="num">'+sapN(r.app.cuoi)+'</td>'+lc(r.lech.cuoi)+'</tr>';});
+      const w=el('div','tbl-wrap');w.style.marginTop='10px';w.innerHTML=h+'</tbody></table>';card.appendChild(w);
+    }
+  }else{const e=el('div','empty',L('Chưa có bản SAP cho kho và kỳ này — chọn file để đối chiếu.'));e.style.marginTop='10px';card.appendChild(e);}
+  host.appendChild(card);
 }
 
 /* Bảng % quy đổi theo nhóm hàng. Tổng 80% nghe ổn, nhưng tách ra mới thấy
@@ -13968,7 +14134,7 @@ function nkPhanLoai(dong,dsCo,plant,sloc){
    chọn ghi vào nhập kho hay bỏ · số SAP chưa về thì máy chủ tự đối chiếu khi agent đẩy số lên. */
 /* GIAI ĐOẠN THỬ (Khoa 20/11/2026): số SAP chỉ ADMIN thấy. Vai khác: dòng SAP bị bỏ khỏi bộ nhớ (không cộng tồn,
    không hiện), nút quét ảnh giữ như cũ, không có khung đối chiếu. Mở cho mọi người: đặt SAP_THU=false. */
-const SAP_THU=true;
+const SAP_THU=false;   /* Khoa 25/11/2026: mở số nhập kho SAP cho mọi người */
 function sapMo(){return !SAP_THU||!!(session&&session.role==='admin');}
 function sapLocThu(){if(!sapMo())receipts=(receipts||[]).filter(r=>!r.sapCt);}
 /* Agent SAP đẩy số nhập của MỌI kho trên app lúc 17h hằng ngày (23/11/2026) → khi mở SAP thì kho nào cũng ở chế độ đối chiếu,
