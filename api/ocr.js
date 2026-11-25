@@ -5,6 +5,7 @@
 // Client gửi POST { images:["data:image/jpeg;base64,..."] }  -> trả { rows:[{code,name,uom,qty}], raw }.
 
 const { bocLoi } = require('../lib/ghi-loi');
+const { phienHopLe } = require('../lib/xac-thuc');
 const AI_KEYS = [
   process.env.AI_API_KEY,  process.env.AI_API_KEY2,  process.env.AI_API_KEY3,
   process.env.GEMINI_API_KEY, process.env.GEMINI2_API_KEY, process.env.GEMINI3_API_KEY,
@@ -51,6 +52,8 @@ const SCHEMA = {
 
 const xuLy = async (req, res) => {
   if (req.method !== 'POST') { res.status(405).json({ error: 'Chỉ nhận POST' }); return; }
+  // 25/11/2026: chỉ người đã đăng nhập app mới gọi được (trước đây ai biết đường dẫn cũng dùng được).
+  if (!(await phienHopLe(req))) { res.status(401).json({ error: 'Phiên đăng nhập đã hết — đóng app mở lại rồi quét lại' }); return; }
 
   try {
     // body có thể đã parse sẵn (Vercel) hoặc là string

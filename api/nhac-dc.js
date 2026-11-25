@@ -2,18 +2,18 @@
 // Nhắc người duyệt các phiếu điều chuyển đang Chờ duyệt: tin Teams (tag người duyệt) + chuông + đẩy về máy.
 // Không cần khai gì thêm trên Vercel: link Teams đọc từ bảng kín bao_mat_cau_hinh (GitHub tự chép vào).
 // Chống gọi bừa: chỉ chạy trong 17:00–18:59 giờ VN và MỘT lần mỗi ngày (khóa ở bảng bao_mat_cau_hinh).
-// Nếu có đặt CRON_SECRET thì bắt buộc đúng header (Vercel Cron tự gửi). ?thu=1 (chỉ xem tin) cần CRON_SECRET.
+// BẮT BUỘC CRON_SECRET (Vercel Cron tự gửi header). Thiếu biến trên Vercel thì cổng đóng (503).
 
 const { bocLoi } = require('../lib/ghi-loi');
 const { APP_URL } = require('../lib/app-url');
 const { nhacDuyetDC } = require('../lib/nhac-dc');
+const { dungCron } = require('../lib/xac-thuc');
 
 async function xuLy(req, res) {
-  const bi = (process.env.CRON_SECRET || '').trim();
-  const dungBi = !!bi && String(req.headers.authorization || '') === 'Bearer ' + bi;
-  if (bi && !dungBi) return res.status(401).json({ error: 'Không có quyền' });
+  // 25/11/2026: ĐÓNG khi thiếu CRON_SECRET (trước đây thiếu biến là ai gọi cũng chạy).
+  if (!(process.env.CRON_SECRET || '').trim()) return res.status(503).json({ error: 'Máy chủ chưa cấu hình CRON_SECRET' });
+  if (!dungCron(req)) return res.status(401).json({ error: 'Không có quyền' });
   const thu = String((req.query && req.query.thu) || '') === '1';
-  if (thu && !dungBi) return res.status(401).json({ error: 'Chế độ thử cần CRON_SECRET' });
   const gio = new Date(Date.now() + 7 * 3600e3).getUTCHours();
   if (!thu && (gio < 17 || gio > 18)) return res.status(200).json({ boQua: 'Chỉ chạy 17:00–18:59 giờ VN' });
   const appUrl = APP_URL;

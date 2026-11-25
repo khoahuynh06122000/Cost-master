@@ -2029,7 +2029,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2511-04';
+const APP_VER='2511-05';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -14721,7 +14721,8 @@ function dcNhapKho(v){
       const _to=setTimeout(()=>{try{_ac&&_ac.abort();}catch(e){}},75000);
       let resp;
       try{
-        resp=await fetch('/api/ocr',{method:'POST',headers:{'Content-Type':'application/json'},
+        const _tk=((await sb.auth.getSession()).data.session||{}).access_token||'';
+        resp=await fetch('/api/ocr',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+_tk},
           body:_body,signal:_ac?_ac.signal:undefined});
       }finally{clearTimeout(_to);}
       const _giay=((Date.now()-_t0)/1000).toFixed(1);
