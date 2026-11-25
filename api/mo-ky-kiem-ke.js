@@ -15,7 +15,7 @@
 // Lô của cùng một lần chạy (cùng data_hash) được CỘNG DỒN vào danh sách của kho → chia lô giữa chừng một kho vẫn đúng.
 // Chạy lại y nguyên (cùng data_hash) không đổi gì. Lần chạy MỚI (data_hash khác) thì THAY danh sách cũ do agent mở.
 // Đẩy TỪNG KHO một lần là cách nhẹ nhất. Một kho tách nhiều lần mà không kèm data_hash: trong 30 phút vẫn được cộng dồn.
-// Không bao giờ đụng: kho + kỳ đã có biên bản kiểm kê ĐÃ DUYỆT; danh sách kế toán mở TAY (trừ khi ghi_de=true).
+// Không bao giờ đụng: kho đang ĐÓNG trên app (bảng kho_dong); kho + kỳ đã có biên bản kiểm kê ĐÃ DUYỆT; danh sách kế toán mở TAY (trừ khi ghi_de=true).
 // Trả: { ok, ky, thu, kho:[{plant,sloc,ten,so_ma,ket_qua,ly_do}], boQua:[{i,lyDo}] }
 //   ket_qua: 'mo_moi' | 'thay' | 'cong_don' | 'khong_doi' | 'bo_qua'
 
@@ -131,14 +131,16 @@ async function xuLy(req, res) {
 
   // Kho có trên hệ thống? Đã có danh sách / biên bản đã duyệt?
   const plants = [...new Set(khos.map(x => x.plant))].map(encodeURIComponent).join(',');
-  const [slocs, cls, subs] = await Promise.all([
+  const [slocs, cls, subs, dongs] = await Promise.all([
     supa('slocs?select=plant_code,sloc_code,sloc_name&plant_code=in.(' + plants + ')'),
     supa('count_lists?select=plant_code,sloc_code,items,created_by,created_at&period=eq.' + ky + '&plant_code=in.(' + plants + ')'),
     supa('submissions?select=plant_code,sloc_code&status=eq.' + encodeURIComponent('Đã duyệt') + '&period=eq.' + ky + '&plant_code=in.(' + plants + ')'),
+    supa('kho_dong?select=plant_code,sloc_code&dong=eq.true&plant_code=in.(' + plants + ')').catch(() => []),
   ]);
   const tenKho = new Map((slocs || []).map(s => [s.plant_code + '|' + s.sloc_code, s.sloc_name]));
   const clMap = new Map((cls || []).map(c => [c.plant_code + '|' + c.sloc_code, c]));
   const daDuyet = new Set((subs || []).map(s => s.plant_code + '|' + s.sloc_code));
+  const khoDong = new Set((Array.isArray(dongs) ? dongs : []).map(s => s.plant_code + '|' + s.sloc_code));
   const appUrl = APP_URL;
 
   // 25/11/2026: chạy 6 kho cùng lúc — chạy lần lượt ~87 kho × 4 lượt gọi máy chủ có thể vượt hạn 60 giây của Vercel.
@@ -146,6 +148,8 @@ async function xuLy(req, res) {
     const k = x.plant + '|' + x.sloc, ten = tenKho.get(k) || '', cu = clMap.get(k), n = Object.keys(x.items).length;
     const dong = { plant: x.plant, sloc: x.sloc, ten, so_ma: n };
     if (!ten) return Object.assign(dong, { ket_qua: 'bo_qua', ly_do: 'Kho chưa có trên hệ thống (bảng slocs)' });
+    // 25/11/2026 (Khoa): kho đang ĐÓNG trên app thì không nhận danh sách — mở kho lại trên app rồi nạp.
+    if (khoDong.has(k)) return Object.assign(dong, { ket_qua: 'bo_qua', ly_do: 'Kho đang đóng trên app — mở kho lại rồi nạp' });
     if (daDuyet.has(k)) return Object.assign(dong, { ket_qua: 'bo_qua', ly_do: 'Kỳ này đã duyệt biên bản kiểm kê' });
     const cuAgent = cu && String(cu.created_by || '').startsWith(NGUOI);
     if (cu && !cuAgent && !ghiDe) return Object.assign(dong, { ket_qua: 'bo_qua', ly_do: 'Kế toán đã mở kỳ tay (' + (cu.created_by || '?') + ') — gửi ghi_de=true để thay' });
