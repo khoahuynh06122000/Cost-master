@@ -19,6 +19,7 @@
 //   dat   {pin}         -> { ok:true }   (chưa có PIN, hoặc đang có/đang khóa mà vừa đăng nhập bằng mật khẩu)
 
 const { bocLoi } = require('../lib/ghi-loi');
+const { kiemPin } = require('../lib/pin-kiem');
 const crypto = require('crypto');
 const SUPA_URL = (process.env.SUPABASE_URL || 'https://jygrdbuwveitrlfuwigs.supabase.co').replace(/\/+$/, '');
 const SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
@@ -105,23 +106,11 @@ const xuLy = async (req, res) => {
 
   if (action === 'kiem') {
     if (!pinHopLe(b.pin)) return res.status(400).json({ error: 'PIN phải đủ 6 số' });
-    // Giành MỘT lượt thử (tăng so_sai có điều kiện) TRƯỚC khi so PIN.
-    let n = -1;
-    for (let vong = 0; vong < 5 && n < 0; vong++) {
-      if (!row) return res.status(200).json({ dung: false, chuaCo: true });
-      if (row.khoa) return res.status(200).json({ dung: false, khoa: true });
-      const cu = Number(row.so_sai) || 0, moi = cu + 1;
-      const kq = await supa('user_pin?user_id=eq.' + uid + '&so_sai=eq.' + cu + '&khoa=is.false&select=so_sai', {
-        method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ so_sai: moi, khoa: moi >= SAI_TOI_DA }) });
-      if (kq && kq.length) n = moi; else row = await doc1();
-    }
-    if (n < 0) return res.status(429).json({ error: 'Đang có nhiều lần thử cùng lúc — thử lại sau ít giây' });
-    if (bangNhau(bam(b.pin, row.salt), row.hash)) {
-      await supa('user_pin?user_id=eq.' + uid, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ so_sai: 0, khoa: false }) });
-      await moPhien(me.id, sid);
-      return res.status(200).json({ dung: true });
-    }
-    return res.status(200).json(n >= SAI_TOI_DA ? { dung: false, khoa: true } : { dung: false, conLai: SAI_TOI_DA - n });
+    // Giành MỘT lượt thử (tăng so_sai có điều kiện) TRƯỚC khi so PIN — dùng chung lib/pin-kiem.js với cổng ký số.
+    const k = await kiemPin(me.id, b.pin);
+    if (k.banTranh) return res.status(429).json({ error: 'Đang có nhiều lần thử cùng lúc — thử lại sau ít giây' });
+    if (k.dung) { await moPhien(me.id, sid); return res.status(200).json({ dung: true }); }
+    return res.status(200).json(k);
   }
 
   if (action === 'dat') {

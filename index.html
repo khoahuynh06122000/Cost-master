@@ -1718,6 +1718,40 @@
   .dcn-i{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:8px 0;border-top:1px solid var(--line)}
   .dcn-n{flex:1 1 200px;min-width:0}.dcn-so{display:flex;gap:14px;font-size:13px}
   .dcn-f{display:flex;flex-wrap:wrap;gap:6px;align-items:center;flex:1 0 100%}
+  /* ===== KÝ SỐ PHIẾU ĐIỀU CHUYỂN (2611-04) ===== */
+  .kyso-bg{position:fixed;inset:0;z-index:380;background:rgba(6,18,16,.55);display:flex;align-items:center;justify-content:center;padding:16px}
+  .kyso{width:min(560px,100%);max-height:calc(100vh - 32px);overflow:auto;background:var(--surface);color:var(--ink);border:1px solid var(--line);
+    border-radius:18px;box-shadow:0 24px 60px -18px rgba(0,0,0,.45)}
+  .kyso-h{background:var(--brand);color:#fff;padding:13px 18px;border-radius:17px 17px 0 0}
+  .kyso-e{font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.8;font-weight:700}
+  .kyso-t{font-size:16px;font-weight:800;margin-top:2px}
+  .kyso-b{padding:14px 18px 16px;display:flex;flex-direction:column;gap:10px}
+  .kyso-phu{font-size:13px;line-height:1.55;color:var(--muted)}
+  .kyso-cv{width:100%;aspect-ratio:600/220;max-width:100%;background:#fff;border:2px dashed var(--line);border-radius:12px;touch-action:none;cursor:crosshair;display:block}
+  .kyso-goi{font-size:12px;color:var(--muted);text-align:center}
+  .kyso-loi{font-size:13px;color:var(--red);font-weight:600;min-height:0}
+  .kyso-loi:empty{display:none}
+  .kyso-nut{display:flex;gap:9px;justify-content:flex-end;flex-wrap:wrap}
+  .kyso-pin{text-align:center;letter-spacing:.5em;font-size:20px!important;font-weight:800;height:50px;max-width:240px;margin:0 auto;width:100%}
+  .kyso-pin::placeholder{letter-spacing:normal;font-size:15px;font-weight:600}
+  .kyso-nd{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface-2);max-height:220px;overflow:auto}
+  .kyso-nd1{font-weight:700;font-size:13px;margin:2px 0}
+  .kyso-nd2{font-size:12.5px;color:var(--ink);line-height:1.5}
+  .kyso-o{border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center;background:#fff;color:#14213d}
+  .kyso-o .kyso-vai{color:#14213d}
+  .kyso-vai{font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--brand-ink)}
+  .kyso-ten{font-weight:700;font-size:13px;margin-top:2px}
+  .kyso-khoi{margin-top:10px;border-top:1px dashed var(--line);padding-top:10px}
+  .kyso-cu{font-size:12px;color:var(--muted);margin-bottom:6px}
+  .kyso-luoi{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));gap:8px}
+  .kyso-cell{border:1px solid var(--line);border-radius:11px;padding:8px 9px;text-align:center;background:var(--surface-2);min-width:0}
+  .kyso-sv{background:#fff;border-radius:8px;margin:4px 0;color:#14213d;min-height:46px}
+  .kyso-chua{color:var(--muted);font-size:12px;padding:16px 0}
+  .kyso-phu2{font-size:11px;color:var(--muted);line-height:1.45;overflow-wrap:anywhere}
+  .kyso-xt{font-size:10.5px;color:var(--muted);margin-top:3px;overflow-wrap:anywhere}
+  .kyso-xt.ok{color:var(--ok-ink)}
+  .kyso-xt.bad{color:var(--red);font-weight:700}
+  .kyso-nutp{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 </style>
 <script>try{if(localStorage.getItem('appDark')==='1')document.documentElement.classList.add('dark');}catch(e){}</script>
 </head>
@@ -1896,6 +1930,9 @@
         <button id="sbDoiKho" onclick="moDoiKho()" title="Đổi kho phụ trách" hidden>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
         </button>
+        <button onclick="moChuKyCuaToi()" title="Chữ ký điện tử">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17c3-1 4-9 7-9s-1 9 2 9 3-5 5-5 2 3 4 3"/><path d="M3 21h18"/></svg>
+        </button>
         <button onclick="moDoiMatKhau()" title="Đổi mật khẩu">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="M21 2l-9.6 9.6"/><path d="M15.5 7.5l3 3L22 7l-3-3"/></svg>
         </button>
@@ -2029,7 +2066,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2611-03';
+const APP_VER='2611-04';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -5537,7 +5574,7 @@ const DB_MAP={
   spot_checks:r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,by:r.created_by,desc:r.description,amount:Number(r.amount)||0,status:r.status,reviewedBy:r.reviewed_by,reviewedAt:r.reviewed_at?fmt(r.reviewed_at):null,note:r.review_note,time:fmt(r.created_at),items:(r.items&&typeof r.items==='object')?r.items:null,ky:r.ky||'',lyDo:r.ly_do||''}),
   closing_stock:r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,period:r.period,items:r.items||{},recon:r.recon||{},explain:r.explain||{},status:r.status||'Chờ duyệt',by:r.created_by,approvedBy:r.approved_by,approvedAt:r.approved_at?fmt(r.approved_at):null,prevOpening:r.prev_opening||null,time:fmt(r.created_at)}),
   receipts:r=>({sapCt:r.sap_ct||null,sapSl:r.sap_sl==null?null:Number(r.sap_sl),id:r.id,plant:r.plant_code,sloc:r.sloc_code,code:r.code,name:r.name,uom:r.uom,qty:Number(r.qty)||0,date:r.date,period:r.period||periodOfDate(r.date),note:r.note,by:r.created_by,time:fmt(r.created_at)}),
-  transfer_requests:r=>({id:r.id,kind:r.kind,fromPlant:r.from_plant,fromSloc:r.from_sloc,toPlant:r.to_plant,toSloc:r.to_sloc,
+  transfer_requests:r=>(r&&Object.prototype.hasOwnProperty.call(r,'chu_ky')&&(_cotChuKy=true),{chuKy:r.chu_ky||null,id:r.id,kind:r.kind,fromPlant:r.from_plant,fromSloc:r.from_sloc,toPlant:r.to_plant,toSloc:r.to_sloc,
         items:r.items||{},reason:r.reason||'',status:r.status||'Chờ duyệt',period:r.period||null,idCu:r.id_cu||'',
         by:r.created_by,time:fmt(r.created_at),createdAt:r.created_at||null,approvedBy:r.approved_by,approvedAt:r.approved_at?fmt(r.approved_at):null,rejectNote:r.reject_note||''}),
   weekly_counts:r=>({id:r.id,plant:r.plant_code,sloc:r.sloc_code,week:r.week,
@@ -6915,6 +6952,7 @@ async function afterAuth(){
   else{try{const {data}=await _upP;const rows=data||[];
     session.plants=[...new Set(rows.map(r=>r.plant_code))];session.wh=rows.map(r=>({plant:r.plant_code,sloc:r.sloc_code||null}));}catch(e){session.plants=[];session.wh=[];}}
   if(!await pinQua())return;
+  await batBuocChuKy();   // Khoa 26/11/2026: chưa có chữ ký điện tử thì phải tạo trước khi vào app
   enterApp();
 }
 function applyDeepLinkKK(kk){
@@ -13333,8 +13371,12 @@ function dcRequestForm(v,kind){
       log('Lập phiếu '+dcKindLabel(kind)+' khi mất mạng',id+' — chờ gửi');
       baoChoMang(['Phiếu <b>'+id+'</b> · '+codes.length+' mã · '+whName(fp,fs)+(tp?' → '+whName(tp,ts):'')],'Phiếu chờ gửi: '+id,true);
     }else{
+      /* KÝ SỐ (26/11/2026): người lập ký ngay sau khi phiếu lên máy chủ. Huỷ ký thì phiếu vẫn còn, ký lại ở thẻ phiếu —
+         bên duyệt chỉ duyệt được khi người lập đã ký. */
+      const _ky=await kySoPhieu(rec,'lap',soCuaO(items,'lap'));
       tb.forEach(x=>notifyWh(x.plant,x.sloc,x.msg,x.kind,x.title));
-      toast(kind==='du'?'Đã gửi phiếu '+id+' — chờ bếp nhận':'Đã gửi phiếu '+id+' — chờ duyệt');
+      if(_ky===false)toast('Đã gửi phiếu '+id+' nhưng CHƯA KÝ — bấm "✍ Ký phiếu" ở thẻ phiếu, chưa ký thì bên kia chưa duyệt được');
+      else toast(kind==='du'?'Đã gửi phiếu '+id+' — chờ bếp nhận':'Đã gửi phiếu '+id+' — chờ duyệt');
     }
     renderView();
   }
@@ -13353,6 +13395,13 @@ function dcChoDuyet(v){
   card.appendChild(el('div','card-h',`<div><span class="ct">Phiếu chờ tôi duyệt</span><div class="cs">Duyệt / nhận xong hàng mới trừ kho nguồn và cộng kho nhận. Phiếu xin hàng tính theo ngày duyệt, hàng dư cuối ngày tính theo ngày chuyển</div></div><span class="badge ${list.length?'badge-wait':'badge-soft'}">${list.length}</span>`));
   const body=el('div');card.appendChild(body);v.appendChild(card);
   {const nn=ghiChuMang(MANG_DUYET);nn.style.margin='12px 16px 0';body.appendChild(nn);}
+  const nhan=dcChoNhanCuaToi();
+  if(nhan.length){
+    const c2=el('div','card');
+    c2.appendChild(el('div','card-h',`<div><span class="ct">Chờ tôi ký nhận hàng</span><div class="cs">Phiếu xin hàng đã được bên cho duyệt. Nhận đủ hàng thì ký xác nhận để hoàn tất chứng từ</div></div><span class="badge badge-wait">${nhan.length}</span>`));
+    const b2=el('div');c2.appendChild(b2);nhan.forEach(r=>b2.appendChild(dcReqCard(r,false)));
+    v.insertBefore(c2,card);
+  }
   if(!list.length){body.appendChild(el('div','empty',`<div class="big">Không có phiếu nào chờ mình</div><div>Khi kho khác xin hàng của kho mình, phiếu sẽ hiện ở đây.</div>`));return;}
   list.forEach(r=>body.appendChild(dcReqCard(r,true)));
 }
@@ -13590,6 +13639,7 @@ function dcReqCard(r,canAct){
     wrap.appendChild(el('div','note',`<span>✓ ${_laDu?'Bếp nhận bởi':'Duyệt bởi'} <b>${r.approvedBy||'—'}</b> ${r.approvedAt||''} · kỳ tháng ${periodVN(r.period||'')} · sổ có <b>${nBook}</b>/${nItems} dòng</span>`));
     if(nBook<nItems)wrap.appendChild(el('div','note',`<span style="color:var(--red)">⚠ Phiếu đã duyệt nhưng sổ điều chuyển <b>thiếu ${nItems-nBook} dòng</b> — hàng chưa bị trừ kho. Admin mở lại phiếu rồi duyệt lại sau khi đã cấp quyền ghi sổ.</span>`));
   }
+  wrap.appendChild(dcKhoiKySo(r));
   // Hàng nút riêng của admin — hiện với MỌI trạng thái phiếu
   if(session&&session.role==='admin'){
     const bar2=el('div');bar2.style.cssText='display:flex;gap:9px;margin-top:10px;flex-wrap:wrap;align-items:center';
@@ -13663,6 +13713,308 @@ async function dcKiemMayChu(r){
   }catch(e){console.warn('dcKiemMayChu',e);}
   return {chan:false};
 }
+/* ===================== KÝ SỐ PHIẾU ĐIỀU CHUYỂN — PAPERLESS (Khoa 26/11/2026) =====================
+   Đem cách app BCSX-SKB ký phiếu nhập về: chữ ký mẫu vẽ tay (bảng chu_ky_mau, gắn theo tài khoản, không sửa/xoá — vẽ lại
+   = thêm mẫu mới, phải nhập PIN) + nhập lại PIN lúc ký + mã băm SHA-256 nội dung phiếu.
+   MÁY CHỦ (api/ky.js) kiểm PIN, kiểm quyền từng ô, tự tính mã băm từ phiếu trong CSDL và ghi chữ ký; trình duyệt không tự khai.
+   Ô ký theo mẫu giấy "PHIẾU CHUYỂN BỘ PHẬN": BP yêu cầu (lap) · Người xuất (giao) · Người nhận (nhan) · Kiểm soát chi phí.
+   Phiếu lập trước KY_SO_MOC giữ nguyên (không bắt ký); trigger SQL PHẦN 48 chặn duyệt phiếu mới thiếu chữ ký.
+   HÀM noiDungDC PHẢI GIỐNG HỆT lib/chu-ky-dc.js. */
+const KY_SO_MOC='2026-11-27T00:00:00+07:00';
+const DC_O_DUYET={xin:'giao',day:'giao',du:'nhan',huy:'duyet'};
+var _cotChuKy=false;   // máy chủ đã có cột transfer_requests.chu_ky (thấy khi tải phiếu)
+let _kySoTat=false;            // máy chủ chưa chạy SQL PHẦN 48 -> duyệt như cũ, không ký
+const _mauKy={};let _mauCuaToi;   // undefined = chưa hỏi
+function dcCanKySo(r){return !!(r&&r.createdAt)&&new Date(r.createdAt).getTime()>=new Date(KY_SO_MOC).getTime();}
+function _so3(n){return String(Math.round((Number(n)||0)*1000)/1000);}
+function noiDungDC(r,vai,qty){
+  const ds=Object.keys(qty||{}).filter(c=>Number(qty[c])>0).map(c=>String(c).trim()+'='+_so3(qty[c])).sort();
+  return ['DIEU_CHUYEN',r.id,r.kind,(r.fromPlant||'')+'-'+(r.fromSloc||''),r.toPlant?r.toPlant+'-'+(r.toSloc||''):'HUY',vai==='lap'?'LAP':'GIAO',ds.join(';')].join('|');
+}
+function soCuaO(items,vai){const out={};Object.keys(items||{}).forEach(c=>{const it=items[c]||{};
+  out[c]=vai==='lap'?Number(it.qtyReq)||0:Number(it.qtyOk!=null?it.qtyOk:it.qtyReq)||0;});return out;}
+async function sha256Hex(s){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('');}
+function maBamNgan(b){return String(b||'').slice(0,16).toUpperCase().replace(/(.{4})(?=.)/g,'$1-');}
+function gioKySo(iso){const d=new Date(iso);if(isNaN(d))return iso||'';const h=n=>String(n).padStart(2,'0');
+  return h(d.getHours())+':'+h(d.getMinutes())+':'+h(d.getSeconds())+' · '+h(d.getDate())+'/'+h(d.getMonth()+1)+'/'+d.getFullYear();}
+function _thieuBangKy(e){return /42P01|42703|does not exist|schema cache|PGRST20[45]/i.test(String((e&&(e.message||e.code))||e));}
+function svgChuKy(m,cao,mau){
+  if(!m||!m.net||!/^[ML0-9. -]+$/.test(m.net))return '';
+  return '<svg viewBox="0 0 '+(m.rong||600)+' '+(m.cao||220)+'" style="height:'+cao+'px;max-width:100%;display:block;margin:0 auto" preserveAspectRatio="xMidYMid meet"><path d="'+m.net
+    +'" fill="none" stroke="'+(mau||'currentColor')+'" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+}
+async function taiMauKy(ids){
+  const can=[...new Set(ids.filter(i=>i&&!_mauKy[i]))];if(!can.length||!sb)return;
+  try{const {data,error}=await sb.from('chu_ky_mau').select('id,ten,net,rong,cao').in('id',can);
+    if(!error)(data||[]).forEach(m=>{_mauKy[m.id]=m;});}catch(e){}
+}
+async function mauCuaToi(epTai){
+  if(!sb||!session)return null;
+  if(_mauCuaToi!==undefined&&!epTai)return _mauCuaToi;
+  const {data,error}=await sb.from('chu_ky_mau').select('id,ten,net,rong,cao').eq('user_id',session.uid).order('id',{ascending:false}).limit(1);
+  if(error){if(_thieuBangKy(error)){_kySoTat=true;return null;}throw error;}
+  _mauCuaToi=(data||[])[0]||null;if(_mauCuaToi)_mauKy[_mauCuaToi.id]=_mauCuaToi;
+  return _mauCuaToi;
+}
+async function goiKy(body){
+  const tk=((await sb.auth.getSession()).data.session||{}).access_token||'';
+  const r=await fetch('/api/ky',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tk},body:JSON.stringify(body)});
+  let j={};try{j=await r.json();}catch(e){}
+  if(r.status>=500&&!j.loi)j.loi='may_chu';
+  return Object.assign({st:r.status},j);
+}
+function cauLoiKy(j){
+  return ({pin_sai:'Mã PIN không đúng'+(j.conLai!=null?' — còn '+j.conLai+' lần thử':''),
+    pin_sai_dang:'Mã PIN phải đủ 6 số',ban_tranh:'Đang có nhiều lần thử cùng lúc — đợi vài giây rồi thử lại',
+    pin_khoa:'Sai mã PIN 5 lần — mã PIN đã bị khoá. App sẽ đưa về màn đăng nhập để đặt lại.',
+    pin_chua_co:'Tài khoản chưa có mã PIN — đăng nhập lại để đặt mã PIN.',
+    chua_gan_danh_ba:'Tài khoản chưa được gắn với nhân viên trong danh bạ, nên chữ ký chưa có họ tên và mã NV. Nhờ admin gắn ở mục Danh bạ rồi ký lại.',
+    chua_co_mau:'Anh/Chị chưa tạo chữ ký điện tử.',khong_quyen:'Tài khoản này không được ký ô này của phiếu.',
+    da_ky:'Ô này đã được ký rồi.',cung_nguoi:'Một người không được ký hai ô đối nhau của cùng một phiếu (bên giao và bên nhận phải là hai người).',
+    noi_dung_doi:'Số trên phiếu đã bị sửa sau khi người lập ký — không ký tiếp được. Báo kế toán kiểm tra phiếu.',
+    sai_trang_thai:'Phiếu vừa được xử lý ở nơi khác. Tải lại trang để xem trạng thái mới.',
+    so_vuot:'Số giao / nhận vượt số đã xin.',so_rong:'Chưa có mã nào số lượng lớn hơn 0.',
+    khong_co_phieu:'Không tìm thấy phiếu trên máy chủ.',trung_ma:'Mã phiếu đang bị trùng — báo kế toán xử lý trước.',
+    het_phien:'Phiên đăng nhập đã hết — đóng app mở lại rồi ký lại.',khong_hoat_dong:'Tài khoản chưa được kích hoạt.',
+    mau_khong_hop_le:'Chữ ký chưa hợp lệ — vẽ lại rõ hơn.'})[j.loi]||'Chưa ký được — thử lại sau ít phút.';
+}
+/* Hộp nền dùng chung cho vẽ chữ ký / ký số */
+function _hopKy(tieuDe,phu){
+  const bg=el('div','kyso-bg');const m=el('div','kyso');bg.appendChild(m);
+  const h=el('div','kyso-h');const t=el('div');t.appendChild(el('div','kyso-e','Ký điện tử'));t.appendChild(el('div','kyso-t'));t.lastChild.textContent=tieuDe;h.appendChild(t);m.appendChild(h);
+  const b=el('div','kyso-b');m.appendChild(b);
+  if(phu){const p=el('div','kyso-phu');p.textContent=phu;b.appendChild(p);}
+  document.body.appendChild(bg);
+  return {bg,h,b,dong:()=>bg.remove()};
+}
+function _oPin(){const i=el('input','input kyso-pin');i.type='password';i.inputMode='numeric';i.autocomplete='off';i.maxLength=6;i.placeholder='Mã PIN 6 số';
+  i.oninput=()=>{i.value=i.value.replace(/\D/g,'').slice(0,6);};return i;}
+/* VẼ CHỮ KÝ MẪU. batBuoc: lần đầu vào app, không có nút Huỷ. coMauCu: vẽ lại — PIN TRƯỚC (Khoa 26/11/2026). */
+function moVeChuKy(opt){
+  opt=opt||{};
+  return new Promise(xong=>{
+    const H=_hopKy(opt.coMauCu?'Vẽ lại chữ ký':'Tạo chữ ký điện tử',
+      opt.batBuoc?'Anh/Chị cần tạo chữ ký trước khi vào app. Chữ ký dùng để ký số phiếu điều chuyển — thay cho ký tay trên phiếu giấy.':
+      opt.coMauCu?'Nhập mã PIN rồi vẽ chữ ký mới. Phiếu đã ký trước đây vẫn giữ đúng chữ ký cũ.':'Vẽ chữ ký của Anh/Chị vào khung dưới.');
+    let pinDaKiem='';
+    const ketThuc=v=>{H.dong();xong(v);};
+    const buocVe=()=>{
+      H.b.querySelectorAll('.kyso-buoc').forEach(x=>x.remove());
+      const wrap=el('div','kyso-buoc');H.b.appendChild(wrap);
+      const W=600,Hh=220;const cv=document.createElement('canvas');cv.width=W;cv.height=Hh;cv.className='kyso-cv';wrap.appendChild(cv);
+      wrap.appendChild(el('div','kyso-goi','Ký bằng ngón tay (điện thoại) hoặc chuột (máy tính)'));
+      const ctx=cv.getContext('2d');ctx.lineWidth=4;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#14213d';
+      const net=[];let cur=null;
+      const diem=e=>{const r=cv.getBoundingClientRect();return {x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*Hh/r.height};};
+      cv.onpointerdown=e=>{e.preventDefault();cv.setPointerCapture(e.pointerId);cur=[diem(e)];net.push(cur);ctx.beginPath();ctx.moveTo(cur[0].x,cur[0].y);};
+      cv.onpointermove=e=>{if(!cur)return;const p=diem(e);cur.push(p);ctx.lineTo(p.x,p.y);ctx.stroke();};
+      cv.onpointerup=cv.onpointercancel=()=>{cur=null;};
+      const loi=el('div','kyso-loi');wrap.appendChild(loi);
+      const nut=el('div','kyso-nut');wrap.appendChild(nut);
+      const bXoa=el('button','btn btn-ghost','Xoá, vẽ lại');bXoa.onclick=()=>{net.length=0;ctx.clearRect(0,0,W,Hh);loi.textContent='';};nut.appendChild(bXoa);
+      if(!opt.batBuoc){const bH=el('button','btn btn-ghost','Huỷ');bH.onclick=()=>ketThuc(null);nut.appendChild(bH);}
+      const bL=el('button','btn btn-primary','Lưu chữ ký');nut.appendChild(bL);
+      bL.onclick=async()=>{
+        const pts=net.flat();
+        if(pts.length<12||Math.max(...pts.map(p=>p.x))-Math.min(...pts.map(p=>p.x))<W*0.15){loi.textContent='Chữ ký quá ngắn — vẽ rõ, trải ngang khung.';return;}
+        const r1=n=>Math.round(n*10)/10;
+        const path=net.filter(n=>n.length).map(n=>{const [d,...s]=n;const du=s.length?s:[{x:d.x+0.5,y:d.y}];return 'M'+r1(d.x)+' '+r1(d.y)+du.map(p=>'L'+r1(p.x)+' '+r1(p.y)).join('');}).join('');
+        bL.disabled=true;bL.textContent='Đang lưu…';loi.textContent='';
+        let j;try{j=await goiKy({action:'luu_mau',net:path,rong:W,cao:Hh,ten:session.name||'',pin:pinDaKiem||undefined});}catch(e){j={loi:'mang'};}
+        bL.disabled=false;bL.textContent='Lưu chữ ký';
+        if(j.ok&&j.mau){_mauCuaToi=j.mau;_mauKy[j.mau.id]=j.mau;log(opt.coMauCu?'Vẽ lại chữ ký điện tử':'Tạo chữ ký điện tử','');toast('✓ Đã lưu chữ ký');ketThuc(j.mau);return;}
+        if(j.loi==='chua_bat'){_kySoTat=true;ketThuc(null);return;}
+        if(j.loi==='mang'){loi.textContent='Chưa kết nối mạng — bật Wi-Fi hoặc 4G rồi bấm Lưu lại.';return;}
+        if(j.loi==='pin_khoa'){alert(cauLoiKy(j));H.dong();pinDangXuat();return;}
+        loi.textContent=cauLoiKy(j);
+      };
+    };
+    if(!opt.coMauCu){buocVe();return;}
+    // Vẽ lại: hỏi PIN TRƯỚC khi cho xoá chữ ký cũ
+    const w=el('div','kyso-buoc');H.b.appendChild(w);
+    if(_mauCuaToi){const o=el('div','kyso-o');o.innerHTML=svgChuKy(_mauCuaToi,70);o.appendChild(el('div','kyso-goi','Chữ ký đang dùng'));w.appendChild(o);}
+    const pin=_oPin();w.appendChild(pin);const loi=el('div','kyso-loi');w.appendChild(loi);
+    const nut=el('div','kyso-nut');w.appendChild(nut);
+    const bH=el('button','btn btn-ghost','Huỷ');bH.onclick=()=>ketThuc(null);nut.appendChild(bH);
+    const bT=el('button','btn btn-primary','Tiếp tục');nut.appendChild(bT);
+    const tiep=async()=>{
+      if(pin.value.length!==6){loi.textContent='Nhập đủ 6 số mã PIN.';return;}
+      bT.disabled=true;loi.textContent='';
+      let k;try{k=await pinApi('kiem',pin.value);}catch(e){k={loi:1,mang:laLoiMang(e)};}
+      bT.disabled=false;
+      if(k&&k.dung){pinDaKiem=pin.value;buocVe();return;}
+      if(k&&k.khoa){alert('Sai mã PIN 5 lần — mã PIN đã bị khoá. App sẽ đưa về màn đăng nhập để đặt lại.');H.dong();pinDangXuat();return;}
+      pin.value='';pin.focus();
+      loi.textContent=k&&k.conLai!=null?'Mã PIN không đúng — còn '+k.conLai+' lần thử':k&&k.mang?'Chưa kết nối mạng — thử lại khi có mạng.':'Chưa kiểm được mã PIN — thử lại.';
+    };
+    bT.onclick=tiep;pin.onkeydown=e=>{if(e.key==='Enter')tiep();};setTimeout(()=>pin.focus(),50);
+  });
+}
+/* BẮT BUỘC có chữ ký mẫu trước khi vào app (Khoa 26/11/2026). Lỗi mạng / chưa chạy SQL thì không chặn vào app. */
+async function batBuocChuKy(){
+  if(!sb||!session)return true;
+  try{const m=await mauCuaToi(true);if(m||_kySoTat)return true;}catch(e){console.warn('chu_ky_mau',e);return true;}
+  await moVeChuKy({batBuoc:true});
+  return true;
+}
+async function moChuKyCuaToi(){
+  if(!session)return;
+  let m=null;try{m=await mauCuaToi(true);}catch(e){toast('Chưa tải được chữ ký — thử lại khi có mạng');return;}
+  if(_kySoTat){toast('Ký số chưa được bật trên máy chủ');return;}
+  await moVeChuKy({coMauCu:!!m});
+}
+/* HỘP KÝ SỐ. Trả true (đã ký) · 'tat' (máy chủ chưa bật ký số — làm tiếp như cũ) · false (huỷ / lỗi -> dừng). */
+async function kySoPhieu(r,vai,qty){
+  if(_kySoTat)return 'tat';
+  if(!sb)return 'tat';
+  if(!mangOK||(typeof navigator!=='undefined'&&navigator.onLine===false)){errBox('Cần có mạng để ký số',['Ký số phải có máy chủ kiểm mã PIN. Anh/Chị di chuyển sang chỗ có mạng ổn định rồi bấm lại.'],'Phiếu: '+r.id);return false;}
+  if(!session.maNv){errBox('Chưa ký được',[cauLoiKy({loi:'chua_gan_danh_ba'})],'Phiếu: '+r.id);return false;}
+  let m;try{m=await mauCuaToi();}catch(e){errBox('Chưa ký được',['Chưa tải được chữ ký của Anh/Chị — thử lại khi mạng ổn định.'],String(e&&e.message||e));return false;}
+  if(_kySoTat)return 'tat';
+  if(!m){m=await moVeChuKy({});if(!m)return _kySoTat?'tat':false;}
+  const NHAN={lap:r.kind==='du'?'Người xuất (lập phiếu)':'BP yêu cầu (lập phiếu)',giao:'Người xuất (bên giao)',nhan:'Người nhận',duyet:'Kiểm soát chi phí (duyệt hủy)'};
+  return await new Promise(xong=>{
+    const H=_hopKy('Ký số phiếu '+r.id,'');
+    const nd=el('div','kyso-nd');
+    const tu=whName(r.fromPlant,r.fromSloc),den=r.toPlant?whName(r.toPlant,r.toSloc):'Hủy / hao hụt';
+    nd.appendChild(el('div','kyso-nd1'));nd.lastChild.textContent=dcKindLabel(r.kind)+' · '+tu+' → '+den;
+    const ds=Object.keys(qty||{}).filter(c=>Number(qty[c])>0);
+    ds.slice(0,12).forEach(c=>{const it=(r.items||{})[c]||{};const d=el('div','kyso-nd2');d.textContent=(it.name||c)+': '+_so3(qty[c])+' '+(it.uom||'');nd.appendChild(d);});
+    if(ds.length>12){const d=el('div','kyso-nd2');d.textContent='… và '+(ds.length-12)+' mã nữa';nd.appendChild(d);}
+    const d0=el('div','kyso-nd1');d0.textContent='Tổng '+ds.length+' mã';nd.appendChild(d0);
+    H.b.appendChild(nd);
+    const o=el('div','kyso-o');o.appendChild(el('div','kyso-vai',NHAN[vai]||vai));
+    const sv=el('div');sv.innerHTML=svgChuKy(m,64);o.appendChild(sv);
+    const tn=el('div','kyso-ten');tn.textContent=session.name||'';o.appendChild(tn);H.b.appendChild(o);
+    H.b.appendChild(el('div','kyso-goi','Tôi đã kiểm tra và xác nhận nội dung trên. Nhập mã PIN để ký.'));
+    const pin=_oPin();H.b.appendChild(pin);const loi=el('div','kyso-loi');H.b.appendChild(loi);
+    const nut=el('div','kyso-nut');H.b.appendChild(nut);
+    const bH=el('button','btn btn-ghost','Huỷ');bH.onclick=()=>{H.dong();xong(false);};nut.appendChild(bH);
+    const bK=el('button','btn btn-primary','✍ Ký');nut.appendChild(bK);
+    const ky=async()=>{
+      if(pin.value.length!==6){loi.textContent='Nhập đủ 6 số mã PIN.';return;}
+      bK.disabled=true;bK.textContent='Đang ký…';loi.textContent='';
+      let j;try{j=await goiKy({id:r.id,vai,pin:pin.value,qty});}catch(e){j={loi:'mang'};}
+      bK.disabled=false;bK.textContent='✍ Ký';
+      if(j.ok){r.chuKy=j.chuKy;log('Ký số phiếu '+r.id,NHAN[vai]||vai);H.dong();xong(true);return;}
+      if(j.loi==='chua_bat'){_kySoTat=true;H.dong();xong('tat');return;}
+      if(j.loi==='pin_khoa'){alert(cauLoiKy(j));H.dong();xong(false);pinDangXuat();return;}
+      if(j.loi==='mang'){loi.textContent='Chưa kết nối mạng — bật Wi-Fi hoặc 4G rồi bấm Ký lại.';return;}
+      if(j.loi==='pin_sai'||j.loi==='pin_sai_dang'||j.loi==='ban_tranh'){pin.value='';pin.focus();loi.textContent=cauLoiKy(j);return;}
+      H.dong();errBox('Chưa ký được phiếu '+r.id,[cauLoiKy(j)],'Phiếu: '+r.id+'\nÔ ký: '+vai+'\nMã: '+(j.loi||'')+' · '+(j.st||''));xong(false);
+    };
+    bK.onclick=ky;pin.onkeydown=e=>{if(e.key==='Enter')ky();};setTimeout(()=>pin.focus(),50);
+  });
+}
+/* Ô ký theo mẫu giấy "Phiếu chuyển bộ phận" */
+function dcOKy(kind){
+  if(kind==='huy')return [['lap','BP yêu cầu'],['duyet','Kiểm soát chi phí']];
+  if(kind==='du')return [['lap','Người xuất'],['nhan','Người nhận']];
+  return [['lap','BP yêu cầu'],['giao','Người xuất'],['nhan','Người nhận']];
+}
+function _laBenLap(r){const wh=(session&&session.wh)||[],cua=(p,s2)=>wh.some(w=>w.plant===p&&(!w.sloc||w.sloc===s2));
+  return r.kind==='xin'?cua(r.toPlant,r.toSloc):cua(r.fromPlant,r.fromSloc);}
+function _laBenNhan(r){const wh=(session&&session.wh)||[];return !!r.toPlant&&wh.some(w=>w.plant===r.toPlant&&(!w.sloc||w.sloc===r.toSloc));}
+function dcChoNhanCuaToi(){return (trReqs||[]).filter(r=>r.kind==='xin'&&r.status==='Đã duyệt'&&dcCanKySo(r)&&!(r.chuKy&&r.chuKy.nhan)&&_laBenNhan(r));}
+/* KHỐI CHỮ KÝ trên thẻ phiếu + nút ký còn thiếu + nút PDF */
+function dcKhoiKySo(r){
+  const box=el('div','kyso-khoi');
+  const ck=r.chuKy||{};
+  const moi=dcCanKySo(r);
+  if(!moi&&!Object.keys(ck).length){
+    box.appendChild(el('div','kyso-cu','Phiếu lập trước khi áp dụng ký số (27/11/2026) — không có chữ ký số.'));
+  }else{
+    const luoi=el('div','kyso-luoi');box.appendChild(luoi);
+    const o=dcOKy(r.kind);
+    o.forEach(([vai,nhan])=>{
+      const c=el('div','kyso-cell');c.appendChild(el('div','kyso-vai',nhan));
+      const s=ck[vai];
+      if(!s){c.appendChild(el('div','kyso-chua','Chưa ký'));luoi.appendChild(c);return;}
+      const sv=el('div','kyso-sv');c.appendChild(sv);
+      const t=el('div','kyso-ten');t.textContent=s.ten||'';c.appendChild(t);
+      const p=el('div','kyso-phu2');p.textContent='Mã NV: '+(s.maNv||'—')+' · Ký lúc: '+gioKySo(s.luc);c.appendChild(p);
+      const v=el('div','kyso-xt');c.appendChild(v);
+      luoi.appendChild(c);
+      (async()=>{
+        await taiMauKy([s.chuKyId]);sv.innerHTML=svgChuKy(_mauKy[s.chuKyId],46);
+        if(vai!=='lap'&&r.status!=='Đã duyệt'){v.textContent='Đã ký · chờ ghi sổ';return;}
+        try{const b=await sha256Hex(noiDungDC(r,vai,soCuaO(r.items,vai==='lap'?'lap':'giao')));
+          if(b===s.bam){v.textContent='✓ Nội dung khớp · '+maBamNgan(s.bam);v.className='kyso-xt ok';}
+          else{v.textContent='⚠ Nội dung đã đổi sau khi ký';v.className='kyso-xt bad';}}catch(e){v.textContent=maBamNgan(s.bam);}
+      })();
+    });
+  }
+  const nut=el('div','kyso-nutp');box.appendChild(nut);
+  if(moi&&!_kySoTat&&!r._choGui){
+    if(r.status==='Chờ duyệt'&&!ck.lap&&(_laBenLap(r)||(session&&session.role==='admin'))){
+      const b=el('button','btn btn-primary btn-sm','✍ Ký phiếu (người lập)');
+      b.onclick=async()=>{b.disabled=true;const k=await kySoPhieu(r,'lap',soCuaO(r.items,'lap'));b.disabled=false;if(k===true){toast('✓ Đã ký phiếu '+r.id);renderView();}};
+      nut.appendChild(b);
+    }
+    if(r.kind==='xin'&&r.status==='Đã duyệt'&&!ck.nhan&&(_laBenNhan(r)||(session&&session.role==='admin'))){
+      const b=el('button','btn btn-primary btn-sm','✍ Xác nhận đã nhận hàng');
+      b.onclick=async()=>{b.disabled=true;const k=await kySoPhieu(r,'nhan',soCuaO(r.items,'giao'));b.disabled=false;
+        if(k===true){toast('✓ Đã xác nhận nhận hàng phiếu '+r.id);
+          notifyWh(r.fromPlant,r.fromSloc,session.name+' đã ký nhận hàng phiếu '+r.id+' · '+whName(r.toPlant,r.toSloc)+' · lúc '+now(),'transfer','Bên nhận đã ký nhận hàng',session.name);
+          renderView();}};
+      nut.appendChild(b);
+    }
+  }
+  const bP=el('button','btn btn-ghost btn-sm','📄 Phiếu PDF');bP.onclick=()=>dcInPhieu(r);nut.appendChild(bP);
+  return box;
+}
+/* PDF THEO MẪU GIẤY "PHIẾU CHUYỂN BỘ PHẬN" — mở trang in, chọn "Lưu thành PDF". Chữ ký là chữ ký số (nét vẽ + mã NV + giờ + mã băm). */
+async function dcInPhieu(r){
+  const w=window.open('','_blank');
+  if(!w){errBox('Trình duyệt chặn cửa sổ mới',['Cho phép cửa sổ bật lên (pop-up) cho trang này rồi bấm lại "📄 Phiếu PDF".'],'Phiếu: '+r.id);return;}
+  w.document.write('<p style="font-family:sans-serif">Đang dựng phiếu…</p>');
+  const ck=r.chuKy||{};
+  await taiMauKy(Object.values(ck).map(s=>s&&s.chuKyId));
+  const e=s=>escHtml(s==null?'':String(s));
+  const ngayLap=r.createdAt?new Date(r.createdAt):null;const h=n=>String(n).padStart(2,'0');
+  const ngay=ngayLap&&!isNaN(ngayLap)?h(ngayLap.getDate())+'/'+h(ngayLap.getMonth()+1)+'/'+ngayLap.getFullYear():(r.time||'');
+  const codes=Object.keys(r.items||{});
+  const daDuyet=r.status==='Đã duyệt';
+  let tongY=0,tongX=0;
+  const dong=codes.map((c,i)=>{const it=r.items[c]||{};const y=Number(it.qtyReq)||0;const x=daDuyet?Number(it.qtyOk!=null?it.qtyOk:it.qtyReq)||0:null;
+    tongY+=y;if(x!=null)tongX+=x;
+    return '<tr><td class="c">'+(i+1)+'</td><td class="n">'+e(_so3(y))+'</td><td class="c">'+e(it.uom)+'</td><td>'+e(it.name||c)+'<div class="ma">'+e(c)+'</div></td>'
+      +'<td class="n">'+(x==null?'':e(_so3(x)))+'</td><td class="c">'+(x==null?'':e(it.uom))+'</td><td></td><td></td><td></td></tr>';}).join('');
+  const oKy=[['lap','BP yêu cầu'],['giao','Người xuất'],['nhan','Người nhận'],['duyet','Kiểm soát chi phí']];
+  if(r.kind==='du'){oKy[0]=['_','BP yêu cầu'];oKy[1]=['lap','Người xuất'];}
+  const kyHtml=oKy.map(([vai,nhan])=>{const s=ck[vai];
+    if(!s)return '<td><div class="vai">'+nhan+'</div><div class="trong">'+(vai==='_'||(vai==='duyet'&&r.kind!=='huy')?'':'Chưa ký')+'</div></td>';
+    return '<td><div class="vai">'+nhan+'</div><div class="sv">'+svgChuKy(_mauKy[s.chuKyId],60,'#14213d')+'</div><div class="ten">'+e(s.ten)+'</div>'
+      +'<div class="phu">Mã NV: '+e(s.maNv||'—')+'</div><div class="phu">Ký lúc: '+e(gioKySo(s.luc))+'</div><div class="bam">Mã băm: '+e(maBamNgan(s.bam))+'</div></td>';}).join('');
+  const tu=whName(r.fromPlant,r.fromSloc),den=r.toPlant?whName(r.toPlant,r.toSloc):'Hủy / hao hụt';
+  const html='<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>Phieu-chuyen-'+e(r.id)+'</title><style>'
+    +'@page{size:A4;margin:14mm}body{font-family:"Times New Roman",serif;color:#111;font-size:13px;margin:0}'
+    +'.top{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #111;padding-bottom:8px}'
+    +'.logo{font:900 22px/1 Arial,sans-serif;letter-spacing:1px}.logo small{display:block;font-size:10px;letter-spacing:3px;font-weight:700}'
+    +'.so{text-align:right;font-size:12.5px;line-height:1.6}.so b{font-size:15px}'
+    +'h1{text-align:center;font-size:21px;margin:14px 0 4px;letter-spacing:.5px}.loai{text-align:center;font-size:12.5px;margin-bottom:10px}'
+    +'.loai span{margin:0 10px}.td{display:flex;gap:30px;margin:8px 0 10px;font-size:13.5px}.td div{flex:1;border-bottom:1px dotted #555;padding:2px 0}'
+    +'table{width:100%;border-collapse:collapse}th,td{border:1px solid #333;padding:4px 5px;vertical-align:top}th{font-size:12px;background:#f2f2f2}'
+    +'.c{text-align:center}.n{text-align:right}.ma{font-size:10.5px;color:#555}'
+    +'.ky td{height:150px;width:25%;text-align:center;font-size:12px}.ky .vai{font-weight:700;margin-bottom:4px}.ky .trong{color:#999;margin-top:50px}'
+    +'.ky .ten{font-weight:700;margin-top:2px}.ky .phu{font-size:10.5px}.ky .bam{font-size:9.5px;color:#444;font-family:monospace}'
+    +'.chan{margin-top:10px;font-size:10.5px;color:#444;line-height:1.5}.trang{display:inline-block;border:1px solid #333;padding:1px 6px;font-size:11px}'
+    +'</style></head><body>'
+    +'<div class="top"><div class="logo">SUN WORLD<small>BA NA HILLS</small></div><div class="so">Số phiếu: <b>'+e(r.id)+'</b><br>Ngày: '+e(ngay)
+    +(r.idCu?'<br>Mã cũ: '+e(r.idCu):'')+'<br><span class="trang">'+e(r.status)+'</span></div></div>'
+    +'<h1>PHIẾU CHUYỂN BỘ PHẬN</h1><div class="loai">'+e(dcKindLabel(r.kind))+(r.reason?' — '+e(r.reason):'')+'</div>'
+    +'<div class="td"><div>Từ: <b>'+e(tu)+'</b></div><div>Đến: <b>'+e(den)+'</b></div></div>'
+    +'<table><thead><tr><th rowspan="2" style="width:28px">TT</th><th colspan="2">Yêu cầu</th><th rowspan="2">Tên mặt hàng</th><th colspan="2">Thực xuất</th>'
+    +'<th rowspan="2">Giá chuyển</th><th rowspan="2">Giá bán</th><th rowspan="2">Cộng</th></tr><tr><th>SL</th><th>Đvt</th><th>SL</th><th>Đvt</th></tr></thead>'
+    +'<tbody>'+dong+'<tr><td></td><td></td><td></td><td><b>Tổng cộng ('+codes.length+' mã)</b></td><td></td><td></td><td></td><td></td><td></td></tr></tbody></table>'
+    +'<table class="ky" style="margin-top:12px"><tr>'+kyHtml+'</tr></table>'
+    +'<div class="chan">Chứng từ điện tử — ký số trên app Kiểm kê F&amp;B (người ký đăng nhập bằng mật khẩu và nhập mã PIN lúc ký; mã băm là dấu vân tay nội dung phiếu lúc ký, sửa số sau khi ký thì mã không còn khớp).'
+    +(dcCanKySo(r)?'':' Phiếu lập trước ngày áp dụng ký số 27/11/2026.')+' In lúc '+e(now())+'.</div>'
+    +'<script>window.onload=function(){setTimeout(function(){window.print()},300)}<\/script></body></html>';
+  w.document.open();w.document.write(html);w.document.close();
+}
+
+function kySoDangBat(){return _cotChuKy&&!_kySoTat;}
 async function approveTransferReq(r,qtys){
   // CHẶN GHI SỔ HAI LẦN. Ghi sổ mất vài giây; trước đây nút vẫn bấm được trong
   // lúc đó nên bấm hai lần (hoặc mạng chậm rồi bấm lại) là sổ có hai dòng giống
@@ -13754,6 +14106,19 @@ async function _approveTransferReq(r,qtys){
     ],'Phiếu: '+r.id+'\nMã vượt: '+over.join(', '));return;}
   const codes=Object.keys(r.items||{}).filter(c=>Number(qtys[c]||0)>0);
   if(!codes.length){toast(_laDu?'Tất cả số thực nhận đang là 0 — nếu không nhận gì thì bấm Không nhận':'Tất cả số thực giao đang là 0 — nếu không giao gì thì bấm Từ chối');return;}
+  /* KÝ SỐ (26/11/2026): phiếu lập từ 27/11 phải có chữ ký người lập + chữ ký ô duyệt TRƯỚC khi ghi sổ.
+     Máy chủ (trigger PHẦN 48) cũng chặn đổi sang Đã duyệt khi thiếu chữ ký. */
+  if(dcCanKySo(r)&&kySoDangBat()){
+    const _oD=DC_O_DUYET[r.kind]||'giao';
+    if(!(r.chuKy&&r.chuKy.lap)){errBox('Người lập chưa ký phiếu',[
+      'Phiếu <b>'+r.id+'</b> chưa có chữ ký số của người lập ('+(r.by||'—')+').',
+      'Nhờ người lập mở thẻ phiếu, bấm <b>✍ Ký phiếu (người lập)</b>, rồi quay lại duyệt.'],'Phiếu: '+r.id);return;}
+    if(!(r.chuKy&&r.chuKy[_oD])){
+      const _q={};codes.forEach(c=>{_q[c]=Number(qtys[c]||0);});
+      const _k=await kySoPhieu(r,_oD,_q);
+      if(_k===false)return;
+    }
+  }
   const items={...r.items};
   Object.keys(items).forEach(c=>{items[c]={...items[c],qtyOk:Number(qtys[c]||0)};});
   // Ghi sổ: mỗi mã 1 dòng transfers. Hủy/hao hụt thì đầu đến là 'HUY' (hàng ra khỏi hệ thống).
@@ -13925,6 +14290,7 @@ async function reopenTransferReq(r){
   const upd=await dbUpd('transfer_requests',{id:r.id},{status:'Chờ duyệt',period:null,approved_by:null,approved_at:null});
   if(!upd.ok||upd.count===0)return;
   r.status='Chờ duyệt';r.period=null;r.approvedBy=null;r.approvedAt=null;
+  if(r.chuKy){delete r.chuKy.giao;delete r.chuKy.nhan;delete r.chuKy.duyet;}
   log('Mở lại phiếu điều chuyển (admin)',`${r.id} · xóa ${cleaned} dòng sổ`);
   toast('Đã mở lại '+r.id+' — chờ duyệt lại');renderView();
 }
@@ -13972,6 +14338,7 @@ async function boTuChoiTransferReq(r){
     }
   }
   r.status='Chờ duyệt';r.approvedBy=null;r.approvedAt=null;
+  if(r.chuKy){delete r.chuKy.giao;delete r.chuKy.nhan;delete r.chuKy.duyet;}
   log('Bỏ từ chối phiếu điều chuyển (admin)',
       r.id+' · '+whName(r.fromPlant,r.fromSloc)+' → '+ai+' · '+codes.length+' mã'
       +(r.rejectNote?' · lý do từ chối cũ: '+r.rejectNote:''));

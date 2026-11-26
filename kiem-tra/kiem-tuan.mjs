@@ -71,13 +71,12 @@ async function kiemMayChu() {
   if (p.s !== 200) ghi('Máy chủ', 'do', 'API thông báo đẩy không trả lời', 'HTTP ' + p.s);
   else if (!(p.j && p.j.ready)) ghi('Máy chủ', 'vang', 'API thông báo đẩy chưa có khoá VAPID — app chỉ báo khi đang mở');
 
-  // Quét ảnh: không khoá phải bị từ chối đúng câu; khoá giả phải đi tới Google rồi bị Google từ chối.
+  // Quét ảnh (từ 25/11/2026 bắt buộc phiên đăng nhập): gọi không có phiên phải bị chặn 401 — không lọt tới Google.
   const px = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
   const post = b => doc(SITE + '/api/ocr', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) }).catch(e => ({ s: 0, t: e.message }));
-  const a = await post({ images: [px] });
-  const b = await post({ key: 'AIzaKIEM-TRA-TUAN-KHOA-GIA-000000', images: [px] });
-  if (a.s === 400 && /khóa AI/i.test(a.t) && b.s === 502 && /lỗi 400/.test(b.t)) ghi('Máy chủ', 'ok', 'API quét ảnh: chặn đúng khi thiếu khoá, đi tới Google bình thường');
-  else ghi('Máy chủ', 'do', 'API quét ảnh trả lời lạ', 'không khoá → ' + a.s + ' · khoá giả → ' + b.s + ' ' + String(b.t).slice(0, 120));
+  const a = await post({ key: 'AIzaKIEM-TRA-TUAN-KHOA-GIA-000000', images: [px] });
+  if (a.s === 401) ghi('Máy chủ', 'ok', 'API quét ảnh: chặn đúng khi không có phiên đăng nhập');
+  else ghi('Máy chủ', 'do', 'API quét ảnh trả lời lạ', 'không phiên → ' + a.s + ' ' + String(a.t).slice(0, 120));
 }
 
 // ------------------------------------------------------------------ 3. CSDL khớp code
