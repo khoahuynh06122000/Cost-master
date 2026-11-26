@@ -2029,7 +2029,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2611-01';
+const APP_VER='2611-02';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -5371,9 +5371,15 @@ function loaiMay(){const u=navigator.userAgent||'';let cai=false;try{cai=matchMe
 function cheLoi(s,n){return String(s==null?'':s).replace(/AIza[0-9A-Za-z_\-]{10,}/g,'AIza***').replace(/eyJ[0-9A-Za-z_\-]{10,}\.[0-9A-Za-z_\-.]+/g,'jwt***').replace(/Bearer\s+[^\s"']+/gi,'Bearer ***').replace(/<[^>]*>/g,'').slice(0,n||300);}
 function ngayVN(){return new Date(Date.now()+7*3600e3).toISOString().slice(0,10);}
 function manHienTai(){try{return (activeTab||'dang_nhap')+(hubOpen&&activeTab&&hubOpen[activeTab]?'/'+hubOpen[activeTab]:'');}catch(e){return '';}}
+/* 26/11/2026: không ghi vào sổ lỗi những thứ KHÔNG phải lỗi app — bot cảnh báo chỉ nên thấy lỗi thật.
+   · "Script error." = lỗi của script khác nguồn (tiện ích trình duyệt, Google Dịch…), trình duyệt giấu hết chi tiết.
+   · Hộp báo chặn ĐÚNG LUẬT nghiệp vụ / báo mất mạng: người dùng thấy là đủ, không phải sự cố. */
+const LOI_KHONG_GHI=/^(Phiếu đã quá hạn duyệt 48 giờ|Phiếu này đã có rồi|Sổ đã có dòng của phiếu này|Kho đang kiểm kê|Dữ liệu chưa được đưa lên hệ thống do mạng)/;
 function ghiLoiApp(loai,thongDiep,ma,chiTiet){
   try{
     const td=cheLoi(thongDiep,300);if(!td)return;
+    if(loai==='js'&&/^Script error\.?$/i.test(td))return;
+    if(loai==='hop_loi'&&LOI_KHONG_GHI.test(td))return;
     const k=loai+'|'+td+'|'+(ma||'');if(_loiDaGui.has(k))return;_loiDaGui.add(k);
     let q=[];try{q=JSON.parse(localStorage.getItem(LOI_Q)||'[]')||[];}catch(e){}
     const cu=q.find(x=>x.k===k);
