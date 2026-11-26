@@ -2616,7 +2616,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2611-14';
+const APP_VER='2611-15';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -14830,6 +14830,22 @@ async function pdfTaiVe(css,than,ten){
       +'html,body{background:#fff;margin:0;padding:0;width:794px}.ph{width:794px;box-sizing:border-box;padding:40px 42px;background:#fff;position:relative}.ph+.ph{page-break-before:auto}</style></head><body>'+than+'</body></html>');
     d.close();
     await new Promise(r=>setTimeout(r,200));try{if(d.fonts&&d.fonts.ready)await d.fonts.ready;}catch(e){}
+    /* Chữ ký là SVG có viewBox 600×220: html2canvas không thu nhỏ theo viewBox nên chỉ vẽ được một góc chữ ký (Khoa 26/11/2026).
+       Tự vẽ từng chữ ký thành ảnh PNG đúng kích thước ô ký rồi mới chụp. */
+    for(const sv of [...d.querySelectorAll('svg')]){
+      try{const vb=(sv.getAttribute('viewBox')||'').split(/\s+/).map(Number);const pa=sv.querySelector('path');if(!pa||vb.length!==4||!vb[2]||!vb[3])continue;
+        const r0=sv.getBoundingClientRect();const cao=Math.max(20,r0.height||46);
+        const cha=sv.parentElement?sv.parentElement.getBoundingClientRect().width:400;const rong=Math.max(30,Math.min(cha||400,cao*vb[2]/vb[3]));
+        const k=3,cv0=document.createElement('canvas');cv0.width=Math.round(rong*k);cv0.height=Math.round(cao*k);
+        const x0=cv0.getContext('2d');const tl=Math.min(cv0.width/vb[2],cv0.height/vb[3]);
+        x0.translate((cv0.width-vb[2]*tl)/2,(cv0.height-vb[3]*tl)/2);x0.scale(tl,tl);x0.translate(-vb[0],-vb[1]);
+        x0.strokeStyle=pa.getAttribute('stroke')&&pa.getAttribute('stroke')!=='currentColor'?pa.getAttribute('stroke'):'#14213d';
+        x0.lineWidth=Number(pa.getAttribute('stroke-width'))||4;x0.lineCap='round';x0.lineJoin='round';
+        x0.stroke(new Path2D(pa.getAttribute('d')||''));
+        const im=d.createElement('img');im.src=cv0.toDataURL('image/png');im.style.cssText='display:block;margin:0 auto;width:'+rong+'px;height:'+cao+'px';
+        sv.replaceWith(im);await new Promise(r=>{if(im.complete)r();else{im.onload=r;im.onerror=r;}});
+      }catch(e){console.warn('chu ky pdf',e);}
+    }
     const {jsPDF}=window.jspdf;const pdf=new jsPDF({unit:'mm',format:'a4',compress:true});
     const W=210,HP=297;let trang=0;
     const secs=[...d.querySelectorAll('section.ph')];
