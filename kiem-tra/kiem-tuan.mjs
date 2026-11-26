@@ -251,11 +251,27 @@ const MAU = [
   { re: /const viec=\[\];ds\.forEach\(d=>d\.t\.theoKho\.forEach\(x=>viec\.push\(\{d,x\}\)\)\);/, mo: false, vi: 'Hai điểm POS cùng một kho: điểm sau đè hàng sử dụng của điểm trước (sửa 26/10, bản 2610-13)' },
   { re: /shifts\.unshift\(rec\);log\('Bàn giao ca',[^\n]*\n\s*dbIns\('shifts'/, mo: false, vi: 'Bàn giao ca báo đã lưu + xoá số trước khi máy chủ nhận (sửa 26/10, bản 2610-13)' },
   { re: /countLists\[plant\+'\|'\+sloc\+'\|'\+period\]=\{items,by:session\.name,at:now\(\)\};\s*\n\s*dbUpsertCountList/, mo: false, vi: 'Mở kỳ báo thành công trước khi máy chủ nhận danh sách (sửa 26/10, bản 2610-13)' },
-  { re: /\(m\?'':' \[mã chờ khai báo\]'\)\)\.trim\(\)/, mo: false, vi: 'Quét ảnh mã mới bỏ mất tên đọc trên phiếu — kế toán phải gõ lại tên lúc duyệt (sửa 27/10, bản 2710-01)' },
+  { re: /\(m\?'':' \[mã chờ khai báo\]'\)\)\.trim\(\)/, mo: false, vi: 'Quét ảnh mã mới bỏ mất tên đọc trên phiếu — kế toán phải gõ lại tên lúc duyệt (sửa 27/10, bản 2710-01)' },  // ---- Rà soát bảo mật + vận hành 25–26/11/2026 (tep: soát file khác index.html) ----
+  { re: /model:'claude-sonnet-5',/, mo: false, vi: 'Báo cáo AI gọi model Claude không tồn tại (claude-sonnet-5) — sửa 26/11, bản 2611-01' },
+  { re: /sb\.from\('opening_stock'\)\.select\('\*'\),/, mo: false, vi: 'Tồn đầu kỳ đọc một lần, cắt ở 1.000 dòng (sửa 26/11, bản 2611-01)' },
+  { re: /const td=cheLoi\(thongDiep,300\);if\(!td\)return;/, mo: false, canTruoc: 'LOI_KHONG_GHI.test(td)', vi: 'Sổ lỗi ghi cả hộp chặn đúng luật / "Script error." — bot báo nhiễu (sửa 26/11, bản 2611-02)' },
+  { re: /@keyframes lcEdge\{0%\{left:/, mo: false, vi: 'Màn PIN/đăng nhập: vệt sáng chạy bằng left — giật trên PC (sửa 25/11, bản 2511-04)' },
+  { re: /\.lc-edge::after\{/, mo: false, canTruoc: 'pin-tinh', vi: 'Màn PIN không dừng hiệu ứng nền — giật khi rê chuột trên PC (sửa 25/11, bản 2511-04)' },
+  { tep: 'api/push-send.js', re: /async function sendOne/, mo: false, canTruoc: 'laDiaChiPush(s.endpoint)', vi: 'Cổng thông báo gửi tới địa chỉ bất kỳ client đưa lên (sửa 26/11, bản 2611-01)' },
+  { tep: 'api/nhac-dc.js', re: /if \(bi && !dungBi\)/, mo: false, vi: 'Cổng nhắc duyệt mở cho mọi người khi thiếu CRON_SECRET (sửa 25/11, bản 2511-05)' },
+  { tep: 'api/ocr.js', re: /const xuLy = async/, mo: false, canTruoc: 'phienHopLe(req)', vi: 'Cổng quét ảnh không kiểm đăng nhập (sửa 25/11, bản 2511-05)' },
+  { tep: 'api/het-han-dc.js', re: /x-forwarded-host|req\.headers\.host/, mo: false, vi: 'Hàm máy chủ dựng địa chỉ gọi nội bộ từ header Host (sửa 25/11, bản 2511-02)' },
+  { tep: 'api/nhac-dc.js', re: /x-forwarded-host|req\.headers\.host/, mo: false, vi: 'Hàm máy chủ dựng địa chỉ gọi nội bộ từ header Host (sửa 25/11, bản 2511-02)' },
+  { tep: 'api/nhap-kho-sap.js', re: /for \(const u of capNhat\)/, mo: false, vi: 'Cổng SAP cập nhật lần lượt từng dòng — dễ quá 60 giây (sửa 26/11, bản 2611-01)' },
+  { tep: 'api/mo-ky-kiem-ke.js', re: /for \(const x of khos\)/, mo: false, vi: 'Cổng mở kỳ xử lý lần lượt từng kho — quá 60 giây khi mở cả công ty (sửa 25/11, bản 2511-04)' },
+  { tep: 'api/mo-ky-kiem-ke.js', re: /Kỳ này đã duyệt biên bản kiểm kê/, mo: false, canTruoc: 'khoDong.has(k)', vi: 'Cổng mở kỳ nhận cả kho đang đóng (sửa 25/11)' },
+  { tep: 'vercel.json', re: /"crons"/, mo: false, canTruoc: 'X-Content-Type-Options', vi: 'Thiếu header bảo vệ nosniff / X-Frame-Options (sửa 26/11, bản 2611-01)' },
 ];
 function kiemTaiPhat() {
   for (const m of MAU) {
-    const co = m.re.test(HTML) && !(m.canTruoc && HTML.includes(m.canTruoc));
+    let ND = HTML;
+    if (m.tep) { try { ND = fs.readFileSync(path.join(ROOT, m.tep), 'utf8'); } catch (e) { ghi('Lỗi đã biết', 'vang', 'Không đọc được ' + m.tep + ' để soát: ' + m.vi); continue; } }
+    const co = m.re.test(ND) && !(m.canTruoc && ND.includes(m.canTruoc));
     if (co) ghi('Lỗi đã biết', m.mo ? 'vang' : 'do', (m.mo ? 'Chưa sửa: ' : 'TÁI PHÁT: ') + m.vi);
     else if (m.mo) ghi('Lỗi đã biết', 'ok', 'Đã hết: ' + m.vi + ' — có thể chuyển mẫu này sang "đã sửa"');
   }
