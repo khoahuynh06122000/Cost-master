@@ -12,10 +12,12 @@
 //                              qty {mã:số} bắt buộc cho ô ký lúc DUYỆT/NHẬN (giao xin, nhan hàng dư, duyet hủy)
 //   { action:'luu_mau', net, rong, cao, ten, pin? }
 //   { action:'chot', ids:[...], pin }  — kế toán chốt phiếu tháng (lúc tải PDF cả tháng): ghi ô 'kt', phiếu khoá luôn
+//   { action:'ky_kk', vai:'bp'|'kt', ids:[...], pin } — ký BIÊN BẢN KIỂM KÊ (bảng submissions): bp = bộ phận kiểm kê (kho được gán),
+//                                                       kt = kế toán ký lúc duyệt (được ký nhiều phiếu một lần — duyệt hàng loạt)
 // Trả { ok:true, ... } | { loi:'<mã>', ... }  (mã lỗi để app nói thành câu nghiệp vụ)
 const { bocLoi } = require('../lib/ghi-loi');
 const { kiemPin, supa } = require('../lib/pin-kiem');
-const { noiDungDC, soCuaO, bamSha256, O_KY, O_LAP, nguonSo } = require('../lib/chu-ky-dc');
+const { noiDungDC, soCuaO, bamSha256, O_KY, O_LAP, nguonSo, noiDungKK } = require('../lib/chu-ky-dc');
 
 const SUPA_URL = (process.env.SUPABASE_URL || 'https://jygrdbuwveitrlfuwigs.supabase.co').replace(/\/+$/, '');
 const SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
@@ -47,10 +49,14 @@ const xuLy = async (req, res) => {
   // CHỮ KÝ MẪU (Khoa 26/11/2026): gắn theo tài khoản; vẽ lần đầu không hỏi PIN (vừa nhập PIN vào app), VẼ LẠI phải nhập
   // đúng PIN. Mẫu cũ KHÔNG xoá — phiếu đã ký vẫn phải hiện đúng nét ký lúc đó; mẫu mới nhất là mẫu dùng từ nay.
   if (b.action === 'luu_mau') {
-    const net = String(b.net || ''), ten = String(b.ten || '').trim().slice(0, 120);
+    const ten = String(b.ten || '').trim().slice(0, 120);
     const rong = Math.round(Number(b.rong) || 0), cao = Math.round(Number(b.cao) || 0);
-    if (!/^[ML0-9. -]+$/.test(net) || net.length < 20 || net.length > 60000 || rong < 50 || rong > 2000 || cao < 30 || cao > 1000)
-      return res.status(400).json({ loi: 'mau_khong_hop_le' });
+    // Hai cách: vẽ tay (net = đường SVG) hoặc CHỤP ẢNH chữ ký trên giấy (anh = PNG nền trong suốt, app đã tách nền)
+    const anh = typeof b.anh === 'string' ? b.anh : '';
+    const net = anh ? '' : String(b.net || '');
+    if (anh) { if (!/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(anh) || anh.length < 200 || anh.length > 350000) return res.status(400).json({ loi: 'mau_khong_hop_le' }); }
+    else if (!/^[ML0-9. -]+$/.test(net) || net.length < 20 || net.length > 60000) return res.status(400).json({ loi: 'mau_khong_hop_le' });
+    if (rong < 50 || rong > 2000 || cao < 30 || cao > 1000) return res.status(400).json({ loi: 'mau_khong_hop_le' });
     const cu = ((await supa('chu_ky_mau?user_id=eq.' + me.id + '&select=id&limit=1', { method: 'GET' })) || [])[0];
     if (cu) {
       const kp = await kiemPinTraLoi(me, b.pin);
@@ -60,11 +66,13 @@ const xuLy = async (req, res) => {
     const idMau = me.id + '_' + d.getUTCFullYear() + h(d.getUTCMonth() + 1) + h(d.getUTCDate()) + h(d.getUTCHours()) + h(d.getUTCMinutes()) + h(d.getUTCSeconds());
     const pf0 = ((await supa('profiles?id=eq.' + me.id + '&select=full_name,ma_nv', { method: 'GET' })) || [])[0] || {};
     const dong = { id: idMau, user_id: me.id, ten: ten || pf0.full_name || '', ma_nv: pf0.ma_nv || null, net, rong, cao,
-      bam: bamSha256((ten || pf0.full_name || '') + '|' + net) };
+      bam: bamSha256((ten || pf0.full_name || '') + '|' + (anh || net)) };
+    if (anh) dong.anh = anh;
     await supa('chu_ky_mau', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(dong) });
     return res.status(200).json({ ok: true, mau: dong });
   }
   if (b.action === 'chot') return chotThang(res, me, b);
+  if (b.action === 'ky_kk') return kyKiemKe(res, me, b);
 
   const id = String(b.id || '').trim(), vai = String(b.vai || '');
   if (!id || id.length > 80 || !VAI.includes(vai)) return res.status(400).json({ loi: 'du_lieu' });
@@ -184,6 +192,58 @@ async function chotThang(res, me, b) {
     }
   }));
   return res.status(200).json(Object.assign({ ok: true, kt }, kq));
+}
+
+/* KÝ BIÊN BẢN KIỂM KÊ (Khoa 26/11/2026). bp: người được gán kho đó (hoặc admin), ký lúc gửi / sau khi sửa số.
+   kt: kế toán (admin, kế toán viên; kế toán định lượng thì chỉ kho được gán) ký lúc duyệt. Chỉ ký phiếu CHỜ DUYỆT.
+   Mã băm = noiDungKK (số đếm của phiếu trên máy chủ). Sửa số sau khi ký -> trigger PHẦN 50 gỡ chữ ký, phải ký lại. */
+async function kyKiemKe(res, me, b) {
+  const vai = String(b.vai || '');
+  const ids = [...new Set((Array.isArray(b.ids) ? b.ids : [b.id]).map(x => String(x || '').trim()).filter(x => x && x.length <= 80 && !/[",()]/.test(x)))];
+  if (!['bp', 'kt'].includes(vai) || !ids.length || ids.length > 500 || (vai === 'bp' && ids.length > 1)) return res.status(400).json({ loi: 'du_lieu' });
+  const nk = await nguoiKy(me);
+  if (nk.loi) return res.status(nk.st).json({ loi: nk.loi });
+  const { pf, ns, mau } = nk;
+  const laAdmin = pf.role === 'admin';
+  const up = (await supa('user_plants?user_id=eq.' + me.id + '&select=plant_code,sloc_code', { method: 'GET' })) || [];
+  const cua = (p, s) => !!p && up.some(u => u.plant_code === p && (!u.sloc_code || u.sloc_code === s));
+  const rows = [];
+  for (let i = 0; i < ids.length; i += 100) {
+    const lo = ids.slice(i, i + 100).map(x => '"' + x + '"').join(',');
+    rows.push(...((await supa('submissions?id=in.(' + enc(lo) + ')&select=id,plant_code,sloc_code,period,items,status,chu_ky', { method: 'GET' })) || []));
+  }
+  if (!rows.length) return res.status(404).json({ loi: 'khong_co_phieu' });
+  const duoc = r => vai === 'bp' ? (laAdmin || cua(r.plant_code, r.sloc_code))
+    : (laAdmin || pf.role === 'ketoan_vien' || (pf.role === 'ketoan_dl' && cua(r.plant_code, r.sloc_code)));
+  if (!rows.some(duoc)) return res.status(403).json({ loi: 'khong_quyen' });
+  if (vai === 'bp' && rows[0].status !== 'Chờ duyệt') return res.status(409).json({ loi: 'sai_trang_thai', trangThai: rows[0].status });
+  if (vai === 'bp' && rows[0].chu_ky && rows[0].chu_ky.bp) return res.status(409).json({ loi: 'da_ky' });
+  const kp = await kiemPinTraLoi(me, b.pin);
+  if (kp) return res.status(kp.st).json(kp.j);
+  const kq = { ok: true, ky: {}, boQua: [] };
+  let vt = 0;
+  await Promise.all(Array.from({ length: Math.min(8, rows.length) }, async () => {
+    while (vt < rows.length) {
+      const r = rows[vt++];
+      const ck = r.chu_ky || {};
+      if (!duoc(r) || r.status !== 'Chờ duyệt') { kq.boQua.push(r.id); continue; }
+      if (ck[vai]) { kq.ky[r.id] = ck; continue; }
+      // bộ phận và kế toán phải là hai người (trừ admin)
+      const kia = ck[vai === 'bp' ? 'kt' : 'bp'];
+      if (!laAdmin && kia && kia.uid === me.id) { kq.boQua.push(r.id); continue; }
+      const s = { id: r.id, plant: r.plant_code, sloc: r.sloc_code, period: r.period, items: r.items };
+      const sig = { vai, uid: me.id, ten: ns.ho_ten || pf.full_name || '', maNv: ns.ma_nv, emailCty: ns.email_cty || '',
+        chuKyId: mau.id, bam: bamSha256(noiDungKK(s)), luc: new Date().toISOString(), xacThuc: 'MATKHAU+PIN' };
+      const moi = Object.assign({}, ck, { [vai]: sig });
+      try {
+        const w = await supa('submissions?id=eq.' + enc(r.id) + '&status=eq.' + enc('Chờ duyệt') + '&select=id', {
+          method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ chu_ky: moi }) });
+        if (Array.isArray(w) && w.length) kq.ky[r.id] = moi; else kq.boQua.push(r.id);
+      } catch (e) { kq.boQua.push(r.id); }
+    }
+  }));
+  if (vai === 'bp' && !kq.ky[rows[0].id]) return res.status(409).json({ loi: 'sai_trang_thai' });
+  return res.status(200).json(kq);
 }
 
 // Chưa chạy SQL PHẦN 48 (thiếu bảng chu_ky_mau / cột chu_ky) -> báo 'chua_bat' để app duyệt như cũ, không kẹt phiếu.

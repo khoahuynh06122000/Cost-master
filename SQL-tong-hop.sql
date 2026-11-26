@@ -133,3 +133,45 @@ create trigger dc_chu_ky_rao before insert or update or delete on public.transfe
 -- Kiểm: trigger bắt cả DELETE (ra 1)
 select count(*) as trigger_co_delete from pg_trigger t join pg_class c on c.oid = t.tgrelid
  where t.tgname = 'dc_chu_ky_rao' and c.relname = 'transfer_requests' and (t.tgtype & 8) <> 0;
+
+-- ============================================================
+-- PHẦN 50 — KÝ SỐ BIÊN BẢN KIỂM KÊ + CHỤP ẢNH CHỮ KÝ — 26/11/2026, bản 2611-10
+-- (A) chu_ky_mau.anh: chữ ký CHỤP ẢNH trên giấy (PNG nền trong suốt) — thay cho nét vẽ tay khi người dùng vẽ xấu.
+-- (B) submissions.chu_ky: { bp: bộ phận kiểm kê ký, kt: kế toán ký lúc duyệt } — chỉ cổng /api/ky (service role) ghi.
+--     Sửa số / tiểu kho của phiếu sau khi ký -> chữ ký tự gỡ (phải ký lại). Hủy duyệt (về Chờ duyệt) -> gỡ chữ ký kế toán.
+-- Chạy lại nhiều lần vẫn an toàn.
+-- ============================================================
+alter table public.chu_ky_mau add column if not exists anh text;
+alter table public.submissions add column if not exists chu_ky jsonb;
+
+create or replace function public.kk_chu_ky_rao() returns trigger
+language plpgsql as $fn$
+declare
+  may_chu boolean := coalesce(auth.role(), '') = 'service_role';
+begin
+  if tg_op = 'INSERT' then
+    if new.chu_ky is not null and not may_chu then new.chu_ky := null; end if;
+    return new;
+  end if;
+  if new.chu_ky is distinct from old.chu_ky and not may_chu then
+    raise exception 'CHU_KY_CHI_MAY_CHU' using errcode = '42501';
+  end if;
+  -- Số đếm đổi sau khi ký: chữ ký cũ hết hiệu lực
+  if (new.items is distinct from old.items or new.zones is distinct from old.zones) and new.chu_ky is not null then
+    new.chu_ky := null;
+  end if;
+  -- Hủy duyệt (về Chờ duyệt): gỡ chữ ký kế toán
+  if new.status = 'Chờ duyệt' and old.status is distinct from 'Chờ duyệt' and new.chu_ky is not null then
+    new.chu_ky := new.chu_ky - 'kt';
+  end if;
+  return new;
+end $fn$;
+
+drop trigger if exists kk_chu_ky_rao on public.submissions;
+create trigger kk_chu_ky_rao before insert or update on public.submissions
+  for each row execute function public.kk_chu_ky_rao();
+
+-- Kiểm: ra 1 · 1 · 1
+select (select count(*) from information_schema.columns where table_name = 'chu_ky_mau' and column_name = 'anh') as co_cot_anh,
+       (select count(*) from information_schema.columns where table_name = 'submissions' and column_name = 'chu_ky') as co_cot_chu_ky_kk,
+       (select count(*) from pg_trigger where tgname = 'kk_chu_ky_rao') as co_trigger;
