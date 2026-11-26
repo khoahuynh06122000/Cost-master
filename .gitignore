@@ -1,0 +1,15 @@
+# Bí mật môi trường (tuyệt đối không đẩy lên Git)
+.env
+.env.*
+
+# File Excel số liệu nội bộ Sun World Ba Na Hills
+*.xlsx
+*.xlsm
+*.xls
+
+# Phụ thuộc & file tạm
+node_modules/
+.grapuco/
+.claude/
+*.log
+*.bak
