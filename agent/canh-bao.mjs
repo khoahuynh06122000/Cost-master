@@ -24,7 +24,7 @@ const REPO = process.env.GITHUB_REPOSITORY || 'khoahuynh06122000/Cost-master';
 const GH_TOKEN = process.env.GITHUB_TOKEN || '';
 const THU = process.env.CANH_BAO_THU === '1';           // chạy thử: in ra màn, không gửi, không ghi
 const NOW = Number(process.env.CANH_BAO_NOW || Date.now());
-const HAN_AN_HAN = Date.parse(process.env.EGRESS_AN_HAN || '2026-11-29T23:59:00+07:00');
+const HAN_AN_HAN = process.env.EGRESS_AN_HAN ? Date.parse(process.env.EGRESS_AN_HAN) : NaN;
 const EG_HAN_MB = Number(process.env.EGRESS_HAN_MB || 5120), EG_NGAY_MB = 160, KY_EG_NGAY = 5;  // kỳ Supabase bắt đầu ngày 5
 const H = { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY };
 { const gio = new Date(NOW + 7 * 3600e3).getUTCHours();
@@ -204,9 +204,12 @@ if (sbOK) {
     const mb = eg.reduce((s, r) => s + Number(r.bytes || 0), 0) / 1048576;
     const ngayQua = Math.max(1, (NOW - bd) / 86400e3), duBao = mb / ngayQua * ((kt - bd) / 86400e3);
     globalThis.__eg = { mb, duBao, bd, kt };
-    const conAnHan = (HAN_AN_HAN - NOW) / 86400e3;
-    if (duBao > EG_HAN_MB && conAnHan >= 0 && conAnHan <= 3) phat.push({ khoa: 'egress_100', muc: 'S1', tieu: 'Egress Supabase sắp vượt hạn mức',
-      anhHuong: 'quá hạn ân hạn Supabase sẽ khoá app (lỗi 402)', dauHieu: `kỳ này ~${mb.toFixed(0)} MB · dự báo ${(duBao / 1024).toFixed(1)} GB / ${EG_HAN_MB / 1024} GB · còn ${conAnHan.toFixed(1)} ngày ân hạn`,
+    const conNgayKy = Math.max(0, (kt - NOW) / 86400e3);
+    const conAnHan = Number.isFinite(HAN_AN_HAN) ? (HAN_AN_HAN - NOW) / 86400e3 : null;
+    const hanTxt = conAnHan !== null && conAnHan >= 0 ? `còn ${conAnHan.toFixed(1)} ngày ân hạn` : `còn ${conNgayKy.toFixed(1)} ngày trong kỳ`;
+    // 26/11/2026: bỏ lệ thuộc ngày ân hạn cứng (tránh tự tắt S1 sau 29/11) — chạm >=90% thực tế hoặc dự báo >100% là báo S1 ngay.
+    if (mb >= EG_HAN_MB * 0.9 || duBao > EG_HAN_MB) phat.push({ khoa: 'egress_100', muc: 'S1', tieu: 'Egress Supabase sắp vượt hạn mức',
+      anhHuong: 'quá hạn mức Supabase sẽ khoá app (lỗi 402)', dauHieu: `kỳ này ~${mb.toFixed(0)} MB (${Math.round(mb / EG_HAN_MB * 100)}%) · dự báo ${(duBao / 1024).toFixed(1)} GB / ${EG_HAN_MB / 1024} GB · ${hanTxt}`,
       viec: 'nâng Supabase lên gói Pro, hoặc giảm dữ liệu tải lúc mở app' });
     else if (duBao > EG_HAN_MB * 0.8) phat.push({ khoa: 'egress_80', muc: 'S2', tieu: 'Egress Supabase dự báo vượt 80% hạn mức',
       anhHuong: 'nguy cơ vượt gói Free cuối kỳ', dauHieu: `kỳ này ~${mb.toFixed(0)} MB · dự báo ${(duBao / 1024).toFixed(1)} GB / ${EG_HAN_MB / 1024} GB (số app tự đếm)`,
