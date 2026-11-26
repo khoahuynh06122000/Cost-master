@@ -1540,7 +1540,8 @@
     background:var(--surface);color:var(--ink);border-radius:22px;box-shadow:var(--shadow-lg);overflow:hidden;
     animation:nsmIn .24s cubic-bezier(.16,1,.3,1) both}
   @keyframes nsmIn{from{opacity:0;transform:translateY(8px) scale(.96)}to{opacity:1;transform:none}}
-  .nsm-l,.nsm-r{overflow:auto;padding:28px}
+  .nsm{grid-template-rows:minmax(0,1fr) auto}
+  .nsm-l,.nsm-r{overflow:auto;padding:28px;min-height:0}
   .nsm-r{border-left:1px solid var(--line);background:var(--surface-2)}
   .nsm-x{position:absolute;top:14px;right:14px;width:38px;height:38px;border-radius:50%;border:0;background:var(--surface-2);color:var(--ink);
     font-size:18px;cursor:pointer;z-index:2}
@@ -1593,7 +1594,7 @@
   .nsm-foot{grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px;padding:12px 20px;border-top:1px solid var(--line);background:var(--surface)}
   .sb-user .av,.sb-user .un{cursor:pointer}
   @media (max-width:760px){
-    .nsm{grid-template-columns:1fr;max-height:calc(100vh - 24px);overflow:auto}
+    .nsm{grid-template-columns:1fr;grid-template-rows:none;max-height:calc(100vh - 24px);overflow:auto}
     .nsm-l,.nsm-r{overflow:visible;padding:20px 16px}
     .nsm-r{border-left:0;border-top:1px solid var(--line)}
     .nsm-top .ns-av{width:88px;height:88px;font-size:32px}
@@ -2084,7 +2085,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2611-06';
+const APP_VER='2611-07';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
