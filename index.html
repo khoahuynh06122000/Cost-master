@@ -2616,7 +2616,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2611-13';
+const APP_VER='2611-14';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -14782,21 +14782,86 @@ function dcPhieuHtml(r){
     +'<div class="chan">Chứng từ điện tử — ký số trên app Kiểm kê F&amp;B (người ký đăng nhập bằng mật khẩu và nhập mã PIN lúc ký; mã băm là dấu vân tay nội dung phiếu lúc ký, sửa số sau khi ký thì mã không còn khớp).'
     +(dcCanKySo(r)||Object.keys(ck).length?'':' Phiếu lập trước ngày áp dụng ký số 27/11/2026.')+(r.by?' Người lập phiếu: '+e(r.by)+'.':'')+' In lúc '+e(now())+'.</div></section>';
 }
-function _moTrangIn(){const w=window.open('','_blank');
-  if(!w){errBox('Trình duyệt chặn cửa sổ mới',['Cho phép cửa sổ bật lên (pop-up) cho trang này rồi bấm lại.'],'');return null;}
-  w.document.write('<p style="font-family:sans-serif">Đang dựng phiếu…</p>');return w;}
-function _ghiTrangIn(w,ten,than){
-  w.document.open();w.document.write('<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>'+escHtml(ten)+'</title><style>'+DC_PDF_CSS+'</style></head><body>'+than
-    +'<script>window.onload=function(){setTimeout(function(){window.print()},400)}<\/script></body></html>');w.document.close();}
-async function dcInPhieu(r){
-  const w=_moTrangIn();if(!w)return;
-  await taiMauKy(Object.values(r.chuKy||{}).map(s=>s&&s.chuKyId));
-  _ghiTrangIn(w,'Phieu-chuyen-'+r.id,dcPhieuHtml(r));
+/* TẢI PDF THẬT (Khoa 26/11/2026: "mở ra không tải về được" — trang in + "Lưu thành PDF" không chạy trên điện thoại / bản cài app).
+   Dựng file .pdf ngay trên máy: mỗi <section class="ph"> vẽ thành ảnh (html2canvas) rồi xếp vào trang A4 (jsPDF); trang dài thì cắt
+   sang trang sau. Hai thư viện tải lười từ cdnjs lần đầu bấm. Máy tính: tải thẳng về Downloads. Điện thoại: hộp "Tải về / Chia sẻ"
+   (cần một chạm mới — trình duyệt chỉ cho mở bảng chia sẻ ngay sau một lần bấm). */
+let _pdfLibP=null;
+function taiThuVienPDF(){
+  if(window.jspdf&&window.html2canvas)return Promise.resolve();
+  if(_pdfLibP)return _pdfLibP;
+  const nap=src=>new Promise((ok,loi)=>{const t=document.createElement('script');t.src=src;t.async=true;t.onload=ok;t.onerror=()=>loi(new Error('khong_tai_thu_vien'));document.head.appendChild(t);});
+  _pdfLibP=Promise.all([nap('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'),
+    nap('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js')]).catch(e=>{_pdfLibP=null;throw e;});
+  return _pdfLibP;
 }
-/* In nhiều phiếu một file (kế toán tải cả tháng): trang bìa tóm tắt + mỗi phiếu một trang. Cửa sổ phải mở TRƯỚC mọi await. */
-async function dcInNhieu(w,ds,ten,bia){
+function _laDienThoai(){return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent||'')||(navigator.maxTouchPoints>1&&/Macintosh/.test(navigator.userAgent||''));}
+function _taiBlob(blob,ten){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=ten;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),8000);}
+async function giaoFilePdf(blob,ten){
+  if(!_laDienThoai()){_taiBlob(blob,ten);toast('✓ Đã tải '+ten);return;}
+  const file=new File([blob],ten,{type:'application/pdf'});
+  const H=_hopKy('File PDF đã sẵn sàng','');
+  const nd=el('div','kyso-nd');const t1=el('div','kyso-nd1');t1.textContent=ten;nd.appendChild(t1);
+  const t2=el('div','kyso-nd2');t2.textContent=(blob.size/1024/1024).toFixed(1).replace('.',',')+' MB';nd.appendChild(t2);H.b.appendChild(nd);
+  const nut=el('div','kyso-nut');H.b.appendChild(nut);
+  const bD=el('button','btn btn-ghost','Đóng');bD.onclick=()=>H.dong();nut.appendChild(bD);
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+    const bS=el('button','btn btn-ghost','📤 Chia sẻ / Lưu vào Tệp');
+    bS.onclick=async()=>{try{await navigator.share({files:[file],title:ten});H.dong();}catch(e){if(!(e&&e.name==='AbortError')){_taiBlob(blob,ten);H.dong();}}};nut.appendChild(bS);
+  }
+  const bT=el('button','btn btn-primary','📥 Tải về máy');bT.onclick=()=>{_taiBlob(blob,ten);H.dong();toast('✓ Đã tải '+ten);};nut.appendChild(bT);
+}
+/* css: CSS của trang; than: chuỗi HTML gồm các <section class="ph">…</section> (mỗi section bắt đầu trang mới). */
+let _dangDungPdf=false;
+async function pdfTaiVe(css,than,ten){
+  if(_dangDungPdf){toast('Đang dựng file PDF, đợi một chút…');return;}
+  _dangDungPdf=true;
+  const ten2=String(ten||'tai-lieu').replace(/[\\/:*?"<>|]+/g,'-')+'.pdf';
+  const fr=document.createElement('iframe');
+  try{
+    toast('Đang dựng file PDF…');
+    try{await taiThuVienPDF();}
+    catch(e){errBox('Chưa dựng được file PDF',['Cần có mạng ở lần tạo PDF đầu tiên. Kiểm tra kết nối rồi bấm lại.'],String(e&&e.message||e));return;}
+    fr.setAttribute('aria-hidden','true');fr.style.cssText='position:fixed;left:-12000px;top:0;width:794px;height:1123px;border:0';
+    document.body.appendChild(fr);
+    const d=fr.contentDocument;d.open();
+    d.write('<!doctype html><html lang="vi"><head><meta charset="utf-8"><style>'+css
+      +'html,body{background:#fff;margin:0;padding:0;width:794px}.ph{width:794px;box-sizing:border-box;padding:40px 42px;background:#fff;position:relative}.ph+.ph{page-break-before:auto}</style></head><body>'+than+'</body></html>');
+    d.close();
+    await new Promise(r=>setTimeout(r,200));try{if(d.fonts&&d.fonts.ready)await d.fonts.ready;}catch(e){}
+    const {jsPDF}=window.jspdf;const pdf=new jsPDF({unit:'mm',format:'a4',compress:true});
+    const W=210,HP=297;let trang=0;
+    const secs=[...d.querySelectorAll('section.ph')];
+    for(let i=0;i<secs.length;i++){
+      const cv=await window.html2canvas(secs[i],{scale:1.6,backgroundColor:'#ffffff',logging:false,windowWidth:794,useCORS:true});
+      const pxMm=cv.width/W,trangPx=Math.floor(HP*pxMm),tl=cv.width/secs[i].getBoundingClientRect().width;
+      /* ngắt trang đúng ranh giới dòng bảng / khối, không cắt ngang chữ */
+      const goc=secs[i].getBoundingClientRect().top;
+      const moc=[...secs[i].querySelectorAll('tr,.l,.ky,.chan,.td,h1,.top')].map(x=>Math.round((x.getBoundingClientRect().bottom-goc)*tl)).sort((a,b)=>a-b);
+      for(let y=0;y<cv.height;){
+        let h=Math.min(trangPx,cv.height-y);if(h<8)break;
+        if(y+h<cv.height){const ok=moc.filter(b=>b>y+trangPx*0.5&&b<=y+trangPx);if(ok.length)h=ok[ok.length-1]-y;}
+        const c2=document.createElement('canvas');c2.width=cv.width;c2.height=h;
+        const x2=c2.getContext('2d');x2.fillStyle='#fff';x2.fillRect(0,0,c2.width,h);x2.drawImage(cv,0,y,cv.width,h,0,0,cv.width,h);
+        if(trang++)pdf.addPage();
+        pdf.addImage(c2.toDataURL('image/jpeg',0.86),'JPEG',0,0,W,h/pxMm);
+        y+=h;
+      }
+      if(secs.length>4&&i%5===4)toast('Đang dựng PDF… '+(i+1)+'/'+secs.length+' trang');
+    }
+    await giaoFilePdf(pdf.output('blob'),ten2);
+  }catch(e){console.error('pdf',e);errBox('Chưa dựng được file PDF',['Thử lại sau ít phút. Nếu vẫn lỗi, chụp màn hình gửi kế toán.'],String(e&&(e.stack||e.message)||e));}
+  finally{fr.remove();_dangDungPdf=false;}
+}
+async function dcInPhieu(r){
+  await taiMauKy(Object.values(r.chuKy||{}).map(s=>s&&s.chuKyId));
+  await pdfTaiVe(DC_PDF_CSS,dcPhieuHtml(r),'Phieu-chuyen-'+r.id);
+}
+/* Nhiều phiếu một file (kế toán tải cả tháng): trang bìa tóm tắt + mỗi phiếu một trang. */
+async function dcInNhieu(ds,ten,bia){
   await taiMauKy(ds.flatMap(r=>Object.values(r.chuKy||{}).map(s=>s&&s.chuKyId)));
-  _ghiTrangIn(w,ten,(bia||'')+ds.map(dcPhieuHtml).join(''));
+  await pdfTaiVe(DC_PDF_CSS,(bia||'')+ds.map(dcPhieuHtml).join(''),ten);
 }
 
 /* CHỐT & TẢI PHIẾU THÁNG (Khoa 26/11/2026): cuối tháng kế toán tải hết phiếu điều chuyển về = chốt. Nhập PIN một lần, máy chủ ghi
@@ -14829,25 +14894,24 @@ function dcChotThang(v){
     +'<div>'+escHtml(kyKhoangVN(dcChotKy))+'</div><table><tr><th>Số phiếu</th><th>Kế toán chốt</th><th>Lúc</th></tr><tr><td class="c">'+n+'</td><td class="c">'+escHtml(m.ten||'')+'</td><td class="c">'+escHtml(gioKySo(m.luc))+'</td></tr></table></section>';
   const bC=el('button','btn btn-primary',chuaChot.length?'🔒 Chốt '+chuaChot.length+' phiếu & tải PDF':'Tất cả phiếu đã chốt');bC.disabled=!chuaChot.length;nut.appendChild(bC);
   const bT=el('button','btn btn-ghost','📄 Tải lại PDF đã chốt ('+daChot.length+')');bT.disabled=!daChot.length;nut.appendChild(bT);
-  bT.onclick=async()=>{const w=_moTrangIn();if(!w)return;const ds2=daChot.slice().sort((a,b)=>String(a.id).localeCompare(String(b.id)));
-    await dcInNhieu(w,ds2,ten,bia(ds2.length,ds2[0].chuKy.kt));};
+  bT.onclick=async()=>{const ds2=daChot.slice().sort((a,b)=>String(a.id).localeCompare(String(b.id)));
+    bT.disabled=true;try{await dcInNhieu(ds2,ten,bia(ds2.length,ds2[0].chuKy.kt));}finally{bT.disabled=false;}};
   bC.onclick=async()=>{
     if(!kySoDangBat()){errBox('Chưa bật ký số',['Máy chủ chưa bật ký số nên chưa chốt được.'],'');return;}
     if(!session.maNv){errBox('Chưa chốt được',[cauLoiKy({loi:'chua_gan_danh_ba'})],'');return;}
     const pin=await hoiPinKy('Chốt '+chuaChot.length+' phiếu kỳ '+periodVN(dcChotKy),
       'Sau khi chốt, phiếu khoá — không mở lại, sửa hay xóa được. PDF đóng dấu đỏ "Kế toán đã chốt". Nhập mã PIN để chốt.','🔒 Chốt');
     if(!pin)return;
-    const w=_moTrangIn();if(!w)return;
     bC.disabled=true;bC.textContent='Đang chốt…';
     let j;try{j=await goiKy({action:'chot',ids:chuaChot.map(r=>r.id),pin});}catch(e){j={loi:'mang'};}
-    if(!j.ok){w.close();bC.disabled=false;bC.textContent='🔒 Chốt '+chuaChot.length+' phiếu & tải PDF';
+    if(!j.ok){bC.disabled=false;bC.textContent='🔒 Chốt '+chuaChot.length+' phiếu & tải PDF';
       if(j.loi==='pin_khoa'){alert(cauLoiKy(j));pinDangXuat();return;}
       errBox('Chưa chốt được',[j.loi==='mang'?'Chưa kết nối mạng — thử lại khi có mạng.':cauLoiKy(j)],'Mã: '+(j.loi||'')+' · '+(j.st||''));return;}
     const xong=new Set(j.ids||[]);
     (trReqs||[]).forEach(r=>{if(xong.has(r.id))r.chuKy=Object.assign({},r.chuKy||{},{kt:j.kt});});
     log('Chốt phiếu điều chuyển tháng',periodVN(dcChotKy)+' · '+j.chot+' phiếu');
     const ds2=duyet.filter(dcDaChot).sort((a,b)=>String(a.id).localeCompare(String(b.id)));
-    await dcInNhieu(w,ds2,ten,bia(ds2.length,j.kt));
+    await dcInNhieu(ds2,ten,bia(ds2.length,j.kt));
     toast('✓ Đã chốt '+j.chot+' phiếu'+(j.boQua?' · '+j.boQua+' phiếu đổi trạng thái, không chốt':''));renderView();
   };
 }
@@ -14950,9 +15014,6 @@ function khoiKyKK(s){
 }
 /* PDF BIÊN BẢN KIỂM KÊ — đúng mẫu Excel công ty (exportBBKK), thêm hai chữ ký số ở ô ký. */
 async function inBienBanPDF(s,byZone){
-  const w=window.open('','_blank');
-  if(!w){errBox('Trình duyệt chặn cửa sổ mới',['Cho phép cửa sổ bật lên (pop-up) cho trang này rồi bấm lại.'],'');return;}
-  w.document.write('<p style="font-family:sans-serif">Đang dựng biên bản…</p>');
   const ck=s.chuKy||{};await taiMauKy(Object.values(ck).map(x=>x&&x.chuKyId));
   const e=escHtml;const wh=whName(s.plant,s.sloc);
   const d=(s.period&&kyKhoang(s.period)?kyKhoang(s.period).den:null)||parseTs(s.time)||new Date();
@@ -14976,7 +15037,7 @@ async function inBienBanPDF(s,byZone){
     +'.ky{margin-top:14px}.ky td{width:50%;text-align:center;vertical-align:top;padding:4px}.ky .vai{font-weight:700}.ky .it{font-style:italic;font-size:11px}'
     +'.ky .trong{height:70px}.ky .ten{font-weight:700;margin-top:2px}.ky .phu{font-size:10.5px}.ky .bam{font-size:9.5px;font-family:monospace;color:#444}'
     +'.chan{margin-top:10px;font-size:10px;color:#555}.tt{float:right;border:1px solid #333;padding:1px 6px;font-size:11px}';
-  const html='<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>'+e('Bien-ban-kiem-ke-'+s.id)+'</title><style>'+css+'</style></head><body>'
+  const than='<section class="ph">'
     +'<div class="tt">'+e(s.status)+' · '+e(s.id)+'</div><div class="cty">CÔNG TY CỔ PHẦN DỊCH VỤ CÁP TREO BÀ NÀ</div><h1>BIÊN BẢN KIỂM KÊ KHO/TÀI SẢN</h1>'
     +'<div class="l b">BỘ PHẬN/KHO: '+e(wh)+' ('+e(s.plant)+'-'+e(s.sloc)+')</div>'
     +'<div class="l">Thời điểm kiểm kê: '+ngay+'. Thành phần tham gia gồm:</div>'
@@ -14988,8 +15049,8 @@ async function inBienBanPDF(s,byZone){
     +'<div class="l" style="margin-top:8px">Có/Không có hàng hóa kém phẩm chất, hết hạn, gần hết hạn theo xác nhận của bp quản lý kho: .................</div>'
     +'<table class="ky"><tr>'+oKy('kt','ĐẠI DIỆN KẾ TOÁN')+oKy('bp','ĐẠI DIỆN KIỂM KÊ')+'</tr></table>'
     +'<div class="chan">Chứng từ điện tử — ký số trên app Kiểm kê F&amp;B (người ký đăng nhập bằng mật khẩu và nhập mã PIN lúc ký; mã băm là dấu vân tay số kiểm kê lúc ký, sửa số sau khi ký thì chữ ký tự hết hiệu lực). In lúc '+e(now())+'.</div>'
-    +'<script>window.onload=function(){setTimeout(function(){window.print()},400)}<\/script></body></html>';
-  w.document.open();w.document.write(html);w.document.close();
+    +'</section>';
+  await pdfTaiVe(css,than,'Bien-ban-kiem-ke-'+s.id+(byZone?'-tieu-kho':''));
 }
 function kySoDangBat(){return _cotChuKy&&!_kySoTat;}
 async function approveTransferReq(r,qtys){
