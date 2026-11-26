@@ -2029,7 +2029,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2611-02';
+const APP_VER='2611-03';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -4029,11 +4029,40 @@ function kyTruoc(per){
    Trước đây chỉ tìm đúng kỳ liền trước (T9 thì chỉ tìm T8) — kho kiểm kê lần cuối
    tháng 7 hoặc tháng 6, hay có phiếu T7 chưa duyệt, thì không khớp gì và tồn ra 0
    dù kho có tồn thật. Kỳ dạng 'YYYY-MM' nên so sánh chuỗi là so đúng thứ tự. */
+/* ===== ÁO MƯA — THEO DÕI NGOÀI SAP (Khoa 26/11/2026) =====
+   Áo mưa không có trên SAP nên bản chốt tồn kế toán (nạp theo số SAP) không bao giờ có mã áo mưa.
+   · Tồn đầu kỳ: bản chốt thiếu mã áo mưa thì lấy số áo mưa từ phiếu kiểm kê CÙNG KỲ của kho đó.
+   · Kiểm kê tháng: luôn có dòng áo mưa (mã kho từng dùng; kho chưa dùng thì đủ mọi mã áo mưa).
+   Mã áo mưa nhận theo TÊN trong danh mục (có chữ "áo mưa") + 3 mã đã biết — thêm mã áo mưa mới vào danh mục là tự nhận. */
+const AO_MUA_MA=['10004806','10048209','10169821'];
+let _aoMuaCache=null,_aoMuaN=-1;
+function maAoMua(){
+  const ds=Object.keys(masterByCode||{});
+  if(_aoMuaCache&&_aoMuaN===ds.length)return _aoMuaCache;
+  const set=new Set(AO_MUA_MA);
+  ds.forEach(c=>{const m=masterByCode[c];if(m&&vnNorm(m.name||'').indexOf('aomua')>=0)set.add(c);});
+  _aoMuaN=ds.length;_aoMuaCache=set;return set;
+}
+function laAoMua(c){return maAoMua().has(String(c));}
+function aoMuaCuaKho(plant,sloc){
+  const tat=maAoMua(),k=maCuaKhoNay(plant,sloc),ds=[...tat].filter(c=>k.has(c));
+  return ds.length?ds:[...tat];
+}
+/* Bản chốt kế toán kỳ `ky` + số áo mưa từ phiếu kiểm kê cùng kỳ (ưu tiên phiếu Đã duyệt) cho mã áo mưa bản chốt không có. */
+function chotKemAoMua(items,plant,sloc,ky){
+  const sub=(submissions||[]).filter(x=>x.plant===plant&&x.sloc===sloc&&x.period===ky&&x.items)
+    .sort((a,b)=>(a.status==='Đã duyệt'?0:1)-(b.status==='Đã duyệt'?0:1))[0];
+  if(!sub)return items;
+  let out=null;
+  Object.keys(sub.items).forEach(c=>{const v=sub.items[c];
+    if(laAoMua(c)&&!(c in items)&&v!==''&&v!=null){if(!out)out={...items};out[c]=v;}});
+  return out||items;
+}
 function _mocTruoc(plant,sloc,per){
   const coSo=o=>o&&o.items&&Object.keys(o.items).length;
   const moc=[];
   closings.forEach(c=>{if(c.plant===plant&&c.sloc===sloc&&c.period&&c.period<per&&coSo(c))
-    moc.push({per:c.period,uu:2,items:c.items,fromId:'CHỐT TỒN THÁNG '+periodVN(c.period)+' (KT)',at:c.approvedAt||c.time||'',by:c.approvedBy||c.by||'',
+    moc.push({per:c.period,uu:2,items:chotKemAoMua(c.items,plant,sloc,c.period),fromId:'CHỐT TỒN THÁNG '+periodVN(c.period)+' (KT)',at:c.approvedAt||c.time||'',by:c.approvedBy||c.by||'',
       nguon:'Chốt tồn tháng '+periodVN(c.period)+' (kế toán)',tam:c.status!=='Đã duyệt'});});
   submissions.forEach(x=>{if(x.plant===plant&&x.sloc===sloc&&x.period&&x.period<per&&coSo(x))
     moc.push({per:x.period,uu:1,items:x.items,fromId:x.id,at:x.approvedAt||x.time||'',by:x.approvedBy||x.user||'',
@@ -8489,6 +8518,7 @@ function templateRowsFor(plant,sloc,period,tuan){
     rows=ds.map(c=>{const m=masterByCode[c]||{};return [c,m.name||'',m.uom||''];});
   }
   else{const op=(openingStock[plant+'|'+sloc]||{}).items||{};rows=Object.keys(op).map(c=>{const m=masterByCode[c]||{};return [c,m.name||'',m.uom||''];});}
+  if(!tuan){const co=new Set(rows.map(r=>String(r[0])));aoMuaCuaKho(plant,sloc).forEach(c=>{if(!co.has(c)){const m=masterByCode[c]||{};rows.push([c,m.name||c,m.uom||'CAI']);}});}
   return rows.sort((a,b)=>(a[1]||'').localeCompare(b[1]||'','vi'));
 }
 function renderKKUpload(v,fixed){
@@ -9575,7 +9605,7 @@ function ktChamDiem(K,c){
     if(!sub)dh.K1=na('Chưa có biên bản kiểm kê');
     else if(!cl)dh.K1=na('Kế toán chưa nạp chốt tồn tháng');
     else{const kt=cl.items||{},bp=sub.items||{},gt=cl.explain||{};
-      const ma=[...new Set(Object.keys(kt).concat(Object.keys(bp).filter(cd=>bp[cd]!==''&&bp[cd]!=null)))];
+      const ma=[...new Set(Object.keys(kt).concat(Object.keys(bp).filter(cd=>bp[cd]!==''&&bp[cd]!=null)))].filter(cd=>!laAoMua(cd));   // áo mưa ngoài SAP: chốt KT không có
       const lech=[];ma.forEach(cd=>{const a=Number(bp[cd])||0,b=Number(kt[cd])||0;if(Math.abs(a-b)>_ktEps)lech.push({cd,a,b,d:_ksR(a-b)});});
       if(ma.length<NG.k1.maMin)dh.K1=na('Dưới '+NG.k1.maMin+' mã để so');
       else{const ty=lech.length/ma.length,cao=lech.filter(z=>z.d>0),gtN=lech.filter(z=>gt[z.cd]).length;
@@ -12024,6 +12054,7 @@ function renderCountSheet(v){
   const _mv=movementsOf(counting.plant,counting.sloc,_per);
   _moved=new Set([...Object.keys(_mv.buy),...Object.keys(_mv.tin),...Object.keys(_mv.tout)]);
   _moved.forEach(c=>_codeSet.add(c));
+  aoMuaCuaKho(counting.plant,counting.sloc).forEach(c=>_codeSet.add(c));   // áo mưa theo dõi ngoài SAP: luôn có dòng (Khoa 26/11/2026)
   }
   /* Mã ĐÃ CÓ SỐ trong nháp / phiếu đang sửa phải luôn có dòng (Khoa 27/10/2026): mã BP "Đếm thêm" ngoài danh sách chỉ được
      thêm vào danh sách trong phiên đó — mở lại phiếu để sửa (hoặc tải lại trang) là mã đó mất dòng, số vẫn nằm trong phiếu
@@ -12038,7 +12069,7 @@ function renderCountSheet(v){
   /* Tách nhóm: mã của CHÍNH kho này lên trước, mã còn lại của điểm bán thu lại sau
      một nút. Chỉ bật khi điểm bán có nhiều kho VÀ kho này có dấu vết riêng — kho mới
      tinh thì không có gì để suy, để nguyên như cũ còn hơn hiện danh sách trống. */
-  const _maKhoNay=maCuaKhoNay(counting.plant,counting.sloc);
+  const _maKhoNay=new Set([...maCuaKhoNay(counting.plant,counting.sloc),...(counting.tuan?[]:aoMuaCuaKho(counting.plant,counting.sloc))]);
   const _laMaKhoNay=m=>_maKhoNay.has(m.code);
   const _soKhac=plantMats.filter(m=>!_laMaKhoNay(m)).length;
   const _chiaNhom=khoCuaDiemBan(counting.plant)>1&&_maKhoNay.size>0&&_soKhac>0;
