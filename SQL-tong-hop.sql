@@ -74,3 +74,62 @@ create trigger dc_chu_ky_rao before insert or update on public.transfer_requests
 select (select count(*) from pg_policies where tablename = 'chu_ky_mau') as so_policy_mau,
        (select count(*) from information_schema.columns where table_name = 'transfer_requests' and column_name = 'chu_ky') as co_cot_chu_ky,
        (select count(*) from pg_trigger where tgname = 'dc_chu_ky_rao') as co_trigger;
+
+-- ============================================================
+-- PHẦN 49 — KÝ SỐ ĐIỀU CHUYỂN v2 + KẾ TOÁN CHỐT THÁNG — 26/11/2026, bản 2611-05 (thay trigger PHẦN 48)
+-- Khoa: ai LẬP phiếu không quan trọng — chỉ cần chữ ký NGƯỜI XUẤT (giao) và NGƯỜI NHẬN (nhan); hủy: kho hủy (giao) + kế toán (duyet).
+--   xin : giao (bên cho, lúc duyệt)  · nhan (bên xin, lúc nhận hàng)
+--   du  : giao (bên chuyển, lúc lập) · nhan (bếp, lúc nhận = lúc duyệt)
+--   huy : giao (kho hủy, lúc lập)    · duyet (kế toán, lúc duyệt)
+-- Kế toán tải PDF phiếu cả tháng = CHỐT: ô 'kt' trong chu_ky. Phiếu đã chốt KHOÁ: không đổi trạng thái / số / chữ ký, không xoá.
+-- Chạy lại nhiều lần vẫn an toàn.
+-- ============================================================
+create or replace function public.dc_chu_ky_rao() returns trigger
+language plpgsql as $fn$
+declare
+  may_chu boolean := coalesce(auth.role(), '') = 'service_role';
+  moc timestamptz := '2026-11-27 00:00:00+07';
+  o_duyet text;
+begin
+  if tg_op = 'DELETE' then
+    if old.chu_ky ? 'kt' then raise exception 'PHIEU_DA_CHOT: phiếu kế toán đã chốt, không xoá được' using errcode = '42501'; end if;
+    return old;
+  end if;
+  if tg_op = 'INSERT' then
+    if new.chu_ky is not null and not may_chu then raise exception 'CHU_KY_CHI_MAY_CHU' using errcode = '42501'; end if;
+    return new;
+  end if;
+  -- Phiếu kế toán đã chốt: khoá mọi thay đổi nội dung
+  if old.chu_ky ? 'kt' and (new.status is distinct from old.status or new.items is distinct from old.items
+       or new.period is distinct from old.period or new.chu_ky is distinct from old.chu_ky) then
+    raise exception 'PHIEU_DA_CHOT: phiếu kế toán đã chốt, không sửa được' using errcode = '42501';
+  end if;
+  if new.chu_ky is distinct from old.chu_ky and not may_chu then
+    raise exception 'CHU_KY_CHI_MAY_CHU' using errcode = '42501';
+  end if;
+  -- Quay về Chờ duyệt (mở lại / bỏ từ chối): chữ ký lúc duyệt / nhận cũ hết hiệu lực; chữ ký người xuất lúc lập (hàng dư / hủy) giữ
+  if new.status = 'Chờ duyệt' and old.status is distinct from 'Chờ duyệt' and new.chu_ky is not null then
+    if new.kind in ('du', 'huy') then new.chu_ky := new.chu_ky - 'nhan' - 'duyet';
+    else new.chu_ky := new.chu_ky - 'giao' - 'nhan'; end if;
+  end if;
+  -- Duyệt / nhận phiếu lập từ ngày áp dụng: phải có chữ ký ô duyệt (hàng dư / hủy: thêm chữ ký người xuất lúc lập)
+  if new.status = 'Đã duyệt' and old.status is distinct from 'Đã duyệt' and not may_chu
+     and coalesce(new.created_at, now()) >= moc then
+    o_duyet := case new.kind when 'du' then 'nhan' when 'huy' then 'duyet' else 'giao' end;
+    if new.kind in ('du', 'huy') and (new.chu_ky is null or (new.chu_ky -> 'giao') is null) then
+      raise exception 'CAN_KY_XUAT: phiếu chưa có chữ ký người xuất' using errcode = '42501';
+    end if;
+    if new.chu_ky is null or (new.chu_ky -> o_duyet) is null then
+      raise exception 'CAN_KY_DUYET: phiếu chưa có chữ ký duyệt' using errcode = '42501';
+    end if;
+  end if;
+  return new;
+end $fn$;
+
+drop trigger if exists dc_chu_ky_rao on public.transfer_requests;
+create trigger dc_chu_ky_rao before insert or update or delete on public.transfer_requests
+  for each row execute function public.dc_chu_ky_rao();
+
+-- Kiểm: trigger bắt cả DELETE (ra 1)
+select count(*) as trigger_co_delete from pg_trigger t join pg_class c on c.oid = t.tgrelid
+ where t.tgname = 'dc_chu_ky_rao' and c.relname = 'transfer_requests' and (t.tgtype & 8) <> 0;
