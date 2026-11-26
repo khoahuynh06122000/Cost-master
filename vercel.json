@@ -6,15 +6,46 @@
     }
   ],
   "crons": [
-    { "path": "/api/nhac-dc", "schedule": "0 10 * * *" },
-    { "path": "/api/het-han-dc", "schedule": "0 23 * * *" },
-    { "path": "/api/bot?viec=sang", "schedule": "0 1 * * *" },
-    { "path": "/api/bot?viec=chieu", "schedule": "0 10 * * *" }
+    {
+      "path": "/api/nhac-dc",
+      "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/het-han-dc",
+      "schedule": "0 23 * * *"
+    },
+    {
+      "path": "/api/bot?viec=sang",
+      "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/bot?viec=chieu",
+      "schedule": "0 10 * * *"
+    }
   ],
   "functions": {
     "api/*.js": {
       "maxDuration": 60,
       "includeFiles": "{agent/report.mjs,agent/canh-bao.mjs,lib/**,index.html}"
     }
-  }
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        }
+      ]
+    }
+  ]
 }

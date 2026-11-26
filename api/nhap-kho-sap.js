@@ -57,6 +57,11 @@ async function supa(path, opt) {
 }
 const p2 = n => String(n).padStart(2, '0');
 const chu = (v, n) => v == null ? '' : String(v).trim().slice(0, n || 200);
+// Chạy fn cho từng phần tử, tối đa n lệnh cùng lúc; lỗi đầu tiên ném ra như vòng for cũ.
+async function chayGioi(ds, n, fn) {
+  let i = 0;
+  await Promise.all(Array.from({ length: Math.min(n, ds.length) }, async () => { while (i < ds.length) { const x = ds[i++]; await fn(x); } }));
+}
 function lay(r, ...k) { for (const x of k) if (r && r[x] != null && String(r[x]).trim() !== '') return r[x]; return null; }
 
 // Ngày: Date ISO / yyyy-mm-dd / dd/mm/yyyy / dd.mm.yyyy / số sê-ri Excel → 'yyyy-mm-dd' (kiểm lịch thật), sai → null
@@ -223,28 +228,27 @@ const xuLy = async (req, res) => {
     if (/sap_ct|sap_sl|PGRST204|schema cache/i.test(String(e.message))) return res.status(503).json({ error: 'Máy chủ chưa chạy SQL PHẦN 43 (cột sap_ct / sap_sl của receipts)' });
     throw e;
   }
-  for (const u of capNhat) {
-    await supa('receipts?id=eq.' + enc(u.id), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(u.patch) });
-  }
+  // 26/11/2026: chạy 8 lệnh cùng lúc — lần lượt từng dòng dễ chạm hạn 60 giây của Vercel khi lô lớn.
+  await chayGioi(capNhat, 8, u => supa('receipts?id=eq.' + enc(u.id), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(u.patch) }));
 
   // ---- 6. Đối chiếu tự động với ảnh BP đã quét trước khi số SAP về (bảng doi_chieu_nhap, trạng thái cho_sap)
   let khop = 0, lech = 0;
   const khoaNgay = [...new Set(ds.map(r => r.plant + '|' + r.sloc + '|' + r.ngay))];
   try {
-    for (const kn of khoaNgay) {
+    await chayGioi(khoaNgay, 4, async kn => {
       const [p, s, d] = kn.split('|');
       const cho = await supa('doi_chieu_nhap?select=id,code,sl_anh&trang_thai=eq.cho_sap&plant_code=eq.' + enc(p) + '&sloc_code=eq.' + enc(s) + '&date=eq.' + d, { method: 'GET' });
-      if (!cho || !cho.length) continue;
+      if (!cho || !cho.length) return;
       const sap = await supa('receipts?select=code,sap_sl,qty&sap_ct=not.is.null&plant_code=eq.' + enc(p) + '&sloc_code=eq.' + enc(s) + '&date=eq.' + d, { method: 'GET' });
       const tong = {};
       (sap || []).forEach(x => { tong[x.code] = (tong[x.code] || 0) + Number(x.sap_sl == null ? x.qty : x.sap_sl); });
-      for (const c of cho) {
+      await chayGioi(cho, 8, c => {
         const t = tong[c.code];
         const tt = t == null ? 'chi_anh' : (Math.abs(t - Number(c.sl_anh)) < 1e-6 ? 'khop' : 'lech');
         if (tt === 'khop') khop++; else if (tt === 'lech') lech++;
-        await supa('doi_chieu_nhap?id=eq.' + enc(c.id) + '&trang_thai=eq.cho_sap', { method: 'PATCH', headers: { Prefer: 'return=minimal' },
+        return supa('doi_chieu_nhap?id=eq.' + enc(c.id) + '&trang_thai=eq.cho_sap', { method: 'PATCH', headers: { Prefer: 'return=minimal' },
           body: JSON.stringify({ trang_thai: tt, sl_sap: t == null ? null : Math.round(t * 1e6) / 1e6, updated_at: new Date().toISOString() }) });
-      }
+      });
       // Báo BP kho đó khi có dòng lệch / ảnh có mà SAP không có
       const can = cho.filter(c => tong[c.code] == null || Math.abs(tong[c.code] - Number(c.sl_anh)) >= 1e-6).length;
       if (can) {
@@ -255,7 +259,7 @@ const xuLy = async (req, res) => {
             created_by: 'Hệ thống', read_flag: false }) });
         } catch (e) { /* thông báo trượt không làm hỏng lượt nhận số */ }
       }
-    }
+    });
   } catch (e) {
     if (!/42P01|does not exist|schema cache|PGRST205/i.test(String(e.message))) throw e;   // chưa chạy SQL PHẦN 43 phần bảng đối chiếu
   }

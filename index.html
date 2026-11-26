@@ -2029,7 +2029,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2511-05';
+const APP_VER='2611-01';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -5666,7 +5666,7 @@ async function dbLoadAll(){
       fetchAllRows('submissions','*','created_at'),
       fetchAllRows('transfers','*','created_at'),
       fetchAllRows('shifts','*','created_at'),
-      sb.from('opening_stock').select('*'),
+      fetchAllRows('opening_stock','*',['plant_code','sloc_code']),
       _tinh?fetchAllRows('plant_materials','plant_code,code',['plant_code','code']):_boQua,
       _tinh?sb.from('audit_log').select('*').order('at',{ascending:false}).limit(500):_boQua,
       fetchAllRows('spot_checks','*','created_at'),
@@ -18231,7 +18231,7 @@ async function claudeReviewText(draft,facts,key){
   const prompt=`Bạn là biên tập viên kiểm duyệt báo cáo nội bộ (FP&A) của Sun World Ba Na Hills. Dưới đây là DỮ LIỆU THỰC TẾ và BẢN NHÁP do AI khác viết. Hãy KIỂM DUYỆT: sửa lỗi, LOẠI BỎ mọi con số/nhận định không có trong dữ liệu, đảm bảo chính xác & ngắn gọn, đúng văn phong báo cáo nội bộ. Trả về BẢN CUỐI hoàn chỉnh bằng tiếng Việt, KHÔNG kèm lời bình.\n\nDỮ LIỆU:\n${facts}\n\nBẢN NHÁP:\n${draft}`;
   const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
     headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-    body:JSON.stringify({model:'claude-sonnet-5',max_tokens:2000,messages:[{role:'user',content:prompt}]})});
+    body:JSON.stringify({model:'claude-sonnet-5-5',max_tokens:2000,messages:[{role:'user',content:prompt}]})});
   if(!r.ok)throw new Error('Claude HTTP '+r.status+' '+(await r.text()).slice(0,150));
   const d=await r.json();return (d.content||[]).filter(x=>x.type==='text').map(x=>x.text).join('\n').trim();
 }

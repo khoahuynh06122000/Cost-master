@@ -116,6 +116,13 @@ function encryptPayload(plaintext, p256dhB64, authB64) {
   return Buffer.concat([salt, rs, Buffer.from([serverPub.length]), serverPub, ct]);
 }
 
+/* 26/11/2026: chỉ gửi tới máy chủ Web Push chuẩn — không để ai mượn cổng này gọi tới địa chỉ khác. */
+const PUSH_HOST = [/^fcm\.googleapis\.com$/, /^android\.googleapis\.com$/, /(^|\.)notify\.windows\.com$/,
+  /^web\.push\.apple\.com$/, /(^|\.)push\.apple\.com$/, /(^|\.)push\.services\.mozilla\.com$/];
+function laDiaChiPush(ep) {
+  try { const u = new URL(ep); return u.protocol === 'https:' && !u.port && PUSH_HOST.some(r => r.test(u.hostname)); } catch (e) { return false; }
+}
+
 /* ---------- gửi tới một subscription ---------- */
 async function sendOne(sub, payloadStr) {
   const url = new URL(sub.endpoint);
@@ -179,6 +186,7 @@ const xuLy = async (req, res) => {
   const gone = [];
   await Promise.all(b.subs.map(async (s) => {
     if (!s || !s.endpoint || !s.p256dh || !s.auth) { failed++; return; }
+    if (!laDiaChiPush(s.endpoint)) { failed++; return; }
     try {
       const r = await sendOne(s, payload);
       if (r.status >= 200 && r.status < 300) sent++;
