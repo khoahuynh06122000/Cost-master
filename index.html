@@ -1749,7 +1749,7 @@
   .kyso-cv{width:100%;aspect-ratio:600/220;max-width:100%;background:#fff;border:2px dashed var(--line);border-radius:12px;touch-action:none;cursor:crosshair;display:block}
   .kyso-goi{font-size:12px;color:var(--muted);text-align:center}
   .kyso-anh{background:#fff;border:2px dashed var(--line);border-radius:12px;padding:10px;display:grid;place-items:center;min-height:120px}
-  .kyso-anh img{max-width:100%;max-height:200px}
+  .kyso-anh svg{width:100%}
   .kyso-chup{align-self:center}
   .kyso-loi{font-size:13px;color:var(--red);font-weight:600;min-height:0}
   .kyso-loi:empty{display:none}
@@ -2089,7 +2089,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2611-10';
+const APP_VER='2611-11';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -13869,35 +13869,82 @@ function cauLoiKy(j){
     da_chot:'Phiếu này kế toán đã chốt tháng — không ký thêm được.',
     chua_ky_xuat:'Người xuất (người lập phiếu) chưa ký phiếu — nhờ họ ký ở thẻ phiếu trước.'})[j.loi]||'Chưa ký được — thử lại sau ít phút.';
 }
-/* CHỤP ẢNH CHỮ KÝ (Khoa 26/11/2026: nhiều người vẽ trên màn rất xấu): ký ra giấy trắng rồi chụp. App tự tách nền giấy
-   (lấy mức sáng của nền = phần lớn ảnh), giữ nét đậm hơn hẳn nền làm mực, cắt sát chữ ký, nền trong suốt, PNG ≤ 600×220. */
+/* CHỤP ẢNH CHỮ KÝ -> NÉT VẼ (Khoa 26/11/2026). Người vẽ trên màn xấu thì ký ra giấy rồi chụp. App KHÔNG lưu ảnh mà dựng lại
+   thành nét vẽ y như vẽ tay (đường SVG 'M x y L x y', vài KB) — cùng cách lưu, cùng cách hiện trên phiếu / PDF:
+   1. tách nền giấy (mức sáng phân vị 60% = nền; điểm tối hơn hẳn nền = mực), bỏ vết bẩn nhỏ (cụm < 0,15% điểm mực);
+   2. cắt sát chữ ký, phóng về khung làm việc 1120×400;
+   3. làm mảnh nét về đường giữa một điểm ảnh (Zhang–Suen);
+   4. dò các đường từ đầu mút, làm gọn (Ramer–Douglas–Peucker), đặt vào khung 600×220 như canvas vẽ tay. */
 function chupAnhChuKy(file){return new Promise((ok,loi)=>{
   const u=URL.createObjectURL(file);const im=new Image();
   im.onerror=()=>{URL.revokeObjectURL(u);loi(new Error('anh_loi'));};
-  im.onload=()=>{try{
-    const K=1400;let w=im.naturalWidth,h=im.naturalHeight;const sc=Math.min(1,K/Math.max(w,h));w=Math.max(1,Math.round(w*sc));h=Math.max(1,Math.round(h*sc));
-    const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.drawImage(im,0,0,w,h);
-    const d=x.getImageData(0,0,w,h),px=d.data,N=w*h,Lm=new Uint8Array(N),hist=new Uint32Array(256);
-    for(let i=0;i<N;i++){const l=(px[i*4]*0.299+px[i*4+1]*0.587+px[i*4+2]*0.114)|0;Lm[i]=l;hist[l]++;}
-    let acc=0,bg=255;for(let v=0;v<256;v++){acc+=hist[v];if(acc>=N*0.6){bg=v;break;}}
-    const dam=bg*0.55,nhat=bg*0.72;
-    let x0=w,y0=h,x1=-1,y1=-1,n=0;
-    for(let y=0;y<h;y++)for(let xx=0;xx<w;xx++){const i=y*w+xx,l=Lm[i];
-      const a=l<=dam?255:(l<nhat?Math.round(255*(nhat-l)/(nhat-dam)):0);
-      px[i*4]=20;px[i*4+1]=33;px[i*4+2]=61;px[i*4+3]=a;
-      if(a>140){n++;if(xx<x0)x0=xx;if(xx>x1)x1=xx;if(y<y0)y0=y;if(y>y1)y1=y;}}
-    if(bg<90||n<60||x1-x0<w*0.06)return loi(new Error('khong_thay_net'));
-    x.putImageData(d,0,0);
-    const pad=10;x0=Math.max(0,x0-pad);y0=Math.max(0,y0-pad);x1=Math.min(w-1,x1+pad);y1=Math.min(h-1,y1+pad);
-    const cw=x1-x0+1,ch=y1-y0+1,s2=Math.min(1,600/cw,220/ch);
-    const ow=Math.max(60,Math.round(cw*s2)),oh=Math.max(40,Math.round(ch*s2));
-    const o=document.createElement('canvas');o.width=ow;o.height=oh;o.getContext('2d').drawImage(c,x0,y0,cw,ch,0,0,ow,oh);
-    const anh=o.toDataURL('image/png');
-    if(anh.length>340000)return loi(new Error('qua_nang'));
-    ok({anh,rong:ow,cao:oh});
-  }catch(e){loi(e);}finally{URL.revokeObjectURL(u);}};
+  im.onload=()=>{try{ok(anhThanhNet(im));}catch(e){loi(e);}finally{URL.revokeObjectURL(u);}};
   im.src=u;
 });}
+function anhThanhNet(im){
+  /* 1. mặt nạ mực ở độ phân giải vừa phải */
+  const K=1400;let w=im.naturalWidth||im.width,h=im.naturalHeight||im.height;const sc=Math.min(1,K/Math.max(w,h));
+  w=Math.max(1,Math.round(w*sc));h=Math.max(1,Math.round(h*sc));
+  const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.drawImage(im,0,0,w,h);
+  const px=x.getImageData(0,0,w,h).data,N=w*h,hist=new Uint32Array(256),Lm=new Uint8Array(N);
+  for(let i=0;i<N;i++){const l=(px[i*4]*0.299+px[i*4+1]*0.587+px[i*4+2]*0.114)|0;Lm[i]=l;hist[l]++;}
+  let acc=0,bg=255;for(let v=0;v<256;v++){acc+=hist[v];if(acc>=N*0.6){bg=v;break;}}
+  if(bg<90)throw new Error('khong_thay_net');
+  const ng=bg*0.62,M=new Uint8Array(N);let nM=0;
+  for(let i=0;i<N;i++)if(Lm[i]<ng){M[i]=1;nM++;}
+  if(nM<60)throw new Error('khong_thay_net');
+  /* bỏ cụm mực nhỏ (vết bẩn, hạt giấy) */
+  const nhan=new Int32Array(N),cum=[],q=new Int32Array(N);let id=0;
+  for(let i=0;i<N;i++){if(!M[i]||nhan[i])continue;id++;let a=0,b=0;q[b++]=i;nhan[i]=id;let n=0,x0=w,y0=h,x1=0,y1=0;
+    while(a<b){const k=q[a++];n++;const kx=k%w,ky=(k/w)|0;if(kx<x0)x0=kx;if(kx>x1)x1=kx;if(ky<y0)y0=ky;if(ky>y1)y1=ky;
+      for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const nx=kx+dx,ny=ky+dy;if(nx<0||ny<0||nx>=w||ny>=h)continue;const kk=ny*w+nx;if(M[kk]&&!nhan[kk]){nhan[kk]=id;q[b++]=kk;}}}
+    cum[id]={n,x0,y0,x1,y1};}
+  const toiThieu=Math.max(25,nM*0.0015);let X0=w,Y0=h,X1=-1,Y1=-1,giu=0;
+  for(let k=1;k<=id;k++){const cm=cum[k];if(cm.n<toiThieu){cm.bo=1;continue;}giu+=cm.n;if(cm.x0<X0)X0=cm.x0;if(cm.y0<Y0)Y0=cm.y0;if(cm.x1>X1)X1=cm.x1;if(cm.y1>Y1)Y1=cm.y1;}
+  if(X1<0||giu<60||X1-X0<w*0.05)throw new Error('khong_thay_net');
+  /* 2. cắt sát + phóng về khung làm việc 1120×400 (gấp đôi khung lưu, nét mảnh chính xác hơn) */
+  const pad=4,cw=X1-X0+1+2*pad,ch=Y1-Y0+1+2*pad,k2=Math.min(1120/cw,400/ch,4);
+  const W=Math.max(8,Math.round(cw*k2)),H=Math.max(8,Math.round(ch*k2));
+  const B=new Uint8Array(W*H);
+  for(let y=0;y<H;y++){const sy=Math.min(h-1,Math.max(0,Math.floor(Y0-pad+(y+0.5)/k2)));
+    for(let xx=0;xx<W;xx++){const sx=Math.min(w-1,Math.max(0,Math.floor(X0-pad+(xx+0.5)/k2)));const kk=sy*w+sx;
+      if(M[kk]&&!cum[nhan[kk]].bo)B[y*W+xx]=1;}}
+  for(let xx=0;xx<W;xx++){B[xx]=0;B[(H-1)*W+xx]=0;}for(let y=0;y<H;y++){B[y*W]=0;B[y*W+W-1]=0;}
+  /* 3. Zhang–Suen */
+  const at=(xx,y)=>B[y*W+xx];let doi=true,vong=0;const xoa=[];
+  while(doi&&vong<80){doi=false;vong++;
+    for(let pha=0;pha<2;pha++){xoa.length=0;
+      for(let y=1;y<H-1;y++)for(let xx=1;xx<W-1;xx++){if(!B[y*W+xx])continue;
+        const p2=at(xx,y-1),p3=at(xx+1,y-1),p4=at(xx+1,y),p5=at(xx+1,y+1),p6=at(xx,y+1),p7=at(xx-1,y+1),p8=at(xx-1,y),p9=at(xx-1,y-1);
+        const bb=p2+p3+p4+p5+p6+p7+p8+p9;if(bb<2||bb>6)continue;
+        const aa=(!p2&&p3)+(!p3&&p4)+(!p4&&p5)+(!p5&&p6)+(!p6&&p7)+(!p7&&p8)+(!p8&&p9)+(!p9&&p2);if(aa!==1)continue;
+        if(pha===0){if(p2*p4*p6||p4*p6*p8)continue;}else{if(p2*p4*p8||p2*p6*p8)continue;}
+        xoa.push(y*W+xx);}
+      if(xoa.length){doi=true;for(const k of xoa)B[k]=0;}}}
+  /* 4. dò đường: bắt đầu từ đầu mút (1 láng giềng), sau đó phần còn lại (vòng kín) */
+  const NB=[[1,0],[0,1],[-1,0],[0,-1],[1,1],[-1,1],[-1,-1],[1,-1]];
+  const deg=k=>{const xx=k%W,y=(k/W)|0;let n=0;for(const [dx,dy] of NB)if(B[(y+dy)*W+xx+dx])n++;return n;};
+  const da=new Uint8Array(W*H),duong=[];
+  const di=start=>{const pts=[];let k=start;da[k]=1;
+    while(true){const xx=k%W,y=(k/W)|0;pts.push([xx,y]);let tiep=-1;
+      for(const [dx,dy] of NB){const kk=(y+dy)*W+xx+dx;if(B[kk]&&!da[kk]){tiep=kk;break;}}
+      if(tiep<0)break;da[tiep]=1;k=tiep;}
+    if(pts.length>=4)duong.push(pts);};
+  for(let k=0;k<W*H;k++)if(B[k]&&!da[k]&&deg(k)===1)di(k);
+  for(let k=0;k<W*H;k++)if(B[k]&&!da[k])di(k);
+  if(!duong.length)throw new Error('khong_thay_net');
+  /* 5. làm gọn + đặt vào khung 600×220 (căn giữa) */
+  const rdp=(a,eps)=>{if(a.length<3)return a;const [x1,y1]=a[0],[x2,y2]=a[a.length-1];const dx=x2-x1,dy=y2-y1,L=Math.hypot(dx,dy)||1;let mx=0,mi=0;
+    for(let i=1;i<a.length-1;i++){const d=Math.abs(dy*a[i][0]-dx*a[i][1]+x2*y1-y2*x1)/L;if(d>mx){mx=d;mi=i;}}
+    return mx>eps?rdp(a.slice(0,mi+1),eps).slice(0,-1).concat(rdp(a.slice(mi),eps)):[a[0],a[a.length-1]];};
+  const kOut=Math.min(560/W,200/H),ox=(600-W*kOut)/2,oy=(220-H*kOut)/2,r1=n=>Math.round(n*10)/10;
+  let eps=1.2,net='';
+  for(let lan=0;lan<6;lan++){
+    net=duong.map(a=>{const b=rdp(a,eps);return 'M'+b.map(([xx,y])=>r1(ox+xx*kOut)+' '+r1(oy+y*kOut)).join('L');}).join('');
+    if(net.length<=55000)break;eps*=1.8;}
+  if(net.length>55000)throw new Error('qua_nang');
+  return {net,rong:600,cao:220};
+}
 /* Hộp nền dùng chung cho vẽ chữ ký / ký số */
 function _hopKy(tieuDe,phu){
   const bg=el('div','kyso-bg');const m=el('div','kyso');bg.appendChild(m);
@@ -13934,11 +13981,11 @@ function moVeChuKy(opt){
       const xem=el('div','kyso-anh');xem.hidden=true;wrap.insertBefore(xem,cv.nextSibling);
       const fi=document.createElement('input');fi.type='file';fi.accept='image/*';fi.setAttribute('capture','environment');fi.hidden=true;wrap.appendChild(fi);
       const bAnh=el('button','btn btn-ghost kyso-chup','📷 Chụp ảnh chữ ký trên giấy');wrap.appendChild(bAnh);
-      wrap.appendChild(el('div','kyso-goi','Ký bằng bút mực đậm trên giấy trắng, chụp thẳng, đủ sáng — app tự bỏ nền giấy'));
+      wrap.appendChild(el('div','kyso-goi','Ký bằng bút mực đậm trên giấy trắng, chụp thẳng, đủ sáng — app tự dựng lại thành nét ký'));
       const loi=el('div','kyso-loi');wrap.appendChild(loi);
       bAnh.onclick=()=>{fi.value='';fi.click();};
       fi.onchange=async()=>{const f=fi.files&&fi.files[0];if(!f)return;loi.textContent='';bAnh.disabled=true;bAnh.textContent='Đang xử lý ảnh…';
-        try{anhChup=await chupAnhChuKy(f);xem.innerHTML='';const img=document.createElement('img');img.src=anhChup.anh;img.alt='';xem.appendChild(img);
+        try{anhChup=await chupAnhChuKy(f);xem.innerHTML=svgChuKy(anhChup,170,'#14213d');
           xem.hidden=false;cv.hidden=true;}
         catch(e){anhChup=null;loi.textContent=e&&e.message==='khong_thay_net'?'Không thấy rõ chữ ký trong ảnh — ký bằng bút đậm trên giấy trắng, chụp gần và đủ sáng.':'Ảnh không dùng được — chụp lại.';}
         bAnh.disabled=false;bAnh.textContent='📷 Chụp lại ảnh khác';};
@@ -13948,12 +13995,12 @@ function moVeChuKy(opt){
       const bL=el('button','btn btn-primary','Lưu chữ ký');nut.appendChild(bL);
       bL.onclick=async()=>{
         if(anhChup){bL.disabled=true;bL.textContent='Đang lưu…';loi.textContent='';
-          let j;try{j=await goiKy({action:'luu_mau',anh:anhChup.anh,rong:anhChup.rong,cao:anhChup.cao,ten:session.name||'',pin:pinDaKiem||undefined});}catch(e){j={loi:'mang'};}
+          let j;try{j=await goiKy({action:'luu_mau',net:anhChup.net,rong:anhChup.rong,cao:anhChup.cao,ten:session.name||'',pin:pinDaKiem||undefined});}catch(e){j={loi:'mang'};}
           bL.disabled=false;bL.textContent='Lưu chữ ký';
           if(j.ok&&j.mau){_mauCuaToi=j.mau;_mauKy[j.mau.id]=j.mau;log(opt.coMauCu?'Đổi chữ ký điện tử (ảnh chụp)':'Tạo chữ ký điện tử (ảnh chụp)','');toast('✓ Đã lưu chữ ký');ketThuc(j.mau);return;}
           if(j.loi==='chua_bat'){_kySoTat=true;ketThuc(null);return;}
           if(j.loi==='mang'){loi.textContent='Chưa kết nối mạng — bật Wi-Fi hoặc 4G rồi bấm Lưu lại.';return;}
-          if(j.loi==='mau_khong_hop_le'){loi.textContent='Máy chủ chưa nhận được ảnh chữ ký — thử vẽ tay, hoặc báo kế toán.';return;}
+          if(j.loi==='mau_khong_hop_le'){loi.textContent='Chữ ký trong ảnh chưa rõ — chụp lại gần hơn, đủ sáng, hoặc vẽ tay.';return;}
           if(j.loi==='pin_khoa'){alert(cauLoiKy(j));H.dong();pinDangXuat();return;}
           loi.textContent=cauLoiKy(j);return;}
         const pts=net.flat();
