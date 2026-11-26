@@ -2084,7 +2084,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2611-05';
+const APP_VER='2611-06';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -13782,6 +13782,8 @@ function dcNguonSo(kind,vai){return DC_O_LAP[kind]===vai?'lap':'giao';}
 var _cotChuKy=false;   // máy chủ đã có cột transfer_requests.chu_ky (thấy khi tải phiếu)
 let _kySoTat=false;            // máy chủ chưa chạy SQL PHẦN 48 -> duyệt như cũ, không ký
 const _mauKy={};let _mauCuaToi;   // undefined = chưa hỏi
+/* Phiếu có ký số: phiếu lập từ 27/11 (bắt buộc), hoặc phiếu cũ còn chờ duyệt / đã có chữ ký (ký được, không bắt buộc — Khoa 26/11). */
+function dcMoKy(r){return dcCanKySo(r)||!!r&&(r.status==='Chờ duyệt'||!!(r.chuKy&&Object.keys(r.chuKy).length));}
 function dcCanKySo(r){return !!(r&&r.createdAt)&&new Date(r.createdAt).getTime()>=new Date(KY_SO_MOC).getTime();}
 function _so3(n){return String(Math.round((Number(n)||0)*1000)/1000);}
 function noiDungDC(r,vai,qty){
@@ -13975,14 +13977,14 @@ function dcDaChot(r){return !!(r&&r.chuKy&&r.chuKy.kt);}
 function dcDauChot(kt){const d=el('div','kyso-dau');d.appendChild(el('b','','KẾ TOÁN ĐÃ CHỐT'));
   const t=el('span');t.textContent=(kt.ten||'')+' · '+gioKySo(kt.luc);d.appendChild(t);return d;}
 function _laBenNhan(r){const wh=(session&&session.wh)||[];return !!r.toPlant&&wh.some(w=>w.plant===r.toPlant&&(!w.sloc||w.sloc===r.toSloc));}
-function dcChoNhanCuaToi(){return (trReqs||[]).filter(r=>r.kind==='xin'&&r.status==='Đã duyệt'&&dcCanKySo(r)&&!(r.chuKy&&r.chuKy.nhan)&&_laBenNhan(r));}
+function dcChoNhanCuaToi(){return (trReqs||[]).filter(r=>r.kind==='xin'&&r.status==='Đã duyệt'&&(dcCanKySo(r)||!!(r.chuKy&&r.chuKy.giao))&&!(r.chuKy&&r.chuKy.nhan)&&_laBenNhan(r));}
 /* KHỐI CHỮ KÝ trên thẻ phiếu + nút ký còn thiếu + nút PDF */
 function dcKhoiKySo(r){
   const box=el('div','kyso-khoi');
   const ck=r.chuKy||{};
   if(ck.kt)box.appendChild(dcDauChot(ck.kt));
-  const moi=dcCanKySo(r);
-  if(!moi&&!Object.keys(ck).length){
+  const moi=dcMoKy(r);
+  if(!moi){
     box.appendChild(el('div','kyso-cu','Phiếu lập trước khi áp dụng ký số (27/11/2026) — không có chữ ký số.'));
   }else{
     const luoi=el('div','kyso-luoi');box.appendChild(luoi);
@@ -14054,7 +14056,7 @@ function dcPhieuHtml(r){
     return '<tr><td class="c">'+(i+1)+'</td><td class="n">'+e(_so3(y))+'</td><td class="c">'+e(it.uom)+'</td><td>'+e(it.name||c)+'<div class="ma">'+e(c)+'</div></td>'
       +'<td class="n">'+(x==null?'':e(_so3(x)))+'</td><td class="c">'+(x==null?'':e(it.uom))+'</td><td></td><td></td><td></td></tr>';}).join('');
   const kyHtml=dcOKy(r.kind).map(([vai,nhan])=>{const s=ck[vai];
-    if(!s)return '<td><div class="vai">'+e(nhan)+'</div><div class="trong">'+(dcCanKySo(r)?'Chưa ký':'')+'</div></td>';
+    if(!s)return '<td><div class="vai">'+e(nhan)+'</div><div class="trong">'+(dcCanKySo(r)||Object.keys(ck).length?'Chưa ký':'')+'</div></td>';
     return '<td><div class="vai">'+e(nhan)+'</div><div class="sv">'+svgChuKy(_mauKy[s.chuKyId],60,'#14213d')+'</div><div class="ten">'+e(s.ten)+'</div>'
       +'<div class="phu">Mã NV: '+e(s.maNv||'—')+'</div><div class="phu">Ký lúc: '+e(gioKySo(s.luc))+'</div><div class="bam">Mã băm: '+e(maBamNgan(s.bam))+'</div></td>';}).join('');
   const tu=whName(r.fromPlant,r.fromSloc),den=r.toPlant?whName(r.toPlant,r.toSloc):'Hủy / hao hụt';
@@ -14069,7 +14071,7 @@ function dcPhieuHtml(r){
     +'<tbody>'+dong+'<tr><td></td><td></td><td></td><td><b>Tổng cộng ('+codes.length+' mã)</b></td><td></td><td></td><td></td><td></td><td></td></tr></tbody></table>'
     +'<table class="ky" style="margin-top:12px"><tr>'+kyHtml+'</tr></table>'
     +'<div class="chan">Chứng từ điện tử — ký số trên app Kiểm kê F&amp;B (người ký đăng nhập bằng mật khẩu và nhập mã PIN lúc ký; mã băm là dấu vân tay nội dung phiếu lúc ký, sửa số sau khi ký thì mã không còn khớp).'
-    +(dcCanKySo(r)?'':' Phiếu lập trước ngày áp dụng ký số 27/11/2026.')+(r.by?' Người lập phiếu: '+e(r.by)+'.':'')+' In lúc '+e(now())+'.</div></section>';
+    +(dcCanKySo(r)||Object.keys(ck).length?'':' Phiếu lập trước ngày áp dụng ký số 27/11/2026.')+(r.by?' Người lập phiếu: '+e(r.by)+'.':'')+' In lúc '+e(now())+'.</div></section>';
 }
 function _moTrangIn(){const w=window.open('','_blank');
   if(!w){errBox('Trình duyệt chặn cửa sổ mới',['Cho phép cửa sổ bật lên (pop-up) cho trang này rồi bấm lại.'],'');return null;}
@@ -14254,6 +14256,14 @@ async function _approveTransferReq(r,qtys){
       const _q={};codes.forEach(c=>{_q[c]=Number(qtys[c]||0);});
       const _k=await kySoPhieu(r,_oD,_q);
       if(_k===false)return;
+    }
+  }else if(kySoDangBat()&&session&&session.maNv){
+    /* Phiếu lập trước 27/11 còn chờ duyệt: mời ký, không bắt buộc (hàng dư / hủy chưa có chữ ký người xuất thì bỏ qua). */
+    const _oD=DC_O_DUYET[r.kind]||'giao';
+    if(!(r.chuKy&&r.chuKy[_oD])&&!(DC_O_LAP[r.kind]&&!(r.chuKy&&r.chuKy.giao))){
+      const _q={};codes.forEach(c=>{_q[c]=Number(qtys[c]||0);});
+      const _k=await kySoPhieu(r,_oD,_q);
+      if(_k===false&&!confirm('Phiếu '+r.id+' lập trước ngày áp dụng ký số (27/11) nên không bắt buộc ký. Duyệt luôn mà không ký?'))return;
     }
   }
   const items={...r.items};
