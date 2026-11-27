@@ -2639,7 +2639,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2711-06';
+const APP_VER='2711-07';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -6205,12 +6205,20 @@ const DB_TANG=[
   {bang:'weekly_counts',lay:()=>weeklyCounts,dat:a=>{weeklyCounts=a;},chiKhi:()=>wkTblOK},
   {bang:'opening_stock',map:true},
   {bang:'count_lists',map:true}];
+/* Lùi 2 phút trước mốc để bắt dòng ghi chậm (giao dịch dài, updated_at = lúc BẮT ĐẦU). Nhưng nếu lùi MÃI thì một lô lớn
+   ghi cùng phút (VD agent SAP đẩy 269 dòng nhập kho lúc 17h) bị mọi máy kéo lại mỗi 2 phút tới khi có dòng mới hơn — tốn Egress.
+   Sửa 27/11/2026: mốc không đổi qua 2 lượt kéo liên tiếp (đã quét lại cửa sổ 2 phút đủ ~4 phút) thì chỉ lấy dòng MỚI HƠN mốc.
+   Không dựa đồng hồ máy người dùng. */
+const _mocQuet={};
 async function keoThayDoi(bang){
   const moc=_dbMoc[bang];const out=[];let from=0;
-  const tu=moc?new Date(new Date(moc).getTime()-120000).toISOString():null;
-  for(;;){let q=sb.from(bang).select('*');if(tu)q=q.gte('updated_at',tu);
+  const mq=_mocQuet[bang];const lan=(mq&&mq.moc===moc)?mq.lan:0;
+  const lui=lan<2;
+  const tu=moc?(lui?new Date(new Date(moc).getTime()-120000).toISOString():moc):null;
+  for(;;){let q=sb.from(bang).select('*');if(tu)q=lui?q.gte('updated_at',tu):q.gt('updated_at',tu);
     const {data,error}=await q.order('updated_at',{ascending:true}).range(from,from+999);
     if(error)return {error};out.push(...(data||[]));if(!data||data.length<1000)break;from+=1000;}
+  _mocQuet[bang]={moc,lan:lan+1};
   return {data:out};
 }
 const laLoiCot=e=>!!e&&/updated_at|xoa_log|schema cache|does not exist|42703|42P01|PGRST20/i.test(String(e.message||'')+' '+String(e.code||''));
