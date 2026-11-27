@@ -3,7 +3,7 @@
 > File này do bot **tự xuất** từ bảng `so_tay` + `su_co` sau mỗi lượt kiểm (8h, 17h). **Đừng sửa tay** — sửa trong app:
 > *Sự cố hệ thống → Sổ tay & bài học* (chỉ admin). Bài học có **dấu hiệu nhận diện** thì bot tự báo ♻️ TÁI PHÁT khi lỗi quay lại.
 
-Cập nhật: 09:36 26/11/2026 · 10 hướng dẫn · 23 bài học · 20 sự cố 30 ngày
+Cập nhật: 09:37 27/11/2026 · 10 hướng dẫn · 30 bài học · 21 sự cố 30 ngày
 
 ## Mục lục
 - [Hướng dẫn xử lý](#hướng-dẫn-xử-lý)
@@ -94,14 +94,70 @@ Cập nhật: 09:36 26/11/2026 · 10 hướng dẫn · 23 bài học · 20 sự 
 
 ## Bài học đã sửa
 
-### Cổng gửi thông báo nhận địa chỉ bất kỳ + vài chỗ dễ thiếu dữ liệu
+### Máy còn nháp không tự cập nhật bản mới, báo mạng không ổn định và phiếu kiểm kê không lên hệ thống
 
-- **Sửa:** 26/11/2026 · bản `2611-01`
+- **Sửa:** 27/11/2026 · bản `2711-01`
 - **Mức:** 🟠 NẶNG
-- **Triệu chứng:** agent rà soát báo push-send không kiểm endpoint, opening_stock đọc không phân trang, model Claude sai tên, nhập kho SAP cập nhật từng dòng dễ quá 60 giây
-- **Nguyên nhân gốc:** push-send gọi fetch tới mọi URL client gửi lên; opening_stock dùng select('*') một lần (cắt ở 1.000 dòng); claude-sonnet-5 không tồn tại; vòng for await tuần tự
-- **Cách sửa:** push-send chỉ gửi tới máy chủ Web Push chuẩn (https, FCM/WNS/Apple/Mozilla, không cổng lạ); opening_stock qua fetchAllRows; model claude-sonnet-5-5; nhap-kho-sap chayGioi 8 lệnh song song; vercel.json thêm nosniff, X-Frame-Options SAMEORIGIN, Referrer-Policy
-- **Chặn tái phát:** cổng /api gọi ra ngoài theo địa chỉ client gửi phải có danh sách cho phép; mọi bảng có thể vượt 1.000 dòng đọc qua fetchAllRows; vòng ghi Supabase trong hàm Vercel chạy song song có giới hạn
+- **Triệu chứng:** Máy PC rớt mạng rồi có mạng lại, app vẫn báo "Số kiểm chưa được đưa lên hệ thống do mạng không ổn định"; phiếu kiểm kê nằm hàng đợi gần một ngày, chỉ lên khi mở lại app.
+- **Nguyên nhân gốc:** Máy chạy bản cũ nên máy chủ chặn mọi lệnh ghi (CAN_CAP_NHAT). App gọi tải lại nhưng máy còn nháp nên trình duyệt bật hộp "Rời trang?" chặn tải lại; cờ _capNhatDangChay kẹt true nên không bao giờ thử lại, lỗi chặn bị hiểu là mất mạng.
+- **Cách sửa:** Cất nháp rồi tải lại không hỏi (_navOK=true; nháp + hàng đợi ở localStorage). Sau 8 giây vẫn ở trang cũ, hoặc vừa tải lại mà vẫn bản cũ, thì gỡ cờ và hiện nút "Có bản mới — bấm để cập nhật".
+- **Chặn tái phát:** Mọi lần tải lại do app tự gọi phải bỏ qua beforeunload và có đường thử lại; cờ "đang làm" phải có lối gỡ khi việc không xảy ra.
+- **Dấu hiệu nhận diện (bot canh):** `Số kiểm chưa được đưa lên hệ thống do mạng không ổn định`
+
+### Đang nhập mã PIN thì app tự xoá số, quay về số đầu
+
+- **Sửa:** 26/11/2026 · bản `2611-09`
+- **Mức:** 🟡 NHẸ
+- **Triệu chứng:** Nhập tới số thứ 4–5 của mã PIN thì các chấm tự xoá, phải nhập lại từ đầu
+- **Nguyên nhân gốc:** Vừa đẩy bản mới thì bot nâng mốc phiên bản tối thiểu; app đang ở màn PIN bản cũ gặp lỗi CAN_CAP_NHAT / kiểm phiên bản rồi tự tải lại trang sau 1,5 giây, mất số đang nhập
+- **Cách sửa:** pinQua hỏi ver_toi_thieu TRƯỚC khi hiện màn PIN, có bản mới thì tải lại ngay; nếu vẫn phải tải lại lúc đang ở màn PIN thì khoá bàn phím và báo rõ lý do
+- **Chặn tái phát:** Mọi bước có thể tự tải lại trang phải chạy trước khi người dùng bắt đầu nhập liệu, không chen ngang lúc đang gõ
+- **Dấu hiệu nhận diện (bot canh):** `Có bản mới — app đang tải lại`
+
+### Màn đăng nhập giật, vào app chậm
+
+- **Sửa:** 26/11/2026 · bản `2611-08`
+- **Mức:** 🟡 NHẸ
+- **Triệu chứng:** Màn đăng nhập trên máy văn phòng giật, rê chuột càng giật; bấm đăng nhập xong phải chờ lâu mới vào app
+- **Nguyên nhân gốc:** Chế độ nhẹ chỉ bật khi đo thấy máy yếu (mấy giây đầu vẫn chạy đủ ~44 hiệu ứng toàn màn); ảnh nền vừa phóng to vừa lọc màu mỗi khung hình; nền nghiêng theo chuột vẽ lại 6 lớp toàn màn; bản 2611-04 thêm một lượt hỏi chữ ký mẫu TRƯỚC khi vào app
+- **Cách sửa:** Bật login-nhe cho mọi máy, bỏ filter ảnh nền, bỏ nghiêng theo chuột; batBuocChuKy chạy sau enterApp (hộp vẽ phủ kín màn, vẫn bắt buộc)
+- **Chặn tái phát:** Màn đăng nhập không dùng lớp phủ toàn màn chạy liên tục, filter hay hiệu ứng theo chuột; mọi kiểm tra thêm khi vào app chạy sau enterApp, không chặn trước
+
+### Cảnh báo khẩn Egress Supabase tự tắt sau ngày ân hạn ghi cứng
+
+- **Sửa:** 26/11/2026 · bản `2611-04`
+- **Mức:** 🟠 NẶNG
+- **Triệu chứng:** Qua 29/11/2026 bot không còn báo S1 dù Egress dự báo vượt hạn mức
+- **Nguyên nhân gốc:** Điều kiện S1 lệ thuộc ngày ân hạn cứng 2026-11-29 (chỉ báo khi còn 0–3 ngày)
+- **Cách sửa:** S1 khi Egress thực tế ≥ 90% hạn mức hoặc dự báo > 100%; ngày ân hạn chỉ còn là chữ hiển thị (biến EGRESS_AN_HAN, không bắt buộc)
+- **Chặn tái phát:** Không ghi cứng ngày hết hạn vào điều kiện cảnh báo; mốc thời gian đặt qua biến môi trường
+
+### Hộp hồ sơ cá nhân bị cắt, không kéo xuống được khung chữ ký
+
+- **Sửa:** 26/11/2026 · bản `2611-07`
+- **Mức:** 🟡 NHẸ
+- **Triệu chứng:** Mở hồ sơ trên máy tính, cột trái bị cắt ngang khung Chữ ký điện tử, cuộn không được, mất nút Đóng
+- **Nguyên nhân gốc:** Lưới .nsm có max-height + overflow hidden nhưng hàng lưới không giới hạn chiều cao, nên .nsm-l cao theo nội dung và overflow:auto không bao giờ kích hoạt
+- **Cách sửa:** .nsm grid-template-rows minmax(0,1fr) auto + .nsm-l/.nsm-r min-height:0; dưới 640px bỏ grid-template-rows (cả hộp cuộn như cũ)
+- **Chặn tái phát:** Vùng cuộn nằm trong ô lưới/flex phải có min-height:0 và hàng/cột bị giới hạn kích thước, không thì overflow:auto vô tác dụng
+
+### Tải PDF biên bản / phiếu thì chữ ký bị mất, chỉ còn một nét nhỏ
+
+- **Sửa:** 26/11/2026 · bản `2611-15`
+- **Mức:** 🟠 NẶNG
+- **Triệu chứng:** Ô Đại diện kế toán / Đại diện kiểm kê trong file PDF chỉ hiện một mẩu nét (dấu <, một gạch), tên và mã băm vẫn có
+- **Nguyên nhân gốc:** Chữ ký là SVG viewBox 600x220 thu nhỏ bằng CSS; html2canvas không áp viewBox nên vẽ ở kích thước gốc rồi cắt theo ô ký, chỉ còn góc trên bên trái
+- **Cách sửa:** Trước khi chụp, tự vẽ từng chữ ký (Path2D) thành ảnh PNG đúng kích thước ô ký, thay vào chỗ SVG
+- **Chặn tái phát:** Nội dung đưa vào html2canvas không dùng SVG có viewBox — đổi sang ảnh raster đúng kích thước trước khi chụp
+
+### Bấm Phiếu PDF / Biên bản PDF mở ra mà không tải về được
+
+- **Sửa:** 26/11/2026 · bản `2611-14`
+- **Mức:** 🟡 NHẸ
+- **Triệu chứng:** Bấm nút PDF chỉ mở trang in, trên điện thoại và bản cài app không có cách lưu file
+- **Nguyên nhân gốc:** PDF làm bằng cửa sổ in (window.print + Lưu thành PDF) — điện thoại / PWA không có bước đó, cửa sổ mới còn hay bị chặn
+- **Cách sửa:** Dựng file .pdf ngay trên máy (html2canvas + jsPDF tải lười từ cdnjs), mỗi phiếu một trang A4, trang dài ngắt đúng ranh giới dòng; máy tính tải thẳng, điện thoại hiện hộp Tải về máy / Chia sẻ
+- **Chặn tái phát:** Tính năng "tải file" phải ra file thật (Blob + tải về / chia sẻ), không dựa vào hộp in của trình duyệt
 
 ### Bot cảnh báo nhiễu vì sổ lỗi ghi cả thông báo chặn nghiệp vụ
 
@@ -112,6 +168,15 @@ Cập nhật: 09:36 26/11/2026 · 10 hướng dẫn · 23 bài học · 20 sự 
 - **Cách sửa:** LOI_KHONG_GHI bỏ 5 tiêu đề chặn nghiệp vụ / báo mất mạng; bỏ "Script error." không chi tiết
 - **Chặn tái phát:** hộp báo chặn đúng luật thêm tiêu đề vào LOI_KHONG_GHI; sổ lỗi chỉ dành cho lỗi thật
 
+### Cổng gửi thông báo nhận địa chỉ bất kỳ + vài chỗ dễ thiếu dữ liệu
+
+- **Sửa:** 26/11/2026 · bản `2611-01`
+- **Mức:** 🟠 NẶNG
+- **Triệu chứng:** agent rà soát báo push-send không kiểm endpoint, opening_stock đọc không phân trang, model Claude sai tên, nhập kho SAP cập nhật từng dòng dễ quá 60 giây
+- **Nguyên nhân gốc:** push-send gọi fetch tới mọi URL client gửi lên; opening_stock dùng select('*') một lần (cắt ở 1.000 dòng); claude-sonnet-5 không tồn tại; vòng for await tuần tự
+- **Cách sửa:** push-send chỉ gửi tới máy chủ Web Push chuẩn (https, FCM/WNS/Apple/Mozilla, không cổng lạ); opening_stock qua fetchAllRows; model claude-sonnet-5-5; nhap-kho-sap chayGioi 8 lệnh song song; vercel.json thêm nosniff, X-Frame-Options SAMEORIGIN, Referrer-Policy
+- **Chặn tái phát:** cổng /api gọi ra ngoài theo địa chỉ client gửi phải có danh sách cho phép; mọi bảng có thể vượt 1.000 dòng đọc qua fetchAllRows; vòng ghi Supabase trong hàm Vercel chạy song song có giới hạn
+
 ### Bot báo cáo 8h và bot cảnh báo chạy trễ nhiều tiếng
 
 - **Sửa:** 25/11/2026 · bản `2511-01`
@@ -120,6 +185,15 @@ Cập nhật: 09:36 26/11/2026 · 10 hướng dẫn · 23 bài học · 20 sự 
 - **Nguyên nhân gốc:** Lịch tự chạy (schedule) của GitHub Actions gói miễn phí bị xếp hàng trễ 4-10 tiếng
 - **Cách sửa:** api/bot.js chạy nguyên agent/report.mjs + agent/canh-bao.mjs bằng tiến trình con, gọi bằng Vercel Cron (CRON_SECRET); GitHub chỉ còn bấm tay + cập nhật sổ tay; bot ghi giờ chạy vào bao_mat_cau_hinh thay cho đọc lịch sử Actions
 - **Chặn tái phát:** Việc cần đúng giờ không đặt trên lịch GitHub Actions — dùng Vercel Cron
+
+### Màn nhập mã PIN giật, lag trên máy tính
+
+- **Sửa:** 25/11/2026 · bản `2511-04`
+- **Mức:** 🟡 NHẸ
+- **Triệu chứng:** PC rê chuột bấm số PIN thấy màn giật, phím phản hồi chậm
+- **Nguyên nhân gốc:** nền màn đăng nhập vẫn chạy đủ 60 hiệu ứng sau thẻ PIN; mỗi lần rê chuột 6 lớp nền nghiêng + vệt sáng theo chuột vẽ lại cả màn; vệt sáng mép thẻ chạy bằng left (tính lại bố cục mỗi khung), lời chào dùng clip-path + filter (chạy trên luồng chính, đúng lúc đang tải dữ liệu)
+- **Cách sửa:** màn PIN gắn lớp pin-tinh: dừng hiệu ứng nền (giữ khung hình), tắt nghiêng theo chuột, ẩn sao băng và vệt sáng chuột; lcEdge chạy bằng transform; pinGlow bằng opacity; lời chào hiện từng chữ bằng opacity + transform; bỏ blur khi thẻ rời đi
+- **Chặn tái phát:** hiệu ứng trên màn đăng nhập / PIN chỉ dùng transform + opacity; không animate left/width/filter/clip-path; không để hiệu ứng nền chạy sau màn cần gõ phím
 
 ### Cổng API mở cho người lạ khi thiếu cấu hình / không kiểm đăng nhập
 
@@ -138,15 +212,6 @@ Cập nhật: 09:36 26/11/2026 · 10 hướng dẫn · 23 bài học · 20 sự 
 - **Nguyên nhân gốc:** appUrl dựng từ header do người gọi tự đặt, rồi fetch(appUrl + '/api/push-send') kèm x-service-key — giả Host là lộ khóa service role; het-han-dc mở cho mọi người
 - **Cách sửa:** lib/app-url.js cố định APP_URL (biến môi trường hoặc địa chỉ thật), bỏ hẳn đọc header Host; het-han-dc bắt buộc CRON_SECRET hoặc phiên đăng nhập hợp lệ, app gửi kèm token; bỏ workflow GitHub het-han-dc.yml (không có mật khẩu)
 - **Chặn tái phát:** Không bao giờ dựng URL gọi đi từ header của request; mọi cổng /api phải có xác thực
-
-### Màn nhập mã PIN giật, lag trên máy tính
-
-- **Sửa:** 25/11/2026 · bản `2511-04`
-- **Mức:** 🟡 NHẸ
-- **Triệu chứng:** PC rê chuột bấm số PIN thấy màn giật, phím phản hồi chậm
-- **Nguyên nhân gốc:** nền màn đăng nhập vẫn chạy đủ 60 hiệu ứng sau thẻ PIN; mỗi lần rê chuột 6 lớp nền nghiêng + vệt sáng theo chuột vẽ lại cả màn; vệt sáng mép thẻ chạy bằng left (tính lại bố cục mỗi khung), lời chào dùng clip-path + filter (chạy trên luồng chính, đúng lúc đang tải dữ liệu)
-- **Cách sửa:** màn PIN gắn lớp pin-tinh: dừng hiệu ứng nền (giữ khung hình), tắt nghiêng theo chuột, ẩn sao băng và vệt sáng chuột; lcEdge chạy bằng transform; pinGlow bằng opacity; lời chào hiện từng chữ bằng opacity + transform; bỏ blur khi thẻ rời đi
-- **Chặn tái phát:** hiệu ứng trên màn đăng nhập / PIN chỉ dùng transform + opacity; không animate left/width/filter/clip-path; không để hiệu ứng nền chạy sau màn cần gõ phím
 
 ### Tin kiểm tra app tuần báo sai và lọt vào nhóm Teams Bếp
 
@@ -242,15 +307,6 @@ Cập nhật: 09:36 26/11/2026 · 10 hướng dẫn · 23 bài học · 20 sự 
 - **Dấu hiệu nhận diện (bot canh):** `Đọc ảnh quá lâu`
 - **Tái phát gần nhất:** 17:38 24/11/2026
 
-### Nhập kho bị quét lặp nhiều lần
-
-- **Sửa:** 19/10/2026 · bản `1910-03`
-- **Mức:** 🟠 NẶNG
-- **Triệu chứng:** Cùng ngày + mã + SL lưu 5–7 lần ở 4 kho bếp.
-- **Nguyên nhân gốc:** Lưu một phần mà báo lỗi đỏ (uid trùng) + không thấy hàng đã nhập (giới hạn 1.000 dòng) → BP quét lại cả phiếu.
-- **Cách sửa:** Sửa uid + phân trang; thêm cột Người nhập để truy ai quét lúc nào; dọn 1.639 dòng (có bảng sao lưu).
-- **Chặn tái phát:** Báo lỗi phải nói đúng phần nào đã lên máy chủ, phần nào chưa — báo sai làm người dùng nhập lại.
-
 ### Danh mục kho / nhập kho thiếu dữ liệu vì giới hạn 1.000 dòng
 
 - **Sửa:** 19/10/2026 · bản `1910-01`
@@ -260,6 +316,15 @@ Cập nhật: 09:36 26/11/2026 · 10 hướng dẫn · 23 bài học · 20 sự 
 - **Cách sửa:** Tải qua fetchAllRows (phân trang, sắp theo khoá ổn định).
 - **Chặn tái phát:** Mọi bảng có thể quá 1.000 dòng phải đi qua fetchAllRows.
 - **Dấu hiệu nhận diện (bot canh):** `plant_materials_pkey`
+
+### Nhập kho bị quét lặp nhiều lần
+
+- **Sửa:** 19/10/2026 · bản `1910-03`
+- **Mức:** 🟠 NẶNG
+- **Triệu chứng:** Cùng ngày + mã + SL lưu 5–7 lần ở 4 kho bếp.
+- **Nguyên nhân gốc:** Lưu một phần mà báo lỗi đỏ (uid trùng) + không thấy hàng đã nhập (giới hạn 1.000 dòng) → BP quét lại cả phiếu.
+- **Cách sửa:** Sửa uid + phân trang; thêm cột Người nhập để truy ai quét lúc nào; dọn 1.639 dòng (có bảng sao lưu).
+- **Chặn tái phát:** Báo lỗi phải nói đúng phần nào đã lên máy chủ, phần nào chưa — báo sai làm người dùng nhập lại.
 
 ### Lưu phân quyền làm người dùng mất sạch kho
 
@@ -281,15 +346,6 @@ Cập nhật: 09:36 26/11/2026 · 10 hướng dẫn · 23 bài học · 20 sự 
 - **Chặn tái phát:** Mã sinh ở client phải có bộ đếm tăng dần, không chỉ dựa thời gian + ngẫu nhiên ngắn.
 - **Dấu hiệu nhận diện (bot canh):** `receipts_pkey`
 
-### Phiếu gốc và phiếu -2 dính dòng sổ của nhau
-
-- **Sửa:** 24/09/2026 · bản `2409-11`
-- **Mức:** 🔴 KHẨN
-- **Triệu chứng:** Duyệt phiếu gốc bị chặn oan; xoá phiếu gốc xoá luôn dòng sổ của phiếu -2.
-- **Nguyên nhân gốc:** Tìm dòng sổ bằng reason.includes(id) — mã gốc nằm trọn trong mã -2.
-- **Cách sửa:** Helper dcLaDongSoCua khớp đuôi chính xác, thay 6 chỗ; máy chủ dùng like '%'||id rồi lọc lại.
-- **Chặn tái phát:** Mã có hậu tố -2/-3: không so khớp bằng includes / like '%…%' / replace.
-
 ### Hai điểm bán trùng mã phiếu điều chuyển
 
 - **Sửa:** 24/09/2026 · bản `2409-02`
@@ -299,6 +355,15 @@ Cập nhật: 09:36 26/11/2026 · 10 hướng dẫn · 23 bài học · 20 sự 
 - **Cách sửa:** insTrReqSafe tự nhảy hậu tố khi trùng khoá + unique index trên máy chủ + mã mới mang cả hai đầu kho.
 - **Chặn tái phát:** Không bao giờ cấp mã bằng cách đếm dữ liệu client đọc được; máy chủ phải có ràng buộc unique.
 - **Dấu hiệu nhận diện (bot canh):** `transfer_requests_id_uniq`
+
+### Phiếu gốc và phiếu -2 dính dòng sổ của nhau
+
+- **Sửa:** 24/09/2026 · bản `2409-11`
+- **Mức:** 🔴 KHẨN
+- **Triệu chứng:** Duyệt phiếu gốc bị chặn oan; xoá phiếu gốc xoá luôn dòng sổ của phiếu -2.
+- **Nguyên nhân gốc:** Tìm dòng sổ bằng reason.includes(id) — mã gốc nằm trọn trong mã -2.
+- **Cách sửa:** Helper dcLaDongSoCua khớp đuôi chính xác, thay 6 chỗ; máy chủ dùng like '%'||id rồi lọc lại.
+- **Chặn tái phát:** Mã có hậu tố -2/-3: không so khớp bằng includes / like '%…%' / replace.
 
 ### Phiếu điều chuyển ghi sổ hai lần
 
@@ -313,8 +378,8 @@ Cập nhật: 09:36 26/11/2026 · 10 hướng dẫn · 23 bài học · 20 sự 
 
 | Mã | Mức | Sự cố | Mở lúc | Đóng | Trạng thái |
 |---|---|---|---|---|---|
+| SC-2611-01 | 🟠 NẶNG | Nhiều người cùng gặp một lỗi (chi tiết trong app) | 17:30 26/11/2026 | 08:45 27/11/2026 | Đã ổn lại |
 | SC-2411-01 | 🟠 NẶNG | Tái phát: Quét ảnh lỗi 504 vì quá giờ | 17:38 24/11/2026 | 09:09 26/11/2026 | Đã xử lý |
-| SC-1711-02 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
 | SC-1711-03 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
 | SC-1711-04 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
 | SC-1711-05 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
@@ -333,3 +398,4 @@ Cập nhật: 09:36 26/11/2026 · 10 hướng dẫn · 23 bài học · 20 sự 
 | SC-1711-17 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
 | SC-1711-18 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
 | SC-1711-19 | 🟠 NẶNG | Bot tự huỷ phiếu quá hạn không chạy | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
+| SC-1711-02 | 🔴 KHẨN | Phiếu đã duyệt mà sổ thiếu dòng | 03:00 17/11/2026 | 08:44 17/11/2026 | Đã ổn lại |
