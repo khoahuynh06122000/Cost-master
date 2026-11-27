@@ -2017,6 +2017,15 @@
     padding:4px 10px;margin:0 0 8px;transform:rotate(-3deg);font-size:11px;line-height:1.3;text-align:center}
   .kyso-dau b{font-size:12.5px;letter-spacing:.04em}
   html.dark .kyso-dau{color:#ff8a8a;border-color:#ff8a8a}
+
+  /* Ô PIN kiểu ngân hàng trong hộp ký số (27/11/2026) — nền tối như màn PIN đăng nhập để dùng lại hiệu ứng */
+  .kp-pin{margin:10px 0 4px;padding:6px 14px 14px;border-radius:18px;background:linear-gradient(160deg,#0f2a2c,#0b1d26);
+    border:1px solid rgba(245,199,122,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 10px 26px -14px rgba(0,0,0,.6)}
+  .kp-pin .pin-stage{height:80px;margin:4px 0 0}
+  .kp-pin .pin-dots i{height:48px}
+  .kp-pin .pin-pad{gap:8px;margin-top:8px}
+  .kp-pin .pin-k{height:48px}
+  .kyso-b:has(.kp-pin) .kyso-nut .btn-primary{display:none}
 </style>
 <script>try{if(localStorage.getItem('appDark')==='1')document.documentElement.classList.add('dark');}catch(e){}</script>
 </head>
@@ -2632,7 +2641,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2711-02';
+const APP_VER='2711-03';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -14635,8 +14644,45 @@ function _hopKy(tieuDe,phu){
   document.body.appendChild(bg);
   return {bg,h,b,dong:()=>bg.remove()};
 }
-function _oPin(){const i=el('input','input kyso-pin');i.type='password';i.inputMode='numeric';i.autocomplete='off';i.maxLength=6;i.placeholder='Mã PIN 6 số';
-  i.oninput=()=>{i.value=i.value.replace(/\D/g,'').slice(0,6);};return i;}
+/* Ô MÃ PIN KIỂU APP NGÂN HÀNG (Khoa 27/11/2026): 6 ô + bàn phím số, cùng hiệu ứng màn PIN đăng nhập. Gõ đủ 6 số là TỰ KÝ (không
+   bấm nút), trong lúc chờ máy chủ thì 6 ô chuyển trạng thái "đang xác minh". Sai PIN / lỗi -> rung đỏ, xoá số để gõ lại.
+   Giữ giao diện như một ô input cũ (.value / .focus() / onkeydown Enter) nên mọi hộp ký đang dùng không phải sửa. */
+function _oPin(){
+  const w=el('div','kp-pin');
+  const st=el('div','pin-stage');st.setAttribute('aria-hidden','true');
+  st.innerHTML='<span class="pin-ring"></span><span class="pin-core"></span><div class="pin-dots"><i class="cur"></i><i></i><i></i><i></i><i></i><i></i></div>'
+    +'<div class="pin-ok-box"><svg class="pin-ok" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>';
+  w.appendChild(st);
+  const pad=el('div','pin-pad');
+  ['1','2','3','4','5','6','7','8','9','','0','del'].forEach(k=>{
+    if(!k){pad.appendChild(el('span'));return;}
+    const b=el('button','pin-k'+(k==='del'?' ph':''),k==='del'?'⌫':k);b.type='button';b.dataset.k=k;if(k==='del')b.setAttribute('aria-label','Xoá');
+    b.onclick=()=>go(k);pad.appendChild(b);});
+  w.appendChild(pad);
+  let v='',dang=false;
+  const ve=()=>{st.querySelectorAll('.pin-dots i').forEach((d,i)=>{d.classList.toggle('on',i<v.length);d.classList.toggle('cur',!dang&&i===v.length);});
+    pad.querySelectorAll('.pin-k').forEach(b=>b.disabled=dang);};
+  const sai=()=>{dang=false;st.classList.remove('verify');st.classList.add('sai');
+    setTimeout(()=>{st.classList.remove('sai');v='';ve();},450);};
+  const gui=()=>{dang=true;st.classList.add('verify');ve();
+    setTimeout(()=>{
+      if(typeof w.onkeydown==='function')w.onkeydown({key:'Enter',preventDefault(){}});
+      else{const b=w.parentNode&&w.parentNode.querySelector('.kyso-nut .btn-primary');if(b)b.click();}
+    },60);};
+  function go(k){if(dang)return;
+    if(k==='del'){v=v.slice(0,-1);ve();return;}
+    if(v.length>=6)return;v+=k;ve();if(v.length===6)gui();}
+  Object.defineProperty(w,'value',{get:()=>v,set:x=>{x=String(x||'').replace(/\D/g,'').slice(0,6);
+    if(!x&&dang){sai();return;}v=x;dang=false;st.classList.remove('verify');ve();}});
+  w.focus=()=>{};
+  /* hộp ký báo lỗi (dòng .kyso-loi có chữ) trong lúc đang xác minh -> rung đỏ, gõ lại */
+  setTimeout(()=>{const loi=w.parentNode&&w.parentNode.querySelector('.kyso-loi');if(!loi)return;
+    new MutationObserver(()=>{if(dang&&loi.textContent.trim())sai();}).observe(loi,{childList:true,characterData:true,subtree:true});},0);
+  const phim=e=>{if(!w.isConnected){document.removeEventListener('keydown',phim);return;}
+    if(/^[0-9]$/.test(e.key)){e.preventDefault();go(e.key);}else if(e.key==='Backspace'){e.preventDefault();go('del');}};
+  document.addEventListener('keydown',phim);
+  ve();return w;
+}
 /* VẼ CHỮ KÝ MẪU. batBuoc: lần đầu vào app, không có nút Huỷ. coMauCu: vẽ lại — PIN TRƯỚC (Khoa 26/11/2026). */
 function moVeChuKy(opt){
   opt=opt||{};
