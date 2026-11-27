@@ -2641,7 +2641,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2711-03';
+const APP_VER='2711-04';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -14859,7 +14859,7 @@ function dcKhoiKySo(r){
         const _ns=dcNguonSo(r.kind,vai);
         if(_ns!=='lap'&&r.status!=='Đã duyệt'){v.textContent='Đã ký · chờ ghi sổ';return;}
         try{const b=await sha256Hex(noiDungDC(r,_ns,soCuaO(r.items,_ns)));
-          if(b===s.bam){v.textContent='✓ Nội dung khớp · '+maBamNgan(s.bam);v.className='kyso-xt ok';}
+          if(b===s.bam){v.textContent=(s.xacThuc==='PHIEU_GIAY'?'✓ Ký trên phiếu giấy (số hóa) · ':'✓ Nội dung khớp · ')+maBamNgan(s.bam);v.className='kyso-xt ok';}
           else{v.textContent='⚠ Nội dung đã đổi sau khi ký';v.className='kyso-xt bad';}}catch(e){v.textContent=maBamNgan(s.bam);}
       })();
     });
@@ -14907,7 +14907,7 @@ function dcPhieuHtml(r){
   const kyHtml=dcOKy(r.kind).map(([vai,nhan])=>{const s=ck[vai];
     if(!s)return '<td><div class="vai">'+e(nhan)+'</div><div class="trong">'+(dcCanKySo(r)||Object.keys(ck).length?'Chưa ký':'')+'</div></td>';
     return '<td><div class="vai">'+e(nhan)+'</div><div class="sv">'+svgChuKy(_mauKy[s.chuKyId],60,'#14213d')+'</div><div class="ten">'+e(s.ten)+'</div>'
-      +'<div class="phu">Mã NV: '+e(s.maNv||'—')+'</div><div class="phu">Ký lúc: '+e(gioKySo(s.luc))+'</div><div class="bam">Mã băm: '+e(maBamNgan(s.bam))+'</div></td>';}).join('');
+      +'<div class="phu">Mã NV: '+e(s.maNv||'—')+'</div><div class="phu">Ký lúc: '+e(gioKySo(s.luc))+'</div>'+(s.xacThuc==='PHIEU_GIAY'?'<div class="phu">Ký trên phiếu giấy (số hóa)</div>':'')+'<div class="bam">Mã băm: '+e(maBamNgan(s.bam))+'</div></td>';}).join('');
   const tu=whName(r.fromPlant,r.fromSloc),den=r.toPlant?whName(r.toPlant,r.toSloc):'Hủy / hao hụt';
   const dau=ck.kt?'<div class="dau">KẾ TOÁN ĐÃ CHỐT<small>'+e(ck.kt.ten)+(ck.kt.maNv?' · '+e(ck.kt.maNv):'')+'</small><small>'+e(gioKySo(ck.kt.luc))+'</small></div>':'';
   return '<section class="ph">'+dau
@@ -15156,7 +15156,7 @@ function khoiKyKK(s){
     const p2=el('div','kyso-phu2');p2.textContent='Mã NV: '+(sg.maNv||'—')+' · Ký lúc: '+gioKySo(sg.luc);c.appendChild(p2);
     const v=el('div','kyso-xt');c.appendChild(v);luoi.appendChild(c);
     (async()=>{await taiMauKy([sg.chuKyId]);sv.innerHTML=svgChuKy(_mauKy[sg.chuKyId],46);
-      try{const b=await sha256Hex(noiDungKK(s));if(b===sg.bam){v.textContent='✓ Nội dung khớp · '+maBamNgan(sg.bam);v.className='kyso-xt ok';}
+      try{const b=await sha256Hex(noiDungKK(s));if(b===sg.bam){v.textContent=(sg.xacThuc==='PHIEU_GIAY'?'✓ Ký trên phiếu giấy (số hóa) · ':'✓ Nội dung khớp · ')+maBamNgan(sg.bam);v.className='kyso-xt ok';}
         else{v.textContent='⚠ Số đã đổi sau khi ký';v.className='kyso-xt bad';}}catch(e){v.textContent=maBamNgan(sg.bam);}})();
   });
   const nut=el('div','kyso-nutp');box.appendChild(nut);
@@ -15186,7 +15186,7 @@ async function inBienBanPDF(s,byZone){
   const oKy=(vai,nhan)=>{const sg=ck[vai];
     if(!sg)return '<td><div class="vai">'+nhan+'</div><div class="it">(Ký, ghi rõ họ tên)</div><div class="trong"></div><div class="ten">'+e(vai==='kt'?(s.approvedBy||''):(s.user||''))+'</div></td>';
     return '<td><div class="vai">'+nhan+'</div><div class="it">(Ký số trên app)</div><div class="sv">'+svgChuKy(_mauKy[sg.chuKyId],62,'#14213d')+'</div><div class="ten">'+e(sg.ten)+'</div>'
-      +'<div class="phu">Mã NV: '+e(sg.maNv||'—')+' · Ký lúc: '+e(gioKySo(sg.luc))+'</div><div class="bam">Mã băm: '+e(maBamNgan(sg.bam))+'</div></td>';};
+      +'<div class="phu">Mã NV: '+e(sg.maNv||'—')+' · Ký lúc: '+e(gioKySo(sg.luc))+'</div>'+(sg.xacThuc==='PHIEU_GIAY'?'<div class="phu">Ký trên phiếu giấy (số hóa)</div>':'')+'<div class="bam">Mã băm: '+e(maBamNgan(sg.bam))+'</div></td>';};
   const css='@page{size:A4;margin:12mm}body{font-family:"Times New Roman",serif;font-size:12.5px;color:#111;margin:0}'
     +'.cty{text-align:center;font-weight:700}h1{text-align:center;font-size:18px;margin:10px 0 8px}.l{margin:3px 0}.b{font-weight:700}'
     +'table{width:100%;border-collapse:collapse}.bang th,.bang td{border:1px solid #000;padding:3px 5px;vertical-align:top}.bang th{background:#f1f1f1}.c{text-align:center}'
