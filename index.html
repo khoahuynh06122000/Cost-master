@@ -2026,6 +2026,9 @@
   .kp-pin .pin-pad{gap:8px;margin-top:8px}
   .kp-pin .pin-k{height:48px}
   .kyso-b:has(.kp-pin) .kyso-nut .btn-primary{display:none}
+  /* Dấu ĐÃ HỦY PHIẾU góc phải trên thẻ phiếu (27/11/2026) */
+  .kyso-dau.goc{position:absolute;top:10px;right:14px;margin:0;z-index:1;transform:rotate(-8deg);background:transparent;max-width:46%;opacity:.9;pointer-events:none}
+  .kyso-dau.goc span{white-space:normal}
 </style>
 <script>try{if(localStorage.getItem('appDark')==='1')document.documentElement.classList.add('dark');}catch(e){}</script>
 </head>
@@ -2641,7 +2644,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2711-04';
+const APP_VER='2711-05';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -14211,6 +14214,7 @@ function dcGuiLai(r){
 }
 function dcReqCard(r,canAct){
   const wrap=el('div','card-b');wrap.style.borderTop='1px solid var(--line)';
+  if(r.status==='Từ chối'){wrap.style.position='relative';const dg=dcDauHuy(r);dg.classList.add('goc');wrap.appendChild(dg);}
   const codes=Object.keys(r.items||{});
   /* Kỳ ghi sổ do người duyệt chọn (mặc định kỳ của hôm nay). Vướng hay không là
      xét theo CHÍNH kỳ đó — chọn sang kỳ sau thì kho vốn đã chốt kỳ này hết vướng. */
@@ -14830,6 +14834,10 @@ function _laBenXuat(r){const wh=(session&&session.wh)||[];return wh.some(w=>w.pl
 function dcDaChot(r){return !!(r&&r.chuKy&&r.chuKy.kt);}
 function dcDauChot(kt){const d=el('div','kyso-dau');d.appendChild(el('b','','KẾ TOÁN ĐÃ CHỐT'));
   const t=el('span');t.textContent=(kt.ten||'')+' · '+gioKySo(kt.luc);d.appendChild(t);return d;}
+/* Phiếu bị từ chối = HỦY PHIẾU (Khoa 27/11/2026): không ký, đóng dấu đỏ "ĐÃ HỦY PHIẾU" góc phải trên (thẻ + PDF). */
+function dcDauHuy(r){const d=el('div','kyso-dau');d.appendChild(el('b','','ĐÃ HỦY PHIẾU'));
+  const t=el('span');t.textContent=[r.approvedBy||'',r.approvedAt?gioKySo(r.approvedAt):''].filter(Boolean).join(' · ');d.appendChild(t);
+  if(r.rejectNote){const l=el('span');l.textContent='Lý do: '+r.rejectNote;d.appendChild(l);}return d;}
 function _laBenNhan(r){const wh=(session&&session.wh)||[];return !!r.toPlant&&wh.some(w=>w.plant===r.toPlant&&(!w.sloc||w.sloc===r.toSloc));}
 function dcChoNhanCuaToi(){return (trReqs||[]).filter(r=>r.kind==='xin'&&r.status==='Đã duyệt'&&(dcCanKySo(r)||!!(r.chuKy&&r.chuKy.giao))&&!(r.chuKy&&r.chuKy.nhan)&&_laBenNhan(r));}
 /* KHỐI CHỮ KÝ trên thẻ phiếu + nút ký còn thiếu + nút PDF */
@@ -14837,6 +14845,8 @@ function dcKhoiKySo(r){
   const box=el('div','kyso-khoi');
   const ck=r.chuKy||{};
   if(ck.kt)box.appendChild(dcDauChot(ck.kt));
+  if(r.status==='Từ chối'){box.appendChild(el('div','kyso-cu','Phiếu đã hủy — không ký.'));
+    const n0=el('div','kyso-nutp');box.appendChild(n0);const b0=el('button','btn btn-ghost btn-sm','📄 Phiếu PDF');b0.onclick=()=>dcInPhieu(r);n0.appendChild(b0);return box;}
   const moi=dcMoKy(r);
   if(!moi){
     box.appendChild(el('div','kyso-cu','Phiếu lập trước khi áp dụng ký số (27/11/2026) — không có chữ ký số.'));
@@ -14850,7 +14860,7 @@ function dcKhoiKySo(r){
         const t0=el('div','kyso-chua');t0.textContent=_cu?('Người xin: '+(r.by||'—')+' · phiếu lập trước khi ký lúc lập'):'Chưa ký';
         c.appendChild(t0);luoi.appendChild(c);return;}
       const sv=el('div','kyso-sv');c.appendChild(sv);
-      const t=el('div','kyso-ten');t.textContent=s.ten||'';c.appendChild(t);
+      const t=el('div','kyso-ten');t.textContent=(s.ten||'')+(s.kyThay?' (ký thay '+s.kyThay+')':'');c.appendChild(t);
       const p=el('div','kyso-phu2');p.textContent='Mã NV: '+(s.maNv||'—')+' · Ký lúc: '+gioKySo(s.luc);c.appendChild(p);
       const v=el('div','kyso-xt');c.appendChild(v);
       luoi.appendChild(c);
@@ -14906,10 +14916,11 @@ function dcPhieuHtml(r){
       +'<td class="n">'+(x==null?'':e(_so3(x)))+'</td><td class="c">'+(x==null?'':e(it.uom))+'</td><td></td><td></td><td></td></tr>';}).join('');
   const kyHtml=dcOKy(r.kind).map(([vai,nhan])=>{const s=ck[vai];
     if(!s)return '<td><div class="vai">'+e(nhan)+'</div><div class="trong">'+(dcCanKySo(r)||Object.keys(ck).length?'Chưa ký':'')+'</div></td>';
-    return '<td><div class="vai">'+e(nhan)+'</div><div class="sv">'+svgChuKy(_mauKy[s.chuKyId],60,'#14213d')+'</div><div class="ten">'+e(s.ten)+'</div>'
+    return '<td><div class="vai">'+e(nhan)+'</div><div class="sv">'+svgChuKy(_mauKy[s.chuKyId],60,'#14213d')+'</div><div class="ten">'+e(s.ten)+(s.kyThay?' <small>(ký thay '+e(s.kyThay)+')</small>':'')+'</div>'
       +'<div class="phu">Mã NV: '+e(s.maNv||'—')+'</div><div class="phu">Ký lúc: '+e(gioKySo(s.luc))+'</div>'+(s.xacThuc==='PHIEU_GIAY'?'<div class="phu">Ký trên phiếu giấy (số hóa)</div>':'')+'<div class="bam">Mã băm: '+e(maBamNgan(s.bam))+'</div></td>';}).join('');
   const tu=whName(r.fromPlant,r.fromSloc),den=r.toPlant?whName(r.toPlant,r.toSloc):'Hủy / hao hụt';
-  const dau=ck.kt?'<div class="dau">KẾ TOÁN ĐÃ CHỐT<small>'+e(ck.kt.ten)+(ck.kt.maNv?' · '+e(ck.kt.maNv):'')+'</small><small>'+e(gioKySo(ck.kt.luc))+'</small></div>':'';
+  const dau=r.status==='Từ chối'?'<div class="dau">ĐÃ HỦY PHIẾU<small>'+e(r.approvedBy||'')+'</small><small>'+e(r.approvedAt?gioKySo(r.approvedAt):'')+'</small></div>'
+    :ck.kt?'<div class="dau">KẾ TOÁN ĐÃ CHỐT<small>'+e(ck.kt.ten)+(ck.kt.maNv?' · '+e(ck.kt.maNv):'')+'</small><small>'+e(gioKySo(ck.kt.luc))+'</small></div>':'';
   return '<section class="ph">'+dau
     +'<div class="top"><div class="logo">SUN WORLD<small>BA NA HILLS</small></div><div class="so">Số phiếu: <b>'+e(r.id)+'</b><br>Ngày: '+e(ngay)
     +(r.idCu?'<br>Mã cũ: '+e(r.idCu):'')+'<br><span class="trang">'+e(r.status)+'</span></div></div>'
@@ -15152,7 +15163,7 @@ function khoiKyKK(s){
     const c=el('div','kyso-cell');c.appendChild(el('div','kyso-vai',nhan));const sg=ck[vai];
     if(!sg){c.appendChild(el('div','kyso-chua',vai==='kt'&&s.status==='Đã duyệt'?'Duyệt trước khi áp dụng ký số':'Chưa ký'));luoi.appendChild(c);return;}
     const sv=el('div','kyso-sv');c.appendChild(sv);
-    const t=el('div','kyso-ten');t.textContent=sg.ten||'';c.appendChild(t);
+    const t=el('div','kyso-ten');t.textContent=(sg.ten||'')+(sg.kyThay?' (ký thay '+sg.kyThay+')':'');c.appendChild(t);
     const p2=el('div','kyso-phu2');p2.textContent='Mã NV: '+(sg.maNv||'—')+' · Ký lúc: '+gioKySo(sg.luc);c.appendChild(p2);
     const v=el('div','kyso-xt');c.appendChild(v);luoi.appendChild(c);
     (async()=>{await taiMauKy([sg.chuKyId]);sv.innerHTML=svgChuKy(_mauKy[sg.chuKyId],46);
@@ -15185,7 +15196,7 @@ async function inBienBanPDF(s,byZone){
     +zList.map(z=>'<td class="c">'+e(zQty(z,r.code))+'</td>').join('')+'<td class="c">'+e(r.qty)+'</td><td>'+e(gcOf(r.code))+'</td></tr>').join('');
   const oKy=(vai,nhan)=>{const sg=ck[vai];
     if(!sg)return '<td><div class="vai">'+nhan+'</div><div class="it">(Ký, ghi rõ họ tên)</div><div class="trong"></div><div class="ten">'+e(vai==='kt'?(s.approvedBy||''):(s.user||''))+'</div></td>';
-    return '<td><div class="vai">'+nhan+'</div><div class="it">(Ký số trên app)</div><div class="sv">'+svgChuKy(_mauKy[sg.chuKyId],62,'#14213d')+'</div><div class="ten">'+e(sg.ten)+'</div>'
+    return '<td><div class="vai">'+nhan+'</div><div class="it">'+(sg.xacThuc==='PHIEU_GIAY'?'(Ký trên phiếu giấy — số hóa)':'(Ký số trên app)')+'</div><div class="sv">'+svgChuKy(_mauKy[sg.chuKyId],62,'#14213d')+'</div><div class="ten">'+e(sg.ten)+(sg.kyThay?' <small>(ký thay '+e(sg.kyThay)+')</small>':'')+'</div>'
       +'<div class="phu">Mã NV: '+e(sg.maNv||'—')+' · Ký lúc: '+e(gioKySo(sg.luc))+'</div>'+(sg.xacThuc==='PHIEU_GIAY'?'<div class="phu">Ký trên phiếu giấy (số hóa)</div>':'')+'<div class="bam">Mã băm: '+e(maBamNgan(sg.bam))+'</div></td>';};
   const css='@page{size:A4;margin:12mm}body{font-family:"Times New Roman",serif;font-size:12.5px;color:#111;margin:0}'
     +'.cty{text-align:center;font-weight:700}h1{text-align:center;font-size:18px;margin:10px 0 8px}.l{margin:3px 0}.b{font-weight:700}'
