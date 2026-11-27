@@ -1539,12 +1539,23 @@
     color:rgba(203,216,236,.58);transition:.15s}
   .gl-eye:hover{color:#fff;background:rgba(255,255,255,.08)}
 
+  .gl-saved{display:flex;align-items:center;gap:8px;padding:8px 11px;margin:2px 0 2px;border-radius:12px;
+    font-size:12px;font-weight:600;color:#a7f3d0;background:rgba(16,185,129,.12);border:1px solid rgba(110,231,183,.28)}
+  .gl-saved-dot{width:6.5px;height:6.5px;border-radius:50%;flex:none;background:#34d399;box-shadow:0 0 8px #34d399;animation:glPulse 2s ease-in-out infinite}
+  .gl-saved-t{flex:1;min-width:0;line-height:1.35}
+  .gl-saved-x{flex:none;padding:3px 8px;border-radius:7px;font-size:11px;font-weight:700;color:rgba(226,238,255,.85);
+    background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);cursor:pointer;transition:.16s}
+  .gl-saved-x:hover{color:#fff;background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.3)}
+
   .login-card2.is-glassy .lc-body>div:not(.hidden)>*{animation:glStagger .42s cubic-bezier(.16,1,.3,1) both}
-  .login-card2.is-glassy .lc-body>div:not(.hidden)>*:nth-child(2){animation-delay:.05s}
-  .login-card2.is-glassy .lc-body>div:not(.hidden)>*:nth-child(3){animation-delay:.10s}
-  .login-card2.is-glassy .lc-body>div:not(.hidden)>*:nth-child(4){animation-delay:.15s}
-  .login-card2.is-glassy .lc-body>div:not(.hidden)>*:nth-child(5){animation-delay:.20s}
-  .login-card2.is-glassy .lc-body>div:not(.hidden)>*:nth-child(6){animation-delay:.24s}
+  .login-card2.is-glassy .lc-body>div:not(.hidden)>*:nth-child(2){animation-delay:.04s}
+  .login-card2.is-glassy .lc-body>div:not(.hidden)>*:nth-child(3){animation-delay:.08s}
+  .login-card2.is-glassy .lc-body>div:not(.hidden)>*:nth-child(4){animation-delay:.12s}
+  .login-card2.is-glassy .lc-body>div:not(.hidden)>*:nth-child(5){animation-delay:.16s}
+  .login-card2.is-glassy .lc-body>div:not(.hidden)>*:nth-child(6){animation-delay:.20s}
+  .login-card2.is-glassy .lc-body>div:not(.hidden)>*:nth-child(7){animation-delay:.23s}
+  .login-card2.is-glassy .lc-body>div:not(.hidden)>*:nth-child(8){animation-delay:.26s}
+  .login-card2.is-glassy .lc-body>div:not(.hidden)>*:nth-child(9){animation-delay:.28s}
   @keyframes glStagger{from{opacity:0;transform:translateY(11px) scale(.98)}to{opacity:1;transform:none}}
 
   .login-card2 h3{font-size:22px;letter-spacing:-.4px}
@@ -2346,7 +2357,7 @@
             <label class="field2"><span>Email</span>
               <div class="gl-inp-wrap">
                 <svg class="gl-inp-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M22 7l-10 6L2 7"/></svg>
-                <input id="liEmail" class="input2" type="email" autocomplete="username" placeholder="email của bạn">
+                <input id="liEmail" class="input2" type="email" autocomplete="username" placeholder="email của bạn" oninput="lcKiemPhienLuu()">
               </div>
             </label>
             <label class="field2"><span>Mật khẩu</span>
@@ -2358,7 +2369,12 @@
                 </button>
               </div>
             </label>
-            <button id="liBtn" class="btn btn-primary btn-block" style="margin-top:16px" onclick="doSignIn()" aria-live="polite">Đăng nhập</button>
+            <div id="liSaved" class="gl-saved hidden">
+              <span class="gl-saved-dot" aria-hidden="true"></span>
+              <span class="gl-saved-t">Phiên đang lưu — bấm Đăng nhập để nhập PIN</span>
+              <button type="button" class="gl-saved-x" onclick="lcDoiTK()">Đổi TK</button>
+            </div>
+            <button id="liBtn" class="btn btn-primary btn-block" style="margin-top:14px" onclick="doSignIn()" aria-live="polite">Đăng nhập</button>
             <div id="authMsg" class="auth-msg"></div>
             <div class="auth-switch"><a onclick="lcChonDangNhap('forgot')">Quên mật khẩu?</a></div>
             <div class="auth-switch">Chưa có tài khoản? <a onclick="lcChonDangNhap('reg')">Đăng ký</a></div>
@@ -2616,7 +2632,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2611-16';
+const APP_VER='2711-01';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -2815,7 +2831,8 @@ Object.assign(TXT.hi,{"Chứng từ ký SignHub": "SignHub दस्तावे
 /* Thẻ đăng nhập 14/11/2026 */
 Object.assign(TXT.en,{"Nhập email và mật khẩu.":"Enter your email and password.","Sai email hoặc mật khẩu.":"Wrong email or password.","Đang đăng nhập…":"Signing in…","Không kết nối được máy chủ — kiểm tra mạng rồi thử lại.":"Can't reach the server — check your connection and try again."});
 Object.assign(TXT.hi,{"Nhập email và mật khẩu.":"अपना ईमेल और पासवर्ड दर्ज करें।","Sai email hoặc mật khẩu.":"ईमेल या पासवर्ड गलत है।","Đang đăng nhập…":"साइन इन हो रहा है…","Không kết nối được máy chủ — kiểm tra mạng rồi thử lại.":"सर्वर से कनेक्ट नहीं हो पा रहा — नेटवर्क जाँचकर फिर कोशिश करें।"});
-Object.assign(TXT.en,{"Đã lưu đăng nhập — bấm Đăng nhập":"Signed in on this device — tap Sign in"});Object.assign(TXT.hi,{"Đã lưu đăng nhập — bấm Đăng nhập":"इस डिवाइस पर साइन इन है — साइन इन दबाएँ"});
+Object.assign(TXT.en,{"Đã lưu đăng nhập — bấm Đăng nhập":"Signed in on this device — tap Sign in","Phiên đang lưu — bấm Đăng nhập để nhập PIN":"Session saved — tap Sign in to enter PIN","Đổi TK":"Switch"});Object.assign(TXT.hi,{"Đã lưu đăng nhập — bấm Đăng nhập":"इस डिवाइस पर साइन इन है — साइन इन दबाएँ","Phiên đang lưu — bấm Đăng nhập để nhập PIN":"सत्र सहेजा गया — PIN डालने के लिए साइन इन दबाएँ","Đổi TK":"बदलें"});
+Object.assign(TXT.en,{"⬆ Có bản mới — bấm để cập nhật (số đã đếm vẫn giữ nguyên)":"⬆ New version — tap to update (your counts are kept)","Đang cập nhật…":"Updating…"});Object.assign(TXT.hi,{"⬆ Có bản mới — bấm để cập nhật (số đã đếm vẫn giữ nguyên)":"⬆ नया संस्करण — अपडेट करने के लिए दबाएँ (गिनती सुरक्षित है)","Đang cập nhật…":"अपडेट हो रहा है…"});
 Object.assign(TXT.en,{"Xin chào":"Hello","Đã xác thực":"Verified"});Object.assign(TXT.hi,{"Xin chào":"नमस्ते","Đã xác thực":"सत्यापित"});
 Object.assign(TXT.en,{"Nhập mã PIN": "Enter PIN", "nhập mã PIN 6 số": "enter your 6-digit PIN", "Đặt mã PIN": "Set a PIN", "Chọn 6 số dễ nhớ với bạn — lần sau mở app chỉ cần nhập mã này.": "Choose 6 digits you can remember — next time you open the app, just enter this code.", "Nhập lại mã PIN": "Re-enter PIN", "Nhập lại 6 số vừa chọn để xác nhận.": "Enter the same 6 digits again to confirm.", "Đang xác minh mã PIN…": "Verifying PIN…", "Đang lưu mã PIN…": "Saving PIN…", "Đã mở khóa": "Unlocked", "Đã đặt mã PIN": "PIN set", "Sai mã PIN — còn": "Wrong PIN —", "lần thử": "tries left", "Sai mã PIN 5 lần — đăng nhập lại bằng mật khẩu.": "Wrong PIN 5 times — sign in again with your password.", "Hai lần nhập không khớp — đặt lại từ đầu.": "The two entries don't match — start again.", "Mã PIN quá dễ đoán — chọn 6 số khác.": "PIN is too easy to guess — choose other digits.", "Máy này chưa lưu được mã PIN — thử lại.": "This device couldn't save the PIN — try again.", "Quên mã PIN?": "Forgot PIN?", "Không phải bạn? Đăng xuất": "Not you? Sign out", "Quên mã PIN: đăng nhập lại bằng email + mật khẩu, sau đó đặt mã PIN mới.": "Forgot PIN: sign in again with email + password, then set a new PIN.", "Tiếp tục?": "Continue?", "Xóa": "Delete"});Object.assign(TXT.hi,{"Nhập mã PIN": "PIN दर्ज करें", "nhập mã PIN 6 số": "अपना 6 अंकों का PIN दर्ज करें", "Đặt mã PIN": "PIN सेट करें", "Chọn 6 số dễ nhớ với bạn — lần sau mở app chỉ cần nhập mã này.": "याद रखने योग्य 6 अंक चुनें — अगली बार ऐप खोलते समय केवल यही कोड दर्ज करें।", "Nhập lại mã PIN": "PIN दोबारा दर्ज करें", "Nhập lại 6 số vừa chọn để xác nhận.": "पुष्टि के लिए वही 6 अंक फिर दर्ज करें।", "Đang xác minh mã PIN…": "PIN जाँचा जा रहा है…", "Đang lưu mã PIN…": "PIN सहेजा जा रहा है…", "Đã mở khóa": "अनलॉक हो गया", "Đã đặt mã PIN": "PIN सेट हो गया", "Sai mã PIN — còn": "गलत PIN — शेष", "lần thử": "प्रयास", "Sai mã PIN 5 lần — đăng nhập lại bằng mật khẩu.": "5 बार गलत PIN — पासवर्ड से फिर लॉग इन करें।", "Hai lần nhập không khớp — đặt lại từ đầu.": "दोनों प्रविष्टियाँ मेल नहीं खातीं — फिर से शुरू करें।", "Mã PIN quá dễ đoán — chọn 6 số khác.": "PIN बहुत आसान है — दूसरे अंक चुनें।", "Máy này chưa lưu được mã PIN — thử lại.": "यह डिवाइस PIN सहेज नहीं सका — फिर प्रयास करें।", "Quên mã PIN?": "PIN भूल गए?", "Không phải bạn? Đăng xuất": "आप नहीं? लॉग आउट करें", "Quên mã PIN: đăng nhập lại bằng email + mật khẩu, sau đó đặt mã PIN mới.": "PIN भूल गए: ईमेल + पासवर्ड से फिर लॉग इन करें, फिर नया PIN सेट करें।", "Tiếp tục?": "जारी रखें?", "Xóa": "हटाएँ"});
 Object.assign(TXT.en,Object.fromEntries(Object.entries({"Danh bạ": "Directory", "Danh bạ nhân viên": "Staff directory", "Hồ sơ của tôi": "My profile", "Tài khoản chưa được gắn với nhân viên trong danh bạ — liên hệ admin.": "This account is not linked to a directory employee yet — contact the admin.", "Chưa tìm thấy hồ sơ của bạn trong danh bạ.": "Your profile was not found in the directory.", "Đóng": "Close", "Chat qua Teams": "Chat on Teams", "Gọi qua Teams": "Call on Teams", "Gọi điện": "Phone call", "Cấp": "Level", "Mã nhân viên": "Employee ID", "Đơn vị": "Unit", "Địa điểm làm việc": "Work location", "Trạng thái làm việc": "Employment status", "Đang làm việc": "Working", "Đã nghỉ việc": "Left the company", "Email công việc": "Work email", "Số điện thoại": "Phone", "Tài khoản app": "App account", "Chưa có tài khoản": "No account", "Sơ đồ vị trí": "Position chart", "Chưa có sơ đồ quản lý — danh bạ sẽ cập nhật ở lần đồng bộ tới.": "No reporting chart yet — it will appear after the next directory sync.", "Số bên phải = số người quản lý trực tiếp.": "Number on the right = direct reports.", "Nhân viên này đang gắn với tài khoản khác": "This employee is already linked to another account", "Vẫn gắn thêm?": "Link anyway?", "Chưa gắn được": "Could not link", "Máy chủ chưa nhận việc gắn tài khoản với nhân viên. Thử lại sau, hoặc báo kỹ thuật.": "The server did not accept the link. Try again later or contact support.", "Mọi tài khoản đang hoạt động đã gắn với nhân viên trong danh bạ.": "Every active account is linked to a directory employee.", "Tài khoản chưa gắn với nhân viên": "Accounts not linked to an employee", "Gắn tất cả gợi ý": "Link all suggestions", "Gắn": "Link", "tài khoản theo gợi ý (email hoặc họ tên trùng khớp)?": "accounts by suggestion (matching email or full name)?", "Đã gắn": "Linked", "Không gắn được với ai trong danh bạ thường là thời vụ, sinh viên thực tập hoặc đã nghỉ việc.": "Accounts with no directory match are usually seasonal staff, interns or people who have left.", "Gợi ý": "Suggestion", "trùng": "matching", "email": "email", "tên": "name", "Không có gợi ý chắc chắn": "No confident suggestion", "Chọn nhân viên khác…": "Choose another employee…", "Gõ tên, mã NV hoặc email…": "Type name, employee ID or email…", "đã nghỉ": "left", "Đang tải danh bạ…": "Loading directory…", "Danh bạ chưa sẵn sàng — thử lại sau.": "Directory not ready — try again later.", "Toàn bộ nhân viên Vp Bà Nà theo danh bạ MySun": "All Ba Na office staff from the MySun directory", "người": "people", "cập nhật": "updated", "Chỉ hiện nhân viên đã có tài khoản app.": "Only employees with an app account are shown.", "Tìm theo tên, email, SĐT, mã NV…": "Search by name, email, phone, ID…", "Tất cả": "All", "Có tài khoản app": "Has app account", "nhân viên": "employees", "▾ Xem thêm": "▾ Show more"}).filter(([k])=>!(k in TXT.en))));Object.assign(TXT.hi,Object.fromEntries(Object.entries({"Danh bạ": "निर्देशिका", "Danh bạ nhân viên": "कर्मचारी निर्देशिका", "Hồ sơ của tôi": "मेरी प्रोफ़ाइल", "Tài khoản chưa được gắn với nhân viên trong danh bạ — liên hệ admin.": "यह खाता अभी निर्देशिका के किसी कर्मचारी से नहीं जुड़ा — एडमिन से संपर्क करें।", "Chưa tìm thấy hồ sơ của bạn trong danh bạ.": "निर्देशिका में आपकी प्रोफ़ाइल नहीं मिली।", "Đóng": "बंद करें", "Chat qua Teams": "Teams पर चैट", "Gọi qua Teams": "Teams पर कॉल", "Gọi điện": "फ़ोन करें", "Cấp": "स्तर", "Mã nhân viên": "कर्मचारी कोड", "Đơn vị": "इकाई", "Địa điểm làm việc": "कार्य स्थान", "Trạng thái làm việc": "कार्य स्थिति", "Đang làm việc": "कार्यरत", "Đã nghỉ việc": "नौकरी छोड़ दी", "Email công việc": "कार्य ईमेल", "Số điện thoại": "फ़ोन", "Tài khoản app": "ऐप खाता", "Chưa có tài khoản": "खाता नहीं", "Sơ đồ vị trí": "पद चार्ट", "Chưa có sơ đồ quản lý — danh bạ sẽ cập nhật ở lần đồng bộ tới.": "अभी रिपोर्टिंग चार्ट नहीं — अगले सिंक के बाद दिखेगा।", "Số bên phải = số người quản lý trực tiếp.": "दाईं संख्या = सीधे अधीनस्थ।", "Nhân viên này đang gắn với tài khoản khác": "यह कर्मचारी पहले से दूसरे खाते से जुड़ा है", "Vẫn gắn thêm?": "फिर भी जोड़ें?", "Chưa gắn được": "जोड़ नहीं सके", "Máy chủ chưa nhận việc gắn tài khoản với nhân viên. Thử lại sau, hoặc báo kỹ thuật.": "सर्वर ने जोड़ना स्वीकार नहीं किया। बाद में प्रयास करें या तकनीकी टीम को बताएँ।", "Mọi tài khoản đang hoạt động đã gắn với nhân viên trong danh bạ.": "हर सक्रिय खाता निर्देशिका के कर्मचारी से जुड़ा है।", "Tài khoản chưa gắn với nhân viên": "कर्मचारी से न जुड़े खाते", "Gắn tất cả gợi ý": "सभी सुझाव जोड़ें", "Gắn": "जोड़ें", "tài khoản theo gợi ý (email hoặc họ tên trùng khớp)?": "खाते सुझाव के अनुसार (ईमेल या पूरा नाम मेल) जोड़ें?", "Đã gắn": "जोड़ा गया", "Không gắn được với ai trong danh bạ thường là thời vụ, sinh viên thực tập hoặc đã nghỉ việc.": "जिन खातों का मेल नहीं मिलता वे आम तौर पर मौसमी कर्मचारी, इंटर्न या छोड़ चुके लोग होते हैं।", "Gợi ý": "सुझाव", "trùng": "मेल", "email": "ईमेल", "tên": "नाम", "Không có gợi ý chắc chắn": "कोई पक्का सुझाव नहीं", "Chọn nhân viên khác…": "दूसरा कर्मचारी चुनें…", "Gõ tên, mã NV hoặc email…": "नाम, कोड या ईमेल लिखें…", "đã nghỉ": "छोड़ चुके", "Đang tải danh bạ…": "निर्देशिका लोड हो रही है…", "Danh bạ chưa sẵn sàng — thử lại sau.": "निर्देशिका तैयार नहीं — बाद में प्रयास करें।", "Toàn bộ nhân viên Vp Bà Nà theo danh bạ MySun": "MySun निर्देशिका के सभी बा ना कार्यालय कर्मचारी", "người": "लोग", "cập nhật": "अपडेट", "Chỉ hiện nhân viên đã có tài khoản app.": "केवल ऐप खाते वाले कर्मचारी दिखाए गए हैं।", "Tìm theo tên, email, SĐT, mã NV…": "नाम, ईमेल, फ़ोन, कोड से खोजें…", "Tất cả": "सभी", "Có tài khoản app": "ऐप खाता है", "nhân viên": "कर्मचारी", "▾ Xem thêm": "▾ और दिखाएँ"}).filter(([k])=>!(k in TXT.hi))));
@@ -5957,14 +5974,31 @@ function verSo(v,now){
 }
 const APP_VER_SO=verSo(APP_VER);
 let _capNhatDangChay=false;
+/* Sửa 27/11/2026: máy PC Quầy Lễ Hội Bia chạy bản 2511-05 nguyên ngày 26/11 — có nháp nên lệnh tải lại bật hộp
+   "Rời trang?" (beforeunload), tải lại không xảy ra, mà cờ _capNhatDangChay kẹt true nên KHÔNG BAO GIỜ thử lại; mọi lần gửi
+   bị máy chủ chặn CAN_CAP_NHAT, app báo "mạng không ổn định", phiếu nằm hàng đợi 22 tiếng.
+   Nay: cất nháp rồi tải lại KHÔNG hỏi (nháp + hàng đợi nằm trong localStorage, tải lại không mất); 8 giây sau vẫn còn ở trang
+   cũ thì gỡ cờ và hiện nút "Có bản mới — bấm để cập nhật" (bấm là một chạm người dùng, trình duyệt cho tải lại). */
+function napBanMoi(){try{saveDrafts();}catch(e){}_navOK=true;try{location.reload();}catch(e){}
+  setTimeout(()=>{_navOK=false;_capNhatDangChay=false;hienNutBanMoi();},8000);}
+function hienNutBanMoi(){
+  if(document.getElementById('verPill'))return;
+  const b=document.createElement('button');b.id='verPill';b.type='button';
+  b.textContent=L('⬆ Có bản mới — bấm để cập nhật (số đã đếm vẫn giữ nguyên)');
+  b.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:136px;z-index:10000;border:0;cursor:pointer;'
+    +'padding:11px 18px;border-radius:999px;background:#E89217;color:#2A1A00;font:700 13px/1.25 inherit;box-shadow:0 8px 24px rgba(0,0,0,.28);max-width:calc(100% - 32px)';
+  b.onclick=()=>{b.disabled=true;b.textContent=L('Đang cập nhật…');napBanMoi();};
+  document.body.appendChild(b);
+}
 function capNhatNgay(){
   if(_capNhatDangChay)return;
-  try{const t=Number(sessionStorage.getItem('kk_capnhat_luc')||0);if(Date.now()-t<120000)return;   /* chống tải lại vòng tròn */
+  try{const t=Number(sessionStorage.getItem('kk_capnhat_luc')||0);
+    if(Date.now()-t<120000){hienNutBanMoi();return;}   /* vừa tải lại mà vẫn bản cũ (mạng chập chờn lấy bản lưu): để người dùng bấm */
     sessionStorage.setItem('kk_capnhat_luc',String(Date.now()));}catch(e){}
   _capNhatDangChay=true;
   try{toast(L('Có bản mới — app đang tự cập nhật…'));}catch(e){}
   try{if(_pinRes&&!$('#login').classList.contains('hidden')){_pinBan=true;pinVe();pinBao('Có bản mới — app đang tải lại, nhập lại mã PIN sau vài giây.');}}catch(e){}
-  setTimeout(()=>{try{location.reload();}catch(e){}},1500);
+  setTimeout(napBanMoi,1500);
 }
 async function kiemPhienBan(){
   if(!sb||_capNhatDangChay)return;
@@ -6561,18 +6595,38 @@ function showAuth(w){
     if(wr)wr.classList.toggle('is-glassy',gl);}
   if(w==='reg'){fillRegPlants();regKho=new Set();fillRegSlocs();}
 }
-let _lcMorphT=[],_lcMorphLock=false;
-/* Hiệu ứng THU GỌN THẬT thành viên kính khói bát giác 164x164 -> NÉN NHỊP LÒ XO -> BUNG NỞ thành Form Glassy V20 */
-function lcChonDangNhap(w){
+let _lcMorphT=[],_lcMorphLock=false,_lcMorphTarget='',_phienLuuEmail='';
+/* Chỉ focus vào ô Email khi ô đang trống — tránh tự bung bàn phím che nút Đăng nhập khi đã lưu phiên */
+function lcFocusLoginNeuTrong(){
+  try{const ie=$('#liEmail');if(ie&&!ie.value.trim())ie.focus();}catch(e){}
+}
+function lcKiemPhienLuu(){
+  const sv=$('#liSaved'),ie=$('#liEmail');if(!sv||!ie)return;
+  const khop=!!(_phienLuuEmail&&ie.value.trim().toLowerCase()===_phienLuuEmail);
+  sv.classList.toggle('hidden',!khop);
+}
+async function lcDoiTK(){
+  _phienLuuEmail='';
+  try{await sb.auth.signOut();}catch(e){}
+  const ie=$('#liEmail'),ip=$('#liPass'),sv=$('#liSaved');
+  if(sv)sv.classList.add('hidden');
+  if(ie)ie.value='';
+  if(ip){ip.value='';ip.placeholder='••••••••';}
+  liBao('');
+  setTimeout(()=>{try{if(ie)ie.focus();}catch(e){}},40);
+}
+/* Hiệu ứng THU GỌN THẬT thành viên kính khói bát giác 164x164 -> NÉN NHỊP LÒ XO -> BUNG NỞ thành Form / PIN Glassy V20 */
+function lcChonDangNhap(w,epChay){
   const c=$('#loginCard'),wr=$('#lcWrap'),mp=$('#lcMorph');
   const boQua=!c||(typeof _itDong==='function'&&_itDong());
-  if(boQua){showAuth(w);if(w==='login')setTimeout(()=>{try{$('#liEmail').focus();}catch(e){}},40);return;}
-  if(_lcMorphLock)return;
-  _lcMorphLock=true;
+  if(boQua){showAuth(w);if(w==='login')setTimeout(lcFocusLoginNeuTrong,40);return;}
+  if(_lcMorphLock&&!epChay&&_lcMorphTarget===w)return;
+  _lcMorphLock=true;_lcMorphTarget=w;
   _lcMorphT.forEach(clearTimeout);_lcMorphT=[];
+  c.classList.remove('is-collapse','is-expand','is-pulse');
+  c.style.height='';
   const h0=c.offsetHeight;
   c.style.height=h0+'px';
-  c.classList.remove('is-expand','is-pulse');
   if(wr)wr.classList.add('is-morphing');
   void c.offsetHeight;
   c.classList.add('is-collapse');
@@ -6594,13 +6648,13 @@ function lcChonDangNhap(w){
     c.classList.remove('is-collapse');
     c.style.height=h1+'px';
     if(mp)_lcMorphT.push(setTimeout(()=>{mp.classList.remove('show');},220));
-    if(w==='login')setTimeout(()=>{try{$('#liEmail').focus();}catch(e){}},220);
+    if(w==='login')setTimeout(lcFocusLoginNeuTrong,220);
     else if(w==='reg')setTimeout(()=>{try{$('#regName').focus();}catch(e){}},220);
     _lcMorphT.push(setTimeout(()=>{
       c.style.height='';
       c.classList.remove('is-expand');
       if(wr)wr.classList.remove('is-morphing');
-      _lcMorphLock=false;
+      _lcMorphLock=false;_lcMorphTarget='';
     },500));
   },660));
 }
@@ -6723,8 +6777,11 @@ async function initAuth(){
      (để thấy đủ hiệu ứng). Email điền sẵn; ô mật khẩu để trống vẫn bấm được (doSignIn dùng lại phiên đang có). */
   try{const {data:{session:s}}=await sb.auth.getSession();
     if(s){if(recoveryMode){showAuth('reset');return;}
-      const em=(s.user&&s.user.email)||'';const ie=$('#liEmail');if(ie&&em&&!ie.value)ie.value=em;
-      const ip=$('#liPass');if(ip){ip.placeholder=L('Đã lưu đăng nhập — bấm Đăng nhập');}}
+      const em=(s.user&&s.user.email)||'';
+      _phienLuuEmail=em.trim().toLowerCase();
+      const ie=$('#liEmail');if(ie&&em&&!ie.value)ie.value=em;
+      const ip=$('#liPass');if(ip){ip.placeholder=L('Đã lưu đăng nhập — bấm Đăng nhập');}
+      lcKiemPhienLuu();}
   }catch(e){console.error(e);}
 }
 /* Hiệu ứng thẻ đăng nhập (14/11/2026): nút xoay khi đang đăng nhập, thẻ rung + hộp đỏ khi sai. Không đổi luồng đăng nhập. */
@@ -6927,8 +6984,27 @@ function pinUI(mode){
   try{if(_pinRes&&_pinMode===mode&&!$('#login').classList.contains('hidden')&&!$('#authPin').classList.contains('hidden')){
     try{ghiLoiApp('pin','Màn PIN bị mở lại khi đang nhập','',String((new Error()).stack||'').slice(0,900));}catch(e){}
     return Promise.resolve(false);}}catch(e){}   /* lượt gọi thứ hai dừng; lượt đang nhập giữ nguyên số */
-  return new Promise(res=>{_pinRes=res;_pinMode=mode;_pinBuf='';_pinB1='';_pinBan=mode==='khoa'||mode==='mang';
-  showAuth('pin');const st=$('#pinStage');if(st)st.className='pin-stage';pinBao(mode==='khoa'?(_pinDatLai?'Quản trị đã cấp lại mật khẩu và đặt lại mã PIN.':'Đã nhập sai 5 lần.'):'',mode==='khoa'&&!_pinDatLai);pinVeDau();pinVe();});}
+  return new Promise(res=>{
+    _pinRes=res;_pinMode=mode;_pinBuf='';_pinB1='';_pinBan=mode==='khoa'||mode==='mang';
+    const st=$('#pinStage');if(st)st.className='pin-stage';
+    pinBao(mode==='khoa'?(_pinDatLai?'Quản trị đã cấp lại mật khẩu và đặt lại mã PIN.':'Đã nhập sai 5 lần.'):'',mode==='khoa'&&!_pinDatLai);
+    pinVeDau();pinVe();
+    const tuLogin=!!($('#authLogin')&&!$('#authLogin').classList.contains('hidden')&&$('#login')&&!$('#login').classList.contains('hidden'));
+    if(tuLogin&&!_itDong()){
+      /* Bật tích xanh mượt trên nút Đăng nhập ~0,34s rồi thu gọn lăng kính 8 cạnh -> bung nở ra 6 ô mã PIN Glassy V20 */
+      const b=$('#liBtn');
+      if(b){
+        _liXong=true;b.disabled=true;b.classList.add('ok');b.innerHTML='';
+        b.insertAdjacentHTML('beforeend','<svg class="lc-ok" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>');
+        const ho=String((session&&session.name)||'').trim().split(/\s+/).pop();
+        b.appendChild(document.createTextNode(ho?L('Xin chào')+', '+ho:L('Đã xác thực')));
+      }
+      liBao('');
+      setTimeout(()=>{lcChonDangNhap('pin',true);},340);
+    }else{
+      showAuth('pin');
+    }
+  });}
 function pinVeDau(){
   const ten=String((session&&session.name)||'').trim().split(/\s+/).pop();
   const t=$('#pinTitle'),sub=$('#pinSub'),lk=$('#pinLink');
