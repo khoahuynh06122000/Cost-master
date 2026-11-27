@@ -17,7 +17,7 @@
 // Trả { ok:true, ... } | { loi:'<mã>', ... }  (mã lỗi để app nói thành câu nghiệp vụ)
 const { bocLoi } = require('../lib/ghi-loi');
 const { kiemPin, supa } = require('../lib/pin-kiem');
-const { noiDungDC, soCuaO, bamSha256, O_KY, O_LAP, nguonSo, noiDungKK } = require('../lib/chu-ky-dc');
+const { noiDungDC, soCuaO, bamSha256, O_KY, O_LAP, O_LAP_BB, nguonSo, noiDungKK } = require('../lib/chu-ky-dc');
 
 const SUPA_URL = (process.env.SUPABASE_URL || 'https://jygrdbuwveitrlfuwigs.supabase.co').replace(/\/+$/, '');
 const SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
@@ -97,17 +97,18 @@ const xuLy = async (req, res) => {
   let ok = false, canTrangThai = 'Chờ duyệt';
   if (vai === 'giao') ok = laAdmin || cua(r.fromPlant, r.fromSloc);
   else if (vai === 'duyet') ok = laKT;
-  else if (vai === 'nhan') { ok = laAdmin || cua(r.toPlant, r.toSloc); if (r.kind !== 'du') canTrangThai = 'Đã duyệt'; }
+  else if (vai === 'nhan') { ok = laAdmin || cua(r.toPlant, r.toSloc); if (r.kind === 'day') canTrangThai = 'Đã duyệt'; }   /* xin: ký lúc lập (Chờ duyệt) · du: bếp ký lúc nhận (Chờ duyệt) */
   if (!ok) return res.status(403).json({ loi: 'khong_quyen' });
   if (row.status !== canTrangThai) return res.status(409).json({ loi: 'sai_trang_thai', trangThai: row.status });
   // Bên xuất ≠ bên nhận / kế toán duyệt hủy ≠ kho hủy
   const doiNhau = { giao: ['nhan', 'duyet'], nhan: ['giao'], duyet: ['giao'] }[vai];
   if (!laAdmin && doiNhau.some(k => ck[k] && ck[k].uid === me.id)) return res.status(409).json({ loi: 'cung_nguoi' });
-  // Hàng dư / hủy: bên xuất ký lúc lập — phải có chữ ký đó, và số chuyển / số hủy còn nguyên như lúc ký
+  // Chữ ký lúc lập (xin: người nhận · hàng dư / hủy: người xuất) — số xin / chuyển / hủy phải còn nguyên như lúc ký;
+  // hàng dư / hủy BẮT BUỘC có chữ ký đó, phiếu xin cũ chưa có thì vẫn duyệt được
   const oLap = O_LAP[r.kind];
   if (oLap && vai !== oLap) {
-    if (!ck[oLap]) return res.status(409).json({ loi: 'chua_ky_xuat' });
-    if (bamSha256(noiDungDC(r, 'lap', soCuaO(items, 'lap'))) !== ck[oLap].bam) return res.status(409).json({ loi: 'noi_dung_doi' });
+    if (!ck[oLap]) { if (O_LAP_BB[r.kind]) return res.status(409).json({ loi: 'chua_ky_xuat' }); }
+    else if (bamSha256(noiDungDC(r, 'lap', soCuaO(items, 'lap'))) !== ck[oLap].bam) return res.status(409).json({ loi: 'noi_dung_doi' });
   }
 
   // 3. Số đem ký

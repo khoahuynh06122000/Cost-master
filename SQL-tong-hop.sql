@@ -175,3 +175,55 @@ create trigger kk_chu_ky_rao before insert or update on public.submissions
 select (select count(*) from information_schema.columns where table_name = 'chu_ky_mau' and column_name = 'anh') as co_cot_anh,
        (select count(*) from information_schema.columns where table_name = 'submissions' and column_name = 'chu_ky') as co_cot_chu_ky_kk,
        (select count(*) from pg_trigger where tgname = 'kk_chu_ky_rao') as co_trigger;
+
+-- ============================================================
+-- PHẦN 51 — PHIẾU XIN: NGƯỜI XIN KÝ Ô "NGƯỜI NHẬN" LÚC LẬP — 27/11/2026, bản 2711-02
+-- Khoa: người đi xin chính là người nhận hàng -> ký luôn khi lập phiếu, bỏ bước "Xác nhận đã nhận hàng" sau duyệt.
+-- Chỉ đổi một chỗ của trigger PHẦN 49: mở lại / bỏ từ chối phiếu xin thì GIỮ chữ ký người nhận (đã ký lúc lập), chỉ gỡ người xuất.
+-- Chạy lại nhiều lần vẫn an toàn.
+-- ============================================================
+create or replace function public.dc_chu_ky_rao() returns trigger
+language plpgsql as $fn$
+declare
+  may_chu boolean := coalesce(auth.role(), '') = 'service_role';
+  moc timestamptz := '2026-11-27 00:00:00+07';
+  o_duyet text;
+begin
+  if tg_op = 'DELETE' then
+    if old.chu_ky ? 'kt' then raise exception 'PHIEU_DA_CHOT: phiếu kế toán đã chốt, không xoá được' using errcode = '42501'; end if;
+    return old;
+  end if;
+  if tg_op = 'INSERT' then
+    if new.chu_ky is not null and not may_chu then raise exception 'CHU_KY_CHI_MAY_CHU' using errcode = '42501'; end if;
+    return new;
+  end if;
+  -- Phiếu kế toán đã chốt: khoá mọi thay đổi nội dung
+  if old.chu_ky ? 'kt' and (new.status is distinct from old.status or new.items is distinct from old.items
+       or new.period is distinct from old.period or new.chu_ky is distinct from old.chu_ky) then
+    raise exception 'PHIEU_DA_CHOT: phiếu kế toán đã chốt, không sửa được' using errcode = '42501';
+  end if;
+  if new.chu_ky is distinct from old.chu_ky and not may_chu then
+    raise exception 'CHU_KY_CHI_MAY_CHU' using errcode = '42501';
+  end if;
+  -- Quay về Chờ duyệt (mở lại / bỏ từ chối): chữ ký lúc duyệt / nhận cũ hết hiệu lực; chữ ký lúc lập (xin: người nhận · hàng dư / hủy: người xuất) giữ
+  if new.status = 'Chờ duyệt' and old.status is distinct from 'Chờ duyệt' and new.chu_ky is not null then
+    if new.kind in ('du', 'huy') then new.chu_ky := new.chu_ky - 'nhan' - 'duyet';
+    elsif new.kind = 'xin' then new.chu_ky := new.chu_ky - 'giao';   -- giữ chữ ký người nhận (ký lúc lập)
+    else new.chu_ky := new.chu_ky - 'giao' - 'nhan'; end if;
+  end if;
+  -- Duyệt / nhận phiếu lập từ ngày áp dụng: phải có chữ ký ô duyệt (hàng dư / hủy: thêm chữ ký người xuất lúc lập)
+  if new.status = 'Đã duyệt' and old.status is distinct from 'Đã duyệt' and not may_chu
+     and coalesce(new.created_at, now()) >= moc then
+    o_duyet := case new.kind when 'du' then 'nhan' when 'huy' then 'duyet' else 'giao' end;
+    if new.kind in ('du', 'huy') and (new.chu_ky is null or (new.chu_ky -> 'giao') is null) then
+      raise exception 'CAN_KY_XUAT: phiếu chưa có chữ ký người xuất' using errcode = '42501';
+    end if;
+    if new.chu_ky is null or (new.chu_ky -> o_duyet) is null then
+      raise exception 'CAN_KY_DUYET: phiếu chưa có chữ ký duyệt' using errcode = '42501';
+    end if;
+  end if;
+  return new;
+end $fn$;
+
+-- Kiểm: ra 1
+select count(*) as da_doi from pg_proc where proname = 'dc_chu_ky_rao' and prosrc like '%elsif new.kind = ''xin''%';

@@ -2632,7 +2632,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2711-01';
+const APP_VER='2711-02';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -2833,6 +2833,7 @@ Object.assign(TXT.en,{"Nhập email và mật khẩu.":"Enter your email and pas
 Object.assign(TXT.hi,{"Nhập email và mật khẩu.":"अपना ईमेल और पासवर्ड दर्ज करें।","Sai email hoặc mật khẩu.":"ईमेल या पासवर्ड गलत है।","Đang đăng nhập…":"साइन इन हो रहा है…","Không kết nối được máy chủ — kiểm tra mạng rồi thử lại.":"सर्वर से कनेक्ट नहीं हो पा रहा — नेटवर्क जाँचकर फिर कोशिश करें।"});
 Object.assign(TXT.en,{"Đã lưu đăng nhập — bấm Đăng nhập":"Signed in on this device — tap Sign in","Phiên đang lưu — bấm Đăng nhập để nhập PIN":"Session saved — tap Sign in to enter PIN","Đổi TK":"Switch"});Object.assign(TXT.hi,{"Đã lưu đăng nhập — bấm Đăng nhập":"इस डिवाइस पर साइन इन है — साइन इन दबाएँ","Phiên đang lưu — bấm Đăng nhập để nhập PIN":"सत्र सहेजा गया — PIN डालने के लिए साइन इन दबाएँ","Đổi TK":"बदलें"});
 Object.assign(TXT.en,{"⬆ Có bản mới — bấm để cập nhật (số đã đếm vẫn giữ nguyên)":"⬆ New version — tap to update (your counts are kept)","Đang cập nhật…":"Updating…"});Object.assign(TXT.hi,{"⬆ Có bản mới — bấm để cập nhật (số đã đếm vẫn giữ nguyên)":"⬆ नया संस्करण — अपडेट करने के लिए दबाएँ (गिनती सुरक्षित है)","Đang cập nhật…":"अपडेट हो रहा है…"});
+Object.assign(TXT.en,{"✍ Ký phiếu (người nhận)":"✍ Sign (receiver)"});Object.assign(TXT.hi,{"✍ Ký phiếu (người nhận)":"✍ हस्ताक्षर करें (प्राप्तकर्ता)"});
 Object.assign(TXT.en,{"Xin chào":"Hello","Đã xác thực":"Verified"});Object.assign(TXT.hi,{"Xin chào":"नमस्ते","Đã xác thực":"सत्यापित"});
 Object.assign(TXT.en,{"Nhập mã PIN": "Enter PIN", "nhập mã PIN 6 số": "enter your 6-digit PIN", "Đặt mã PIN": "Set a PIN", "Chọn 6 số dễ nhớ với bạn — lần sau mở app chỉ cần nhập mã này.": "Choose 6 digits you can remember — next time you open the app, just enter this code.", "Nhập lại mã PIN": "Re-enter PIN", "Nhập lại 6 số vừa chọn để xác nhận.": "Enter the same 6 digits again to confirm.", "Đang xác minh mã PIN…": "Verifying PIN…", "Đang lưu mã PIN…": "Saving PIN…", "Đã mở khóa": "Unlocked", "Đã đặt mã PIN": "PIN set", "Sai mã PIN — còn": "Wrong PIN —", "lần thử": "tries left", "Sai mã PIN 5 lần — đăng nhập lại bằng mật khẩu.": "Wrong PIN 5 times — sign in again with your password.", "Hai lần nhập không khớp — đặt lại từ đầu.": "The two entries don't match — start again.", "Mã PIN quá dễ đoán — chọn 6 số khác.": "PIN is too easy to guess — choose other digits.", "Máy này chưa lưu được mã PIN — thử lại.": "This device couldn't save the PIN — try again.", "Quên mã PIN?": "Forgot PIN?", "Không phải bạn? Đăng xuất": "Not you? Sign out", "Quên mã PIN: đăng nhập lại bằng email + mật khẩu, sau đó đặt mã PIN mới.": "Forgot PIN: sign in again with email + password, then set a new PIN.", "Tiếp tục?": "Continue?", "Xóa": "Delete"});Object.assign(TXT.hi,{"Nhập mã PIN": "PIN दर्ज करें", "nhập mã PIN 6 số": "अपना 6 अंकों का PIN दर्ज करें", "Đặt mã PIN": "PIN सेट करें", "Chọn 6 số dễ nhớ với bạn — lần sau mở app chỉ cần nhập mã này.": "याद रखने योग्य 6 अंक चुनें — अगली बार ऐप खोलते समय केवल यही कोड दर्ज करें।", "Nhập lại mã PIN": "PIN दोबारा दर्ज करें", "Nhập lại 6 số vừa chọn để xác nhận.": "पुष्टि के लिए वही 6 अंक फिर दर्ज करें।", "Đang xác minh mã PIN…": "PIN जाँचा जा रहा है…", "Đang lưu mã PIN…": "PIN सहेजा जा रहा है…", "Đã mở khóa": "अनलॉक हो गया", "Đã đặt mã PIN": "PIN सेट हो गया", "Sai mã PIN — còn": "गलत PIN — शेष", "lần thử": "प्रयास", "Sai mã PIN 5 lần — đăng nhập lại bằng mật khẩu.": "5 बार गलत PIN — पासवर्ड से फिर लॉग इन करें।", "Hai lần nhập không khớp — đặt lại từ đầu.": "दोनों प्रविष्टियाँ मेल नहीं खातीं — फिर से शुरू करें।", "Mã PIN quá dễ đoán — chọn 6 số khác.": "PIN बहुत आसान है — दूसरे अंक चुनें।", "Máy này chưa lưu được mã PIN — thử lại.": "यह डिवाइस PIN सहेज नहीं सका — फिर प्रयास करें।", "Quên mã PIN?": "PIN भूल गए?", "Không phải bạn? Đăng xuất": "आप नहीं? लॉग आउट करें", "Quên mã PIN: đăng nhập lại bằng email + mật khẩu, sau đó đặt mã PIN mới.": "PIN भूल गए: ईमेल + पासवर्ड से फिर लॉग इन करें, फिर नया PIN सेट करें।", "Tiếp tục?": "जारी रखें?", "Xóa": "हटाएँ"});
 Object.assign(TXT.en,Object.fromEntries(Object.entries({"Danh bạ": "Directory", "Danh bạ nhân viên": "Staff directory", "Hồ sơ của tôi": "My profile", "Tài khoản chưa được gắn với nhân viên trong danh bạ — liên hệ admin.": "This account is not linked to a directory employee yet — contact the admin.", "Chưa tìm thấy hồ sơ của bạn trong danh bạ.": "Your profile was not found in the directory.", "Đóng": "Close", "Chat qua Teams": "Chat on Teams", "Gọi qua Teams": "Call on Teams", "Gọi điện": "Phone call", "Cấp": "Level", "Mã nhân viên": "Employee ID", "Đơn vị": "Unit", "Địa điểm làm việc": "Work location", "Trạng thái làm việc": "Employment status", "Đang làm việc": "Working", "Đã nghỉ việc": "Left the company", "Email công việc": "Work email", "Số điện thoại": "Phone", "Tài khoản app": "App account", "Chưa có tài khoản": "No account", "Sơ đồ vị trí": "Position chart", "Chưa có sơ đồ quản lý — danh bạ sẽ cập nhật ở lần đồng bộ tới.": "No reporting chart yet — it will appear after the next directory sync.", "Số bên phải = số người quản lý trực tiếp.": "Number on the right = direct reports.", "Nhân viên này đang gắn với tài khoản khác": "This employee is already linked to another account", "Vẫn gắn thêm?": "Link anyway?", "Chưa gắn được": "Could not link", "Máy chủ chưa nhận việc gắn tài khoản với nhân viên. Thử lại sau, hoặc báo kỹ thuật.": "The server did not accept the link. Try again later or contact support.", "Mọi tài khoản đang hoạt động đã gắn với nhân viên trong danh bạ.": "Every active account is linked to a directory employee.", "Tài khoản chưa gắn với nhân viên": "Accounts not linked to an employee", "Gắn tất cả gợi ý": "Link all suggestions", "Gắn": "Link", "tài khoản theo gợi ý (email hoặc họ tên trùng khớp)?": "accounts by suggestion (matching email or full name)?", "Đã gắn": "Linked", "Không gắn được với ai trong danh bạ thường là thời vụ, sinh viên thực tập hoặc đã nghỉ việc.": "Accounts with no directory match are usually seasonal staff, interns or people who have left.", "Gợi ý": "Suggestion", "trùng": "matching", "email": "email", "tên": "name", "Không có gợi ý chắc chắn": "No confident suggestion", "Chọn nhân viên khác…": "Choose another employee…", "Gõ tên, mã NV hoặc email…": "Type name, employee ID or email…", "đã nghỉ": "left", "Đang tải danh bạ…": "Loading directory…", "Danh bạ chưa sẵn sàng — thử lại sau.": "Directory not ready — try again later.", "Toàn bộ nhân viên Vp Bà Nà theo danh bạ MySun": "All Ba Na office staff from the MySun directory", "người": "people", "cập nhật": "updated", "Chỉ hiện nhân viên đã có tài khoản app.": "Only employees with an app account are shown.", "Tìm theo tên, email, SĐT, mã NV…": "Search by name, email, phone, ID…", "Tất cả": "All", "Có tài khoản app": "Has app account", "nhân viên": "employees", "▾ Xem thêm": "▾ Show more"}).filter(([k])=>!(k in TXT.en))));Object.assign(TXT.hi,Object.fromEntries(Object.entries({"Danh bạ": "निर्देशिका", "Danh bạ nhân viên": "कर्मचारी निर्देशिका", "Hồ sơ của tôi": "मेरी प्रोफ़ाइल", "Tài khoản chưa được gắn với nhân viên trong danh bạ — liên hệ admin.": "यह खाता अभी निर्देशिका के किसी कर्मचारी से नहीं जुड़ा — एडमिन से संपर्क करें।", "Chưa tìm thấy hồ sơ của bạn trong danh bạ.": "निर्देशिका में आपकी प्रोफ़ाइल नहीं मिली।", "Đóng": "बंद करें", "Chat qua Teams": "Teams पर चैट", "Gọi qua Teams": "Teams पर कॉल", "Gọi điện": "फ़ोन करें", "Cấp": "स्तर", "Mã nhân viên": "कर्मचारी कोड", "Đơn vị": "इकाई", "Địa điểm làm việc": "कार्य स्थान", "Trạng thái làm việc": "कार्य स्थिति", "Đang làm việc": "कार्यरत", "Đã nghỉ việc": "नौकरी छोड़ दी", "Email công việc": "कार्य ईमेल", "Số điện thoại": "फ़ोन", "Tài khoản app": "ऐप खाता", "Chưa có tài khoản": "खाता नहीं", "Sơ đồ vị trí": "पद चार्ट", "Chưa có sơ đồ quản lý — danh bạ sẽ cập nhật ở lần đồng bộ tới.": "अभी रिपोर्टिंग चार्ट नहीं — अगले सिंक के बाद दिखेगा।", "Số bên phải = số người quản lý trực tiếp.": "दाईं संख्या = सीधे अधीनस्थ।", "Nhân viên này đang gắn với tài khoản khác": "यह कर्मचारी पहले से दूसरे खाते से जुड़ा है", "Vẫn gắn thêm?": "फिर भी जोड़ें?", "Chưa gắn được": "जोड़ नहीं सके", "Máy chủ chưa nhận việc gắn tài khoản với nhân viên. Thử lại sau, hoặc báo kỹ thuật.": "सर्वर ने जोड़ना स्वीकार नहीं किया। बाद में प्रयास करें या तकनीकी टीम को बताएँ।", "Mọi tài khoản đang hoạt động đã gắn với nhân viên trong danh bạ.": "हर सक्रिय खाता निर्देशिका के कर्मचारी से जुड़ा है।", "Tài khoản chưa gắn với nhân viên": "कर्मचारी से न जुड़े खाते", "Gắn tất cả gợi ý": "सभी सुझाव जोड़ें", "Gắn": "जोड़ें", "tài khoản theo gợi ý (email hoặc họ tên trùng khớp)?": "खाते सुझाव के अनुसार (ईमेल या पूरा नाम मेल) जोड़ें?", "Đã gắn": "जोड़ा गया", "Không gắn được với ai trong danh bạ thường là thời vụ, sinh viên thực tập hoặc đã nghỉ việc.": "जिन खातों का मेल नहीं मिलता वे आम तौर पर मौसमी कर्मचारी, इंटर्न या छोड़ चुके लोग होते हैं।", "Gợi ý": "सुझाव", "trùng": "मेल", "email": "ईमेल", "tên": "नाम", "Không có gợi ý chắc chắn": "कोई पक्का सुझाव नहीं", "Chọn nhân viên khác…": "दूसरा कर्मचारी चुनें…", "Gõ tên, mã NV hoặc email…": "नाम, कोड या ईमेल लिखें…", "đã nghỉ": "छोड़ चुके", "Đang tải danh bạ…": "निर्देशिका लोड हो रही है…", "Danh bạ chưa sẵn sàng — thử lại sau.": "निर्देशिका तैयार नहीं — बाद में प्रयास करें।", "Toàn bộ nhân viên Vp Bà Nà theo danh bạ MySun": "MySun निर्देशिका के सभी बा ना कार्यालय कर्मचारी", "người": "लोग", "cập nhật": "अपडेट", "Chỉ hiện nhân viên đã có tài khoản app.": "केवल ऐप खाते वाले कर्मचारी दिखाए गए हैं।", "Tìm theo tên, email, SĐT, mã NV…": "नाम, ईमेल, फ़ोन, कोड से खोजें…", "Tất cả": "सभी", "Có tài khoản app": "ऐप खाता है", "nhân viên": "कर्मचारी", "▾ Xem thêm": "▾ और दिखाएँ"}).filter(([k])=>!(k in TXT.hi))));
@@ -14127,9 +14128,11 @@ function dcRequestForm(v,kind){
     }else{
       /* KÝ SỐ (26/11/2026): hàng dư / hủy — người lập là bên XUẤT hàng nên ký ngay (số chuyển / số hủy). Phiếu xin không ký
          lúc lập (bên cho ký lúc duyệt, bên xin ký lúc nhận hàng). Huỷ ký thì phiếu vẫn còn, ký lại ở thẻ phiếu. */
-      const _ky=DC_O_LAP[kind]?await kySoPhieu(rec,'giao',soCuaO(items,'lap')):true;
+      const _oL=DC_O_LAP[kind];
+      const _ky=_oL?await kySoPhieu(rec,_oL,soCuaO(items,'lap')):true;
       tb.forEach(x=>notifyWh(x.plant,x.sloc,x.msg,x.kind,x.title));
-      if(_ky===false)toast('Đã gửi phiếu '+id+' nhưng CHƯA KÝ — bấm "✍ Ký phiếu (người xuất)" ở thẻ phiếu, chưa ký thì bên kia chưa nhận / duyệt được');
+      if(_ky===false)toast(_oL==='nhan'?'Đã gửi phiếu '+id+' nhưng CHƯA KÝ — bấm "✍ Ký phiếu (người nhận)" ở thẻ phiếu'
+        :'Đã gửi phiếu '+id+' nhưng CHƯA KÝ — bấm "✍ Ký phiếu (người xuất)" ở thẻ phiếu, chưa ký thì bên kia chưa nhận / duyệt được');
       else toast(kind==='du'?'Đã gửi phiếu '+id+' — chờ bếp nhận':'Đã gửi phiếu '+id+' — chờ duyệt');
     }
     renderView();
@@ -14149,7 +14152,7 @@ function dcChoDuyet(v){
   card.appendChild(el('div','card-h',`<div><span class="ct">Phiếu chờ tôi duyệt</span><div class="cs">Duyệt / nhận xong hàng mới trừ kho nguồn và cộng kho nhận. Phiếu xin hàng tính theo ngày duyệt, hàng dư cuối ngày tính theo ngày chuyển</div></div><span class="badge ${list.length?'badge-wait':'badge-soft'}">${list.length}</span>`));
   const body=el('div');card.appendChild(body);v.appendChild(card);
   {const nn=ghiChuMang(MANG_DUYET);nn.style.margin='12px 16px 0';body.appendChild(nn);}
-  const nhan=dcChoNhanCuaToi();
+  const nhan=[];   /* 27/11/2026: bỏ bước ký nhận hàng sau duyệt — người xin ký ô Người nhận lúc lập phiếu */
   if(nhan.length){
     const c2=el('div','card');
     c2.appendChild(el('div','card-h',`<div><span class="ct">Chờ tôi ký nhận hàng</span><div class="cs">Phiếu xin hàng đã được bên cho duyệt. Nhận đủ hàng thì ký xác nhận để hoàn tất chứng từ</div></div><span class="badge badge-wait">${nhan.length}</span>`));
@@ -14478,7 +14481,10 @@ const KY_SO_MOC='2026-11-27T00:00:00+07:00';
 const DC_O_DUYET={xin:'giao',day:'giao',du:'nhan',huy:'duyet'};
 /* Khoa 26/11/2026: ai LẬP phiếu không quan trọng — chỉ ký NGƯỜI XUẤT và NGƯỜI NHẬN (hủy: kho hủy + kế toán).
    Hàng dư / hủy: bên xuất chính là người lập nên ký lúc lập (số chuyển / số hủy). GIỐNG HỆT lib/chu-ky-dc.js. */
-const DC_O_LAP={du:'giao',huy:'giao'};
+/* Ô ký LÚC LẬP (Khoa 27/11/2026: người lập phiếu xin chính là người nhận hàng -> ký luôn ô "Người nhận" khi lập, không còn bước
+   "Xác nhận đã nhận hàng"; người duyệt bên cho ký ô "Người xuất"). DC_LAP_BB = loại phiếu BẮT BUỘC có chữ ký lúc lập trước khi duyệt. */
+const DC_O_LAP={xin:'nhan',du:'giao',huy:'giao'};
+const DC_LAP_BB={du:1,huy:1};
 function dcNguonSo(kind,vai){return DC_O_LAP[kind]===vai?'lap':'giao';}
 var _cotChuKy=false;   // máy chủ đã có cột transfer_requests.chu_ky (thấy khi tải phiếu)
 let _kySoTat=false;            // máy chủ chưa chạy SQL PHẦN 48 -> duyệt như cũ, không ký
@@ -14794,7 +14800,9 @@ function dcKhoiKySo(r){
     o.forEach(([vai,nhan])=>{
       const c=el('div','kyso-cell');c.appendChild(el('div','kyso-vai',nhan));
       const s=ck[vai];
-      if(!s){c.appendChild(el('div','kyso-chua','Chưa ký'));luoi.appendChild(c);return;}
+      if(!s){const _cu=(vai==='nhan'&&r.kind==='xin'&&r.status!=='Chờ duyệt');
+        const t0=el('div','kyso-chua');t0.textContent=_cu?('Người xin: '+(r.by||'—')+' · phiếu lập trước khi ký lúc lập'):'Chưa ký';
+        c.appendChild(t0);luoi.appendChild(c);return;}
       const sv=el('div','kyso-sv');c.appendChild(sv);
       const t=el('div','kyso-ten');t.textContent=s.ten||'';c.appendChild(t);
       const p=el('div','kyso-phu2');p.textContent='Mã NV: '+(s.maNv||'—')+' · Ký lúc: '+gioKySo(s.luc);c.appendChild(p);
@@ -14812,17 +14820,10 @@ function dcKhoiKySo(r){
   }
   const nut=el('div','kyso-nutp');box.appendChild(nut);
   if(moi&&!_kySoTat&&!r._choGui&&!ck.kt){
-    if(DC_O_LAP[r.kind]&&r.status==='Chờ duyệt'&&!ck.giao&&(_laBenXuat(r)||(session&&session.role==='admin'))){
-      const b=el('button','btn btn-primary btn-sm','✍ Ký phiếu (người xuất)');
-      b.onclick=async()=>{b.disabled=true;const k=await kySoPhieu(r,'giao',soCuaO(r.items,'lap'));b.disabled=false;if(k===true){toast('✓ Đã ký phiếu '+r.id);renderView();}};
-      nut.appendChild(b);
-    }
-    if(r.kind==='xin'&&r.status==='Đã duyệt'&&!ck.nhan&&(_laBenNhan(r)||(session&&session.role==='admin'))){
-      const b=el('button','btn btn-primary btn-sm','✍ Xác nhận đã nhận hàng');
-      b.onclick=async()=>{b.disabled=true;const k=await kySoPhieu(r,'nhan',soCuaO(r.items,'giao'));b.disabled=false;
-        if(k===true){toast('✓ Đã xác nhận nhận hàng phiếu '+r.id);
-          notifyWh(r.fromPlant,r.fromSloc,session.name+' đã ký nhận hàng phiếu '+r.id+' · '+whName(r.toPlant,r.toSloc)+' · lúc '+now(),'transfer','Bên nhận đã ký nhận hàng',session.name);
-          renderView();}};
+    const _oL=DC_O_LAP[r.kind];
+    if(_oL&&r.status==='Chờ duyệt'&&!ck[_oL]&&((_oL==='nhan'?_laBenNhan(r):_laBenXuat(r))||(session&&session.role==='admin'))){
+      const b=el('button','btn btn-primary btn-sm',_oL==='nhan'?'✍ Ký phiếu (người nhận)':'✍ Ký phiếu (người xuất)');
+      b.onclick=async()=>{b.disabled=true;const k=await kySoPhieu(r,_oL,soCuaO(r.items,'lap'));b.disabled=false;if(k===true){toast('✓ Đã ký phiếu '+r.id);renderView();}};
       nut.appendChild(b);
     }
   }
@@ -15257,7 +15258,7 @@ async function _approveTransferReq(r,qtys){
      lúc lập). Máy chủ (trigger PHẦN 49) cũng chặn đổi sang Đã duyệt khi thiếu chữ ký. */
   if(dcCanKySo(r)&&kySoDangBat()){
     const _oD=DC_O_DUYET[r.kind]||'giao';
-    if(DC_O_LAP[r.kind]&&!(r.chuKy&&r.chuKy.giao)){errBox('Người xuất chưa ký phiếu',[
+    if(DC_LAP_BB[r.kind]&&!(r.chuKy&&r.chuKy.giao)){errBox('Người xuất chưa ký phiếu',[
       'Phiếu <b>'+r.id+'</b> chưa có chữ ký số của người xuất ('+(r.by||'—')+').',
       'Nhờ người lập phiếu mở thẻ phiếu, bấm <b>✍ Ký phiếu (người xuất)</b>, rồi quay lại.'],'Phiếu: '+r.id);return;}
     if(!(r.chuKy&&r.chuKy[_oD])){
@@ -15268,7 +15269,7 @@ async function _approveTransferReq(r,qtys){
   }else if(kySoDangBat()&&session&&session.maNv){
     /* Phiếu lập trước 27/11 còn chờ duyệt: mời ký, không bắt buộc (hàng dư / hủy chưa có chữ ký người xuất thì bỏ qua). */
     const _oD=DC_O_DUYET[r.kind]||'giao';
-    if(!(r.chuKy&&r.chuKy[_oD])&&!(DC_O_LAP[r.kind]&&!(r.chuKy&&r.chuKy.giao))){
+    if(!(r.chuKy&&r.chuKy[_oD])&&!(DC_LAP_BB[r.kind]&&!(r.chuKy&&r.chuKy.giao))){
       const _q={};codes.forEach(c=>{_q[c]=Number(qtys[c]||0);});
       const _k=await kySoPhieu(r,_oD,_q);
       if(_k===false&&!confirm('Phiếu '+r.id+' lập trước ngày áp dụng ký số (27/11) nên không bắt buộc ký. Duyệt luôn mà không ký?'))return;
@@ -15446,7 +15447,7 @@ async function reopenTransferReq(r){
   const upd=await dbUpd('transfer_requests',{id:r.id},{status:'Chờ duyệt',period:null,approved_by:null,approved_at:null});
   if(!upd.ok||upd.count===0)return;
   r.status='Chờ duyệt';r.period=null;r.approvedBy=null;r.approvedAt=null;
-  if(r.chuKy){if(!DC_O_LAP[r.kind])delete r.chuKy.giao;delete r.chuKy.nhan;delete r.chuKy.duyet;}
+  if(r.chuKy){['giao','nhan','duyet'].forEach(o=>{if(o!==DC_O_LAP[r.kind])delete r.chuKy[o];});}
   log('Mở lại phiếu điều chuyển (admin)',`${r.id} · xóa ${cleaned} dòng sổ`);
   toast('Đã mở lại '+r.id+' — chờ duyệt lại');renderView();
 }
@@ -15495,7 +15496,7 @@ async function boTuChoiTransferReq(r){
     }
   }
   r.status='Chờ duyệt';r.approvedBy=null;r.approvedAt=null;
-  if(r.chuKy){if(!DC_O_LAP[r.kind])delete r.chuKy.giao;delete r.chuKy.nhan;delete r.chuKy.duyet;}
+  if(r.chuKy){['giao','nhan','duyet'].forEach(o=>{if(o!==DC_O_LAP[r.kind])delete r.chuKy[o];});}
   log('Bỏ từ chối phiếu điều chuyển (admin)',
       r.id+' · '+whName(r.fromPlant,r.fromSloc)+' → '+ai+' · '+codes.length+' mã'
       +(r.rejectNote?' · lý do từ chối cũ: '+r.rejectNote:''));
