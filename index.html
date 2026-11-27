@@ -2381,11 +2381,6 @@
                 </button>
               </div>
             </label>
-            <div id="liSaved" class="gl-saved hidden">
-              <span class="gl-saved-dot" aria-hidden="true"></span>
-              <span class="gl-saved-t">Phiên đang lưu — bấm Đăng nhập để nhập PIN</span>
-              <button type="button" class="gl-saved-x" onclick="lcDoiTK()">Đổi TK</button>
-            </div>
             <button id="liBtn" class="btn btn-primary btn-block" style="margin-top:14px" onclick="doSignIn()" aria-live="polite">Đăng nhập</button>
             <div id="authMsg" class="auth-msg"></div>
             <div class="auth-switch"><a onclick="lcChonDangNhap('forgot')">Quên mật khẩu?</a></div>
@@ -2644,7 +2639,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2711-05';
+const APP_VER='2711-06';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
