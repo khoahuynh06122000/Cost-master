@@ -2639,7 +2639,7 @@ function matHit(m,qn){return vnAll(matKey(m),qn);}
 /* PHIÊN BẢN — đổi MỖI LẦN đẩy bản mới lên. Dạng NGÀYTHÁNG-SỐ THỨ TỰ TRONG NGÀY:
    1609-01 = bản thứ nhất của ngày 16/09. Cùng ngày đẩy tiếp thì 1609-02, 1609-03…
    Dùng để khi BP báo lỗi, đọc một dòng là biết họ đang chạy bản nào. */
-const APP_VER='2711-08';
+const APP_VER='2811-01';
 function veVersion(){
   const e=document.getElementById('sbVer');if(!e)return;
   e.textContent='Phiên bản '+APP_VER;
@@ -4650,13 +4650,16 @@ function kyTruoc(per){
    · Kiểm kê tháng: luôn có dòng áo mưa (mã kho từng dùng; kho chưa dùng thì đủ mọi mã áo mưa).
    Mã áo mưa nhận theo TÊN trong danh mục (có chữ "áo mưa") + 3 mã đã biết — thêm mã áo mưa mới vào danh mục là tự nhận. */
 const AO_MUA_MA=['10004806','10048209','10169821'];
-let _aoMuaCache=null,_aoMuaN=-1;
+let _aoMuaCache=null,_aoMuaN=-1,_aoMuaLuc=0;
+/* Chỉ dựng lại khi danh mục đổi số mã hoặc quá 60 giây (đổi tên tại chỗ). Trước đây mỗi lần gọi đều Object.keys cả 7.436 mã
+   chỉ để so độ dài — gọi cho từng mã trên từng phiếu nên trang Kiểm soát số liệu mất ~3 giây chỉ ở đây (28/11/2026). */
 function maAoMua(){
+  const n=(DATA.materials||[]).length,now=Date.now();
+  if(_aoMuaCache&&_aoMuaN===n&&now-_aoMuaLuc<60000)return _aoMuaCache;
   const ds=Object.keys(masterByCode||{});
-  if(_aoMuaCache&&_aoMuaN===ds.length)return _aoMuaCache;
   const set=new Set(AO_MUA_MA);
   ds.forEach(c=>{const m=masterByCode[c];if(m&&vnNorm(m.name||'').indexOf('aomua')>=0)set.add(c);});
-  _aoMuaN=ds.length;_aoMuaCache=set;return set;
+  _aoMuaN=n;_aoMuaLuc=now;_aoMuaCache=set;return set;
 }
 function laAoMua(c){return maAoMua().has(String(c));}
 function aoMuaCuaKho(plant,sloc){
@@ -10151,8 +10154,23 @@ function ksIndex(ky){
   return {rc,tr};
 }
 function ksSoCT(t){return dcMaPhieu(t)||('Nạp Excel '+(t.date||''));}
-/* NXT theo mã của MỘT kho trong phạm vi lọc */
+/* Nhớ tạm kết quả ksTinhKho theo dữ liệu đang có: trang Kiểm soát gọi cùng một kho 2–3 lần (đánh giá, sổ từng kho,
+   bấm vào kho, mục đột xuất). Dữ liệu đổi (tải lại, duyệt, thêm dòng) thì chữ ký đổi và tính lại (28/11/2026). */
+let _ksMemo=null;
+function ksSigDuLieu(){
+  return [(receipts||[]).length,(transfers||[]).length,(closings||[]).map(x=>x.id+'~'+x.status).join(','),
+    (submissions||[]).map(x=>x.id+'~'+x.status+'~'+((x.edits||[]).length)).join(','),
+    Object.keys(openingStock||{}).map(k=>k+'~'+((openingStock[k]&&openingStock[k].fromId)||'')).join(','),
+    Object.keys(countLists||{}).length,(DATA.materials||[]).length].join('§');
+}
 function ksTinhKho(p,s,ky,tu,den,idx){
+  const arr=[receipts,transfers,submissions,closings,openingStock];
+  if(!_ksMemo||_ksMemo.arr.some((a,i)=>a!==arr[i])||_ksMemo.sig!==ksSigDuLieu())_ksMemo={arr,sig:ksSigDuLieu(),m:{}};
+  const k=[p,s,ky,tu||'',den||''].join('|');
+  return _ksMemo.m[k]||(_ksMemo.m[k]=_ksTinhKho(p,s,ky,tu,den,idx));
+}
+/* NXT theo mã của MỘT kho trong phạm vi lọc */
+function _ksTinhKho(p,s,ky,tu,den,idx){
   const key=p+'|'+s,sub=nxtPhieuCua(p,s,ky);
   const dkO=sub?dkCuaPhieu(sub):tonDauKy(p,s,ky);
   const k=kyKhoang(ky),dau=k?ksIsoNgay(k.tu):'',cuoiKy=k?ksIsoNgay(k.den):'';
@@ -10650,14 +10668,13 @@ function renderKiemSoat(v){
   ktVeKetLuan(v,D);
   ktVePhuongAn(v,D);
   ktVeMaTran(v,D);
-  ktVeChuaDu(v,D);
   try{khoDongKhoi(v);}catch(e){}
   ksVeTraCuu(v,ky,fmtN);
 }
 function ktVeKetLuan(v,D){
   const kl=D.kl,ic={do:'!',vang:'!',xanh:'✓'}[kl.muc];
   const tieu={do:'Chưa đủ điều kiện chốt số kỳ '+periodVN(D.ky),vang:'Chốt được sau khi xử lý '+D.viec.length+' việc',xanh:'Số liệu kỳ '+periodVN(D.ky)+' đủ điều kiện chốt'}[kl.muc];
-  const cau=[kl.dat+'/'+kl.tong+' phép kiểm tra đạt.',kl.nDoi+'/'+kl.nKho+' kho đối chiếu được (có tồn đầu kỳ và biên bản kiểm kê).'];
+  const cau=[];
   if(kl.nCao)cau.push(kl.nCao+' kho có dấu hiệu bất thường mức cao — cần kiểm kê đột xuất trước khi duyệt.');
   else if(kl.nTb)cau.push(kl.nTb+' kho có dấu hiệu bất thường mức trung bình — cần yêu cầu giải trình.');
   else cau.push('Chưa thấy kho nào có dấu hiệu bất thường đáng kể.');
@@ -10701,30 +10718,6 @@ function ktVeMaTran(v,D){
       if(t.ds.length>60)ul.appendChild(el('div','list-hint','… và '+(t.ds.length-60)+' trường hợp nữa — tải báo cáo kiểm soát để xem đủ.'));
       d.appendChild(ul);dichMan(ul);});}
     b.appendChild(d);});
-}
-function ktVeChuaDu(v,D){
-  const ds=D.khos.filter(k=>!k.doiChieu||k.tam);
-  const c=el('div','card');
-  c.appendChild(el('div','card-h',`<div><span class="ct">Kho chưa đủ điều kiện đối chiếu</span><div class="cs">Thiếu tồn đầu kỳ hoặc biên bản kiểm kê thì chưa tính được xuất thực tế — các kho này không bị chấm điểm rủi ro ở những dấu hiệu cần số đó.</div></div>`));
-  const b=el('div','card-b');c.appendChild(b);v.appendChild(c);
-  const an=[];if(D.khongSo)an.push(D.khongSo+' kho không có số liệu kỳ này (không nhập, không điều chuyển, không kiểm kê)');if(D.dong)an.push(D.dong+' kho đang đóng cửa');
-  if(an.length)b.appendChild(el('div','kt-an',an.join(' · ')+' — đã ẩn.'));
-  if(!ds.length){b.appendChild(el('div','kt-ok','Mọi kho có số liệu đều đã đủ tồn đầu kỳ và biên bản kiểm kê.'));return;}
-  const w=el('div','tbl-wrap');const t=el('table');
-  t.innerHTML='<thead><tr><th>Kho</th><th>Điểm bán</th><th>Tồn đầu kỳ</th><th>Biên bản kiểm kê</th><th>Việc cần làm</th><th>Người làm</th></tr></thead>';
-  const tb=el('tbody');
-  ds.sort((a,b)=>(a.coMoc?1:0)-(b.coMoc?1:0)||a.ten.localeCompare(b.ten,'vi')).forEach(k=>{
-    const dk=!k.coMoc?ktPill('cao','Chưa có'):(k.tam?ktPill('tb','Tạm tính'):ktPill('ok','Chính thức'));
-    const kk={duyet:ktPill('ok','Đã duyệt'),cho:ktPill('tb','Chờ duyệt'),chua:ktPill(D.daQua?'cao':'thap','Chưa nộp'),chuamo:ktPill('thap','Chưa mở kỳ')}[k.kk];
-    let viec='',ai='';
-    if(!k.coMoc){viec='Nạp tồn đầu kỳ, hoặc duyệt biên bản kiểm kê kỳ trước';ai='Kế toán';}
-    else if(k.tam){viec='Duyệt biên bản kỳ trước để tồn đầu kỳ thành số chính thức';ai='Kế toán';}
-    else if(k.kk==='chuamo'){viec=D.daQua?'Kho có phát sinh nhưng chưa mở kỳ kiểm kê':'Mở kỳ kiểm kê khi tới ngày chốt';ai='Kế toán';}
-    else if(k.kk==='chua'){viec=D.daQua?'Nộp biên bản kiểm kê':'Nộp biên bản trước ngày chốt';ai='Giám sát kho';}
-    const tr=el('tr');tr.style.cursor='pointer';
-    tr.innerHTML=`<td><b>${escHtml(k.ten)}</b></td><td>${escHtml(k.diemBan)}</td><td>${dk}</td><td>${kk}</td><td>${escHtml(viec)}</td><td>${escHtml(ai)}</td>`;
-    tr.onclick=()=>ktDi({kho:k.key});tb.appendChild(tr);});
-  t.appendChild(tb);w.appendChild(t);b.appendChild(w);
 }
 /* ===================== TRANG 2: RỦI RO SỐ LIỆU ===================== */
 function renderRuiRo(v){
