@@ -27,6 +27,8 @@
 // KỲ ĐÃ DUYỆT KIỂM KÊ: dòng rơi vào kho + kỳ đã duyệt biên bản thì KHÔNG ghi (đổi số Xuất của biên bản đã ký) — báo boQua.
 
 const { bocLoi } = require('../lib/ghi-loi');
+const { guiTelegram } = require('../lib/telegram');
+const { tinTruot, tinDaLen } = require('../lib/sap-nk');
 const crypto = require('crypto');
 const SUPA_URL = (process.env.SUPABASE_URL || 'https://jygrdbuwveitrlfuwigs.supabase.co').replace(/\/+$/, '');
 const SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
@@ -125,6 +127,8 @@ const xuLy = async (req, res) => {
 
   let b;
   try { b = await doc(req); } catch (e) { return res.status(400).json({ error: e.message }); }
+  // 28/11/2026: gói BÁO CÁO LƯỢT CHẠY của agent (đạt hay trượt) — lưu lại + báo Telegram khi trượt.
+  if (b && b.bao_cao_chay && typeof b.bao_cao_chay === 'object') return res.status(200).json(await nhanBaoCao(b.bao_cao_chay));
   // Gói của agent sap_zsmmq002_sync.py: { target_date, data_hash, batch_index, total_batches, records:[…] }
   const rows = Array.isArray(b) ? b : (b && Array.isArray(b.records) ? b.records : (b && Array.isArray(b.rows) ? b.rows : null));
   if (!rows) return res.status(400).json({ error: 'Thiếu mảng records' });
@@ -264,6 +268,57 @@ const xuLy = async (req, res) => {
     if (!/42P01|does not exist|schema cache|PGRST205/i.test(String(e.message))) throw e;   // chưa chạy SQL PHẦN 43 phần bảng đối chiếu
   }
 
+  // Dự phòng theo dõi (agent bản cũ chưa gửi báo cáo lượt chạy): ghi ngày + giờ của lô cuối cùng nhận được.
+  if (!b.total_batches || Number(b.batch_index) === Number(b.total_batches)) {
+    try { await ghiCauHinh('sapnk_day', { ngay: ngayIso(b.target_date) || (ds[0] && ds[0].ngay) || '', luc: new Date().toISOString(), lo: Number(b.total_batches) || 1 }); } catch (e) { /* không chặn */ }
+  }
   return res.status(200).json({ ok: true, nhan: rows.length, moi: moi.length, capNhat: capNhat.length - giuSoBP.length, khongDoi, giuSoBP, boQua, doiChieu: { khop, lech } });
 };
+
+// ---------------------------------------------------------------- BÁO CÁO LƯỢT CHẠY CỦA AGENT (28/11/2026)
+async function docCauHinh(k) {
+  const q = await supa('bao_mat_cau_hinh?select=gia_tri&k=eq.' + enc(k), { method: 'GET' });
+  try { return q && q[0] && q[0].gia_tri ? JSON.parse(q[0].gia_tri) : null; } catch (e) { return null; }
+}
+async function ghiCauHinh(k, obj) {
+  await supa('bao_mat_cau_hinh?on_conflict=k', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+    body: JSON.stringify({ k, bat: true, gia_tri: JSON.stringify(obj) }) });
+}
+function gioVNChu(ms) {
+  const d = new Date(ms + 7 * 3600e3), p = n => String(n).padStart(2, '0');
+  return p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()) + ' ' + p(d.getUTCDate()) + '/' + p(d.getUTCMonth() + 1);
+}
+async function nhanBaoCao(x) {
+  const ngay = ngayIso(x.target_date);
+  if (!ngay) return { ok: false, loi: 'thiếu target_date' };
+  const dat = String(x.status || '').toUpperCase() === 'OK';
+  const now = Date.now();
+  const tail = (Array.isArray(x.log_tail) ? x.log_tail : []).map(t => chu(t, 220)).filter(Boolean).slice(-6);
+  const r = { status: dat ? 'OK' : 'FAIL', ngay, gio: gioVNChu(now), luc: new Date(now).toISOString(), chay: chu(x.run_at, 40),
+    up: chu(x.upload_status, 40), sap: Number(x.total_sap_rows) || 0, khop: Number(x.matched_rows) || 0, dong: Number(x.summary_rows_count) || 0,
+    loi: dat ? '' : chu(x.error_message, 400), log: dat ? [] : tail };
+  let cu = null, ok = null;
+  try { [cu, ok] = await Promise.all([docCauHinh('sapnk_chay'), docCauHinh('sapnk_ok')]); } catch (e) { /* đọc trượt -> vẫn thử ghi */ }
+  const cungNgayTruot = cu && cu.status === 'FAIL' && cu.ngay === ngay;
+  r.lanTruot = dat ? 0 : (cungNgayTruot ? (Number(cu.lanTruot) || 1) + 1 : 1);
+  // Chống dồn tin: cùng ngày trượt liên tiếp chỉ báo lại sau 2 giờ (Khoa hay chạy tay nhiều lần liền).
+  let baoLuc = cungNgayTruot ? cu.baoLuc || null : null, daBao = cungNgayTruot ? !!cu.daBao : false;
+  let tg = null;
+  if (!dat && (!baoLuc || now - Date.parse(baoLuc) > 2 * 3600e3)) {
+    tg = await guiTelegram(tinTruot(r, r.lanTruot), { muc: 'S2' });
+    if (tg.ok) { baoLuc = r.luc; daBao = true; }
+  }
+  if (dat && cu && cu.status === 'FAIL' && cu.daBao && cu.ngay <= ngay) tg = await guiTelegram(tinDaLen(r), { muc: 'S2' });
+  r.baoLuc = baoLuc; r.daBao = daBao;
+  await ghiCauHinh('sapnk_chay', r);
+  if (dat) {
+    const cac = Object.assign({}, (ok && ok.cacNgay) || {});
+    cac[ngay] = { luc: r.luc, dong: r.dong, up: r.up };
+    const cac2 = {};
+    Object.keys(cac).sort().slice(-30).forEach(k => { cac2[k] = cac[k]; });
+    await ghiCauHinh('sapnk_ok', { cacNgay: cac2 });
+  }
+  return { ok: true, ghi: true, telegram: tg ? (tg.ok ? 'da_gui' : (tg.hoan ? 'hoan_toi_8h' : 'truot')) : 'khong' };
+}
+
 module.exports = bocLoi('nhap-kho-sap', xuLy);

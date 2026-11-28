@@ -16,6 +16,7 @@ import { readFileSync } from 'node:fs';
 const require = createRequire(import.meta.url);
 const { guiTelegram, dangNgu, esc } = require('../lib/telegram.js');
 const { tinSuCo, tinOnLai, tinTomTat } = require('../lib/mau-tin.js');
+const { giaiThich, lenhChayLai, THU_MUC, dmy, dmyCham } = require('../lib/sap-nk.js');
 
 const SB_URL = (process.env.SUPABASE_URL || '').replace(/\/+$/, '');
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY || '';
@@ -232,6 +233,34 @@ if (sbOK) {
   }
 }
 
+// 1g. Agent đẩy nhập kho SAP (ZSMMQ002, máy kế toán, 17h mỗi ngày) — Khoa 28/11/2026: "báo cáo thêm việc agent up nhập kho".
+// Agent tự báo từng lượt về /api/nhap-kho-sap (lưu bao_mat_cau_hinh: sapnk_chay / sapnk_ok / sapnk_day, xem lib/sap-nk.js).
+// Bot xét: NGÀY HÔM QUA đã có số SAP chưa (17h hôm nay agent có thể chưa chạy xong nên không xét hôm nay).
+let sapNK = null;
+if (sbOK) {
+  try {
+    const cf = Object.fromEntries((await q('bao_mat_cau_hinh?select=k,gia_tri&k=in.(sapnk_chay,sapnk_ok,sapnk_day)')).map(x => { let v = null; try { v = JSON.parse(x.gia_tri); } catch (e) {} return [x.k, v]; }));
+    const chay = cf.sapnk_chay, ok = (cf.sapnk_ok && cf.sapnk_ok.cacNgay) || {}, day = cf.sapnk_day;
+    const da = new Set(Object.keys(ok)); if (day && day.ngay) da.add(day.ngay);
+    if (chay || day || Object.keys(ok).length) {
+      const homQua = ngayISO(NOW - 86400e3), hKia = ngayISO(NOW - 2 * 86400e3);
+      const thieu = (Object.keys(ok).length ? [hKia, homQua] : [homQua]).filter(n => !da.has(n));   // agent bản cũ chỉ có sapnk_day (một ngày) -> chỉ xét hôm qua
+      const gan = [...da].sort().pop() || '';
+      sapNK = { gan, dong: ok[gan] ? ok[gan].dong : null, luc: ok[gan] ? ok[gan].luc : (day && day.ngay === gan ? day.luc : null), thieu, chay };
+      if (!da.has(homQua)) {
+        const g = chay && chay.status === 'FAIL' ? giaiThich(chay.loi, chay.log) : null;
+        const lyDo = [`Chưa nhận được số SAP của ngày ${dmy(homQua)}` + (thieu.length > 1 ? ` (cả ngày ${dmy(hKia)})` : ''),
+          gan ? `Ngày gần nhất đã có số: ${dmy(gan)}` : 'Chưa có ngày nào đẩy xong',
+          chay ? `Lượt chạy gần nhất ${chay.gio || ''} cho ngày ${dmy(chay.ngay)}: ${chay.status === 'OK' ? 'đạt' : 'TRƯỢT — ' + (g ? g.ly : '')}` : 'Agent chưa gửi báo cáo lượt chạy nào (máy tắt / chưa tới giờ / agent bản cũ)'];
+        phat.push({ khoa: 'sapnk|' + homQua, muc: 'S2', tieu: 'Agent nhập kho SAP chưa đẩy số ngày ' + dmy(homQua),
+          anhHuong: 'nhập kho SAP chưa lên app — tồn ước tính các kho thiếu phần hàng nhận', lyDo,
+          viec: (g ? g.lam + ', rồi chạy lại: ' : 'Mở máy chạy agent, chạy lại: ') + lenhChayLai(homQua),
+          traCuu: THU_MUC + '\logs\run_' + dmyCham(homQua) + '.log' });
+      }
+    }
+  } catch (e) { if (!thieuBang(e)) ghiChu.push('đọc tình trạng agent nhập kho SAP: ' + e.message); }
+}
+
 // TÁI PHÁT (Khoa 16/11/2026): lỗi đã sửa phải được nhớ để không tái phạm. Bảng so_tay (PHẦN 40) loại 'bai_hoc' có
 // khoa_nhan_dien: dấu hiệu nào khớp (đầu mã su_co, hoặc chuỗi trong câu lỗi) thì gắn nhãn TÁI PHÁT + dẫn bài học.
 // Lỗi người dùng khớp bài học mà chưa đủ ngưỡng mở sự cố (1–2 người) vẫn mở sự cố S2 "tái phát".
@@ -361,6 +390,7 @@ if (sbOK && suCoOK && d.getUTCHours() >= 8 && d.getUTCHours() < 22) {
         nang: Object.entries(bang).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, v]) => ({ k, mb: v / 1048576 })) };
       D.banCu = { ver: verRepo, ten: [...new Set(eg.filter(r => r.ver && verRepo && r.ver !== verRepo).map(r => r.ten || '?'))] };
     } catch (e) { if (!thieuBang(e)) D.ghiChu.push('Egress'); }
+    if (sapNK) D.sap = sapNK;
     const kq = await gui(tinTomTat(D), 'INFO');
     if (kq.ok) await ghi('POST', 'su_co', { id: khoaTT, muc: 'S3', tieu_de: 'Tin tóm tắt ' + homNay, trang_thai: 'dong', mo_at: new Date(NOW).toISOString(), dong_at: new Date(NOW).toISOString() });
   }
